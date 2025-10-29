@@ -1,0 +1,101 @@
+# Thiết kế gói (Package Design) và Cấu trúc Project (Tổng quan)
+
+## 1. Mục tiêu và phạm vi
+
+Phần này trình bày **tổng quan thiết kế gói và cấu trúc codebase** của hệ thống học tiếng Nhật, nhằm:
+
+* Làm rõ cách tổ chức project ở mức **kiến trúc – module**
+* Tránh over-engineering, không đi vào chi tiết triển khai
+* Đủ thông tin để các agent hoặc lập trình viên khác **tự hiểu và triển khai tiếp**
+* Phù hợp đưa trực tiếp vào khóa luận tốt nghiệp CNTT
+
+Nội dung **không mô tả chi tiết lớp, hàm hay thuật toán**, mà tập trung vào ranh giới trách nhiệm giữa các module.
+
+---
+
+## 2. Nguyên tắc thiết kế tổng quát
+
+Hệ thống được thiết kế theo các nguyên tắc sau:
+
+1. **Modular Monolith**: một codebase thống nhất, chia theo module nghiệp vụ
+2. **Tách theo miền nghiệp vụ (business domain)**, không theo CRUD hay công nghệ
+3. **Core Knowledge Base (CKB)** là lõi tri thức dùng chung cho toàn hệ thống
+4. **Sentence-centric**: mọi luồng học đều bắt đầu từ một câu cụ thể (Discovery Artifact)
+5. **KU-centric**: Trạng thái học tập gắn với Knowledge Unit (cố định), không gắn với Flashcard (biểu diễn)
+6. **Rule-based là nền tảng**, AI và chatbot chỉ đóng vai trò hỗ trợ thẩm định và giải thích
+
+---
+
+## 3. Phân tầng kiến trúc ở mức khái quát
+
+Ở mức khái quát, hệ thống gồm ba tầng chính:
+
+* **Presentation Layer**: giao diện người dùng, routing (Next.js)
+* **Application / Domain Layer**: các module nghiệp vụ chính
+* **Infrastructure Layer**: cơ sở dữ liệu, dịch vụ bên ngoài, cấu hình
+
+Phần này chỉ tập trung vào cách **tổ chức module và codebase**, không đi sâu vào chi tiết kỹ thuật từng tầng.
+
+---
+
+## 4. Cấu trúc thư mục codebase (tổng quan)
+
+```text
+src/
+├── app/        # Giao diện, routing, page & layout (Next.js)
+├── modules/    # Các module nghiệp vụ chính của hệ thống
+├── services/   # Tích hợp dịch vụ bên ngoài (YouTube, LLM, ...)
+├── db/         # Truy cập cơ sở dữ liệu, schema, migration
+├── lib/        # Tiện ích và hạ tầng dùng chung
+├── types/      # Kiểu dữ liệu dùng chung
+└── config/     # Cấu hình hệ thống
+```
+
+Cấu trúc này nhằm đảm bảo:
+
+* Dễ định vị logic nghiệp vụ
+* Dễ mở rộng thêm tính năng mới
+* Phù hợp cho cả phát triển đồ án và sản phẩm thử nghiệm
+
+---
+
+## 5. Thiết kế module nghiệp vụ (mức khái quát)
+
+Các module nghiệp vụ được đặt trong thư mục `modules/`, mỗi module đại diện cho một miền chức năng rõ ràng.
+
+```text
+modules/
+├── auth        # Người dùng và xác thực
+├── ckb         # Core Knowledge Base (vocab, kanji, grammar)
+├── sentence    # Quản lý câu – điểm vào của luồng học
+├── analysis    # Phân tích câu và ánh xạ về CKB
+├── flashcard   # Flashcard và deck (bao gồm 60 level có sẵn)
+├── learning    # Trạng thái học và SRS
+├── content     # Lesson và bài học cá nhân hóa
+├── youtube     # Tích hợp YouTube, subtitle
+├── chatbot     # Trợ lý học tập
+└── analytics   # Theo dõi và thống kê tiến độ học
+```
+
+---
+
+## 6. Vai trò và ranh giới của các module
+
+* **auth**: quản lý người dùng, không chứa logic học tập
+* **ckb**: nguồn tri thức chuẩn, các module khác chỉ tham chiếu
+* **sentence**: quản lý câu học, không xử lý phân tích
+* **analysis**: phân tích ngôn ngữ, ánh xạ về CKB và thẩm định/sửa lỗi câu theo yêu cầu
+* **flashcard**: biểu diễn kiến thức dưới dạng có thể học
+* **learning**: theo dõi trạng thái và tiến độ học cá nhân
+* **content**: tổ chức flashcard thành bài học
+* **youtube**: cung cấp câu từ nguồn video
+* **chatbot**: hỗ trợ giải thích và dẫn dắt học tập
+* **analytics**: tổng hợp chỉ số học tập (dữ liệu dẫn xuất)
+
+Mỗi module có ranh giới trách nhiệm rõ ràng, hạn chế phụ thuộc chéo để giảm độ phức tạp toàn hệ thống.
+
+---
+
+## 7. Kết luận
+
+Thiết kế gói và cấu trúc project được xây dựng ở mức khái quát, tập trung vào ranh giới nghiệp vụ thay vì chi tiết kỹ thuật. Cách tổ chức này giúp hệ thống tránh over-engineering, đồng thời đủ rõ ràng để các lập trình viên hoặc agent khác tiếp tục triển khai, mở rộng và tối ưu trong các giai đoạn phát triển tiếp theo.

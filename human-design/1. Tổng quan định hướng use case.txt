@@ -1,0 +1,82 @@
+Nhóm UC-01: Quản lý và khai thác kiến thức nền (Core Knowledge)
+
+UC-01.1: Truy cập kho kiến thức nền
+(vocabulary, kanji, grammar, sentence)
+
+UC-01.2: Xem bài học kiến thức theo cấu trúc chuẩn
+
+UC-01.3: Cá nhân hóa trạng thái học trên từng đơn vị kiến thức
+(trạng thái ghi nhớ, mức độ thành thạo, lịch ôn tập)
+
+Nhóm UC-02: Học Flashcard & SRS (CORE)
+
+UC-02.1: Học flashcard theo bộ 60 level có sẵn
+
+UC-02.2: Ôn tập kiến thức theo lịch SRS
+
+UC-02.3: Đánh giá mức độ ghi nhớ sau mỗi lượt học
+
+UC-02.4: Tạo flashcard cá nhân từ câu học
+(flashcard được ánh xạ về Knowledge Unit hiện có)
+
+Nhóm UC-03: Phân tích câu học tập (CORE – TRUNG TÂM)
+
+Đây là use case trung tâm, được kích hoạt từ nhiều nguồn khác nhau
+(bài học, YouTube, chatbot, hoặc người dùng nhập thủ công).
+
+UC-03.1: Phân tích một câu học tập bất kỳ
+
+UC-03.2: Tra cứu từ vựng và thông tin mở rộng trong câu
+
+UC-03.3: Nhận diện và giải thích điểm ngữ pháp trong câu
+
+UC-03.4: Tạo hành động học từ kết quả phân tích câu
+(thêm flashcard, thêm vào danh sách học, đánh dấu quan trọng)
+
+UC-03.5: Đánh giá và đề xuất sửa đổi câu (On-demand AI Refinement)
+(Trigger thủ công để kiểm tra độ chuẩn, nhận giải thích và bản sửa lỗi nếu cần)
+
+Nhóm UC-04: Học tập thông qua YouTube (BỔ TRỢ)
+
+UC-04.1: Kết nối và quản lý danh sách video YouTube học tập
+
+UC-04.2: Trích xuất và hiển thị phụ đề video
+
+UC-04.3: Phân tích câu từ phụ đề video
+
+UC-04.4: Liên kết nội dung video với kiến thức nền hiện có
+
+UC-04.5: Tạo flashcard từ nội dung video hợp lệ
+
+Lưu ý:
+Nội dung không ánh xạ được về Knowledge Base (CKB) sẽ không được đưa vào hệ thống học chính thức, nhằm đảm bảo tính nhất quán của trục học tập.
+
+Nhóm UC-05: Học tập với Chatbot trợ giảng (BỔ TRỢ)
+
+Chatbot đóng vai trò lớp tương tác thông minh, hỗ trợ người học thông qua hội thoại và các hành động học được đề xuất.
+
+UC-05.1: Đặt câu hỏi về nội dung học tập
+
+UC-05.2: Nhận giải thích dựa trên kiến thức nền và lịch sử học
+(có xét đến trạng thái SRS và tiến độ cá nhân)
+
+UC-05.3: Yêu cầu phân tích một câu thông qua chatbot
+
+UC-05.4: Đề xuất nội dung học hoặc ôn tập phù hợp
+
+UC-05.5: Khởi tạo hành động tạo bộ flashcard thông qua tương tác chatbot
+(chatbot đề xuất, người học xác nhận, hệ thống thực hiện use case tạo deck)
+
+UC-05.6: Thực hiện các lượt học hoặc ôn tập SRS thông qua giao diện hội thoại
+(chatbot đóng vai trò giao diện, sử dụng cơ chế SRS hiện có)
+
+Nhóm UC-06: Theo dõi và đánh giá quá trình học (IMPORTANT)
+
+UC-06.1: Theo dõi tiến độ học theo flashcard
+
+UC-06.2: Theo dõi tiến độ học theo ngữ pháp và câu
+(quy chiếu về Knowledge Unit)
+
+UC-06.3: Thống kê mức độ ghi nhớ và tần suất ôn tập
+
+UC-06.4: Hiển thị biểu đồ và chỉ số học tập tổng quan
