@@ -2,8 +2,8 @@
 
 import React from "react";
 import { ReactNode } from "react";
-import { AuthProvider } from "@/modules/auth/AuthContext";
-import { AnalysisProvider } from "@/modules/analysis/hooks/AnalysisContext";
+import { AuthProvider } from "@/features/auth/AuthContext";
+import { AnalysisProvider } from "@/features/analysis/hooks/AnalysisContext";
 import { Toaster } from "sonner";
 
 interface ProvidersProps {

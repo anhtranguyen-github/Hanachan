@@ -1,6 +1,6 @@
 
-import { createClient } from '@/lib/supabase/server';
-import { getDueCards } from '@/modules/learning/repository';
+import { createClient } from '@/services/supabase/server';
+import { getDueCards } from '@/features/learning/repository';
 import { NextResponse } from 'next/server';
 
 export async function GET() {

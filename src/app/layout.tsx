@@ -1,7 +1,7 @@
-import { MainLayout } from "@/lib/components/layout/MainLayout";
-import { SidebarProvider } from "@/lib/components/layout/SidebarContext";
-import { NotificationProvider } from "@/lib/context/NotificationContext";
-import { QuotaProvider } from "@/modules/auth/hooks/QuotaContext";
+import { MainLayout } from "@/ui/components/shared/MainLayout";
+import { SidebarProvider } from "@/ui/components/shared/SidebarContext";
+import { NotificationProvider } from "@/ui/components/shared/NotificationContext";
+import { QuotaProvider } from "@/features/auth/hooks/QuotaContext";
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { Providers } from "./providers";
 import { Nunito, Fredoka } from "next/font/google";
