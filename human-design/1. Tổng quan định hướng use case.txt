@@ -11,13 +11,14 @@ UC-01.3: Cá nhân hóa trạng thái học trên từng đơn vị kiến thứ
 Nhóm UC-02: Học Flashcard & SRS (CORE)
 
 UC-02.1: Học flashcard theo bộ 60 level có sẵn
+(Vocab/Kanji/Radical: Mặt chữ - Nghĩa | Grammar: Câu - Cloze)
 
 UC-02.2: Ôn tập kiến thức theo lịch SRS
 
 UC-02.3: Đánh giá mức độ ghi nhớ sau mỗi lượt học
 
 UC-02.4: Tạo flashcard cá nhân từ câu học
-(flashcard được ánh xạ về Knowledge Unit hiện có)
+(Flashcard được ánh xạ về Knowledge Unit. Grammar LUÔN gắn với câu).
 
 Nhóm UC-03: Phân tích câu học tập (CORE – TRUNG TÂM)
 

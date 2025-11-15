@@ -3,7 +3,7 @@
 -- ---------------------------------------------------------
 
 DO $$ BEGIN
-    CREATE TYPE fsrs_state AS ENUM ('New', 'Learning', 'Review', 'Relearning', 'Burned');
+    CREATE TYPE fsrs_state AS ENUM ('new', 'learning', 'review', 'relearning', 'burned');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS user_learning_states (
     ku_id UUID NOT NULL REFERENCES knowledge_units(id) ON DELETE CASCADE,
     
     -- FSRS Core Parameters (UC-01.3 & fsrs.md)
-    state fsrs_state DEFAULT 'New',
+    state fsrs_state DEFAULT 'new',
     stability DOUBLE PRECISION DEFAULT 0, -- S: Memory durability in days
     difficulty DOUBLE PRECISION DEFAULT 0,  -- D: Intrinsic difficulty
     

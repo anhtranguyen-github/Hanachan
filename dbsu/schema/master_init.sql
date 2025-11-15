@@ -21,10 +21,10 @@ DO $$ BEGIN
         CREATE TYPE ku_type AS ENUM ('radical', 'kanji', 'vocabulary', 'grammar');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'fsrs_state') THEN
-        CREATE TYPE fsrs_state AS ENUM ('New', 'Learning', 'Review', 'Relearning', 'Burned');
+        CREATE TYPE fsrs_state AS ENUM ('new', 'learning', 'review', 'relearning', 'burned');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'interaction_state') THEN
-        CREATE TYPE interaction_state AS ENUM ('New', 'Seen', 'Learning', 'Mastered');
+        CREATE TYPE interaction_state AS ENUM ('new', 'seen', 'learning', 'mastered');
     END IF;
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
@@ -152,7 +152,7 @@ CREATE TABLE IF NOT EXISTS deck_item_interactions (
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     deck_id UUID REFERENCES decks(id) ON DELETE CASCADE,
     ku_id UUID REFERENCES knowledge_units(id) ON DELETE CASCADE,
-    state interaction_state DEFAULT 'New',
+    state interaction_state DEFAULT 'new',
     last_interaction_at TIMESTAMPTZ DEFAULT NOW(),
     interaction_count INTEGER DEFAULT 0,
     PRIMARY KEY (user_id, deck_id, ku_id)
@@ -164,7 +164,7 @@ CREATE TABLE IF NOT EXISTS deck_item_interactions (
 CREATE TABLE IF NOT EXISTS user_learning_states (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     ku_id UUID NOT NULL REFERENCES knowledge_units(id) ON DELETE CASCADE,
-    state fsrs_state DEFAULT 'New',
+    state fsrs_state DEFAULT 'new',
     stability DOUBLE PRECISION DEFAULT 0,
     difficulty DOUBLE PRECISION DEFAULT 0,
     elapsed_days INTEGER DEFAULT 0,

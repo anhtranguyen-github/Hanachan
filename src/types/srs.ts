@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { type LearningStatus } from '@/config/design.config';
 
-export type ContentType = 'RADICAL' | 'KANJI' | 'VOCABULARY' | 'GRAMMAR';
+export type ContentType = 'radical' | 'kanji' | 'vocabulary' | 'grammar';
 
 // Unified with design system - use LearningStatus
 export type ItemState = LearningStatus;
@@ -9,7 +9,7 @@ export type SrsState = LearningStatus;
 
 export type DeckSource = 'SYSTEM';
 
-export const ContentTypeSchema = z.enum(["RADICAL", "KANJI", "VOCABULARY", "GRAMMAR"]);
+export const ContentTypeSchema = z.enum(["radical", "kanji", "vocabulary", "grammar"]);
 export const ItemStateSchema = z.enum(["new", "learning", "review", "relearning", "burned"]);
 export const SrsStateSchema = z.enum(["new", "learning", "review", "relearning", "burned"]);
 export const DeckSourceSchema = z.enum(["SYSTEM"]);
