@@ -1,7 +1,12 @@
-import { SQLiteLearningRepository } from "./infrastructure/SQLiteLearningRepository";
 
-export const learningRepository = new SQLiteLearningRepository();
+// Export actions for Client Components
+export * from "./actions";
 
-export * from "./domain/interfaces/ILearningRepository";
-export * from "./domain/SRSAlgorithm";
-export * from "./infrastructure/SQLiteLearningRepository";
+// Export types
+export * from "./types";
+
+// Export FSRS logic if needed
+export * from "./schedule";
+
+// Export DB functions (Server Components only)
+export * from "./db";

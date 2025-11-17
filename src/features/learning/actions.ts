@@ -7,8 +7,8 @@ import {
     getLearningSettings,
     updateLearningState,
     logReviewHistory
-} from './repository';
-import { FSRS } from './lib/fsrs';
+} from './db';
+import { FSRS } from './schedule';
 import { FSRSParameters, ReviewRating } from './types';
 import { revalidatePath } from 'next/cache';
 

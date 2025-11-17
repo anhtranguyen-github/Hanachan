@@ -1,7 +1,9 @@
-import { SQLiteKURepository } from "./infrastructure/SQLiteKURepository";
 
-// Export a single instance for the app to use
-export const kuRepository = new SQLiteKURepository();
+import { knowledgeService } from "./service";
 
-export * from "./domain/interfaces/IKURepository";
-export * from "./infrastructure/SQLiteKURepository";
+// Export the service as the primary entry point
+export { knowledgeService };
+
+export * from "./types";
+// Do not export repo directly to enforce service usage layer
+// export * from "./knowledge.repo";
