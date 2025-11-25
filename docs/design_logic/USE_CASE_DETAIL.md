@@ -50,27 +50,31 @@ This document outlines the core interactions, emphasizing the **Sentence -> Anal
 ## Part 2: Comprehensive Use Case Overview
 *(Source: 1. Tổng quan định hướng use case.txt)*
 
-Nhóm UC-01: Quản lý và khai thác kiến thức nền (Core Knowledge)
+Nhóm UC-01: Kiến thức nền & Cá nhân hóa (Knowledge Base)
+**(Nhóm Browse, Lesson, Personalization)**
 
-UC-01.1: Truy cập kho kiến thức nền
+UC-01.1: Truy cập kho kiến thức nền (Browse)
 (vocabulary, kanji, grammar, sentence)
 
-UC-01.2: Xem bài học kiến thức theo cấu trúc chuẩn
+UC-01.2: Xem bài học kiến thức theo cấu trúc chuẩn (Lesson View)
 
-UC-01.3: Cá nhân hóa trạng thái học trên từng đơn vị kiến thức
-(trạng thái ghi nhớ, mức độ thành thạo, lịch ôn tập)
+UC-01.3: Cá nhân hóa (Personalization)
+(Bookmark, ghi chú, đánh dấu trạng thái "đã biết")
 
-Nhóm UC-02: Học Flashcard & SRS (CORE)
+Nhóm UC-02: Học Flashcard & SRS (CORE FEATURE)
+**(Hoạt động học chính - The Engine of Retention)**
 
-UC-02.1: Học flashcard theo bộ 60 level có sẵn
-(Vocab/Kanji/Radical: Mặt chữ - Nghĩa | Grammar: Câu - Cloze)
+UC-02.1: Học theo lộ trình chuẩn (Level-based Learning)
+(Hệ thống chia sẵn 60 level. Mỗi level chứa Vocabulary, Kanji, Grammar, Sentence).
 
-UC-02.2: Ôn tập kiến thức theo lịch SRS
+UC-02.2: Ôn tập (SRS Review)
+(Hệ thống tự động nhắc lại dựa trên lịch sử ghi nhớ).
 
-UC-02.3: Đánh giá mức độ ghi nhớ sau mỗi lượt học
+UC-02.3: Đánh giá & Phản hồi (Self-Evaluation)
+(Người học tự đánh giá mức độ nhớ: Again, Hard, Good, Easy -> Cập nhật thuật toán FSRS).
 
-UC-02.4: Tạo flashcard cá nhân từ câu học
-(Flashcard được ánh xạ về Knowledge Unit. Grammar LUÔN gắn với câu).
+UC-02.4: Quản lý Deck (Deck Management)
+(Tạo deck cá nhân, thêm thẻ từ Mine, tùy chỉnh deck học).
 
 Nhóm UC-03: Phân tích câu học tập (CORE – TRUNG TÂM)
 
@@ -123,13 +127,14 @@ UC-05.5: Khởi tạo hành động tạo bộ flashcard thông qua tương tác
 UC-05.6: Thực hiện các lượt học hoặc ôn tập SRS thông qua giao diện hội thoại
 (chatbot đóng vai trò giao diện, sử dụng cơ chế SRS hiện có)
 
-Nhóm UC-06: Theo dõi và đánh giá quá trình học (IMPORTANT)
+Nhóm UC-06: Analytics & Tracking (IMPORTANT)
+**(Không thể thiếu để duy trì động lực)**
 
-UC-06.1: Theo dõi tiến độ học theo flashcard
+UC-06.1: Dashboard tiến độ (Progress Dashboard)
+(Tổng quan level, số thẻ đã học, streak ngày học).
 
-UC-06.2: Theo dõi tiến độ học theo ngữ pháp và câu
-(quy chiếu về Knowledge Unit)
+UC-06.2: Heatmap & Charts
+(Biểu đồ trí nhớ, khối lượng từ vựng tích lũy theo thời gian).
 
-UC-06.3: Thống kê mức độ ghi nhớ và tần suất ôn tập
-
-UC-06.4: Hiển thị biểu đồ và chỉ số học tập tổng quan
+UC-06.3: Quản lý "Known Words" (Coverage Tracking)
+(Thống kê % bao phủ từ vựng trong video/bài đọc dựa trên kiến thức đã học).
