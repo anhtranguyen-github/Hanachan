@@ -74,7 +74,12 @@ UC-02.3: Đánh giá & Phản hồi (Self-Evaluation)
 (Người học tự đánh giá mức độ nhớ: Again, Hard, Good, Easy -> Cập nhật thuật toán FSRS).
 
 UC-02.4: Quản lý Deck (Deck Management)
-(Tạo deck cá nhân, thêm thẻ từ Mine, tùy chỉnh deck học).
+- **System Decks (Fixed)**: 60 Levels chuẩn, không thể chỉnh sửa nội dung.
+- **Custom Decks (Dynamic)**: Người dùng tự tạo từ:
+  - **YouTube Mining**: (UC-04.5) - Deck tạo từ video.
+  - **Chatbot Context**: (UC-05.5) - Deck tạo từ hội thoại.
+  - **Manual Mining**: (UC-03.4) - Deck tạo từ việc tra cứu.
+*(Note: Mọi deck đều chỉ là tập hợp các tham chiếu (References) đến KUs trong Core Knowledge Base. Không duplicate dữ liệu).*
 
 Nhóm UC-03: Phân tích câu học tập (CORE – TRUNG TÂM)
 
