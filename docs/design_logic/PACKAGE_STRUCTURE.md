@@ -14,18 +14,18 @@ The project is organized into business domains within `src/modules/`. Each modul
 ```text
 src/
 ├── app/            # Delivery Layer: Routing, Pages, Layouts (Next.js)
-├── modules/        # Domain Modules (Business Logic)
-│   ├── analysis    # Linguistic analysis, mapping to CKB & AI Refinement
-│   ├── ckb         # Core Knowledge Base (The stable "Ground Truth" library)
-│   ├── sentence    # Sentence management (Entry Point & Context Pocket)
-│   ├── learning    # Progress tracking & SRS Engine (The Learning State)
-│   ├── flashcard   # Presentation/Renderer for SRS study sessions
-│   ├── youtube     # Source provider: Subtitles & Immersion
-│   ├── chatbot     # AI Tutor interaction logic
-│   └── auth        # Identity, Quotas & Access
+├── features/       # Domain Features (Business Logic)
+│   ├── auth        # Identity, Quotas & Access
+│   ├── analytics   # Progress tracking & Statistics
+│   ├── chat        # AI Tutor interaction logic
+│   ├── decks       # Flashcard Decks Management
+│   ├── knowledge   # Core Knowledge Base (The stable "Ground Truth")
+│   ├── learning    # Progress tracking & SRS Engine
+│   ├── sentence    # Sentence Analysis & Mining (Core Loop)
+│   └── youtube     # Source provider: Subtitles & Immersion
 ├── services/       # External Adapters (OpenAI, YouTube API)
 ├── db/             # Persistence logic & Schema
-└── lib/            # Shared UI components & Utils
+└── ui/             # Shared UI components & Utils
 ```
 
 ## 2. Dependency Rules & Boundaries
@@ -40,11 +40,11 @@ src/
 We avoid over-engineering by using a "Clean-lite" structure inside modules:
 
 ```
-modules/[feature]/
-├── components/     # UI Components
-├── hooks/          # UI Logic & Data fetching (Using Repositories)
-├── domain/         # Pure logic (e.g., SRS math, static rules)
-├── infrastructure/ # Implementation details (Optional)
+features/[feature]/
+├── components/     # UI Components (Feature-specific)
+├── db.ts           # Database Access (Repository)
+├── service.ts      # Business Logic & APIs
+├── types.ts        # Type Definitions
 └── index.ts        # Public exports (Clean API)
 ```
 
@@ -113,16 +113,14 @@ Các module nghiệp vụ được đặt trong thư mục `src/features/`, mỗ
 
 ```text
 features/
-├── auth        # Người dùng và xác thực
-├── knowledge   # Core Knowledge Base (vocab, kanji, grammar)
-├── sentence    # Quản lý câu – điểm vào của luồng học
-├── analysis    # Phân tích câu và ánh xạ về CKB
-├── flashcard   # Flashcard và deck (bao gồm 60 level có sẵn)
-├── learning    # Trạng thái học và SRS
-├── content     # Lesson và bài học cá nhân hóa
-├── youtube     # Tích hợp YouTube, subtitle
-├── chatbot     # Trợ lý học tập
-└── analytics   # Theo dõi và thống kê tiến độ học
+├── auth        # Xác thực & Quota
+├── analytics   # Thống kê & Dashboard
+├── chat        # AI Tutor & Hội thoại
+├── decks       # Quản lý Deck (System & User)
+├── knowledge   # Core Knowledge Base (Radical/Kanji/Vocab/Grammar)
+├── learning    # FSRS Algorithm & Learning State
+├── sentence    # Phân tích câu & Mining
+└── youtube     # Subtitles & Video Learning
 ```
 
 ---
