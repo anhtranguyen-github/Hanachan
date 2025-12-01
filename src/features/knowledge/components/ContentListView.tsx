@@ -146,7 +146,7 @@ export function ContentListView({
                                     (readings && readings.toLowerCase().includes(term))
                                 );
 
-                                const srsInfo = initialSrsStatus[char];
+                                const srsInfo = initialSrsStatus[item.slug];
                                 const currentStatus = srsInfo ? (srsInfo.state?.toLowerCase() || 'new') : 'locked';
                                 const matchesStatus = statusFilter === 'all' || statusFilter === currentStatus;
                                 return matchesSearch && matchesStatus;
@@ -181,7 +181,7 @@ export function ContentListView({
                                                 meaning={meaning}
                                                 reading={reading}
                                                 href={`/${typePath}/${encodeURIComponent(item.slug || char)}`}
-                                                srsState={initialSrsStatus[char]?.state as any}
+                                                srsState={initialSrsStatus[item.slug]?.state as any}
                                             />
                                         );
                                     })}

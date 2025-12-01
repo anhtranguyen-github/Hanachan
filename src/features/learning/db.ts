@@ -107,3 +107,28 @@ export async function logReviewHistory(
         console.error('Error logging review history:', error);
     }
 }
+export async function getUserLearningStates(userId: string) {
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('user_learning_states')
+        .select('state, next_review, knowledge_units(slug)')
+        .eq('user_id', userId);
+
+    if (error) {
+        console.error('Error fetching user learning states:', error);
+        return {};
+    }
+
+    const stateMap: Record<string, { state: string, next_review: string }> = {};
+    data.forEach((item: any) => {
+        const slug = item.knowledge_units?.slug;
+        if (slug) {
+            stateMap[slug] = {
+                state: item.state,
+                next_review: item.next_review
+            };
+        }
+    });
+
+    return stateMap;
+}

@@ -31,8 +31,28 @@ export const ROLE_POWER: Record<Role, number> = {
 };
 
 /**
- * Check if a role has at least the power of another role
+ * Checks if a role has at least the power of another role
  */
 export function hasRolePower(userRole: Role, requiredRole: Role): boolean {
     return ROLE_POWER[userRole] >= ROLE_POWER[requiredRole];
+}
+
+export interface UserProfile {
+    id: string;
+    email: string;
+    display_name?: string | null;
+    avatar_url?: string | null;
+    role: Role;
+    created_at?: string;
+}
+
+export interface UserSettings {
+    user_id: string;
+    target_retention: number;
+    daily_new_limit: number;
+    daily_review_limit: number;
+    fsrs_weights?: number[] | null;
+    metadata?: Record<string, any>;
+    quota_limit?: number;
+    quota_used?: number;
 }
