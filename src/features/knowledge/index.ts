@@ -1,9 +1,7 @@
-
-import { knowledgeService } from "./service";
-
-// Export the service as the primary entry point
-export { knowledgeService };
+// Export business logic
+export * from "./persona-logic";
+export * from "./lesson-logic";
 
 export * from "./types";
-// Do not export repo directly to enforce service usage layer
-// export * from "./knowledge.repo";
+export * from "./service";
+export * from "./db";

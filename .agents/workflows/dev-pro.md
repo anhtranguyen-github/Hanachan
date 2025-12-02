@@ -47,7 +47,7 @@ This workflow ensures high-quality execution using the **Primary Workflow** prin
 
 2. **Phase 2: Structured Planning (Planner Agent)**
    - Activate `planning` skill.
-   - **Context Search**: Read `docs/design_logic/USE_CASE_DETAIL.md` and `docs/design_logic/PACKAGE_STRUCTURE.md` to align with the master design.
+   - **Context Search**: Read `docs/design_logic/USE_CASE_DETAIL.md`, `docs/design_logic/PACKAGE_STRUCTURE.md`, and `docs/database_schema_final.md` to align with the master design and database constraints.
    - Create a detailed implementation plan in `./plans/yyyy-mm-dd-[feature-name].md`.
    - **Principles**: Validate against **YAGNI, KISS, DRY**.
    - Define: Objective, Scope, **Existing file modifications (No enhanced files)**, and **TODO tasks**.
@@ -55,6 +55,8 @@ This workflow ensures high-quality execution using the **Primary Workflow** prin
 
 3. **Phase 3: Recursive Implementation**
    - **Strict Rule**: Keep files **UNDER 200 lines**.
+   - **Architecture**: ❌ Do NOT create `domain/`, `logic/`, or `infrastructure/` sub-folders. Use plain modules.
+   - **Testing Layout**: ❌ Do NOT put tests next to source files. Use a separate `tests/` or `__tests__` folder.
    - **Naming**: Use `kebab-case` for descriptive naming.
    - **Skill**: Activate **`error-handling-patterns`** for robust error logic.
    - **Implementation**: Follow the plan. **Implement real code** (no placeholders).

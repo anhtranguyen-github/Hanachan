@@ -39,7 +39,7 @@ export function hasRolePower(userRole: Role, requiredRole: Role): boolean {
 
 export interface UserProfile {
     id: string;
-    email: string;
+    email?: string | null;
     display_name?: string | null;
     avatar_url?: string | null;
     role: Role;
@@ -49,10 +49,8 @@ export interface UserProfile {
 export interface UserSettings {
     user_id: string;
     target_retention: number;
-    daily_new_limit: number;
-    daily_review_limit: number;
     fsrs_weights?: number[] | null;
-    metadata?: Record<string, any>;
-    quota_limit?: number;
-    quota_used?: number;
+    preferred_voice?: string | null;
+    theme?: string | null;
+    updated_at?: string;
 }

@@ -9,14 +9,21 @@ All notable changes to this project will be documented in this file.
   - Standardized all features to use `db.ts`, `service.ts`, `types.ts`, `index.ts`.
   - Removed "antibattery" folders (`domain`, `infrastructure`, `hooks`).
 - **Naming Convention**: Adopted "Descriptive Naming" (e.g., `schedule.ts` vs `fsrs.engine.ts`).
+- **Database Layer**: Synchronized all feature repositories with the final Supabase schema.
+  - Standardized identifier usage: Switched from UUID `id` to `slug` for internal app logic and joins.
+  - Simplified `user_settings`: Removed study limits and synchronized with minimal schema.
+  - Verified 1100 KUs and 1989 Sentences seeded correctly.
+- **Knowledge Module**: Split repository into `db.ts` and `mapper.ts` to adhere to the < 200 lines rule.
+
+### AI & Services
+- **Verification**: OpenAI API (GPT-4) connection confirmed and tested.
+- **YouTube Strategy**: Defined a direct synchronous import approach for transcripts to speed up early development.
 
 ### Documentation
 - **Consolidated**: Merged dispersed design docs into `USE_CASE_DETAIL.md` and `PACKAGE_STRUCTURE.md`.
 - **Constitution**: Created `PROJECT_DNA.md` as the single source of truth for architectural rules.
-- **Workflow**: Updated `dev-pro.md` to enforce strict "Critical Rules" and `error-handling-patterns`.
+- **Workflow**: Updated `dev-pro.md` to enforce strict "Critical Rules", `database_schema_final.md` context, and `error-handling-patterns`.
 
 ### Added
-- Professional Development Skills in `.agents/skills/`:
-  - `documentation-engine`: Automated doc updates.
-  - `orchestration-expert`: Task flow management.
+- Professional Development Skills in `.agents/skills/`.
 - Master Production Workflow in `.agents/workflows/dev-pro.md`.

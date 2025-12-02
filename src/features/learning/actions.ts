@@ -8,7 +8,7 @@ import {
     updateLearningState,
     logReviewHistory
 } from './db';
-import { FSRS } from './schedule';
+import { FSRSAlgorithm } from './srs-algorithm';
 import { FSRSParameters, ReviewRating } from './types';
 import { revalidatePath } from 'next/cache';
 
@@ -65,7 +65,7 @@ export async function submitReviewAction(kuId: string, rating: ReviewRating) {
 
     // 2. Get User FSRS Settings
     const settings = await getLearningSettings(user.id);
-    const fsrs = new FSRS(settings.weights, settings.targetRetention);
+    const fsrs = new FSRSAlgorithm(settings.weights, settings.targetRetention);
 
     // 3. Calculate next state
     const result = fsrs.calculateNextState(params, rating);

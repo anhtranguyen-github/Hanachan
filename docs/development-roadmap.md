@@ -9,9 +9,10 @@ This roadmap outlines the path from foundation to a high-performance, AI-powered
 - [x] **Architecture Refactor**: Enforced "Descriptive Naming" and "Clean-lite" structure (db/service/types).
 - [x] **Constitution**: Established `PROJECT_DNA.md` and `architecture-nextjs-practical.md`.
 - [x] **Project Scaffolding**: Modular feature structure (`src/features/`).
-- [x] **Database Sync**: Supabase schema alignment and data seeding.
-- [x] **Vibrant Design System**: `design.config.ts` v5 implementation.
-- [ ] **UC-01 (Knowledge Browser)**: Implementation of Knowledge Access, Lesson View, and Personalization.
+- [x] **Database Sync**: Supabase schema alignment, slug-based identifiers, and 1989+ seed sentences.
+- [x] **AI Verification**: OpenAI API (GPT-4) connection confirmed and tested.
+- [x] **UC-01 (Knowledge Browser)**: Core DB access logic refactored for Slug identifiers.
+- [ ] **Next Up**: YouTube "Real Data" Integration (Phase 4 kickstart).
 
 ## 🎴 Phase 2: The Core Engine (UC-02)
 *Goal: Implement the primary learning loop (Flashcards & FSRS).*

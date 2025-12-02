@@ -6,13 +6,14 @@ This document is the absolute source of truth for the Hanachan V2 project. All d
 
 ## 1. Architectural Integrity (The "Hidden" Layer)
 
-### 1.1. Feature-Oriented Modular Monolith
-- **Location**: All business logic must reside in `src/features/{feature_name}`. (Current codebase standard).
-- **Sub-folders**:
-  - `domain/`: Interfaces and pure algorithms (WaniKani/FSRS logic).
-  - `infrastructure/`: Implementations (Supabase, SQLite, APIs).
-  - `components/`: UI specific to this feature.
-- **Strict Separation**: Domain logic must never import from infrastructure. Use the **Repository Pattern (DIP)**.
+### 1.1. Feature-Oriented Flat Structure
+- **Location**: All business logic must reside in `src/features/{feature_name}`. 
+- **Folder Exclusion**: ❌ Do NOT create `domain/`, `logic/`, or `infrastructure/` sub-folders within features.
+- **Organization**: Use plain modules (e.g., `srs.ts`, `review.ts`) directly within the feature folder.
+- **Testing**: 
+  - Tests are REQUIRED and MUST be in a separate `/tests` or `/__tests__` directory.
+  - ❌ Do NOT place tests next to source files.
+  - ❌ Do NOT mix test code into production code.
 
 ### 1.2. Hybrid Logic (Sentence-centric + CKB-centric)
 - **Grammar (MANDATORY Sentence-Centric)**: Grammar units MUST always be learned via `ku-sentence` (Cloze format).
@@ -51,8 +52,8 @@ This document is the absolute source of truth for the Hanachan V2 project. All d
 ---
 
 ## 3. Tooling & Performance
-- **Bun**: Mandatory package manager.
-- **Turbo**: Use `bun x turbo build` for checks.
+- **PNPM**: Mandatory package manager.
+- **Turbo**: Use `pnpm dlx turbo build` for checks.
 - **Next/Image**: Mandatory for all media assets.
 
 ## 4. Implementation Protocol

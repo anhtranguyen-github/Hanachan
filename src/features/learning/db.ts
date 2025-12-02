@@ -12,7 +12,10 @@ export async function getLearningSettings(userId: string) {
 
     if (error) {
         console.error('Error fetching learning settings:', error);
-        return { weights: undefined, targetRetention: 0.9 };
+        return {
+            weights: undefined,
+            targetRetention: 0.9
+        };
     }
 
     return {
@@ -111,7 +114,7 @@ export async function getUserLearningStates(userId: string) {
     const supabase = createClient();
     const { data, error } = await supabase
         .from('user_learning_states')
-        .select('state, next_review, knowledge_units(slug)')
+        .select('ku_id, state, next_review, lapses, difficulty')
         .eq('user_id', userId);
 
     if (error) {
@@ -119,15 +122,15 @@ export async function getUserLearningStates(userId: string) {
         return {};
     }
 
-    const stateMap: Record<string, { state: string, next_review: string }> = {};
+    const stateMap: Record<string, { state: string, next_review: string, lapses: number, difficulty: number, kuId: string }> = {};
     data.forEach((item: any) => {
-        const slug = item.knowledge_units?.slug;
-        if (slug) {
-            stateMap[slug] = {
-                state: item.state,
-                next_review: item.next_review
-            };
-        }
+        stateMap[item.ku_id] = {
+            state: item.state,
+            next_review: item.next_review,
+            lapses: item.lapses || 0,
+            difficulty: item.difficulty || 0,
+            kuId: item.ku_id
+        };
     });
 
     return stateMap;
