@@ -135,6 +135,27 @@ export class SupabaseKURepository {
             return mapToKU(row, details || {}, row.type as KUType);
         }));
     }
+    async checkSlugsExist(potentialMatches: string[]): Promise<Set<string>> {
+        const supabase = createClient();
+
+        // Search by both slug AND character to be safe
+        const { data, error } = await supabase
+            .from('knowledge_units')
+            .select('slug, character')
+            .or(`slug.in.(${potentialMatches.join(',')}),character.in.(${potentialMatches.join(',')})`);
+
+        if (error) {
+            console.error('Error checking slugs:', error);
+            return new Set();
+        }
+
+        const results = new Set<string>();
+        data?.forEach(row => {
+            results.add(row.slug);
+            results.add(row.character);
+        });
+        return results;
+    }
 }
 
 export const kuRepository = new SupabaseKURepository();

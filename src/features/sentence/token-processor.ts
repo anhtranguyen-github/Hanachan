@@ -1,53 +1,68 @@
-
-/**
- * Business rules for processing Japanese sentence tokens.
- */
-
-export interface Token {
-    surface: string;
-    pos: string; // Part of speech
-    reading?: string;
-    base?: string; // Dictionary form
-}
+import { KuromojiToken } from "./tokenizer";
 
 export interface AnalyzedUnit {
     surface: string;
+    reading?: string;
+    basic_form: string;
     type: 'kanji' | 'vocabulary' | 'grammar' | 'particle' | 'punctuation' | 'other';
-    metadata?: any;
+    pos: string;
+    is_in_ckb: boolean;
+    ku_slug?: string;
 }
 
 /**
- * Maps raw tokens from a morphological analyzer to Hana-chan's AnalyzedUnits.
+ * Maps raw kuromoji tokens to Hana-chan's AnalyzedUnits, checking against the CKB.
  */
-export function mapTokensToUnits(tokens: Token[]): AnalyzedUnit[] {
+export function processTokens(tokens: KuromojiToken[], ckbSlugs: Set<string>): AnalyzedUnit[] {
     return tokens.map(token => {
         let type: AnalyzedUnit['type'] = 'other';
+        const pos = token.pos;
 
-        if (token.pos === '助詞') type = 'particle';
-        else if (token.pos === '記号') type = 'punctuation';
-        else if (['名詞', '動詞', '形容詞', '副詞'].includes(token.pos)) type = 'vocabulary';
+        if (pos === '助詞') type = 'particle';
+        else if (pos === '記号') type = 'punctuation';
+        else if (['名詞', '動詞', '形容詞', '副詞', '助動詞'].includes(pos)) type = 'vocabulary';
 
-        // Simple logic: if contains kanji, it's vocab/kanji
-        if (/[一-龠]/.test(token.surface)) {
-            type = 'vocabulary';
+        // Check CKB mapping
+        // We check against the basic form (dictionary form)
+        let is_in_ckb = false;
+        let ku_slug: string | undefined = undefined;
+
+        if (ckbSlugs.has(token.basic_form)) {
+            is_in_ckb = true;
+            ku_slug = token.basic_form;
+        } else if (ckbSlugs.has(token.surface_form)) {
+            is_in_ckb = true;
+            ku_slug = token.surface_form;
         }
 
         return {
-            surface: token.surface,
+            surface: token.surface_form,
+            reading: token.reading,
+            basic_form: token.basic_form,
             type,
-            metadata: {
-                pos: token.pos,
-                base: token.base
-            }
+            pos,
+            is_in_ckb,
+            ku_slug
         };
     });
 }
 
 /**
- * Extracts unique kanji from a set of tokens for CKB mapping.
+ * Extracts all unique strings that could be Knowledge Units (Kanji, Vocab basic forms).
  */
-export function extractUniqueKanji(text: string): string[] {
+export function extractPotentialKUSlugs(text: string, tokens: KuromojiToken[]): string[] {
+    const slugs = new Set<string>();
+
+    // 1. All unique Kanji
     const kanjiRegex = /[一-龠]/g;
-    const matches = text.match(kanjiRegex) || [];
-    return [...new Set(matches)];
+    const kanjiMatches = text.match(kanjiRegex) || [];
+    kanjiMatches.forEach(k => slugs.add(k));
+
+    // 2. All token basic forms and surfaces
+    tokens.forEach(t => {
+        if (t.basic_form && t.basic_form !== '*') slugs.add(t.basic_form);
+        slugs.add(t.surface_form);
+    });
+
+    return Array.from(slugs);
 }
