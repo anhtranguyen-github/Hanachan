@@ -1,38 +1,43 @@
 
 /**
- * Business rules for classifying user intent in the Hana AI Tutor.
+ * Simple keyword-based Intent Router (to save AI tokens/latency).
+ * In production, this could be a small LLM call, but Regex is faster for now.
  */
 
-export type ChatIntent =
-    | 'GENERAL_QUERY'      // Ask about Japanese or the app
-    | 'SENTENCE_ANALYSIS'  // Request to break down a sentence
-    | 'STUDY_PRACTICE'     // Request for quiz or conversion practice
-    | 'LESSON_SUGGESTION'  // Ask what to learn next
-    | 'CONTENT_SEARCH';    // Search for KUs or videos
+export type ChatIntent = 'GREETING' | 'SRS_SESSION' | 'STUDY_REQUEST' | 'ANALYZE' | 'PROJECT_QUERY' | 'GENERAL_CHAT';
 
-/**
- * Classifies the user's message into an intent.
- * Note: In production, this would be an LLM call or regex-based router.
- * This domain logic defines the routing rules.
- */
-export function classifyIntent(message: string): ChatIntent {
-    const text = message.toLowerCase();
+export function classifyIntent(text: string): ChatIntent {
+    const lower = text.toLowerCase().trim();
 
-    if (text.includes('analyze') || text.includes('break down') || text.includes('analysis') || text.includes('phân tích')) {
-        return 'SENTENCE_ANALYSIS';
+    // 1. Check for Analysis Request (Japanese characters or keywords)
+    // Heuristic: Contains Kanji/Kana OR starts with "analyze/explain"
+    const hasJapanese = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(text);
+    if ((lower.startsWith("analyze") || lower.startsWith("explain")) && hasJapanese) {
+        return 'ANALYZE';
+    }
+    // Direct Japanese sentence input (assumption: if short and mostly JP, it's an analysis request)
+    if (hasJapanese && text.length > 5 && text.length < 100 && !lower.includes("how do i")) {
+        return 'ANALYZE';
     }
 
-    if (text.includes('practice') || text.includes('quiz') || text.includes('test') || text.includes('luyện tập')) {
-        return 'STUDY_PRACTICE';
+    // 2. Project Awareness
+    if (lower.includes("project") || lower.includes("stack") || lower.includes("building") || lower.includes("architecture")) {
+        return 'PROJECT_QUERY';
     }
 
-    if (text.includes('suggest') || text.includes('should i learn') || text.includes('next level') || text.includes('đề xuất')) {
-        return 'LESSON_SUGGESTION';
+    // 3. SRS / Study
+    if (lower.includes("quiz me") || lower.includes("start test")) {
+        return 'SRS_SESSION'; // Explicit command to start
+    }
+    if (lower.includes("study") || lower.includes("practice") || lower.includes("learn") || lower.includes("suggestion")) {
+        return 'STUDY_REQUEST'; // Vague request, needs confirmation/suggestion
     }
 
-    if (text.includes('search') || text.includes('find') || text.includes('tìm kiếm')) {
-        return 'CONTENT_SEARCH';
+    // 3. Greetings
+    if (lower.match(/^(hi|hello|konnichiwa|yo|hey)/)) {
+        return 'GREETING';
     }
 
-    return 'GENERAL_QUERY';
+    // Default
+    return 'GENERAL_CHAT';
 }
