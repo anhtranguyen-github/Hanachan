@@ -27,7 +27,7 @@ This skill defines the structural and behavioral rules for the Hanachan V2 proje
 
 ## 3. Tech Stack Specifics
 - **Next.js 14+ / React 18+**
-- **LangChain/LangGraph**: Logic stays in `features/` (server-side).
+- **LangChain/LangGraph**: Logic stays in `features/` (server-side). Using **Zod** for "Structured Outputs" to enforce AI response consistency.
 - **Styling**: Tailwind CSS + Radix UI components.
 - **Testing**: Vitest (Unit/Integration), Playwright (E2E).
 - **Package Manager**: PNPM.

@@ -15,6 +15,21 @@ All notable changes to this project will be documented in this file.
   - Verified 1100 KUs and 1989 Sentences seeded correctly.
 - **Knowledge Module**: Split repository into `db.ts` and `mapper.ts` to adhere to the < 200 lines rule.
 
+- **Decks & SRS Intelligence**:
+  - Implemented `LearningService`: Orchestrates FSRS review cycles and stats tracking.
+  - Implemented `DeckService`: Handles personal deck management and membership.
+  - Developed `AnalyticsService`: Tracks learning progress (New vs Review) and time spent.
+  - Integrated `FSRSAlgorithm` with Supabase persistence.
+  - Added comprehensive integration tests (48/48 Passed).
+
+- **Sentence Intelligence Engine**:
+  - Implemented 4-stage Analysis (`SentenceService`):
+    - **Stage 1 (Local)**: High-speed tokenization using `kuromoji`.
+    - **Stage 2 (Mapping)**: Automatic CKB lookup via Slug verification.
+    - **Stage 3 (AI)**: Advanced grammar discovery and contextual translation (OpenAI). Integrated **Zod Structured Outputs** to guarantee response consistency.
+    - **Stage 4 (Mining)**: Smart mining with source tracking and automatic CKB linking.
+  - Added `AISentenceAnalyzer`: Handles complex linguistic insights and "Golden Sentence" refinement using `withStructuredOutput`.
+
 ### AI & Services
 - **Verification**: OpenAI API (GPT-4) connection confirmed and tested.
 - **YouTube Strategy**: Defined a direct synchronous import approach for transcripts to speed up early development.

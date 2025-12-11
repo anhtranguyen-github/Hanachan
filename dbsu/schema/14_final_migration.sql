@@ -183,6 +183,16 @@ create table if not exists public.user_youtube_videos (
   unique(user_id, video_id)
 );
 
+create table if not exists public.user_youtube_video_segments (
+  id uuid not null default gen_random_uuid() primary key,
+  video_id uuid references public.user_youtube_videos(id) not null,
+  text_ja text not null,
+  text_en text,
+  start_time double precision not null,
+  end_time double precision not null,
+  created_at timestamp with time zone default now()
+);
+
 -- Analytics
 create table if not exists public.user_analysis_history (
   id uuid not null default gen_random_uuid() primary key,

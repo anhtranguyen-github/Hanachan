@@ -23,9 +23,9 @@ This roadmap outlines the path from foundation to a high-performance, AI-powered
 
 ## 🔬 Phase 3: Sentence Intelligence (UC-03)
 *Goal: Transition from word-learning to context-learning.*
-- [ ] **Sentence Analysis**: Server-side parsing and mapping to CKB.
-- [ ] **Mining Workflow**: "One-click" creation of custom cards from analyzed sentences.
-- [ ] **AI Refinement**: On-demand "Golden Sentence" generation.
+- [x] **Sentence Analysis**: Implemented 4-stage engine (Local Tokenization -> KB Mapping -> AI Insight -> Smart Mining).
+- [x] **Mining Workflow**: "One-click" creation of custom cards and linking to CKB.
+- [x] **AI Refinement**: On-demand "Golden Sentence" generation and error detection.
 
 ## 📺 Phase 4: Multimedia Ecosystem (UC-04)
 *Goal: Expand learning sources to real-world content.*

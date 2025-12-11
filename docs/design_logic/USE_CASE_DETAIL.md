@@ -30,16 +30,23 @@ This document outlines the core interactions, emphasizing the **Sentence -> Anal
 ### UC-02: SRS Study (Flashcards)
 - **Actor**: Student
 - **Goal**: Review items currently due in the user's `learning` queue.
-- **Global Review Hub**: A central feature that pulls due items from **all decks** (System, YouTube-mined, Chat-mined). Users don't need to visit individual decks to stay on top of their SRS.
-- **Dual Learning Mode**: Students can choose to study:
-  1. The **Sentence** itself (Cloze Deletion style).
-  2. The **Individual Words** (using the mined sentence as a context example).
-- **Key Note**: Flashcards are just a **view** of a KU or Mined Sentence. The card content is pulled from `ckb` or `sentences` table.
+- **Global Review Hub**: A central feature that pulls due items from **all decks** (System, YouTube-mined, Chat-mined).
+- **Architecture**: **Sentence-as-Root**. Flashcards are derivatives of a contextual sentence.
+- **Card Types (Strict Separation)**:
+  1.  **Vocab Card (Meaning Focus)**: 
+      - Front: Word (e.g., `猫`).
+      - Back: Meaning + Reading. (No Context Sentence displayed by default to ensure speed).
+  2.  **Grammar Card (Sentence Focus)**: 
+      - Front: Full Sentence with Grammar Point highlighted or masked.
+      - Back: Explanation of the Grammar Structure.
 
-### UC-01: Personal Knowledge Management
+### UC-01: Personal Knowledge Management & Personal Corpus
 - **Actor**: Student
-- **Goal**: Browse and personalize their learning path.
-- **Action**: Students can "bookmark" or "add to deck" specific KUs discovered during sentence analysis.
+- **Goal**: Deep dive into specific Knowledge Units.
+- **Personal Corpus**: 
+  - When viewing a KU Detail (e.g., "Neko"), the system lists **All Mined Sentences** containing that word from user's history.
+  - This acts as a personalized dictionary of context.
+- **Action**: Students use this view to reinforce understanding ("How did I see this word used before?").
 
 ## 3. Supplementary Modes
 
@@ -101,8 +108,14 @@ UC-03.2: Tra cứu từ vựng và thông tin mở rộng trong câu
 
 UC-03.3: Nhận diện và giải thích điểm ngữ pháp trong câu
 
-UC-03.4: Tạo hành động học từ kết quả phân tích câu
-(thêm flashcard, thêm vào danh sách học, đánh dấu quan trọng)
+UC-03.4: Tạo hành động học từ kết quả phân tích câu (Interactive Mining)
+- **Workflow**:
+  1. **Interact**: User click vào từng token từ vựng hoặc điểm ngữ pháp đã được AI phân tích.
+  2. **View Detail**: Hiển thị Modal chi tiết (Nghĩa, cấu trúc...).
+  3. **Action**: User bấm nút `[+] Add to Deck`.
+- **Logic tạo Card**:
+  - **Vocab**: Tạo thẻ Từ vựng (Mặt trước: Từ, Mặt sau: Nghĩa + Câu ví dụ gốc).
+  - **Grammar**: Tạo thẻ Ngữ pháp (Mặt trước: Cấu trúc, Mặt sau: Giải thích + Câu ví dụ dạng Cloze).
 
 UC-03.5: Đánh giá và đề xuất sửa đổi câu (On-demand AI Refinement)
 (Trigger thủ công để kiểm tra độ chuẩn, nhận giải thích và bản sửa lỗi nếu cần)
@@ -125,10 +138,19 @@ UC-04.3: Phân tích câu từ phụ đề video
 
 UC-04.4: Liên kết nội dung video với kiến thức nền hiện có
 
-UC-04.5: Tạo flashcard từ nội dung video hợp lệ
+UC-04.5: Tạo flashcard từ nội dung video hợp lệ (Interactive Mining)
+- **Workflow**:
+  1. **Pause**: Video tự động pause khi user click vào phụ đề hoặc một từ vựng.
+  2. **Select**: User chọn Token (Từ) hoặc Grammar Point.
+  3. **Add**: Hệ thống tạo Card tương ứng (Vocab/Grammar) và liên kết với Timestamp hiện tại của video.
 
-Lưu ý:
-Nội dung không ánh xạ được về Knowledge Base (CKB) sẽ không được đưa vào hệ thống học chính thức, nhằm đảm bảo tính nhất quán của trục học tập.
+### UC-01: Personal Knowledge Management
+- **Actor**: Student
+- **Goal**: Browse, personalize, and Deep Dive.
+- **Deep Dive (Personal Corpus)**: 
+  - Xem chi tiết một KU (Từ vựng/Kanji).
+  - Hệ thống hiển thị danh sách **"My Mined Sentences"**: Tất cả các câu user đã từng mine (từ YouTube/Chat) có chứa từ này.
+  - Giúp ôn tập từ vựng trong đa dạng ngữ cảnh thực tế đã trải qua.
 
 Nhóm UC-05: Học tập với Chatbot trợ giảng (BỔ TRỢ)
 
@@ -145,6 +167,11 @@ UC-05.3: Yêu cầu phân tích một câu thông qua chatbot
 - **Trigger**: User gửi câu tiếng Nhật hoặc yêu cầu "Phân tích...".
 - **Action**: Gọi `SentenceService.analyze()`.
 - **Output**: Hiển thị kết quả phân tích chuẩn (Meaning, Grammar breakdown) ngay trong khung chat.
+
+UC-05.4: Đề xuất tạo Flashcard từ hội thoại (Modal Trigger)
+- **Scenario**: User yêu cầu "Lưu từ này lại" hoặc Bot phát hiện từ vựng quan trọng.
+- **Bot Action**: Trả về Payload JSON `action: 'TRIGGER_ADD_CARD_MODAL'`.
+- **Frontend Action**: Hiển thị Modal xác nhận tạo thẻ (Vocab/Grammar) lấy ngữ cảnh từ đoạn chat hiện tại.
 
 UC-05.6: Thực hiện các lượt học hoặc ôn tập SRS thông qua giao diện hội thoại
 - **Modes**: 
