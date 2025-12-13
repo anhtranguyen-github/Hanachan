@@ -68,3 +68,29 @@ export async function updateInteraction(interaction: DeckInteraction): Promise<v
         throw new Error(`Failed to update deck interaction: ${error.message}`);
     }
 }
+export async function getDeckMasteryStats(userId: string, deckId: string) {
+    const supabase = createClient();
+
+    // Joint query to get learning states for items in this specific deck
+    const { data, error } = await supabase
+        .from('deck_items')
+        .select(`
+            ku_id,
+            user_learning_states!inner (
+                state
+            )
+        `)
+        .eq('deck_id', deckId)
+        .eq('user_learning_states.user_id', userId);
+
+    if (error) {
+        console.error('Error fetching deck mastery:', error);
+        return { total: 0, learned: 0, burned: 0 };
+    }
+
+    const total = data.length;
+    const learned = data.filter((item: any) => item.user_learning_states[0]?.state !== 'New').length;
+    const burned = data.filter((item: any) => item.user_learning_states[0]?.state === 'Burned').length;
+
+    return { total, learned, burned };
+}

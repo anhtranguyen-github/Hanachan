@@ -114,7 +114,7 @@ export async function getUserLearningStates(userId: string) {
     const supabase = createClient();
     const { data, error } = await supabase
         .from('user_learning_states')
-        .select('ku_id, state, next_review, lapses, difficulty')
+        .select('ku_id, state, next_review, last_review, lapses, reps, difficulty, stability')
         .eq('user_id', userId);
 
     if (error) {
@@ -122,15 +122,9 @@ export async function getUserLearningStates(userId: string) {
         return {};
     }
 
-    const stateMap: Record<string, { state: string, next_review: string, lapses: number, difficulty: number, kuId: string }> = {};
+    const stateMap: Record<string, any> = {};
     data.forEach((item: any) => {
-        stateMap[item.ku_id] = {
-            state: item.state,
-            next_review: item.next_review,
-            lapses: item.lapses || 0,
-            difficulty: item.difficulty || 0,
-            kuId: item.ku_id
-        };
+        stateMap[item.ku_id] = item;
     });
 
     return stateMap;
