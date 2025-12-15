@@ -1,7 +1,13 @@
-export interface AnalysisHistory {
+
+export interface ChatMessage {
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+    timestamp: string;
+}
+
+export interface ChatSession {
     id: string;
-    user_id: string;
-    text_ja: string;
-    analysis_result?: any;
-    created_at?: string;
+    userId: string;
+    messages: ChatMessage[];
+    updatedAt: string;
 }

@@ -4,19 +4,16 @@ import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts
 import { ChatOpenAI } from "@langchain/openai";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { JsonOutputParser } from "@langchain/core/output_parsers";
-import { localChatRepo } from './local-db';
+import { localChatRepo } from './chat-repo';
 import { ContextInjector, ProjectAwarenessInjector, PersonaInjector, SRSSimulatorInjector } from './injectors';
 import { classifyIntent } from './chat-router';
 import { sentenceService } from '../sentence/service';
 import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
+import { sentenceRepo } from '../sentence/sentence-repo'; // Updated to new repo
 import dotenv from 'dotenv';
 import path from 'path';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
-
-// --- Type Definitions (Pydantic-style for LangChain JSON Output) ---
-// We define the structure for the 'Analyze' intent response manually
-// since we are using specific service logic, but for general chat, we stick to string.
 
 export class AdvancedChatService {
     private llm: ChatOpenAI;
@@ -27,7 +24,7 @@ export class AdvancedChatService {
     constructor() {
         this.llm = new ChatOpenAI({
             modelName: "gpt-4o",
-            temperature: 0.7, // Balanced for chat
+            temperature: 0.7,
         });
     }
 
@@ -35,12 +32,13 @@ export class AdvancedChatService {
      * Main entry point.
      */
     async sendMessage(sessionId: string, userId: string, text: string) {
-        // 1. Session Management
-        let session = localChatRepo.getSession(sessionId);
-        if (!session) session = localChatRepo.createSession(sessionId, userId);
+        // 1. Session Management (Async Await Fix)
+        let session = await localChatRepo.getSession(sessionId);
+        if (!session) {
+            session = await localChatRepo.createSession(sessionId, userId);
+        }
 
         // 2. Intent Classification
-        // Pattern: Light Router (Regex) -> Deep Action
         const intent = classifyIntent(text);
         console.log(`🧭 Intent: ${intent}`);
 
@@ -49,11 +47,10 @@ export class AdvancedChatService {
             return await this.handleAnalysis(sessionId, text);
         }
 
-        // 4. Construct System Prompt using Pattern: "Role-Based System Prompts"
+        // 4. Construct System Prompt
         let systemContext = await this.buildSystemContext(userId, intent);
 
         // 5. Build LangChain Chain
-        // Pattern: "Template Systems"
         const promptTemplate = ChatPromptTemplate.fromMessages([
             ["system", "{system_context}"],
             new MessagesPlaceholder("history"),
@@ -68,7 +65,8 @@ export class AdvancedChatService {
             m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content)
         );
 
-        localChatRepo.addMessage(sessionId, { role: 'user', content: text, timestamp: new Date().toISOString() });
+        // Async Add Message
+        await localChatRepo.addMessage(sessionId, { role: 'user', content: text, timestamp: new Date().toISOString() });
 
         const response = await chain.invoke({
             system_context: systemContext,
@@ -77,22 +75,15 @@ export class AdvancedChatService {
         });
 
         const replyText = response.content as string;
-        localChatRepo.addMessage(sessionId, { role: 'assistant', content: replyText, timestamp: new Date().toISOString() });
+        await localChatRepo.addMessage(sessionId, { role: 'assistant', content: replyText, timestamp: new Date().toISOString() });
 
         return replyText;
     }
 
-    /**
-     * Builds dynamic system context based on intent.
-     * Pattern: "Progressive Disclosure" (Only show what's needed)
-     */
     private async buildSystemContext(userId: string, intent: string): Promise<string> {
         let context = "You are an advanced AI Tutor.";
-
-        // Always inject Persona
         context += await this.personaInjector.inject(userId);
 
-        // Conditional Injection
         if (intent === 'PROJECT_QUERY') {
             context += await this.projectInjector.inject(userId);
         } else if (intent === 'SRS_SESSION') {
@@ -116,16 +107,19 @@ export class AdvancedChatService {
         return context;
     }
 
-    /**
-     * Specialized Logic for Analysis.
-     * Pattern: "Structured Output" (Manually formatted here for markdown display)
-     */
     private async handleAnalysis(sessionId: string, text: string) {
         const cleanText = text.replace(/^(analyze|explain)( this)?[: ]*/i, "").trim();
         try {
             const result = await sentenceService.analyze(cleanText);
 
-            // Refined Output Pattern
+            // NEW: Auto-save analyzed sentence (Async Fix)
+            const savedSentence = await sentenceRepo.addSentence({
+                text: cleanText,
+                translation: result.translation,
+                sourceType: 'chat',
+                sourceId: sessionId
+            });
+
             const response = `**Analysis Result** 🇯🇵
             
 **Original:** ${result.raw_text}
@@ -136,9 +130,14 @@ ${result.grammar_points.map(g => `- **${g.title}**: ${g.meaning}`).join('\n')}
 
 **Vocabulary Breakdown:**
 ${result.units.filter(u => u.type === 'vocabulary').map(u => `- ${u.surface} (${u.reading}): ${u.pos}`).join('\n')}
+
+[ACTION_TRIGGER]: {"type": "PROPOSE_MINING", "sentenceId": "${savedSentence.id}"}
 `;
-            localChatRepo.addMessage(sessionId, { role: 'user', content: text, timestamp: new Date().toISOString() });
-            localChatRepo.addMessage(sessionId, { role: 'assistant', content: response, timestamp: new Date().toISOString() });
+
+            // Async Add Message
+            await localChatRepo.addMessage(sessionId, { role: 'user', content: text, timestamp: new Date().toISOString() });
+            await localChatRepo.addMessage(sessionId, { role: 'assistant', content: response, timestamp: new Date().toISOString() });
+
             return response;
         } catch (e: any) {
             return `Error: ${e.message}`;

@@ -1,20 +1,19 @@
-export interface Sentence {
+
+export interface SentenceEntity {
     id: string;
-    user_id?: string | null;
     text_ja: string;
-    text_en?: string | null;
-    text_tokens?: any | null;
-    audio_url?: string | null;
-    source_type?: string | null;
-    source_metadata?: any | null;
-    is_verified?: boolean;
-    created_at?: string;
+    text_en?: string;
+    source_type: 'youtube' | 'chat' | 'manual';
+    source_id?: string;
+    timestamp?: number;
+    user_id: string;
+    created_at: string;
     updated_at?: string;
 }
 
-export interface KUToSentence {
+export interface KUToSentenceEntity {
     ku_id: string;
     sentence_id: string;
     is_primary: boolean;
-    cloze_positions?: any | null;
+    cloze_positions?: any;
 }
