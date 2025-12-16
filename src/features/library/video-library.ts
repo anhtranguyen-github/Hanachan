@@ -1,72 +1,96 @@
 
-import fs from 'fs';
-import path from 'path';
+import { createClient } from '@/services/supabase/server';
+import { VideoMetadata } from './types';
 
-const DATA_DIR = path.resolve(process.cwd(), 'data');
-const LIBRARY_FILE = path.join(DATA_DIR, 'library.json');
-
-export interface VideoMetadata {
-    id: string;
-    title: string;
-    thumbnailUrl: string;
-    duration: number;
-    status: 'new' | 'learning' | 'completed';
-    progress: number; // 0-100
-    addedAt: string;
-}
+const DUMMY_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 export class VideoLibraryService {
-    private load(): VideoMetadata[] {
-        if (!fs.existsSync(LIBRARY_FILE)) return [];
-        try {
-            return JSON.parse(fs.readFileSync(LIBRARY_FILE, 'utf-8'));
-        } catch { return []; }
-    }
-
-    private save(data: VideoMetadata[]) {
-        if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-        fs.writeFileSync(LIBRARY_FILE, JSON.stringify(data, null, 2), 'utf-8');
-    }
 
     /**
-     * Adds a video to the user's library.
+     * Adds a video to the user's library in Supabase.
      */
-    addVideo(metadata: VideoMetadata) {
-        const videos = this.load();
-        if (videos.find(v => v.id === metadata.id)) {
-            console.log(`⚠️ Video ${metadata.id} already in library. Skipping.`);
-            return;
+    async addVideo(video: Omit<VideoMetadata, 'id' | 'user_id' | 'created_at'>, userId: string = DUMMY_USER_ID) {
+        const supabase = createClient();
+
+        // 1. Check if video already exists for this user
+        const { data: existing } = await supabase
+            .from('user_youtube_videos')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('video_id', video.video_id)
+            .single();
+
+        if (existing) {
+            console.log(`⚠️ Video ${video.video_id} already in library. Skipping.`);
+            return existing as VideoMetadata;
         }
-        videos.push(metadata);
-        this.save(videos);
-        console.log(`📚 Added to Library: ${metadata.title}`);
-    }
 
-    /**
-     * Lists all videos in library.
-     */
-    listVideos(): VideoMetadata[] {
-        return this.load().sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
-    }
+        // 2. Insert new record
+        const { data, error } = await supabase
+            .from('user_youtube_videos')
+            .insert({
+                user_id: userId,
+                video_id: video.video_id,
+                title: video.title,
+                thumbnail_url: video.thumbnail_url,
+                channel_title: video.channel_title,
+                status: video.status || 'new',
+                last_watched_at: new Date().toISOString()
+            })
+            .select()
+            .single();
 
-    /**
-     * Update learning progress.
-     */
-    updateProgress(videoId: string, progress: number) {
-        const videos = this.load();
-        const video = videos.find(v => v.id === videoId);
-        if (video) {
-            video.progress = progress;
-            if (progress >= 100) video.status = 'completed';
-            else if (progress > 0) video.status = 'learning';
-            this.save(videos);
+        if (error) {
+            console.error("❌ Error adding video to library:", error);
+            throw error;
         }
+
+        console.log(`📚 Added to DB Library: ${video.title}`);
+        return data as VideoMetadata;
     }
 
-    deleteVideo(videoId: string) {
-        let videos = this.load();
-        videos = videos.filter(v => v.id !== videoId);
-        this.save(videos);
+    /**
+     * Lists all videos in library from Supabase.
+     */
+    async listVideos(userId: string = DUMMY_USER_ID): Promise<VideoMetadata[]> {
+        const supabase = createClient();
+        const { data, error } = await supabase
+            .from('user_youtube_videos')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error("❌ Error listing videos:", error);
+            return [];
+        }
+
+        return (data || []) as VideoMetadata[];
+    }
+
+    /**
+     * Update video status.
+     */
+    async updateStatus(videoId: string, status: VideoMetadata['status'], userId: string = DUMMY_USER_ID) {
+        const supabase = createClient();
+        const { error } = await supabase
+            .from('user_youtube_videos')
+            .update({ status, last_watched_at: new Date().toISOString() })
+            .eq('user_id', userId)
+            .eq('video_id', videoId);
+
+        if (error) console.error("❌ Error updating video status:", error);
+    }
+
+    async deleteVideo(videoId: string, userId: string = DUMMY_USER_ID) {
+        const supabase = createClient();
+        const { error } = await supabase
+            .from('user_youtube_videos')
+            .delete()
+            .eq('user_id', userId)
+            .eq('video_id', videoId);
+
+        if (error) console.error("❌ Error deleting video:", error);
     }
 }
 

@@ -115,8 +115,8 @@
     "pg": "^8.17.1",
     "postcss": "latest",
     "tailwindcss": "latest",
-    "turbo": "^2.7.5",
     "tsx": "^4.19.2",
+    "turbo": "^2.7.5",
     "typescript": "latest",
     "vitest": "^4.0.17"
   }
