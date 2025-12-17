@@ -1,22 +1,22 @@
-
 import { describe, it, expect } from 'vitest';
-import { mapTokensToUnits, extractUniqueKanji } from '../../src/features/sentence/token-processor';
+import { processTokens, extractPotentialKUSlugs } from '../../src/features/sentence/token-processor';
 import { matchGrammar } from '../../src/features/sentence/grammar-matcher';
 import { canMineKU } from '../../src/features/sentence/mining-logic';
 
 describe('Sentence Token Processing', () => {
     it('should map particles and nouns accurately', () => {
         const tokens = [
-            { surface: '私', pos: '名詞' },
-            { surface: 'は', pos: '助詞' }
+            { surface_form: '私', pos: '名詞', basic_form: '私' },
+            { surface_form: 'は', pos: '助詞', basic_form: 'は' }
         ];
-        const units = mapTokensToUnits(tokens as any);
+        const units = processTokens(tokens as any, new Set());
         expect(units[0].type).toBe('vocabulary');
         expect(units[1].type).toBe('particle');
     });
 
-    it('should extract unique kanji', () => {
-        expect(extractUniqueKanji('日本語は面白い日本')).toEqual(['日', '本', '語', '面', '白']);
+    it('should extract potential slugs', () => {
+        const slugs = extractPotentialKUSlugs('私', [{ surface_form: '私', basic_form: '私' } as any]);
+        expect(slugs).toContain('私');
     });
 });
 
