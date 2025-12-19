@@ -1,18 +1,26 @@
-
-import { kuRepository } from '../knowledge/db';
 import { analyticsService } from '../analytics/service';
 import * as db from './db';
 import { FSRSAlgorithm } from './srs-algorithm';
 import { SRSCard } from './srs-card';
 import { StudySession } from './study-session';
 import { ReviewRating, FSRSReviewResult } from './types';
+import { uuidSchema } from '@/lib/validations';
 
 export class LearningService {
+    /**
+     * Fetches due cards for a user.
+     */
+    async getDueCards(userId: string, limit: number = 20) {
+        uuidSchema.parse(userId);
+        return await db.getDueCards(userId, limit);
+    }
+
     /**
      * Initializes a study session for the user.
      * Fetches all due and new cards.
      */
     async startSession(userId: string): Promise<StudySession> {
+        uuidSchema.parse(userId);
         // 1. Fetch due learning states from DB
         // We use a reasonably large limit or no limit since we removed boundaries
         const dueData = await db.getDueCards(userId, 100);
@@ -40,6 +48,8 @@ export class LearningService {
         kuId: string,
         rating: ReviewRating
     ): Promise<FSRSReviewResult> {
+        uuidSchema.parse(userId);
+        uuidSchema.parse(kuId);
         // 1. Get current state
         const states = await db.getUserLearningStates(userId);
         const currentState = states[kuId];
@@ -77,6 +87,15 @@ export class LearningService {
         await analyticsService.trackReview(userId, isNew);
 
         return result;
+    }
+
+    /**
+     * Quickly get the count of due cards for a user.
+     */
+    async getDueCount(userId: string): Promise<number> {
+        uuidSchema.parse(userId);
+        const dueData = await db.getDueCards(userId, 500);
+        return dueData.length;
     }
 }
 

@@ -85,8 +85,11 @@ export class FSRSAlgorithm implements SRSAlgorithm {
     }
 
     private calculateRetrievability(current: FSRSParameters, now: Date): number {
-        if (!current.last_review) return 0;
-        const elapsed = (now.getTime() - new Date(current.last_review).getTime()) / (1000 * 60 * 60 * 24);
+        if (!current.last_review || current.stability <= 0) return 0;
+        const lastReviewDate = new Date(current.last_review);
+        if (isNaN(lastReviewDate.getTime())) return 0;
+
+        const elapsed = (now.getTime() - lastReviewDate.getTime()) / (1000 * 60 * 60 * 24);
         return Math.exp(Math.log(0.9) * (elapsed / current.stability));
     }
 

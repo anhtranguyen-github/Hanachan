@@ -1,9 +1,11 @@
-
 import { kuRepository } from "./db";
 import { KnowledgeUnit, KUType } from "./types";
+import { uuidSchema } from "@/lib/validations";
 
 export class KnowledgeService {
     async getById(id: string, type: KUType): Promise<KnowledgeUnit | null> {
+        // Only validate if it looks like a UUID, otherwise it's likely a slug
+        if (id.includes('-')) uuidSchema.parse(id);
         return await kuRepository.getById(id, type);
     }
 
@@ -20,6 +22,7 @@ export class KnowledgeService {
     }
 
     async getSentencesByKU(kuId: string): Promise<any[]> {
+        uuidSchema.parse(kuId);
         return await kuRepository.getSentencesByKU(kuId);
     }
 

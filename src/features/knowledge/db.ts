@@ -20,7 +20,7 @@ export class SupabaseKURepository {
         const { data: detailsData, error: detailsError } = await supabase
             .from(detailsTable)
             .select('*')
-            .eq('ku_id', kuData.slug)
+            .eq('ku_id', kuData.id)
             .single();
 
         if (detailsError && detailsError.code !== 'PGRST116') {
@@ -46,7 +46,7 @@ export class SupabaseKURepository {
         const { data: detailsData, error: detailsError } = await supabase
             .from(detailsTable)
             .select('*')
-            .eq('ku_id', kuData.slug)
+            .eq('ku_id', kuData.id)
             .single();
 
         if (detailsError && detailsError.code !== 'PGRST116') {
@@ -131,7 +131,7 @@ export class SupabaseKURepository {
 
         return await Promise.all(data.map(async (row: any) => {
             const detailsTable = getDetailsTableName(row.type);
-            const { data: details } = await supabase.from(detailsTable).select('*').eq('ku_id', row.slug).single();
+            const { data: details } = await supabase.from(detailsTable).select('*').eq('ku_id', row.id).single();
             return mapToKU(row, details || {}, row.type as KUType);
         }));
     }

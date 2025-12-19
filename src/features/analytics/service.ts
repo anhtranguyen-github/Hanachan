@@ -1,5 +1,6 @@
-import { createClient } from '@/services/supabase/server';
+import * as db from './db';
 import { DailyStats, DashboardStats } from './types';
+import { uuidSchema } from '@/lib/validations';
 
 const DUMMY_USER_ID = "00000000-0000-0000-0000-000000000000";
 
@@ -9,18 +10,13 @@ export class AnalyticsService {
      * Log a review event to update stats in DB.
      */
     async logReview(isNew: boolean, isCorrect: boolean, userId: string = DUMMY_USER_ID) {
-        const supabase = createClient();
+        uuidSchema.parse(userId);
         const today = new Date().toISOString().split('T')[0];
 
         // 1. Fetch current stats (or init defaults)
-        const { data: current } = await supabase
-            .from('user_daily_stats')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('day', today)
-            .single();
+        const current = await db.getDailyStats(userId, today);
 
-        const stats = current || {
+        const stats = current ? { ...current } : {
             user_id: userId,
             day: today,
             minutes_spent: 0,
@@ -33,35 +29,37 @@ export class AnalyticsService {
         stats.reviews_completed++;
         if (isNew) stats.new_cards_learned++;
         if (isCorrect) stats.correct_reviews++;
-        stats.minutes_spent += 1; // Used 1 instead of 0.5 to match INT column type for now
+        stats.minutes_spent += 1;
 
         // 3. Upsert to DB
-        const { error } = await supabase
-            .from('user_daily_stats')
-            .upsert(stats);
+        try {
+            await db.upsertDailyStats(stats);
+        } catch (error) {
+            console.error("❌ Stats Error:", error);
+        }
+    }
 
-        if (error) console.error("❌ Stats Error:", error);
+    /**
+     * Compatibility wrapper for trackReview
+     */
+    async trackReview(userId: string, isNew: boolean, isCorrect: boolean = true) {
+        return this.logReview(isNew, isCorrect, userId);
     }
 
     async getDashboardStats(userId: string = DUMMY_USER_ID) {
-        const supabase = createClient();
+        uuidSchema.parse(userId);
         const today = new Date().toISOString().split('T')[0];
 
-        // Parallel Fetch
-        const [dailyRes, totalInfo] = await Promise.all([
-            supabase.from('user_daily_stats').select('*').eq('user_id', userId).eq('day', today).single(),
-            // Mock total info since we might allow 'null' decks
-            Promise.resolve({ total: 100, due: 5 })
-        ]);
-
-        const daily = dailyRes.data || { minutes_spent: 0, reviews_completed: 0, correct_reviews: 0 };
+        // 1. Get daily stats
+        const dailyData = await db.getDailyStats(userId, today);
+        const daily = dailyData || { minutes_spent: 0, reviews_completed: 0, correct_reviews: 0 };
 
         return {
             daily: {
                 minutes: daily.minutes_spent,
                 reviews: daily.reviews_completed,
                 retention: daily.reviews_completed > 0
-                    ? Math.round((daily.correct_reviews / daily.reviews_completed) * 100)
+                    ? Math.round((daily.correct_reviews / (daily.reviews_completed as number)) * 100)
                     : 100
             }
         };

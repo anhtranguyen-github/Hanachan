@@ -1,6 +1,5 @@
-
 import { createClient } from '@/services/supabase/server';
-import { getDueCards } from '@/features/learning/repository';
+import { learningService } from '@/features/learning/service';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -12,8 +11,8 @@ export async function GET() {
             return NextResponse.json({ count: 0 });
         }
 
-        const dueCards = await getDueCards(user.id, 500); // Fetch enough to count reliably
-        return NextResponse.json({ count: dueCards.length });
+        const count = await learningService.getDueCount(user.id);
+        return NextResponse.json({ count });
     } catch (error) {
         return NextResponse.json({ count: 0 });
     }

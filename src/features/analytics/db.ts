@@ -52,3 +52,14 @@ export async function incrementDailyStats(
             });
     }
 }
+
+export async function upsertDailyStats(stats: Partial<DailyStats> & { user_id: string; day: string }): Promise<void> {
+    const supabase = createClient();
+    const { error } = await supabase
+        .from('user_daily_stats')
+        .upsert(stats);
+
+    if (error) {
+        throw new Error(`Failed to upsert daily stats: ${error.message}`);
+    }
+}

@@ -1,4 +1,3 @@
-
 import { createClient } from '@/services/supabase/server';
 import { FSRSParameters, FSRSReviewResult, SRSState } from './types';
 
@@ -71,7 +70,9 @@ export async function updateLearningState(
             state: result.next_state,
             stability: result.next_stability,
             difficulty: result.next_difficulty,
-            next_review: result.next_review.toISOString(),
+            next_review: (!isNaN(result.next_review.getTime()))
+                ? result.next_review.toISOString()
+                : new Date().toISOString(),
             last_review: new Date().toISOString(),
             reps: reps,
             lapses: lapses
