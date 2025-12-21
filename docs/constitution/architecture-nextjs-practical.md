@@ -97,13 +97,44 @@ Kiến trúc tuân theo tư duy:
 
 ------------------------------------------------------------------------
 
-## 7. Naming Convention
-- **File name mô tả việc nó làm, không mô tả tầng kiến trúc.**
-- Trong feature folder, `types.ts`, `db.ts`, `service.ts` là đủ rõ, không cần prefix `feature.xxx.ts`.
-- Ví dụ: `schedule.ts` (FSRS logic), `state.ts` (Learning state ops).
+------------------------------------------------------------------------
+
+## 8. STRICT ARCHITECTURE RULES (NON-NEGOTIABLE)
+
+### 8.1 Data Persistence
+- There is exactly **ONE** Data Persistence layer per feature.
+- This layer **MUST** be named `db.ts`. 
+- `repository.ts` **MUST NEVER** be created or referenced.
+- `db.ts` represents the **Repository Pattern** in Clean Architecture.
+
+### 8.2 Access Control
+- `db.ts` **MUST NOT** be imported or called directly from:
+    - API routes
+    - Controllers
+    - Actions
+    - Components
+    - UI or framework layers
+- Direct database access outside `db.ts` is **FORBIDDEN**.
+
+### 8.3 Dependency Direction
+- **Flow**: `API / App layer` → `Usecases / Services` → `db.ts`
+- Reverse or skipping layers (e.g., API calling `db.ts` directly) is **NOT allowed**.
+
+### 8.4 Responsibilities
+- **`db.ts`**:
+    - Contains **ONLY** persistence logic (queries, inserts, updates).
+    - HAS **NO** business rules, no orchestration, no framework logic.
+- **Usecases / Services**:
+    - Contain **ALL** business rules.
+    - Are the **ONLY** layer allowed to call `db.ts`.
+
+### 8.5 Enforcement
+- If data is needed, create or extend a usecase/service.
+- Never import `db.ts` outside the business layer.
+- Any violation is considered an architectural error.
 
 ------------------------------------------------------------------------
 
-## 8. Câu chốt
+## 9. Câu chốt
 
 > "Tổ chức code theo feature, tách rõ UI, business và infrastructure."

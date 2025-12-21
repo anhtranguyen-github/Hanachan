@@ -28,6 +28,15 @@
       ],
       "@public/*": [
         "./public/*"
+      ],
+      "@features/*": [
+        "./src/features/*"
+      ],
+      "@services/*": [
+        "./src/services/*"
+      ],
+      "@components/*": [
+        "./src/components/*"
       ]
     },
     "strict": false

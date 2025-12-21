@@ -6,13 +6,15 @@ This document is the absolute source of truth for the Hanachan V2 project. All d
 
 ## 1. Architectural Integrity (The "Hidden" Layer)
 
-### 1.1. Feature-Oriented Modular Monolith
-- **Location**: All business logic must reside in `src/features/{feature_name}`. (Current codebase standard).
-- **Sub-folders**:
-  - `domain/`: Interfaces and pure algorithms (WaniKani/FSRS logic).
-  - `infrastructure/`: Implementations (Supabase, SQLite, APIs).
-  - `components/`: UI specific to this feature.
-- **Strict Separation**: Domain logic must never import from infrastructure. Use the **Repository Pattern (DIP)**.
+### 1.1. Feature-Oriented Architecture (The "Sakura" Layering)
+- **Location**: All business logic must reside in `src/features/{feature_name}`.
+- **Strict File Structure**:
+  - `db.ts`: **MANDATORY**. The ONLY file allowed to interact with the database (Repository).
+  - `service.ts`: **MANDATORY**. All business rules and orchestration.
+  - `components/`: Feature-specific UI.
+  - `types.ts`: Feature-specific interfaces.
+- **The "Forbidden" Rule**: `repository.ts` MUST NEVER be created. `db.ts` IS the repository.
+- **Access Control**: ONLY `service.ts` can import/call `db.ts`. API/UI/Actions MUST call `service.ts`.
 
 ### 1.2. Hybrid Logic (Sentence-centric + CKB-centric)
 - **Grammar (MANDATORY Sentence-Centric)**: Grammar units MUST always be learned via `ku-sentence` (Cloze format).

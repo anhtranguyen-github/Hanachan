@@ -1,9 +1,16 @@
 {
     "$schema": "https://turbo.build/schema.json",
+    "ui": "tui",
     "tasks": {
         "build": {
             "dependsOn": [
                 "^build"
+            ],
+            "inputs": [
+                "src/**",
+                "tailwind.config.ts",
+                "next.config.js",
+                "tsconfig.json"
             ],
             "outputs": [
                 ".next/**",
@@ -12,10 +19,20 @@
         },
         "test": {
             "dependsOn": [
-                "^build"
+                "lint"
+            ],
+            "inputs": [
+                "src/**",
+                "tests/**",
+                "vitest.config.ts"
             ]
         },
-        "lint": {},
+        "lint": {
+            "inputs": [
+                "src/**",
+                ".eslintrc.json"
+            ]
+        },
         "dev": {
             "cache": false,
             "persistent": true
