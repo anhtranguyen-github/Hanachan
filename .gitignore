@@ -50,3 +50,10 @@ playwright/.auth/
 
 
 .turbo/
+
+# local logs and results
+*_output.txt
+dev_log.txt
+test_results.txt
+test-results/
+playwright-report/
