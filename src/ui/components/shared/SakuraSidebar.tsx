@@ -27,7 +27,9 @@ import {
     Sparkles,
     Youtube,
     MessageCircle,
-    LucideIcon
+    LucideIcon,
+    Moon,
+    Sun
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
@@ -38,7 +40,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/components/ui/dropdown-menu';
-import { useSidebar } from './SidebarContext';
+import { useUIStore } from '@/store/useUIStore'; // Upgraded State Management
+import { useSidebar } from './SidebarContext'; // Still using for stats for now
 import { useUser } from '@/features/auth/AuthContext';
 import { cn } from '@/lib/utils';
 
@@ -59,7 +62,8 @@ interface SidebarSection {
 }
 
 export const SakuraSidebar = React.memo(function SakuraSidebar() {
-    const { isExpanded, toggle } = useSidebar();
+    const { isSidebarOpen: isExpanded, toggleSidebar: toggle, activeTheme, setTheme } = useUIStore();
+    const { studyStats } = useSidebar(); // Keeping stats context for now
     const [dueCount, setDueCount] = React.useState(0);
     const { user, logout } = useUser();
     const pathname = usePathname();
@@ -74,10 +78,6 @@ export const SakuraSidebar = React.memo(function SakuraSidebar() {
         };
         fetchDue();
     }, [user, pathname]);
-
-    if (pathname?.startsWith('/auth/')) {
-        return null;
-    }
 
     const isGuest = !user;
 
@@ -116,7 +116,7 @@ export const SakuraSidebar = React.memo(function SakuraSidebar() {
         };
 
         return [...appSections, contentSection, toolsSection];
-    }, []);
+    }, [dueCount]);
 
     const utilityItems: SidebarItem[] = React.useMemo(() => {
         return [
@@ -130,6 +130,10 @@ export const SakuraSidebar = React.memo(function SakuraSidebar() {
             ]),
         ];
     }, [isGuest, user?.role]);
+
+    if (pathname?.startsWith('/auth/')) {
+        return null;
+    }
 
     return (
         <aside
@@ -373,20 +377,26 @@ export const SakuraSidebar = React.memo(function SakuraSidebar() {
                 "mt-auto border-t border-sakura-divider p-3 flex gap-2",
                 isExpanded ? "flex-row items-center justify-between" : "flex-col items-center"
             )}>
-                {/* Study Health */}
-
-
                 {/* Notifications */}
                 <button
                     className="relative p-2 rounded-xl bg-sakura-bg-soft border border-sakura-divider hover:bg-sakura-accent-muted transition-colors text-sakura-text-muted hover:text-sakura-accent-primary"
                     title="Notifications"
                 >
                     <Bell size={18} aria-hidden="true" />
-                    {studyStats.reviewsCount > 0 && (
+                    {dueCount > 0 && (
                         <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white">
                             <span className="sr-only">New reviews available</span>
                         </span>
                     )}
+                </button>
+
+                {/* Theme Toggle */}
+                <button
+                    onClick={() => setTheme(activeTheme === 'sakura' ? 'night' : 'sakura')}
+                    className="p-2 rounded-xl bg-sakura-bg-soft border border-sakura-divider hover:bg-sakura-accent-muted transition-colors text-sakura-text-muted hover:text-sakura-accent-primary"
+                    title={`Switch to ${activeTheme === 'sakura' ? 'Night' : 'Sakura'} Mode`}
+                >
+                    {activeTheme === 'sakura' ? <Moon size={18} /> : <Sun size={18} />}
                 </button>
 
                 {/* Profile Dropdown */}
@@ -432,26 +442,6 @@ export const SakuraSidebar = React.memo(function SakuraSidebar() {
                         )}
                     </DropdownMenuContent>
                 </DropdownMenu>
-
-                {/* Auth Button */}
-                <button
-                    onClick={async () => {
-                        if (isGuest) {
-                            router.push('/auth/signin');
-                        } else {
-                            await logout();
-                            router.push('/auth/signin');
-                            router.refresh();
-                        }
-                    }}
-                    className={cn(
-                        "p-2 rounded-xl bg-sakura-bg-soft border border-sakura-divider transition-all",
-                        isGuest ? "text-sakura-accent-primary hover:bg-sakura-accent-muted" : "text-destructive hover:bg-destructive/10 hover:border-destructive/30"
-                    )}
-                    title={isGuest ? "Sign In" : "Sign Out"}
-                >
-                    {isGuest ? <LogIn size={18} /> : <LogOut size={18} />}
-                </button>
             </div>
         </aside>
     );

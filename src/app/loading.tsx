@@ -3,11 +3,19 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Brain } from 'lucide-react';
+import { useEffect } from 'react';
 
 export default function Loading() {
+    useEffect(() => {
+        // Ensure pointer events are restored when unmounted
+        return () => {
+            document.body.style.pointerEvents = 'auto';
+        };
+    }, []);
+
     return (
-        <div>
-            <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-neutral-beige/10 backdrop-blur-sm">
+        <div data-testid="global-loading">
+            <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-neutral-beige/10 backdrop-blur-sm pointer-events-auto">
                 {/* Ambient Background Glow */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
 

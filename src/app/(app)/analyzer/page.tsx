@@ -5,9 +5,9 @@ import { SakuraHeader } from '@/ui/components/sakura/SakuraHeader';
 import Image from 'next/image';
 import { Eraser, Loader2, Wand2, Sparkles, History, Book, Languages, Monitor, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { TokenRenderer } from '@/features/analysis/components/TokenRenderer';
-import { DictionaryPanel } from '@/features/analysis/components/DictionaryPanel';
-import { GrammarPanel } from '@/features/analysis/components/GrammarPanel';
+import { TokenRenderer } from '@/features/sentence/components/TokenRenderer';
+import { DictionaryPanel } from '@/features/sentence/components/DictionaryPanel';
+import { GrammarPanel } from '@/features/sentence/components/GrammarPanel';
 
 export default function AnalyzerPage() {
     const [text, setText] = useState('');

@@ -35,6 +35,8 @@ export default function Home() {
   const { isAuthenticated, isAuthResolved } = useAuth();
   const router = useRouter();
 
+  console.log('DEBUG: Hero Render. isAuthResolved:', isAuthResolved, 'isAuthenticated:', isAuthenticated);
+
   return (
     <div className="min-h-screen bg-transparent flex flex-col selection:bg-purple-200">
       <SakuraHeader
@@ -254,7 +256,7 @@ export default function Home() {
               </div>
               <h2 className="text-6xl font-black text-sakura-ink tracking-tighter uppercase leading-[0.9]">Turn Narrative Into Knowledge.</h2>
               <p className="text-xl text-sakura-ink/60 leading-relaxed font-medium">
-                Don't just watch—synthesize. Hanachan extracts linguistics from any YouTube sequence, creating an instant retrieval path for your matrix.
+                Don&apos;t just watch—synthesize. Hanachan extracts linguistics from any YouTube sequence, creating an instant retrieval path for your matrix.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
                 {[

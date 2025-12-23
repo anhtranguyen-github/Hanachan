@@ -70,7 +70,7 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({ initialCards }) =>
                 <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-500">
                     <CheckCircle2 size={40} />
                 </div>
-                <h2 className="text-2xl font-bold">You're all caught up!</h2>
+                <h2 className="text-2xl font-bold">You&apos;re all caught up!</h2>
                 <p className="text-zinc-400">No cards due for review. Take a break or explore new material.</p>
             </div>
         )
@@ -91,7 +91,7 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({ initialCards }) =>
                     <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
                         Session Complete!
                     </h2>
-                    <p className="text-zinc-400">You've successfully reviewed {completedCount} cards.</p>
+                    <p className="text-zinc-400">You&apos;ve successfully reviewed {completedCount} cards.</p>
                 </div>
                 <div className="w-full h-px bg-white/10" />
                 <button

@@ -8,13 +8,15 @@ import { cn } from '@/lib/utils';
 
 import { WordDetailModal } from '@/ui/components/shared/WordDetailModal';
 
+import { useUIStore } from '@/store/useUIStore';
+
 export function MainLayout({ children }: { children: React.ReactNode }) {
-    const { isExpanded } = useSidebar();
+    const isExpanded = useUIStore((state) => state.isSidebarOpen);
     const pathname = usePathname();
 
     const isFullWidthPage = pathname === '/chat' || pathname === '/analyzer' || pathname === '/immersion';
     const isLandingPage = pathname === '/landing' || pathname === '/';
-    const isFocusMode = pathname?.includes('/reviews') || pathname?.includes('/mock-test');
+    const isFocusMode = pathname?.includes('/reviews') || pathname?.includes('/mock-test') || pathname?.includes('/study/review');
     const isAuthPage = pathname?.startsWith('/auth/') || pathname === '/login';
 
     if (isLandingPage) {

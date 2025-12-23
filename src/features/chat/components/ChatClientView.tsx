@@ -146,9 +146,9 @@ export default function ChatClientView({
                                     <div className="w-20 h-20 bg-white rounded-[2rem] border border-sakura-divider flex items-center justify-center mb-6">
                                         <Sparkles size={32} className="text-purple-600 animate-pulse" />
                                     </div>
-                                    <h2 className="text-3xl font-black text-sakura-ink mb-3 tracking-tighter uppercase">Kon'nichiwa!</h2>
+                                    <h2 className="text-3xl font-black text-sakura-ink mb-3 tracking-tighter uppercase">Kon&apos;nichiwa!</h2>
                                     <p className="text-sakura-cocoa/60 font-medium leading-relaxed mb-8 max-w-sm">
-                                        I'm your high-fidelity Japanese tutor. Ready to synthesize custom flashcards?
+                                        I&apos;m your high-fidelity Japanese tutor. Ready to synthesize custom flashcards?
                                     </p>
 
                                     {/* Suggestion Chips */}

@@ -44,6 +44,8 @@ const fredoka = Fredoka({
   display: 'swap',
 });
 
+import { HanaProvider } from "@/ui/components/hana/HanaProvider";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -52,9 +54,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <NotificationProvider>
             <QuotaProvider>
               <SidebarProvider>
-                <MainLayout>
-                  {children}
-                </MainLayout>
+                <HanaProvider>
+                  <MainLayout>
+                    {children}
+                  </MainLayout>
+                </HanaProvider>
               </SidebarProvider>
             </QuotaProvider>
           </NotificationProvider>
