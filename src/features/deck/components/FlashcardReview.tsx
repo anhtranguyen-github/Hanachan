@@ -36,7 +36,7 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({ cards, onRevie
     if (isFinished) return <SuccessSession onComplete={onComplete} stats={{ count: cards.length }} />;
 
     return (
-        <div className="max-w-3xl mx-auto min-h-[80dvh] flex flex-col justify-center p-6 space-y-12">
+        <div data-testid="flashcard-session" className="max-w-3xl mx-auto min-h-[80dvh] flex flex-col justify-center p-6 space-y-12">
             {/* Progress Header */}
             <div className="space-y-4">
                 <div className="flex justify-between items-end px-2">
@@ -58,6 +58,7 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({ cards, onRevie
             {/* Flashcard Area */}
             <div className="perspective-1000 min-h-[400px]">
                 <HanaCard
+                    data-testid={showAnswer ? 'flashcard-back' : 'flashcard-front'}
                     variant="clay"
                     padding="none"
                     className={cn(
@@ -90,7 +91,7 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({ cards, onRevie
 
                     {!showAnswer && (
                         <div className="absolute inset-x-0 bottom-12 flex justify-center">
-                            <HanaButton size="lg" onClick={() => setShowAnswer(true)} className="px-12 group">
+                            <HanaButton data-testid="flashcard-reveal" size="lg" onClick={() => setShowAnswer(true)} className="px-12 group">
                                 Reveal <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
                             </HanaButton>
                         </div>
@@ -114,6 +115,7 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({ cards, onRevie
 
 const RatingButton = ({ rating, label, color, onClick }: any) => (
     <button
+        data-testid={`flashcard-rate-${label.toLowerCase()}`}
         onClick={onClick}
         className="group flex flex-col items-center gap-2 p-4 rounded-3xl bg-white border-2 border-sakura-divider hover:border-sakura-ink transition-all active:scale-95"
     >
@@ -125,7 +127,7 @@ const RatingButton = ({ rating, label, color, onClick }: any) => (
 );
 
 const EmptySession = ({ onComplete }: any) => (
-    <div className="max-w-md mx-auto py-20 text-center space-y-8 animate-fadeIn">
+    <div data-testid="flashcard-empty" className="max-w-md mx-auto py-20 text-center space-y-8 animate-fadeIn">
         <div className="w-24 h-24 bg-white rounded-[2.5rem] border-2 border-sakura-divider flex items-center justify-center mx-auto shadow-xl">
             <Brain size={40} className="text-sakura-cocoa/20" />
         </div>
@@ -138,7 +140,7 @@ const EmptySession = ({ onComplete }: any) => (
 );
 
 const SuccessSession = ({ onComplete, stats }: any) => (
-    <div className="max-w-md mx-auto py-20 text-center space-y-10 animate-fadeIn">
+    <div data-testid="flashcard-complete" className="max-w-md mx-auto py-20 text-center space-y-10 animate-fadeIn">
         <div className="relative">
             <div className="w-32 h-32 bg-white rounded-[3rem] border-2 border-sakura-pink flex items-center justify-center mx-auto shadow-2xl animate-float">
                 <Zap size={56} className="text-sakura-pink fill-current" />

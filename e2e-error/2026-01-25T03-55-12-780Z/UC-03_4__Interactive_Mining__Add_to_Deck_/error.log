@@ -1,0 +1,29 @@
+Error in test: UC-03.4: Interactive Mining (Add to Deck)
+TimeoutError: page.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("Synthesize")')[22m
+[2m    - locator resolved to <button class="flex items-center gap-2.5 px-8 py-2.5 bg-[#8B5CF6] text-white font-black text-[10px] uppercase tracking-widest rounded-2xl hover:bg-purple-700 active:scale-95 transition-all disabled:opacity-50">…</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <nextjs-portal></nextjs-portal> intercepts pointer events[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <nextjs-portal></nextjs-portal> intercepts pointer events[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    54 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is visible, enabled and stable[22m
+[2m       - scrolling into view if needed[22m
+[2m       - done scrolling[22m
+[2m       - <nextjs-portal></nextjs-portal> intercepts pointer events[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+
+    at D:\PROJECT\hanachan_v2_final\tests\e2e\uc-03-analysis.spec.ts:71:20

@@ -40,7 +40,7 @@ export async function getDueCards(userId: string, limit: number = 20) {
             )
         `)
         .eq('user_id', userId)
-        .neq('state', 'Burned')
+        .neq('state', 'burned')
         .lte('next_review', new Date().toISOString())
         .order('next_review', { ascending: true })
         .limit(limit);

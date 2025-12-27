@@ -26,9 +26,9 @@ interface DashboardContentProps {
 
 export const DashboardContent: React.FC<DashboardContentProps> = ({ user, stats }) => {
     return (
-        <div className="max-w-7xl mx-auto space-y-12 pb-24">
+        <div data-testid="dashboard-ready" className="max-w-7xl mx-auto space-y-12 pb-24">
             {/* Elegant Hero Section */}
-            <header className="relative p-8 md:p-12 rounded-[40px] bg-white border-2 border-sakura-divider overflow-hidden group">
+            <header data-testid="progress-summary" className="relative p-8 md:p-12 rounded-[40px] bg-white border-2 border-sakura-divider overflow-hidden group">
                 {/* Decorative Sakura Petal Blurs */}
                 <div className="absolute top-[-10%] right-[-5%] w-64 h-64 bg-sakura-pink/10 blur-[80px] rounded-full group-hover:bg-sakura-pink/20 transition-colors duration-1000" />
 
@@ -126,7 +126,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ user, stats 
                     <h2 className="text-2xl font-black text-sakura-ink flex items-center gap-3 uppercase tracking-tight">
                         <Clock className="text-sakura-cocoa" /> Momentum
                     </h2>
-                    <HanaCard variant="flat" className="h-[340px] border-dashed border-2 flex flex-col items-center justify-center text-center space-y-4 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
+                    <HanaCard data-testid="stats-chart" variant="flat" className="h-[340px] border-dashed border-2 flex flex-col items-center justify-center text-center space-y-4 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
                         <div className="w-20 h-20 rounded-full bg-sakura-divider flex items-center justify-center text-sakura-cocoa">
                             <TrendingUp size={32} />
                         </div>

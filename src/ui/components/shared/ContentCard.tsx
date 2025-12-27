@@ -72,6 +72,7 @@ export function ContentCard({
 
     return (
         <Link
+            data-testid={type === 'VOCABULARY' ? 'vocab-card' : 'content-card'}
             href={href}
             className={cn(
                 "group relative flex flex-col items-center justify-center p-6 min-h-[140px] rounded-2xl transition-all duration-300 active:scale-95 hover:scale-105 shadow-sm",
@@ -124,7 +125,7 @@ export function ContentCard({
             {level && (
                 <span className={cn(
                     "absolute bottom-2 right-2 text-[9px] font-black uppercase tracking-widest",
-                    isStudyActive ? "text-white/20" : "opacity-20"
+                    isReview ? "text-white/20" : "opacity-20"
                 )}>
                     LV.{level}
                 </span>

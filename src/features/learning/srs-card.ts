@@ -13,7 +13,7 @@ export class SRSCard {
             difficulty: params?.difficulty ?? 0,
             elapsed_days: params?.elapsed_days ?? 0,
             scheduled_days: params?.scheduled_days ?? 0,
-            state: params?.state ?? 'New',
+            state: params?.state ?? 'new',
             last_review: params?.last_review,
             reps: params?.reps ?? 0,
             lapses: params?.lapses ?? 0,
@@ -55,8 +55,8 @@ export class SRSCard {
     }
 
     isDue(now: Date = new Date()): boolean {
-        if (this.state === 'New') return true;
-        if (this.state === 'Burned') return false;
+        if (this.state === 'new') return true;
+        if (this.state === 'burned') return false;
 
         if (!this.params.last_review) return true;
 

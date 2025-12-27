@@ -33,7 +33,7 @@ async function ensureDatabaseExists(connectionString: string) {
 }
 
 async function runMigrations() {
-    await ensureDatabaseExists(databaseUrl!);
+    // await ensureDatabaseExists(databaseUrl!);
     const client = new Client({ connectionString: databaseUrl, family: 4, ssl: { rejectUnauthorized: false } });
     try {
         await client.connect();

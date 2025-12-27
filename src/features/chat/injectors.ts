@@ -1,5 +1,5 @@
 
-import { localChatRepo } from './local-db';
+import { chatRepo } from './chat-repo';
 import { identifyTroubleItems, recommendTopics, SRSStateSnapshot } from './recommendation-engine';
 
 /**
@@ -35,8 +35,8 @@ You are "Hana-chan" (はなちゃん), a cheerful and encouraging Japanese AI Tu
 
 export class SRSSimulatorInjector implements ContextInjector {
     async inject(userId: string): Promise<string> {
-        // 1. Get SRS Data from Local DB (simulating Database fetch)
-        const states = localChatRepo.getSRSStates(userId) as SRSStateSnapshot[];
+        // 1. Get SRS Data from Supabase (unified repo)
+        const states = await chatRepo.getSRSStates(userId) as SRSStateSnapshot[];
 
         // 2. Use Business Logic (Recommendation Engine)
         const troubleItems = identifyTroubleItems(states);

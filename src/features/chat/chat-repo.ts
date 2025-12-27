@@ -1,12 +1,10 @@
-import { createClient } from '@/services/supabase/server';
+import { createAdminClient } from '@/services/supabase/server';
 import { ChatMessage, ChatSession } from './types';
-
-const DUMMY_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 export class ChatRepository {
 
     async getSession(sessionId: string): Promise<ChatSession | null> {
-        const supabase = createClient();
+        const supabase = createAdminClient();
 
         // 1. Get Session Info
         const { data: session } = await supabase
@@ -36,8 +34,8 @@ export class ChatRepository {
         };
     }
 
-    async createSession(sessionId: string, userId: string = DUMMY_USER_ID): Promise<ChatSession> {
-        const supabase = createClient();
+    async createSession(sessionId: string, userId: string): Promise<ChatSession> {
+        const supabase = createAdminClient();
 
         // Upsert Session to ensure existence
         const { error } = await supabase
@@ -60,7 +58,7 @@ export class ChatRepository {
     }
 
     async addMessage(sessionId: string, message: ChatMessage) {
-        const supabase = createClient();
+        const supabase = createAdminClient();
 
         const { error } = await supabase
             .from('chat_messages')
@@ -75,16 +73,60 @@ export class ChatRepository {
     }
 
     // SRS Retrieval from DB
-    async getSRSStates(userId: string = DUMMY_USER_ID): Promise<any[]> {
-        const supabase = createClient();
+    async getSRSStates(userId: string): Promise<any[]> {
+        const supabase = createAdminClient();
         const { data } = await supabase
             .from('user_learning_states')
             .select('*')
             .eq('user_id', userId);
         return data || [];
     }
+
+    // Analysis History (merged from db.ts)
+    async logAnalysis(analysis: any): Promise<any | null> {
+        const supabase = createAdminClient();
+        const { data, error } = await supabase
+            .from('user_analysis_history')
+            .insert(analysis)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error logging analysis:', error);
+            return null;
+        }
+        return data;
+    }
+
+    async getUserAnalysisHistory(userId: string): Promise<any[]> {
+        const supabase = createAdminClient();
+        const { data, error } = await supabase
+            .from('user_analysis_history')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching analysis history:', error);
+            return [];
+        }
+        return data || [];
+    }
+
+    async getUserSessions(userId: string): Promise<any[]> {
+        const supabase = createAdminClient();
+        const { data, error } = await supabase
+            .from('chat_sessions')
+            .select('*')
+            .eq('user_id', userId)
+            .order('updated_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching user sessions:', error);
+            return [];
+        }
+        return data || [];
+    }
 }
 
 export const chatRepo = new ChatRepository();
-// Alias for backward compatibility during refactor
-export const localChatRepo = chatRepo; 

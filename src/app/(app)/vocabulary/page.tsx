@@ -25,14 +25,16 @@ export default async function VocabularyPage() {
     const srsStatus = user ? await getUserLearningStates(user.id) : {};
 
     return (
-        <ContentListView
-            type="VOCABULARY"
-            title="Vocabulary"
-            subtitle="Words to build your fluency"
-            accentColor="#AA00FF" // Vocab purple from design.config.ts
-            initialDifficulty="N5"
-            initialLevelData={levelData}
-            initialSrsStatus={srsStatus}
-        />
+        <div data-testid="vocab-list-ready">
+            <ContentListView
+                type="VOCABULARY"
+                title="Vocabulary"
+                subtitle="Words to build your fluency"
+                accentColor="#AA00FF" // Vocab purple from design.config.ts
+                initialDifficulty="N5"
+                initialLevelData={levelData}
+                initialSrsStatus={srsStatus}
+            />
+        </div>
     );
 }

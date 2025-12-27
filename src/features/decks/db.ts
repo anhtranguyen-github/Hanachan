@@ -89,8 +89,8 @@ export async function getDeckMasteryStats(userId: string, deckId: string) {
     }
 
     const total = data.length;
-    const learned = data.filter((item: any) => item.user_learning_states[0]?.state !== 'New').length;
-    const burned = data.filter((item: any) => item.user_learning_states[0]?.state === 'Burned').length;
+    const learned = data.filter((item: any) => item.user_learning_states[0]?.state !== 'new').length;
+    const burned = data.filter((item: any) => item.user_learning_states[0]?.state === 'burned').length;
 
     return { total, learned, burned };
 }

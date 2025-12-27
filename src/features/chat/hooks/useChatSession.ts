@@ -2,10 +2,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { sendMessageAction, getSessionHistoryAction, createSessionAction } from '../actions';
+import { sendMessageAction, getSessionHistoryAction, createSessionAction, getUserSessionsAction } from '../actions';
 import { ChatMessage, ChatSession } from '../types';
 
-export function useChatSession(conversationId?: string, userId: string = "00000000-0000-0000-0000-000000000000") {
+export function useChatSession(conversationId?: string) {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [sessions, setSessions] = useState<any[]>([]);
@@ -22,6 +22,15 @@ export function useChatSession(conversationId?: string, userId: string = "000000
             setIsLoading(false);
         }
     }, []);
+
+    const loadSessions = useCallback(async () => {
+        const data = await getUserSessionsAction();
+        setSessions(data || []);
+    }, []);
+
+    useEffect(() => {
+        loadSessions();
+    }, [loadSessions]);
 
     useEffect(() => {
         if (conversationId) {
@@ -42,7 +51,7 @@ export function useChatSession(conversationId?: string, userId: string = "000000
         setIsLoading(true);
 
         try {
-            const result = await sendMessageAction(conversationId, userId, content);
+            const result = await sendMessageAction(conversationId, content);
             if (result.success && result.reply) {
                 setMessages(prev => [...prev, {
                     role: 'assistant',
@@ -59,7 +68,11 @@ export function useChatSession(conversationId?: string, userId: string = "000000
 
     const createNewConversation = async () => {
         const id = `session-${Date.now()}`;
-        await createSessionAction(id, userId);
+        try {
+            await createSessionAction(id);
+        } catch (error) {
+            console.error('❌ createSessionAction failed:', error);
+        }
         return id;
     };
 

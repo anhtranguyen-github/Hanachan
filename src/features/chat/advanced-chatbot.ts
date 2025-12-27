@@ -4,7 +4,7 @@ import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts
 import { ChatOpenAI } from "@langchain/openai";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { JsonOutputParser } from "@langchain/core/output_parsers";
-import { localChatRepo } from './chat-repo';
+import { chatRepo } from './chat-repo';
 import { ContextInjector, ProjectAwarenessInjector, PersonaInjector, SRSSimulatorInjector } from './injectors';
 import { classifyIntent } from './chat-router';
 import { sentenceService } from '../sentence/service';
@@ -32,10 +32,10 @@ export class AdvancedChatService {
      * Main entry point.
      */
     async sendMessage(sessionId: string, userId: string, text: string) {
-        // 1. Session Management (Async Await Fix)
-        let session = await localChatRepo.getSession(sessionId);
+        // 1. Session Management
+        let session = await chatRepo.getSession(sessionId);
         if (!session) {
-            session = await localChatRepo.createSession(sessionId, userId);
+            session = await chatRepo.createSession(sessionId, userId);
         }
 
         // 2. Intent Classification
@@ -44,7 +44,7 @@ export class AdvancedChatService {
 
         // 3. Routing & Logic
         if (intent === 'ANALYZE') {
-            return await this.handleAnalysis(sessionId, text);
+            return await this.handleAnalysis(sessionId, userId, text);
         }
 
         // 4. Construct System Prompt
@@ -59,14 +59,14 @@ export class AdvancedChatService {
 
         const chain = promptTemplate.pipe(this.llm);
 
-        // 6. Execution
-        console.log("🤖 Hana is thinking...");
+
+
         const history = session.messages.map((m: any) =>
             m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content)
         );
 
         // Async Add Message
-        await localChatRepo.addMessage(sessionId, { role: 'user', content: text, timestamp: new Date().toISOString() });
+        await chatRepo.addMessage(sessionId, { role: 'user', content: text, timestamp: new Date().toISOString() });
 
         const response = await chain.invoke({
             system_context: systemContext,
@@ -75,7 +75,7 @@ export class AdvancedChatService {
         });
 
         const replyText = response.content as string;
-        await localChatRepo.addMessage(sessionId, { role: 'assistant', content: replyText, timestamp: new Date().toISOString() });
+        await chatRepo.addMessage(sessionId, { role: 'assistant', content: replyText, timestamp: new Date().toISOString() });
 
         return replyText;
     }
@@ -107,7 +107,7 @@ export class AdvancedChatService {
         return context;
     }
 
-    private async handleAnalysis(sessionId: string, text: string) {
+    private async handleAnalysis(sessionId: string, userId: string, text: string) {
         const cleanText = text.replace(/^(analyze|explain)( this)?[: ]*/i, "").trim();
         try {
             const result = await sentenceService.analyze(cleanText);
@@ -117,7 +117,8 @@ export class AdvancedChatService {
                 text: cleanText,
                 translation: result.translation,
                 sourceType: 'chat',
-                sourceId: sessionId
+                sourceId: sessionId,
+                userId: userId
             });
 
             const response = `**Analysis Result** 🇯🇵
@@ -135,8 +136,8 @@ ${result.units.filter(u => u.type === 'vocabulary').map(u => `- ${u.surface} (${
 `;
 
             // Async Add Message
-            await localChatRepo.addMessage(sessionId, { role: 'user', content: text, timestamp: new Date().toISOString() });
-            await localChatRepo.addMessage(sessionId, { role: 'assistant', content: response, timestamp: new Date().toISOString() });
+            await chatRepo.addMessage(sessionId, { role: 'user', content: text, timestamp: new Date().toISOString() });
+            await chatRepo.addMessage(sessionId, { role: 'assistant', content: response, timestamp: new Date().toISOString() });
 
             return response;
         } catch (e: any) {

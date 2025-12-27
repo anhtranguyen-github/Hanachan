@@ -1,0 +1,6 @@
+Error in test: UC-02.4: Deck Management
+TimeoutError: page.waitForSelector: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-testid="decks-ready"]') to be visible[22m
+
+    at D:\PROJECT\hanachan_v2_final\tests\e2e\uc-02-srs.spec.ts:55:20

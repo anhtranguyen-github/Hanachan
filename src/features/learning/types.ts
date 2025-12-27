@@ -1,5 +1,4 @@
-
-export type SRSState = 'New' | 'Learning' | 'Review' | 'Relearning' | 'Burned';
+export type SRSState = 'new' | 'learning' | 'review' | 'relearning' | 'burned';
 
 export interface FSRSParameters {
     stability: number;

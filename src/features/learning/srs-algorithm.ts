@@ -28,19 +28,19 @@ export class FSRSAlgorithm implements SRSAlgorithm {
         let nextDifficulty: number;
         let nextState: SRSState = current.state;
 
-        const isFirstReview = current.reps === 0 || current.state === 'New';
+        const isFirstReview = current.reps === 0 || current.state === 'new';
 
         if (isFirstReview) {
             // Step 1: Initial Stability based on rating (1-4)
             nextStability = this.w[rating - 1];
             // Step 2: Initial Difficulty: w[4] - w[5] * (rating - 3)
             nextDifficulty = this.clamp(this.w[4] - this.w[5] * (rating - 3), 1, 10);
-            nextState = rating === 1 ? 'Learning' : 'Review';
+            nextState = rating === 1 ? 'learning' : 'review';
         } else {
             const r = this.calculateRetrievability(current, reviewDate);
 
             if (rating === 1) { // Again (Failure)
-                nextState = 'Relearning';
+                nextState = 'relearning';
                 // Failure Stability: w[11] * D^-w[12] * ((S+1)^w[13] - 1) * exp(w[14] * (1-R))
                 nextStability = this.w[11] *
                     Math.pow(current.difficulty, -this.w[12]) *
@@ -49,7 +49,7 @@ export class FSRSAlgorithm implements SRSAlgorithm {
 
                 nextDifficulty = this.clamp(current.difficulty + this.w[6], 1, 10);
             } else { // Hard, Good, Easy (Success)
-                nextState = 'Review';
+                nextState = 'review';
                 // Success Stability formula
                 const hardMultiplier = rating === 2 ? this.w[15] : 1;
                 const easyMultiplier = rating === 4 ? this.w[16] : 1;
@@ -69,7 +69,7 @@ export class FSRSAlgorithm implements SRSAlgorithm {
 
         // Burned check (Domain Rule: S > 365 days or reached specific mastery)
         if (nextStability > 365) {
-            nextState = 'Burned';
+            nextState = 'burned';
         }
 
         const nextReviewDate = new Date(reviewDate);

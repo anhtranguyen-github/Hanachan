@@ -11,32 +11,32 @@ export default function ChatPage() {
     const router = useRouter();
     const conversationId = searchParams.get('id');
 
-    // In a real app, we'd get the user from a Context/Provider
-    const TEST_USER_ID = "00000000-0000-0000-0000-000000000000";
-
     const {
         messages,
         isLoading,
         sessions,
         sendMessage,
         createNewConversation
-    } = useChatSession(conversationId || undefined, TEST_USER_ID);
+    } = useChatSession(conversationId || undefined);
 
     const handleNewSession = async () => {
         const newId = await createNewConversation();
         router.push(`/chat?id=${newId}`);
     };
 
+
     return (
-        <ChatInterface
-            messages={messages}
-            isLoading={isLoading}
-            sessions={sessions}
-            activeSessionId={conversationId || undefined}
-            onSendMessage={sendMessage}
-            onNewSession={handleNewSession}
-            onSelectSession={(id) => router.push(`/chat?id=${id}`)}
-            onDeleteSession={(id) => console.log('Delete', id)}
-        />
+        <div data-testid="chat-ready" className="h-full">
+            <ChatInterface
+                messages={messages}
+                isLoading={isLoading}
+                sessions={sessions}
+                activeSessionId={conversationId || undefined}
+                onSendMessage={sendMessage}
+                onNewSession={handleNewSession}
+                onSelectSession={(id) => router.push(`/chat?id=${id}`)}
+                onDeleteSession={(id) => console.log('Delete', id)}
+            />
+        </div>
     );
 }

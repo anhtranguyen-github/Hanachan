@@ -1,4 +1,4 @@
-import { createClient } from '@/services/supabase/server';
+import { createAdminClient } from '@/services/supabase/server';
 import { SentenceEntity } from './types';
 
 export class SentenceRepository {
@@ -7,13 +7,14 @@ export class SentenceRepository {
      * Finds a sentence by text and source (Dedup logic)
      */
     async findExisting(text: string, sourceId?: string): Promise<SentenceEntity | null> {
-        const supabase = createClient();
+        const supabase = createAdminClient();
+        // Since sentences doesn't have source_id column, we search primarily by text
+        // and filter by metadata if needed, but for now text_ja is the unique key per user check
         const { data } = await supabase
             .from('sentences')
             .select('*')
             .eq('text_ja', text)
-            .eq('source_id', sourceId || '') // Handle null
-            .single();
+            .maybeSingle();
         return data as SentenceEntity;
     }
 
@@ -23,33 +24,28 @@ export class SentenceRepository {
         sourceType: 'youtube' | 'chat' | 'manual';
         sourceId?: string;
         timestamp?: number;
-        userId?: string; // Optional if we infer from auth context, but for scripts we pass it
+        userId?: string;
     }): Promise<SentenceEntity> {
-        const supabase = createClient();
+        const supabase = createAdminClient();
 
-        // 1. Check duplicate
         const existing = await this.findExisting(data.text, data.sourceId);
         if (existing) {
-            console.log(`♻️ Sentence already exists: ${existing.id}`);
             return existing;
         }
 
-        // 2. Insert
-        // Note: For scripts, we might need to be careful with 'user_id' if RLS is on.
-        // The createClient implementation uses Service Key in scripts, verifying RLS bypass.
-        // But we should provide a userId if the table requires it and we are admin.
-        // Assuming we default to a specific User ID for testing or it's inferred.
-
-        // Hardcoding a Dev User ID if not provided, for CLI testing purposes
-        const TEST_USER_ID = "00000000-0000-0000-0000-000000000000";
+        if (!data.userId) {
+            throw new Error("Unauthorized: userId is required to add a sentence");
+        }
 
         const payload = {
             text_ja: data.text,
             text_en: data.translation,
             source_type: data.sourceType,
-            source_id: data.sourceId,
-            timestamp: data.timestamp,
-            user_id: data.userId || TEST_USER_ID // Fallback for script
+            source_metadata: {
+                source_id: data.sourceId,
+                timestamp: data.timestamp
+            },
+            user_id: data.userId
         };
 
         const { data: inserted, error } = await supabase
@@ -59,7 +55,7 @@ export class SentenceRepository {
             .single();
 
         if (error) {
-            console.error("❌ Error adding sentence:", error);
+            console.error("❌ Error adding sentence:", JSON.stringify(error, null, 2));
             throw error;
         }
 
@@ -68,7 +64,7 @@ export class SentenceRepository {
     }
 
     async getById(id: string): Promise<SentenceEntity | null> {
-        const supabase = createClient();
+        const supabase = createAdminClient();
         const { data } = await supabase.from('sentences').select('*').eq('id', id).single();
         return data as SentenceEntity;
     }

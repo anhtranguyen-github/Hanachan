@@ -42,12 +42,12 @@ const getTranscriptAction = async (videoId: string, lang: string) => {
     return [{ text: "Hello, World!", duration: 3000, offset: 0 }];
 };
 
-import { GrammarPanel } from '@/features/analysis/components/GrammarPanel';
+import { GrammarPanel } from '@/features/sentence/components/GrammarPanel';
 import { toast } from 'sonner';
 import { useUser } from '@/features/auth/AuthContext';
 import { cn } from '@/lib/utils';
-import { FuriganaConverterV2 } from '@/features/analysis/components/FuriganaConverterV2';
-import { DictionaryPanel } from '@/features/analysis/components/DictionaryPanel';
+import { FuriganaConverterV2 } from '@/features/sentence/components/FuriganaConverterV2';
+import { DictionaryPanel } from '@/features/sentence/components/DictionaryPanel';
 import type { TokenResult, AnalyzerResponse } from '@/types/ai.types';
 
 interface TranscriptPart {
@@ -246,11 +246,11 @@ export function YouTubeComponent({ videoId, onBackToLibrary }: YouTubeComponentP
     };
 
     return (
-        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-0 h-full overflow-hidden bg-transparent">
+        <div data-testid="yt-component-ready" className="flex flex-col lg:grid lg:grid-cols-12 gap-0 h-full overflow-hidden bg-transparent">
             {/* Left Column: Player & Controls (8 cols) */}
             <div className="lg:col-span-8 flex flex-col h-full bg-sakura-ink relative">
                 {/* 1. Video Area (Ocean Waves aesthetic) */}
-                <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
+                <div data-testid="yt-player-area" className="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
 
                     <div className="w-full aspect-video z-10 shadow-2xl relative">
                         <ReactPlayer
@@ -281,7 +281,7 @@ export function YouTubeComponent({ videoId, onBackToLibrary }: YouTubeComponentP
                 </div>
 
                 {/* 2. Controls Bar (Sakura V2 Neutral) */}
-                <div className="bg-white border-t border-sakura-divider p-4 lg:p-6 flex items-center justify-between gap-4">
+                <div data-testid="yt-controls" className="bg-white border-t border-sakura-divider p-4 lg:p-6 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
                         <button onClick={() => skipTime(-5)} className="p-3 rounded-xl bg-white text-sakura-cocoa/40 hover:text-sakura-ink border border-sakura-divider transition-all shadow-sm">
                             <Rewind size={18} fill="currentColor" />
@@ -327,6 +327,7 @@ export function YouTubeComponent({ videoId, onBackToLibrary }: YouTubeComponentP
 
                     <div className="flex items-center gap-2">
                         <button
+                            data-testid="yt-synthesis-button"
                             onClick={handleAnalyzeLine}
                             disabled={isAnalyzing}
                             className="px-6 py-3 rounded-xl bg-sakura-ink text-white font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:opacity-90 transition-all active:scale-95 shadow-lg"
@@ -342,10 +343,11 @@ export function YouTubeComponent({ videoId, onBackToLibrary }: YouTubeComponentP
             <div className="lg:col-span-4 flex flex-col h-full border-l border-sakura-divider bg-white">
                 <div className="p-5 border-b border-sakura-divider bg-white flex items-center justify-between">
                     <h3 className="text-[10px] font-black uppercase tracking-widest text-sakura-cocoa/60">Chronicle Transcript</h3>
-                    <div className="flex gap-1">
+                    <div data-testid="yt-lang-toolbar" className="flex gap-1">
                         {(['Jp', 'En', 'Jp+En'] as LanguageMode[]).map(mode => (
                             <button
                                 key={mode}
+                                data-testid={`yt-lang-${mode.toLowerCase().replace('+', '-')}`}
                                 onClick={() => setLangMode(mode)}
                                 className={cn(
                                     "px-3 py-1.5 rounded-lg text-[9px] font-black transition-all border uppercase tracking-wider",
@@ -361,6 +363,7 @@ export function YouTubeComponent({ videoId, onBackToLibrary }: YouTubeComponentP
                 </div>
 
                 <div
+                    data-testid="yt-transcript"
                     ref={(el) => { (transcriptListRef.current as any) = el; }}
                     className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar scroll-smooth"
                 >
@@ -379,6 +382,7 @@ export function YouTubeComponent({ videoId, onBackToLibrary }: YouTubeComponentP
                             return (
                                 <div
                                     key={idx}
+                                    data-testid="yt-transcript-line"
                                     onClick={() => seekTo(line.offset / 1000)}
                                     className={cn(
                                         "p-5 rounded-[1.5rem] transition-all cursor-pointer border",
@@ -414,7 +418,7 @@ export function YouTubeComponent({ videoId, onBackToLibrary }: YouTubeComponentP
 
                 {/* Dictionary/Analysis Panel (Overlays bottom of transcript) */}
                 {analysisResult && showAnalysis && (
-                    <div className="h-2/5 border-t border-sakura-divider bg-white overflow-y-auto animate-in slide-in-from-bottom duration-500 z-30 shadow-2xl">
+                    <div data-testid="yt-analysis-panel" className="h-2/5 border-t border-sakura-divider bg-white overflow-y-auto animate-in slide-in-from-bottom duration-500 z-30 shadow-2xl">
                         <div className="p-6">
                             <div className="flex items-center justify-between mb-6">
                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-purple-600">Deep Analysis</h4>
@@ -437,9 +441,10 @@ export function YouTubeComponent({ videoId, onBackToLibrary }: YouTubeComponentP
 
             {/* Selection Popup (Dictionary) */}
             {selectedToken && (
-                <div className="fixed inset-0 bg-[#4A3728]/80 z-[100] flex items-center justify-center p-6">
+                <div data-testid="yt-dictionary-modal" className="fixed inset-0 bg-[#4A3728]/80 z-[100] flex items-center justify-center p-6">
                     <div className="bg-white w-full max-w-md rounded-[3rem] p-10 shadow-2xl border border-sakura-divider relative animate-in zoom-in duration-300">
                         <button
+                            data-testid="yt-dictionary-close"
                             onClick={() => setSelectedToken(null)}
                             title="Close"
                             className="absolute top-8 right-8 p-2 text-sakura-cocoa/40 hover:text-sakura-ink bg-sakura-cocoa/5 rounded-full transition-all"

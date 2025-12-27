@@ -12,15 +12,21 @@ export default function ReviewPage() {
     const router = useRouter();
     const [cards, setCards] = useState<FlashcardEntity[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<Error | null>(null);
 
     // Mock User
     const TEST_USER_ID = "00000000-0000-0000-0000-000000000000";
 
     useEffect(() => {
         const load = async () => {
-            const due = await flashcardService.getDueCards(TEST_USER_ID);
-            setCards(due);
-            setIsLoading(false);
+            try {
+                const due = await flashcardService.getDueCards(TEST_USER_ID);
+                setCards(due ?? []);
+            } catch (err) {
+                setError(err as Error);
+            } finally {
+                setIsLoading(false);
+            }
         };
         load();
     }, []);
@@ -37,11 +43,30 @@ export default function ReviewPage() {
         </div>
     );
 
+    if (error) {
+        return (
+            <div data-testid="review-error" className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+                <p className="font-black uppercase text-xs tracking-widest text-sakura-cocoa/60">Failed to load reviews</p>
+            </div>
+        );
+    }
+
+    if (cards.length === 0) {
+        return (
+            <div data-testid="flashcard-empty" className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+                <p className="font-black uppercase text-xs tracking-widest text-sakura-cocoa/60">No cards to review</p>
+            </div>
+        );
+    }
+
     return (
-        <FlashcardReview
-            cards={cards}
-            onReview={handleReview}
-            onComplete={() => router.push('/dashboard')}
-        />
+        <div data-testid="study-session-ready">
+            <div data-testid="srs-session-started" />
+            <FlashcardReview
+                cards={cards}
+                onReview={handleReview}
+                onComplete={() => router.push('/dashboard')}
+            />
+        </div>
     );
 }

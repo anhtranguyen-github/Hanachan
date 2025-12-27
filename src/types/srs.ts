@@ -63,10 +63,10 @@ export interface Deck {
 
 // Stage name mapping (WaniKani-style)
 export const getStageName = (stage: number): string => {
-    if (stage === 0) return 'New';
-    if (stage >= 9) return 'Burned';
-    if (stage >= 5) return 'Review';
-    return 'Learning';
+    if (stage === 0) return 'new';
+    if (stage >= 9) return 'burned';
+    if (stage >= 5) return 'review';
+    return 'learning';
 };
 
 // Map SRS stage to unified learning state

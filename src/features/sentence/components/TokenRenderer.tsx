@@ -32,6 +32,7 @@ export function TokenRenderer({ token, isSelected, onClick }: TokenRendererProps
 
     return (
         <span
+            data-testid="analysis-token"
             className={`
                 inline-block px-1 py-1 mx-0.5 rounded-lg cursor-pointer transition-all
                 ${isSelected ? 'bg-white ring-2 ring-purple-500 -translate-y-1' : 'hover:bg-sakura-cocoa/5'}

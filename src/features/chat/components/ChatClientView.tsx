@@ -7,7 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
 import { SakuraHeader } from '@/ui/components/sakura/SakuraHeader';
-import { useChatSession } from '../hooks/useChatSession';
+import { useChatSession } from './useChatSession';
 
 // Define Props if not imported
 interface ChatClientViewProps {
@@ -66,6 +66,11 @@ export default function ChatClientView({
         await sendMessage(content);
     };
 
+    const handleNewConversation = async () => {
+        const id = await createNewConversation();
+        router.push(`/chat?id=${id}`);
+    };
+
     const handleDeleteConversation = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         if (confirm('Delete session?')) {
@@ -103,7 +108,7 @@ export default function ChatClientView({
                     )}>
                         <div className="p-6 border-b border-sakura-divider bg-white/50 backdrop-blur-sm">
                             <button
-                                onClick={createNewConversation}
+                                onClick={handleNewConversation}
                                 className="w-full h-12 flex items-center justify-center gap-2 px-4 bg-sakura-rose text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-[#4A262C] active:scale-95 transition-all shadow-md shadow-sakura-rose/20"
                             >
                                 <Plus size={18} /> New Session

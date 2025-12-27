@@ -1,0 +1,86 @@
+# E2E Error Report
+
+Generated: 2026-01-25T03:51:16.778Z
+
+## Use Case: 2026-01-25T03-50-45-934Z / UC-01_1__Browse_Knowledge_Base__Vocabulary_
+```
+Error in test: UC-01.1: Browse Knowledge Base (Vocabulary)
+Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator: getByTestId('vocab-list-ready').or(getByTestId('page-ready'))
+Expected: visible
+Timeout: 10000ms
+Error: element(s) not found
+
+Call log:
+[2m  - Expect "toBeVisible" with timeout 10000ms[22m
+[2m  - waiting for getByTestId('vocab-list-ready').or(getByTestId('page-ready'))[22m
+
+    at D:\PROJECT\hanachan_v2_final\tests\e2e\uc-01-knowledge.spec.ts:40:99
+```
+
+[Screenshot](./e2e-error/2026-01-25T03-50-45-934Z/UC-01_1__Browse_Knowledge_Base__Vocabulary_/screenshot.png) | [DOM](./e2e-error/2026-01-25T03-50-45-934Z/UC-01_1__Browse_Knowledge_Base__Vocabulary_/dom.html)
+---
+
+## Use Case: 2026-01-25T03-50-52-581Z / UC-02_2__SRS_Review_Session
+```
+Error in test: UC-02.2: SRS Review Session
+TimeoutError: page.waitForSelector: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-testid="study-session-ready"]') to be visible[22m
+
+    at D:\PROJECT\hanachan_v2_final\tests\e2e\uc-02-srs.spec.ts:29:20
+```
+
+[Screenshot](./e2e-error/2026-01-25T03-50-52-581Z/UC-02_2__SRS_Review_Session/screenshot.png) | [DOM](./e2e-error/2026-01-25T03-50-52-581Z/UC-02_2__SRS_Review_Session/dom.html)
+---
+
+## Use Case: 2026-01-25T03-50-58-610Z / UC-02_4__Deck_Management
+```
+Error in test: UC-02.4: Deck Management
+TimeoutError: page.waitForSelector: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-testid="decks-ready"]') to be visible[22m
+
+    at D:\PROJECT\hanachan_v2_final\tests\e2e\uc-02-srs.spec.ts:55:20
+```
+
+[Screenshot](./e2e-error/2026-01-25T03-50-58-610Z/UC-02_4__Deck_Management/screenshot.png) | [DOM](./e2e-error/2026-01-25T03-50-58-610Z/UC-02_4__Deck_Management/dom.html)
+---
+
+## Use Case: 2026-01-25T03-51-00-791Z / UC-01_2__Lesson_View___Deep_Dive
+```
+Error in test: UC-01.2: Lesson View & Deep Dive
+TimeoutError: locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-testid="vocab-card"]').first()[22m
+[2m    - locator resolved to <a data-testid="vocab-card" href="/vocabulary/vocabulary%2F%E4%B9%9D%E3%81%A4" class="group relative flex flex-col items-center justify-center p-6 min-h-[140px] rounded-2xl transition-all duration-300 active:scale-95 hover:scale-105 shadow-sm">…</a>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <nextjs-portal></nextjs-portal> intercepts pointer events[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <nextjs-portal></nextjs-portal> intercepts pointer events[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    56 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is visible, enabled and stable[22m
+[2m       - scrolling into view if needed[22m
+[2m       - done scrolling[22m
+[2m       - <nextjs-portal></nextjs-portal> intercepts pointer events[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+
+    at D:\PROJECT\hanachan_v2_final\tests\e2e\uc-01-knowledge.spec.ts:56:29
+```
+
+[Screenshot](./e2e-error/2026-01-25T03-51-00-791Z/UC-01_2__Lesson_View___Deep_Dive/screenshot.png) | [DOM](./e2e-error/2026-01-25T03-51-00-791Z/UC-01_2__Lesson_View___Deep_Dive/dom.html)
+---
+

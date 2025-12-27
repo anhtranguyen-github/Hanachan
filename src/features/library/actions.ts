@@ -6,7 +6,14 @@ import { createClient } from '@/services/supabase/server';
 import { youtubeScraper } from '@/features/youtube/scraper';
 
 export async function listVideosAction() {
-    return await videoLibraryService.listVideos();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        throw new Error('Unauthorized');
+    }
+
+    return await videoLibraryService.listVideos(user.id);
 }
 
 export async function addVideoAction(url: string) {

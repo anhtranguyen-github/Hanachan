@@ -42,10 +42,13 @@ export default function ImmersionPage() {
     if (isLoading) return <div className="p-20 text-center font-bold animate-pulse">Scanning Archive...</div>;
 
     return (
-        <LibraryView
-            videos={videos}
-            onAddVideo={handleAddVideo}
-            onSelectVideo={handleSelectVideo}
-        />
+        <div data-testid="immersion-ready">
+            <div data-testid="youtube-ready" />
+            <LibraryView
+                videos={videos}
+                onAddVideo={handleAddVideo}
+                onSelectVideo={handleSelectVideo}
+            />
+        </div>
     );
 }

@@ -5,6 +5,7 @@ import React from 'react';
 import { HanaButton } from '@/ui/components/hana/Button';
 import { HanaCard } from '@/ui/components/hana/Card';
 import { Play, Clock, Star, Search, Plus, Youtube } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { VideoMetadata } from '../types';
 
 interface LibraryViewProps {
@@ -15,7 +16,7 @@ interface LibraryViewProps {
 
 export const LibraryView: React.FC<LibraryViewProps> = ({ videos, onAddVideo, onSelectVideo }) => {
     return (
-        <div className="max-w-7xl mx-auto space-y-10 p-6 md:p-12">
+        <div data-testid="immersion-library" className="max-w-7xl mx-auto space-y-10 p-6 md:p-12">
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="space-y-2">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-torii-red/10 text-torii-red text-[10px] font-black uppercase tracking-widest">
@@ -28,13 +29,13 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ videos, onAddVideo, on
                     <HanaButton variant="secondary">
                         <Search size={18} />
                     </HanaButton>
-                    <HanaButton onClick={() => onAddVideo('')}>
+                    <HanaButton data-testid="add-video-button" onClick={() => onAddVideo('')}>
                         <Plus size={18} /> Add Video
                     </HanaButton>
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div data-testid="video-list" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 {videos.map((video) => (
                     <VideoCard
                         key={video.id}
@@ -44,12 +45,12 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ videos, onAddVideo, on
                 ))}
 
                 {videos.length === 0 && (
-                    <div className="col-span-full py-20 flex flex-col items-center justify-center text-center space-y-4 opacity-40">
+                    <div data-testid="video-empty-state" className="col-span-full py-20 flex flex-col items-center justify-center text-center space-y-4 opacity-40">
                         <div className="w-20 h-20 rounded-full bg-sakura-divider flex items-center justify-center">
                             <Youtube size={32} />
                         </div>
                         <p className="font-black text-lg uppercase">Your library is empty</p>
-                        <HanaButton variant="outline" onClick={() => onAddVideo('')}>Add your first video</HanaButton>
+                        <HanaButton data-testid="add-first-video" variant="outline" onClick={() => onAddVideo('')}>Add your first video</HanaButton>
                     </div>
                 )}
             </div>

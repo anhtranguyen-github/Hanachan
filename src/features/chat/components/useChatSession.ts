@@ -6,6 +6,7 @@ export function useChatSession(options: any = {}) {
     const [messages, setMessages] = useState<any[]>(options.initialMessages || [
         { id: '1', role: 'assistant', content: 'こんにちは！今日は何を勉強しますか？' }
     ]);
+    const [conversations, setConversations] = useState<any[]>(options.initialConversations || []);
 
     const sendMessage = async (content: string) => {
         setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', content }]);
@@ -14,13 +15,19 @@ export function useChatSession(options: any = {}) {
         }, 1000);
     };
 
+    const createNewConversation = () => {
+        const id = `session-${Date.now()}`;
+        setConversations(prev => [{ id, title: 'New Chat' }, ...prev]);
+        return id;
+    };
+
     return {
         state: 'idle',
-        conversations: [],
+        conversations,
         messages,
         pendingDeck: null,
         loadConversations: async () => { },
-        createNewConversation: () => { },
+        createNewConversation,
         sendMessage,
         confirmDeck: async () => { },
         cancelDeck: () => { },
