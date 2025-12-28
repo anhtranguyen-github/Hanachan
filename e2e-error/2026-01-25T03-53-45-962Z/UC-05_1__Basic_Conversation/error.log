@@ -1,6 +1,0 @@
-Error in test: UC-05.1: Basic Conversation
-TimeoutError: page.waitForSelector: Timeout 30000ms exceeded.
-Call log:
-[2m  - waiting for locator('[data-testid="chat-ready"]') to be visible[22m
-
-    at D:\PROJECT\hanachan_v2_final\tests\e2e\uc-05-chat.spec.ts:27:20

@@ -1,6 +1,0 @@
-Error in test: UC-02.2: SRS Review Session
-TimeoutError: page.waitForSelector: Timeout 30000ms exceeded.
-Call log:
-[2m  - waiting for locator('[data-testid="study-session-ready"]') to be visible[22m
-
-    at D:\PROJECT\hanachan_v2_final\tests\e2e\uc-02-srs.spec.ts:29:20

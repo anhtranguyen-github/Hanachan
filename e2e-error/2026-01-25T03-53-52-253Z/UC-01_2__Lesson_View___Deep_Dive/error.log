@@ -1,6 +1,0 @@
-Error in test: UC-01.2: Lesson View & Deep Dive
-TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
-Call log:
-[2m  - waiting for locator('[data-testid="lesson-ready"]') to be visible[22m
-
-    at D:\PROJECT\hanachan_v2_final\tests\e2e\uc-01-knowledge.spec.ts:59:24
