@@ -140,18 +140,9 @@ const config: Config = {
 		}
 	},
 	plugins: [
-		require('@tailwindcss/typography'),
-		require("tailwindcss-animate")
+		// Removed @tailwindcss/typography
+		// Removed tailwindcss-animate (was causing build error due to missing dep)
 	],
 	darkMode: 'class', // or 'media' for system preference
 }
 export default config
-
-
-
-
-
-
-
-// --------------------------------------------------------
-

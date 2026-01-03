@@ -1,10 +1,11 @@
+
 "use client";
 
 import React from "react";
 import { ReactNode } from "react";
+// Import mocks locally if needed, or just standard children wrapper
 import { AuthProvider } from "@/features/auth/AuthContext";
 import { AnalysisProvider } from "@/features/analysis/hooks/AnalysisContext";
-import { Toaster } from "sonner";
 
 interface ProvidersProps {
   children: ReactNode;
@@ -15,7 +16,6 @@ export function Providers({ children }: ProvidersProps) {
     <AuthProvider>
       <AnalysisProvider>
         {children}
-        <Toaster richColors closeButton position="top-right" />
       </AnalysisProvider>
     </AuthProvider>
   );

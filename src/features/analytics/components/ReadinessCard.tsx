@@ -12,7 +12,6 @@ import {
     ArrowRight,
     X
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -71,72 +70,62 @@ export function ReadinessCard() {
         setTimeout(() => setIsDismissed(true), 500); // Wait for animation
     };
 
-    if (isDismissed || !data) return null;
+    if (isDismissed || !data || !isVisible) return null;
 
     const Icon = STATE_ICONS[data.state] || CheckCircle2;
     const colorClass = STATE_COLORS[data.state] || STATE_COLORS.BALANCED;
 
     return (
-        <AnimatePresence>
-            {isVisible && (
-                <motion.div
-                    initial={{ height: 0, opacity: 0, marginBottom: 0 }}
-                    animate={{ height: 'auto', opacity: 1, marginBottom: 24 }}
-                    exit={{ height: 0, opacity: 0, marginBottom: 0 }}
-                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                    className="overflow-hidden"
+        <div className="overflow-hidden animate-in slide-in-from-top-4 duration-500 mb-6">
+            <div className={cn(
+                "relative p-6 rounded-[2rem] border-2 transition-all flex flex-col md:flex-row items-center gap-6",
+                colorClass
+            )}>
+                {/* Dismiss Button */}
+                <button
+                    onClick={handleDismiss}
+                    className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-full transition-colors"
                 >
-                    <div className={cn(
-                        "relative p-6 rounded-[2rem] border-2 transition-all flex flex-col md:flex-row items-center gap-6",
-                        colorClass
-                    )}>
-                        {/* Dismiss Button */}
-                        <button
-                            onClick={handleDismiss}
-                            className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-full transition-colors"
-                        >
-                            <X size={16} />
-                        </button>
+                    <X size={16} />
+                </button>
 
-                        {/* Icon Section */}
-                        <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm  flex items-center justify-center">
-                            <Icon size={28} />
-                        </div>
+                {/* Icon Section */}
+                <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm  flex items-center justify-center">
+                    <Icon size={28} />
+                </div>
 
-                        {/* Content Section */}
-                        <div className="flex-1 text-center md:text-left space-y-1">
-                            <div className="flex items-center justify-center md:justify-start gap-2">
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Today&apos;s Guidance</span>
-                                <div className="h-1 w-1 rounded-full bg-current opacity-30" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">{data.state.replace(/_/g, ' ')}</span>
-                            </div>
-                            <h3 className="text-xl font-black tracking-tight">{data.title}</h3>
-                            <p className="text-sm font-medium opacity-80 leading-relaxed max-w-2xl">
-                                {data.description}
-                            </p>
-                        </div>
-
-                        {/* Actions Section */}
-                        <div className="flex flex-wrap items-center justify-center gap-3">
-                            {data.suggestedActions.map((action, idx) => (
-                                <Link
-                                    key={idx}
-                                    href={action.href}
-                                    className={cn(
-                                        "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 active:scale-95",
-                                        action.type === 'primary'
-                                            ? "bg-white text-sakura-text-primary  hover: hover:-translate-y-0.5"
-                                            : "border border-current opacity-60 hover:opacity-100 hover:bg-white/10"
-                                    )}
-                                >
-                                    {action.label}
-                                    {action.type === 'primary' && <ArrowRight size={14} />}
-                                </Link>
-                            ))}
-                        </div>
+                {/* Content Section */}
+                <div className="flex-1 text-center md:text-left space-y-1">
+                    <div className="flex items-center justify-center md:justify-start gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Today&apos;s Guidance</span>
+                        <div className="h-1 w-1 rounded-full bg-current opacity-30" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">{data.state.replace(/_/g, ' ')}</span>
                     </div>
-                </motion.div>
-            )}
-        </AnimatePresence>
+                    <h3 className="text-xl font-black tracking-tight">{data.title}</h3>
+                    <p className="text-sm font-medium opacity-80 leading-relaxed max-w-2xl">
+                        {data.description}
+                    </p>
+                </div>
+
+                {/* Actions Section */}
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                    {data.suggestedActions.map((action, idx) => (
+                        <Link
+                            key={idx}
+                            href={action.href}
+                            className={cn(
+                                "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 active:scale-95",
+                                action.type === 'primary'
+                                    ? "bg-white text-sakura-text-primary  hover: hover:-translate-y-0.5"
+                                    : "border border-current opacity-60 hover:opacity-100 hover:bg-white/10"
+                            )}
+                        >
+                            {action.label}
+                            {action.type === 'primary' && <ArrowRight size={14} />}
+                        </Link>
+                    ))}
+                </div>
+            </div>
+        </div>
     );
 }

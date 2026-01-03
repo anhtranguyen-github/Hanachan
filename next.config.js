@@ -1,9 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-
+  distDir: '.next_clean',
   async redirects() {
     return [
-      // Only keeping critical system redirects if any, otherwise clean slate.
       {
         source: '/progress',
         destination: '/dashboard',
@@ -40,4 +39,3 @@ const nextConfig = {
   },
 }
 module.exports = nextConfig
-

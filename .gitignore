@@ -57,3 +57,4 @@ dev_log.txt
 test_results.txt
 test-results/
 playwright-report/
+.next_clean/

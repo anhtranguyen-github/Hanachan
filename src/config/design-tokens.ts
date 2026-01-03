@@ -1,64 +1,66 @@
 
+
 /**
- * HanaChan V2 Design Tokens
+ * Hanachan V2 Design Tokens - boring-deterministic variant
  * Follows Phase 1 of ui_development_for_code_agent.md
+ * Constraints: Minimal colors (2-3), system font, flat layout.
  */
 
 export const DESIGN_TOKENS = {
     colors: {
         primary: {
-            main: 'var(--color-sakura-pink)',
-            foreground: 'var(--color-sakura-cocoa)',
-            hover: 'var(--color-sakura-rose)',
+            main: '#000000',
+            foreground: '#FFFFFF',
+            hover: '#333333',
         },
         background: {
-            app: 'var(--color-sakura-bg-app)',
-            card: 'var(--color-card)',
+            app: '#FFFFFF',
+            card: '#FFFFFF',
+            muted: '#F5F5F5',
         },
         text: {
-            main: 'var(--color-sakura-ink)',
-            muted: 'var(--color-muted-foreground)',
+            main: '#000000',
+            muted: '#666666',
             inverse: '#FFFFFF',
         },
         border: {
-            default: 'var(--color-border)',
+            default: '#DDDDDD',
+            active: '#000000',
         },
-        semantic: {
-            radical: 'var(--color-content-emerald)', // Adjusting to match globals.css or app.config
-            kanji: 'var(--color-content-teal)',
-            vocabulary: 'var(--color-content-blue)',
-            grammar: 'var(--color-content-amber)',
+        status: {
+            success: '#000000',
+            error: '#FF0000',
+            info: '#000000',
         }
     },
     spacing: {
-        xs: '0.25rem',   // 4px
-        sm: '0.5rem',    // 8px
-        md: '1rem',      // 16px
-        lg: '1.5rem',    // 24px
-        xl: '2rem',      // 32px
+        xs: '4px',
+        sm: '8px',
+        md: '16px',
+        lg: '24px',
+        xl: '32px',
     },
     typography: {
         fonts: {
-            sans: 'var(--font-nunito)',
-            display: 'var(--font-fredoka)',
-            jp: 'var(--font-m-plus-rounded)',
+            sans: 'system-ui, -apple-system, sans-serif',
+            mono: 'ui-monospace, monospace',
         },
         sizes: {
-            xs: 'var(--font-size-xs)',
-            sm: 'var(--font-size-sm)',
-            base: 'var(--font-size-base)',
-            lg: 'var(--font-size-lg)',
-            xl: 'var(--font-size-xl)',
-            '2xl': 'var(--font-size-2xl)',
-            '3xl': 'var(--font-size-3xl)',
+            xs: '12px',
+            sm: '14px',
+            base: '16px',
+            lg: '18px',
+            xl: '20px',
+            '2xl': '24px',
         }
     },
     radius: {
-        sm: 'calc(var(--radius) - 4px)',
-        md: 'calc(var(--radius) - 2px)',
-        lg: 'var(--radius)',
-        xl: '1rem',
-        '2xl': '1.5rem',
-        clay: '24px',
+        none: '0px',
+        sm: '0px',
+        md: '0px',
+        lg: '0px',
+    },
+    shadows: {
+        none: 'none',
     }
 };
