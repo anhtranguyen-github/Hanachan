@@ -34,22 +34,13 @@ export default function AnalyzePage() {
                     <div className="text-right mt-1 text-xs text-slate-400">{sentence.length}/100 characters</div>
                 </div>
 
-                <div className="flex gap-4 items-end">
-                    <div>
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">Language</label>
-                        <div className="flex gap-2">
-                            <Button variant="outline" className="bg-blue-50 text-blue-600 border-blue-200 font-bold w-32">Japanese</Button>
-                            {/* Korean option removed */}
-                        </div>
-                    </div>
-                    <div className="flex-1 flex justify-end gap-3">
-                        <Button className="bg-purple-500 hover:bg-purple-600 text-white font-bold h-12 px-8 rounded-xl shadow-lg shadow-purple-200" onClick={() => setShowAiExplainer(true)}>
-                            <Bot size={18} className="mr-2" /> Explain with AI
-                        </Button>
-                        <Button className="btn-primary h-12 px-8 rounded-xl shadow-lg shadow-blue-200" onClick={() => setIsAnalyzed(true)}>
-                            Analyze Sentence
-                        </Button>
-                    </div>
+                <div className="flex justify-end gap-3 pt-2">
+                    <Button className="bg-purple-500 hover:bg-purple-600 text-white font-bold h-12 px-8 rounded-xl shadow-lg shadow-purple-200" onClick={() => setShowAiExplainer(true)}>
+                        <Bot size={18} className="mr-2" /> Explain with AI
+                    </Button>
+                    <Button className="btn-primary h-12 px-8 rounded-xl shadow-lg shadow-blue-200" onClick={() => setIsAnalyzed(true)}>
+                        Analyze Sentence
+                    </Button>
                 </div>
             </div>
 
@@ -104,10 +95,10 @@ export default function AnalyzePage() {
                                         { t: '好き', c: 'rose' }, { t: 'です', c: 'orange' }
                                     ].map((item, i) => (
                                         <span key={i} className={`px-3 py-2 rounded-lg border text-lg font-medium cursor-pointer ${item.c === 'blue' ? 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100' :
-                                                item.c === 'green' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100' :
-                                                    item.c === 'purple' ? 'bg-purple-50 text-purple-600 border-purple-100 hover:bg-purple-100' :
-                                                        item.c === 'rose' ? 'bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-100' :
-                                                            'bg-orange-50 text-orange-600 border-orange-100 hover:bg-orange-100'
+                                            item.c === 'green' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100' :
+                                                item.c === 'purple' ? 'bg-purple-50 text-purple-600 border-purple-100 hover:bg-purple-100' :
+                                                    item.c === 'rose' ? 'bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-100' :
+                                                        'bg-orange-50 text-orange-600 border-orange-100 hover:bg-orange-100'
                                             }`}>
                                             {item.t}
                                         </span>

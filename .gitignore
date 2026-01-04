@@ -58,3 +58,5 @@ test_results.txt
 test-results/
 playwright-report/
 .next_clean/
+
+processed_data/

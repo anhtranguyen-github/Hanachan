@@ -19,7 +19,7 @@ import {
   LogOut,
   ChevronLeft
 } from 'lucide-react';
-import { AuthProvider } from "@/features/auth/AuthContext";
+import { AuthProvider, useUser } from "@/features/auth/AuthContext";
 import "./globals.css";
 
 const SidebarItem = ({ icon: Icon, label, href, isActive, activeClassName }: any) => (
@@ -74,10 +74,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <SidebarItem icon={Layers} label="Decks" href="/decks" isActive={isActive('/decks') || isActive('/study')} />
 
                 <SectionLabel label="Content" />
-                <SidebarItem icon={Puzzle} label="Radicals" href="/radicals" isActive={isActive('/radicals')} activeClassName="bg-blue-100 text-blue-600 font-bold" />
+                <SidebarItem icon={Puzzle} label="Radicals" href="/radical" isActive={isActive('/radical')} activeClassName="bg-rose-100 text-rose-600 font-bold" />
                 <SidebarItem icon={Type} label="Kanji" href="/kanji" isActive={isActive('/kanji')} activeClassName="bg-rose-100 text-rose-600 font-bold" />
-                <SidebarItem icon={BookOpen} label="Vocabulary" href="/vocabulary" isActive={isActive('/vocabulary')} activeClassName="bg-purple-100 text-purple-600 font-bold" />
-                <SidebarItem icon={ScrollText} label="Grammar" href="/grammar" isActive={isActive('/grammar')} activeClassName="bg-emerald-100 text-emerald-600 font-bold" />
+                <SidebarItem icon={BookOpen} label="Vocabulary" href="/vocabulary" isActive={isActive('/vocabulary')} activeClassName="bg-rose-100 text-rose-600 font-bold" />
+                <SidebarItem icon={ScrollText} label="Grammar" href="/grammar" isActive={isActive('/grammar')} activeClassName="bg-rose-100 text-rose-600 font-bold" />
 
                 <SectionLabel label="Tools" />
                 <SidebarItem icon={Youtube} label="YouTube Immersion" href="/immersion" isActive={isActive('/immersion')} />
@@ -90,19 +90,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
 
               {/* Footer (User) */}
-              <div className="p-4 border-t border-slate-50 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <button className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100">
-                    <Bell size={16} />
-                  </button>
-                  <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 font-bold border border-rose-200">
-                    U
-                  </div>
-                </div>
-                <button className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50">
-                  <LogOut size={16} />
-                </button>
-              </div>
+              <FooterSection />
             </aside>
 
             {/* --- MAIN CONTENT PREVIEW --- */}
@@ -114,5 +102,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </AuthProvider>
       </body>
     </html>
+  );
+}
+
+function FooterSection() {
+  const { user, signOut } = useUser();
+  const initial = (user?.user_metadata?.display_name?.[0] || user?.email?.[0] || 'U').toUpperCase();
+
+  return (
+    <div className="p-4 border-t border-slate-50 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <button className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100">
+          <Bell size={16} />
+        </button>
+        <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 font-bold border border-rose-200">
+          {initial}
+        </div>
+      </div>
+      <button
+        onClick={() => signOut()}
+        className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50"
+      >
+        <LogOut size={16} />
+      </button>
+    </div>
   );
 }

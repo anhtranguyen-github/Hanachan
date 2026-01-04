@@ -6,15 +6,23 @@ import { Button } from '@/ui/components/ui/button';
 import { Play, ChevronRight, BarChart3, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { PageHeader } from '@/ui/components/PageHeader';
+import { useUser } from '@/features/auth/AuthContext';
 
 export default function DashboardPage() {
     const router = useRouter();
+    const { user, loading } = useUser();
+
+    if (loading) {
+        return <div className="max-w-6xl mx-auto p-20 text-center animate-pulse text-slate-400 font-bold">Loading your journey...</div>;
+    }
+
+    const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Explorer';
 
     return (
         <div className="max-w-6xl mx-auto space-y-8">
 
             <PageHeader
-                title="Welcome back, User!"
+                title={`Welcome back, ${displayName}!`}
                 subtitle="Ready to continue your journey?"
                 action={
                     <div className="flex gap-3">
