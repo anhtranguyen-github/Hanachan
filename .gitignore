@@ -60,3 +60,6 @@ playwright-report/
 .next_clean/
 
 processed_data/
+
+src/db/local.db
+dbsu/raw_data/content_grammar.json
