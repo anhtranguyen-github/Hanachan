@@ -1,16 +1,62 @@
-
 'use client';
 
 import React, { useState } from 'react';
 import { Button } from '@/ui/components/ui/button';
 import { PageHeader } from '@/ui/components/PageHeader';
-import { Sparkles, ScanText, Save, Bot } from 'lucide-react';
+import { Sparkles, ScanText, Save, Bot, Loader2 } from 'lucide-react';
+import { analyzeSentenceAction } from '@/features/sentence/actions';
+import { FullAnalysisResult } from '@/features/sentence/service';
+import { AnalyzedUnit } from '@/features/sentence/token-processor';
+import { MiningModal } from '@/features/mining/components/MiningModal';
+
 
 export default function AnalyzePage() {
     const [sentence, setSentence] = useState('私は雨の日曜日の午後にドゥームメタルを聴くのが好きです。');
-    const [isAnalyzed, setIsAnalyzed] = useState(true);
-    const [activeTab, setActiveTab] = useState<'word' | 'politeness' | 'grammar'>('word');
-    const [showAiExplainer, setShowAiExplainer] = useState(false);
+    const [isAnalyzed, setIsAnalyzed] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [analysis, setAnalysis] = useState<FullAnalysisResult | null>(null);
+    const [subTab, setSubTab] = useState<'word' | 'grammar'>('word');
+    const [selectedUnit, setSelectedUnit] = useState<AnalyzedUnit | null>(null);
+
+    // Mining Modal State
+    const [mineModalOpen, setMineModalOpen] = useState(false);
+    const [mineMode, setMineMode] = useState<'word' | 'sentence'>('word');
+    const [mineInitialData, setMineInitialData] = useState<any>({});
+
+    const openMineModal = (mode: 'word' | 'sentence', data: any) => {
+        setMineMode(mode);
+        setMineInitialData(data);
+        setMineModalOpen(true);
+    };
+
+
+    const handleAnalyze = async () => {
+        setIsLoading(true);
+        try {
+            const res = await analyzeSentenceAction(sentence);
+            if (res.success && res.data) {
+                setAnalysis(res.data);
+                setIsAnalyzed(true);
+                setSelectedUnit(res.data.units[0] || null);
+            } else {
+                alert(res.error);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Analysis failed.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const getColorForPos = (unit: AnalyzedUnit) => {
+        if (unit.type === 'particle') return 'green';
+        if (unit.pos === '名詞') return 'blue';
+        if (unit.pos === '動詞') return 'rose';
+        if (unit.pos === '形容詞') return 'purple';
+        if (unit.pos === '助動詞') return 'orange';
+        return 'slate';
+    };
 
     return (
         <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
@@ -27,191 +73,191 @@ export default function AnalyzePage() {
                 <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">Sentence</label>
                     <textarea
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-lg font-medium text-slate-800 outline-none focus:ring-2 focus:ring-blue-100 min-h-[100px] resize-none"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-lg font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-100 min-h-[100px] resize-none font-jp"
                         value={sentence}
                         onChange={(e) => setSentence(e.target.value)}
                     />
                     <div className="text-right mt-1 text-xs text-slate-400">{sentence.length}/100 characters</div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-2">
-                    <Button className="bg-purple-500 hover:bg-purple-600 text-white font-bold h-12 px-8 rounded-xl shadow-lg shadow-purple-200" onClick={() => setShowAiExplainer(true)}>
-                        <Bot size={18} className="mr-2" /> Explain with AI
-                    </Button>
-                    <Button className="btn-primary h-12 px-8 rounded-xl shadow-lg shadow-blue-200" onClick={() => setIsAnalyzed(true)}>
-                        Analyze Sentence
-                    </Button>
-                </div>
-            </div>
-
-            {/* AI Explainer Box (Conditional) */}
-            {showAiExplainer && (
-                <div className="bg-gradient-to-br from-purple-50 to-white p-6 rounded-2xl border border-purple-100 animate-in slide-in-from-top-4">
-                    <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md">
-                            <Sparkles size={20} />
+                <div className="flex justify-between items-center pt-2">
+                    {analysis && (
+                        <div className="flex gap-4">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Coverage</span>
+                                <span className="text-lg font-black text-blue-600">{analysis.coverage_stats.percentage.toFixed(0)}%</span>
+                            </div>
+                            <div className="flex flex-col border-l border-slate-100 pl-4">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Units</span>
+                                <span className="text-lg font-black text-slate-700">{analysis.coverage_stats.known_units}/{analysis.coverage_stats.total_units}</span>
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <h3 className="font-bold text-slate-800">AI Explanation</h3>
-                            <p className="text-slate-600 text-sm leading-relaxed">
-                                This sentence expresses a personal preference. Specifically:
-                                <br />
-                                • <span className="font-bold text-purple-600">私は (Watashi wa)</span> marks the speaker as the topic.
-                                <br />
-                                • <span className="font-bold text-purple-600">雨の日曜日の午後に (Ame no nichiyōbi no gogo ni)</span> sets the specific time: "on rainy Sunday afternoons". The particle <span className="font-bold">に (ni)</span> marks the time.
-                                <br />
-                                • <span className="font-bold text-purple-600">聴くのが好きです (kiku no ga suki desu)</span> means "like listening to...". The <span className="font-bold">の (no)</span> nominalizes the verb "listen" into "listening".
-                                <br /><br />
-                                Overall nuance: It feels somewhat poetic or atmospheric, specifying exact conditions for enjoying the music.
-                            </p>
-                            <Button variant="ghost" size="sm" className="text-purple-500 hover:bg-purple-50 text-xs mt-2" onClick={() => setShowAiExplainer(false)}>Close Explanation</Button>
-                        </div>
+                    )}
+                    <div className="flex gap-3">
+                        <Button
+                            variant="outline"
+                            className="h-12 px-6 rounded-xl border-slate-200 text-slate-600 font-bold hover:bg-slate-50"
+                            onClick={async () => {
+                                setIsLoading(true);
+                                const res = await analyzeSentenceAction(sentence); // Reuse analyze for now or add refine
+                                if (res.success) alert("AI Suggestion: " + res.data?.translation);
+                                setIsLoading(false);
+                            }}
+                            disabled={isLoading}
+                        >
+                            <Sparkles className="w-4 h-4 mr-2" /> Refine
+                        </Button>
+                        <Button className="btn-primary h-12 px-8 rounded-xl shadow-lg shadow-blue-200" onClick={handleAnalyze} disabled={isLoading}>
+                            {isLoading ? <><Loader2 className="animate-spin mr-2" /> Analyzing...</> : 'Analyze Sentence'}
+                        </Button>
                     </div>
                 </div>
-            )}
 
+            </div>
 
             {/* Analysis Results Tabs */}
-            {isAnalyzed && (
+            {isAnalyzed && analysis && (
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden min-h-[500px]">
                     <div className="flex border-b border-slate-100 px-6">
-                        <TabButton label="Word Analysis" active={activeTab === 'word'} onClick={() => setActiveTab('word')} />
-                        <TabButton label="Politeness Variants" active={activeTab === 'politeness'} onClick={() => setActiveTab('politeness')} />
-                        <TabButton label="Grammar Points" active={activeTab === 'grammar'} onClick={() => setActiveTab('grammar')} />
+                        <TabButton label="Word Analysis" active={subTab === 'word'} onClick={() => setSubTab('word')} />
+                        <TabButton label="Grammar & Meaning (AI)" active={subTab === 'grammar'} onClick={() => setSubTab('grammar')} />
                     </div>
 
                     <div className="p-8">
-                        {activeTab === 'word' && (
+                        {subTab === 'word' && (
                             <div className="space-y-8 animate-in fade-in">
                                 {/* Tokenizer Visual */}
-                                <div className="flex flex-wrap gap-2 justify-center mb-8">
-                                    {[
-                                        { t: '私', c: 'blue' }, { t: 'は', c: 'green' },
-                                        { t: '雨', c: 'purple' }, { t: 'の', c: 'green' },
-                                        { t: '日曜日', c: 'blue' }, { t: 'の', c: 'green' },
-                                        { t: '午後', c: 'blue' }, { t: 'に', c: 'green' },
-                                        { t: 'ドゥームメタル', c: 'blue' }, { t: 'を', c: 'green' },
-                                        { t: '聴く', c: 'blue' }, { t: 'の', c: 'green' }, { t: 'が', c: 'green' },
-                                        { t: '好き', c: 'rose' }, { t: 'です', c: 'orange' }
-                                    ].map((item, i) => (
-                                        <span key={i} className={`px-3 py-2 rounded-lg border text-lg font-medium cursor-pointer ${item.c === 'blue' ? 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100' :
-                                            item.c === 'green' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100' :
-                                                item.c === 'purple' ? 'bg-purple-50 text-purple-600 border-purple-100 hover:bg-purple-100' :
-                                                    item.c === 'rose' ? 'bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-100' :
-                                                        'bg-orange-50 text-orange-600 border-orange-100 hover:bg-orange-100'
-                                            }`}>
-                                            {item.t}
-                                        </span>
-                                    ))}
+                                <div className="flex flex-wrap gap-2 justify-center mb-8 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
+                                    {analysis.units.map((item, i) => {
+                                        const color = getColorForPos(item);
+                                        const isSelected = selectedUnit === item;
+
+                                        return (
+                                            <span
+                                                key={i}
+                                                onClick={() => setSelectedUnit(item)}
+                                                className={`px-3 py-2 rounded-xl border text-xl font-bold font-jp cursor-pointer transition-all duration-200
+                                                    ${color === 'blue' ? 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100' :
+                                                        color === 'green' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100' :
+                                                            color === 'purple' ? 'bg-purple-50 text-purple-600 border-purple-100 hover:bg-purple-100' :
+                                                                color === 'rose' ? 'bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-100' :
+                                                                    color === 'orange' ? 'bg-orange-50 text-orange-600 border-orange-100 hover:bg-orange-100' :
+                                                                        'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'}
+                                                      ${isSelected ? 'ring-2 ring-offset-2 ring-black transform scale-105 shadow-md' : ''}
+                                                      ${item.is_in_ckb ? 'border-b-4 border-b-blue-400' : ''}
+                                                `}>
+                                                {item.surface}
+                                            </span>
+                                        );
+                                    })}
                                 </div>
 
-                                <div className="text-center space-y-2 text-slate-500">
-                                    <p className="text-sm">Watashi wa ame no nichiyōbi no gogo ni dūmu metaru o kiku no ga suki desu.</p>
-                                    <p className="text-lg font-medium text-slate-800 italic">I like listening to doom metal on rainy Sunday afternoons.</p>
-                                </div>
+                                {/* Detail Box */}
+                                {selectedUnit ? (
+                                    <div className="mt-8 pt-8 border-t border-slate-100 animate-in slide-in-from-bottom-2">
+                                        <div className="flex justify-between items-start mb-6">
+                                            <h3 className="text-4xl font-black text-slate-900 flex items-center gap-3 font-jp">
+                                                {selectedUnit.surface}
+                                                <span className="px-3 py-1 bg-slate-100 text-slate-500 text-sm font-bold rounded-lg uppercase tracking-wider">{selectedUnit.pos}</span>
+                                                {selectedUnit.is_in_ckb && <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-bold rounded-lg uppercase tracking-widest">In Knowledge Base</span>}
+                                            </h3>
+                                        </div>
 
-                                {/* Detail Box (Hardcoded for Sunday example) */}
-                                <div className="mt-12 pt-8 border-t border-slate-100">
-                                    <h3 className="text-2xl font-black text-slate-900 mb-4 flex items-center gap-3">
-                                        日曜日 <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs font-bold rounded uppercase">noun</span>
-                                    </h3>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <DetailCard label="Reading" value={selectedUnit.reading || '-'} />
+                                            <DetailCard label="Base Form" value={selectedUnit.basic_form} />
+                                            <DetailCard label="Type" value={selectedUnit.type} />
+                                            <DetailCard label="POS Details" value={`${selectedUnit.pos}`} />
+                                        </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="p-4 bg-slate-50 rounded-xl">
-                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Reading</div>
-                                            <div className="text-xl font-bold text-slate-800">にちようび</div>
-                                            <div className="text-xs text-slate-400">nichiyōbi</div>
-                                        </div>
-                                        <div className="p-4 bg-slate-50 rounded-xl">
-                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Translation</div>
-                                            <div className="text-xl font-bold text-slate-800">Sunday</div>
-                                        </div>
-                                        <div className="p-4 bg-slate-50 rounded-xl">
-                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Part of Speech</div>
-                                            <div className="text-xl font-bold text-slate-800">名詞 (noun)</div>
-                                        </div>
-                                        <div className="p-4 bg-slate-50 rounded-xl">
-                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Base Form</div>
-                                            <div className="text-xl font-bold text-slate-800">日曜日</div>
+                                        <div className="mt-6 flex justify-between items-center bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                                            <div className="flex items-center gap-2 text-slate-400">
+                                                <Sparkles size={16} />
+                                                <span className="text-xs font-bold uppercase tracking-widest">Mine word with context</span>
+                                            </div>
+                                            <div className="flex gap-3">
+                                                <Button
+                                                    variant="outline"
+                                                    className="border-slate-200 text-slate-600 font-bold rounded-xl px-6 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-100 transition-all"
+                                                    onClick={() => openMineModal('word', {
+                                                        textJa: sentence,
+                                                        textEn: analysis?.translation,
+                                                        targetWord: selectedUnit.surface,
+                                                        targetMeaning: `Base: ${selectedUnit.basic_form}, POS: ${selectedUnit.pos}`,
+                                                        sourceType: 'analyze'
+                                                    })}
+                                                >
+                                                    Mine Word
+                                                </Button>
+                                                <Button
+                                                    className="bg-slate-900 text-white font-bold rounded-xl px-6 hover:bg-emerald-600 transition-all"
+                                                    onClick={() => openMineModal('sentence', {
+                                                        textJa: sentence,
+                                                        textEn: analysis?.translation,
+                                                        sourceType: 'analyze'
+                                                    })}
+                                                >
+                                                    Mine Full Sentence
+                                                </Button>
+                                            </div>
+
                                         </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className="text-center text-slate-400 py-10 font-bold">Select a word above to see details</div>
+                                )}
                             </div>
                         )}
 
-                        {activeTab === 'politeness' && (
-                            <div className="space-y-6 animate-in fade-in">
-                                <h3 className="font-bold text-slate-800 text-lg mb-4">Politeness Variants</h3>
+                        {subTab === 'grammar' && (
+                            <div className="space-y-10 animate-in fade-in">
+                                <section>
+                                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                        <Bot size={14} /> Translation
+                                    </h4>
+                                    <p className="text-2xl font-bold text-slate-800 leading-relaxed italic">"{analysis.translation}"</p>
+                                </section>
 
-                                <PolitenessCard
-                                    title="Casual"
-                                    japanese="私は雨の日曜日の午後にドゥームメタルを聴くのが好きだ。"
-                                    romaji="...suki da."
-                                    desc="Used among friends, family, and casual settings."
-                                    tag="くだけた"
-                                />
-                                <PolitenessCard
-                                    title="Polite (Current)"
-                                    japanese="私は雨の日曜日の午後にドゥームメタルを聴くのが好きです。"
-                                    romaji="...suki desu."
-                                    desc="Standard polite form for most situations."
-                                    tag="丁寧語"
-                                    active
-                                />
-                                <PolitenessCard
-                                    title="Honorific"
-                                    japanese="私は雨の日曜日の午後にドゥームメタルを拝聴するのが好きでございます。"
-                                    romaji="...haichō suru no ga suki de gozaimasu."
-                                    desc="Formal speech used in business or toward superiors."
-                                    tag="敬語"
-                                />
-                            </div>
-                        )}
+                                <section>
+                                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Grammar Discovery</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {analysis.grammar_points.map((gp, i) => (
+                                            <div key={i} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:border-blue-200 transition-all">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase">{gp.title}</span>
+                                                    <span className="text-lg font-bold text-slate-900 font-jp">{gp.selector}</span>
+                                                </div>
+                                                <p className="text-sm font-bold text-slate-700 mb-2">{gp.meaning}</p>
+                                                <p className="text-xs text-slate-500 leading-relaxed">{gp.explanation}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
 
-                        {activeTab === 'grammar' && (
-                            <div className="space-y-6 animate-in fade-in">
-                                <h3 className="font-bold text-slate-800 text-lg mb-4">Grammar Points</h3>
-
-                                <GrammarPointCard
-                                    title="のが好きです"
-                                    desc="This pattern is used to express liking an action or activity."
-                                    structure="Verb (dictionary form) + のが好きです"
-                                    example={{ jp: '映画を見るのが好きです', en: 'I like watching movies' }}
-                                />
-                                <GrammarPointCard
-                                    title="XのY (Possessive/Descriptive)"
-                                    desc="The particle の connects nouns to show possession or attribution."
-                                    structure="Noun X + の + Noun Y"
-                                    example={{ jp: '雨の日曜日', en: 'Rainy Sunday (Sunday of rain)' }}
-                                />
-                                <GrammarPointCard
-                                    title="を (Object Marker)"
-                                    desc="The particle を marks the direct object of a verb action."
-                                    structure="Direct Object + を + Verb"
-                                    example={{ jp: 'ドゥームメタルを聴く', en: 'listen to doom metal' }}
-                                />
+                                <section>
+                                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Cloze Suggestion</h4>
+                                    <div className="p-6 bg-blue-50/50 rounded-2xl border border-blue-100 flex justify-between items-center">
+                                        <span className="text-xl font-bold text-blue-900 font-jp">{analysis.cloze_suggestion.text}</span>
+                                        <Button className="bg-blue-600 text-white font-bold rounded-xl shadow-md">Create Cloze Card</Button>
+                                    </div>
+                                </section>
                             </div>
                         )}
                     </div>
                 </div>
             )}
 
-            {/* Save Button */}
-            {isAnalyzed && (
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex justify-center cursor-pointer hover:bg-slate-100 transition-colors">
-                    <span className="font-bold text-slate-600 flex items-center gap-2"><Save size={18} /> Save Sentence</span>
-                </div>
-            )}
-
-            <div className="pt-8 border-t border-slate-100">
-                <h3 className="font-bold text-slate-800 flex items-center justify-between">
-                    My Saved Sentences
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><span className="rotate-90">›</span></Button>
-                </h3>
-            </div>
+            <MiningModal
+                isOpen={mineModalOpen}
+                onClose={() => setMineModalOpen(false)}
+                initialData={mineInitialData}
+                mode={mineMode}
+            />
         </div>
     );
 }
+
+
 
 function TabButton({ label, active, onClick }: any) {
     return (
@@ -224,37 +270,12 @@ function TabButton({ label, active, onClick }: any) {
     )
 }
 
-function PolitenessCard({ title, japanese, romaji, desc, tag, active }: any) {
+function DetailCard({ label, value, sub }: any) {
     return (
-        <div className={`p-6 rounded-xl border ${active ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200'}`}>
-            <div className="flex justify-between items-start mb-2">
-                <h4 className={`font-bold ${active ? 'text-blue-700' : 'text-slate-800'}`}>{title}</h4>
-                <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold rounded">{tag}</span>
-            </div>
-            <p className="text-lg font-medium text-slate-800 mb-1">{japanese}</p>
-            <p className={`text-xs ${active ? 'text-blue-600' : 'text-slate-400'} font-medium mb-3`}>{romaji}</p>
-            <p className="text-xs text-slate-500 italic">{desc}</p>
-        </div>
-    )
-}
-
-function GrammarPointCard({ title, desc, structure, example }: any) {
-    return (
-        <div className="p-6 rounded-xl border border-l-4 border-slate-200 border-l-blue-500 bg-slate-50/50">
-            <h4 className="font-bold text-blue-700 mb-1">{title}</h4>
-            <p className="text-sm text-slate-600 mb-4">{desc}</p>
-
-            <div className="pl-4 border-l-2 border-slate-200 space-y-2">
-                <div>
-                    <span className="text-xs font-bold text-slate-800 block">Structure:</span>
-                    <span className="text-xs text-slate-600">{structure}</span>
-                </div>
-                <div>
-                    <span className="text-xs font-bold text-slate-800 block">Example:</span>
-                    <span className="text-sm text-blue-600 font-medium">{example.jp}</span>
-                    <div className="text-xs text-slate-500 italic">({example.en})</div>
-                </div>
-            </div>
+        <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{label}</div>
+            <div className="text-xl font-bold text-slate-800 font-jp truncate">{value === '*' ? 'None' : value}</div>
+            {sub && sub !== '*' && <div className="text-xs text-slate-400 mt-1 font-medium">{sub}</div>}
         </div>
     )
 }

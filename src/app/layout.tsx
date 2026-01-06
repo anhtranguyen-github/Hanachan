@@ -17,7 +17,8 @@ import {
   User,
   Bell,
   LogOut,
-  ChevronLeft
+  ChevronLeft,
+  PenTool
 } from 'lucide-react';
 import { AuthProvider, useUser } from "@/features/auth/AuthContext";
 import "./globals.css";
@@ -82,6 +83,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <SectionLabel label="Tools" />
                 <SidebarItem icon={Youtube} label="YouTube Immersion" href="/immersion" isActive={isActive('/immersion')} />
                 <SidebarItem icon={Sparkles} label="Text Analyzer" href="/analyze" isActive={isActive('/analyze')} />
+                <SidebarItem icon={PenTool} label="Sentence Mining" href="/sentence-mining" isActive={isActive('/sentence-mining')} />
                 <SidebarItem icon={MessageCircle} label="Hana AI Chat" href="/chat" isActive={isActive('/chat')} />
 
                 <SectionLabel label="Account" />

@@ -4,9 +4,18 @@ import { localTranscriptRepo } from './local-db';
 import * as db from './db';
 import { UserVideo } from './types';
 
+import { SupabaseClient } from '@supabase/supabase-js';
+
+// ... imports
+
+import { z } from 'zod';
+
 export class YoutubeService {
 
-    async importVideo(userId: string, url: string): Promise<UserVideo> {
+    async importVideo(userId: string, url: string, client?: SupabaseClient): Promise<UserVideo> {
+        z.string().uuid().parse(userId);
+        z.string().url().parse(url);
+
         const videoId = youtubeScraper.extractVideoId(url);
         if (!videoId) throw new Error("Invalid YouTube URL");
 
@@ -16,37 +25,8 @@ export class YoutubeService {
             transcript = await youtubeScraper.fetchTranscript(videoId, 'ja');
         } catch (e) {
             console.warn(`⚠️ Scraper failed: ${e}.`);
-            if (videoId === 'ZlvcqelxeSI') {
-                console.log("⚠️ Proceeding with empty transcript for patching (ZlvcqelxeSI override).");
-                transcript = [];
-            } else {
-                throw e;
-            }
-        }
-
-        // 🟢 SPECIAL HANDLER FOR USER REQUEST (ZlvcqelxeSI)
-        // Ensure 6:01 (361s) has the specific text
-        if (videoId === 'ZlvcqelxeSI') {
-            const targetTime = 361;
-            const specificText = "綺麗きれいですよね。こういう家いえがたくさんこの";
-
-            // Find if there is a segment overlapping 361s
-            const index = transcript.findIndex(s => s.offset <= targetTime && (s.offset + s.duration) >= targetTime);
-
-            if (index !== -1) {
-                // Update existing
-                console.log(`🔧 Patching transcript at ${targetTime}s with user-requested text.`);
-                transcript[index].text = specificText;
-            } else {
-                // Insert if not found (or just push it for safety around that time)
-                console.log(`➕ Injecting missing transcript segment at ${targetTime}s.`);
-                transcript.push({
-                    text: specificText,
-                    offset: targetTime,
-                    duration: 5.0
-                });
-                transcript.sort((a, b) => a.offset - b.offset);
-            }
+            // Proceed even if failed, maybe empty transcript is fine for music videos
+            transcript = [];
         }
 
         // 2. Save Transcript to LOCAL STORAGE (per user request)
@@ -62,7 +42,7 @@ export class YoutubeService {
         // If it fails, we catch and log, but assume local transcript is the key for now.
         let video: UserVideo | null = null;
         try {
-            const existing = await db.getVideoByYoutubeId(userId, videoId);
+            const existing = await db.getVideoByYoutubeId(userId, videoId, client);
             if (existing) {
                 video = existing;
             } else {
@@ -71,7 +51,7 @@ export class YoutubeService {
                     video_id: videoId,
                     title: `Video ${videoId}`,
                     status: 'learning'
-                });
+                }, client); // Pass client
             }
         } catch (e: any) {
             console.warn("⚠️ Warning: Could not save video metadata to Supabase. Using dummy object.");
@@ -89,7 +69,27 @@ export class YoutubeService {
     }
 
     async getTranscript(videoId: string) {
-        return localTranscriptRepo.getTranscript(videoId);
+        z.string().min(1).parse(videoId);
+        let segments = localTranscriptRepo.getTranscript(videoId);
+
+        if (!segments || segments.length === 0) {
+            console.log(`🔍 Transcript missing in local-db for ${videoId}. Attempting live fetch...`);
+            try {
+                const live = await youtubeScraper.fetchTranscript(videoId, 'ja');
+                if (live && live.length > 0) {
+                    segments = live.map(s => ({
+                        start: s.offset,
+                        duration: s.duration,
+                        text: s.text
+                    }));
+                    localTranscriptRepo.saveTranscript(videoId, segments);
+                }
+            } catch (e) {
+                console.error("Failed to recover transcript via live fetch", e);
+            }
+        }
+
+        return segments || [];
     }
 }
 

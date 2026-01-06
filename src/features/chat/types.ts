@@ -1,13 +1,5 @@
+import { z } from 'zod';
+import { ChatMessageSchema, ChatSessionSchema } from '@/lib/validation';
 
-export interface ChatMessage {
-    role: 'user' | 'assistant' | 'system';
-    content: string;
-    timestamp: string;
-}
-
-export interface ChatSession {
-    id: string;
-    userId: string;
-    messages: ChatMessage[];
-    updatedAt: string;
-}
+export type ChatMessage = z.infer<typeof ChatMessageSchema>;
+export type ChatSession = z.infer<typeof ChatSessionSchema>;

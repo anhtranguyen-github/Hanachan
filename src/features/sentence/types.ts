@@ -1,15 +1,7 @@
+import { z } from 'zod';
+import { SentenceEntitySchema } from '@/lib/validation';
 
-export interface SentenceEntity {
-    id: string;
-    text_ja: string;
-    text_en?: string;
-    source_type: 'youtube' | 'chat' | 'manual';
-    source_id?: string;
-    timestamp?: number;
-    user_id: string;
-    created_at: string;
-    updated_at?: string;
-}
+export type SentenceEntity = z.infer<typeof SentenceEntitySchema>;
 
 export interface KUToSentenceEntity {
     ku_id: string;

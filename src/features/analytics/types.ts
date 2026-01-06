@@ -1,3 +1,7 @@
+import { z } from 'zod';
+import { DashboardStatsSchema } from '@/lib/validation';
+
+export type DashboardStats = z.infer<typeof DashboardStatsSchema>;
 
 export interface DailyStats {
     user_id: string;
@@ -6,17 +10,4 @@ export interface DailyStats {
     reviews_completed: number;
     new_cards_learned: number;
     correct_reviews: number;
-}
-
-export interface DashboardStats {
-    daily: {
-        minutes: number;
-        reviews: number;
-        retention: number;
-    };
-    learning?: {
-        totalCards: number;
-        dueToday: number;
-        mastered: number;
-    };
 }

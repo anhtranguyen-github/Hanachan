@@ -14,10 +14,16 @@ async function getAuthUser() {
     return user;
 }
 
+import { z } from 'zod';
+
 /**
  * Server Action to send a message to the AI.
  */
 export async function sendMessageAction(sessionId: string, content: string) {
+    // 0. Validation
+    z.string().min(1).parse(sessionId);
+    z.string().min(1).parse(content);
+
     const user = await getAuthUser();
     if (process.env.E2E === 'true') {
         const lower = content.toLowerCase();

@@ -1,14 +1,8 @@
-export type KUType = 'radical' | 'kanji' | 'vocabulary' | 'grammar';
+import { z } from 'zod';
+import { KnowledgeUnitSchema, KUTypeSchema } from '@/lib/validation';
 
-export interface KnowledgeUnit {
-    id: string;
-    slug: string;
-    type: KUType;
-    character: string;
-    level: number;
-    meaning: string;
-    details: any;
-}
+export type KUType = z.infer<typeof KUTypeSchema>;
+export type KnowledgeUnit = z.infer<typeof KnowledgeUnitSchema>;
 
 export interface RadicalDetails {
     ku_id: string;

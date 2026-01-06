@@ -59,7 +59,8 @@ export function KUDetailView({ slug, type }: { slug: string, type: string }) {
     const [loading, setLoading] = useState(true);
     const [activeSection, setActiveSection] = useState<'meaning' | 'reading' | 'practice'>('meaning');
 
-    const fullSlug = `${type}/${slug}`;
+    const decodedSlug = decodeURIComponent(slug);
+    const fullSlug = `${type}/${decodedSlug}`;
 
     useEffect(() => {
         const fetchDetail = async () => {
@@ -90,7 +91,8 @@ export function KUDetailView({ slug, type }: { slug: string, type: string }) {
 
                 let meaning = ku.meaning || ku.search_key || '';
                 let onyx = [], kunx = [], primaryR = '';
-                let examples = [];
+                let examples: any[] = [];
+
                 let gramMeta = null;
                 let meaningStory = '';
                 let readingStory = '';
@@ -133,21 +135,44 @@ export function KUDetailView({ slug, type }: { slug: string, type: string }) {
                     .limit(5);
 
                 if (exampleData) {
-                    const fetchedExamples = exampleData
+                    exampleData
                         .filter((item: any) => item.sentences)
-                        .map((item: any) => ({
-                            jp: item.sentences.text_ja,
-                            en: item.sentences.text_en,
-                            id: item.sentences.id
-                        }));
+                        .forEach((item: any) => {
+                            examples.push({
+                                jp: item.sentences.text_ja,
+                                en: item.sentences.text_en,
+                                id: item.sentences.id,
+                                source: 'official'
+                            });
+                        });
+                }
 
-                    // Filter out duplicates if any (merging metadata examples with DB sentences)
-                    const existingTexts = new Set(examples.map(e => e.jp || e.japanese));
-                    fetchedExamples.forEach(fe => {
-                        if (!existingTexts.has(fe.jp)) {
-                            examples.push(fe);
-                        }
-                    });
+
+                // 4. Fetch Personal Corpus (Mined Sentences)
+                const { data: minedData } = await supabase
+                    .from('user_sentence_cards')
+                    .select(`
+                        sentence_id,
+                        sentences (id, text_ja, text_en, source_type)
+                    `)
+                    .eq('user_id', user.id)
+                    .eq('target_slug', fullSlug)
+                    .limit(10);
+
+                if (minedData) {
+                    minedData
+                        .filter((item: any) => item.sentences)
+                        .forEach((item: any) => {
+                            // Avoid duplicates
+                            if (!examples.some(e => e.jp === item.sentences.text_ja)) {
+                                examples.push({
+                                    jp: item.sentences.text_ja,
+                                    en: item.sentences.text_en,
+                                    id: item.sentences.id,
+                                    source: item.sentences.source_type || 'mined'
+                                });
+                            }
+                        });
                 }
 
                 setData({
@@ -166,6 +191,7 @@ export function KUDetailView({ slug, type }: { slug: string, type: string }) {
             }
             setLoading(false);
         };
+
 
         fetchDetail();
     }, [fullSlug, user, supabase]);

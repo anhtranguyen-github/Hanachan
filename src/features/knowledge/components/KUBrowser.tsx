@@ -120,8 +120,8 @@ export function KUBrowser({ title, type }: { title: string, type: string }) {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <PageHeader
                     title={title}
-                    subtitle={`Browsing Levels ${currentJlpt.range[0]}-${currentJlpt.range[1]}`}
-                    icon={BookOpen}
+                    subtitle={`Browsing Official Curriculum (Levels ${currentJlpt.range[0]}-${currentJlpt.range[1]})`}
+                    icon={type === 'radical' ? Zap : type === 'kanji' ? Layers : BookOpen}
                     iconColor="text-rose-500"
                 />
 
@@ -186,13 +186,13 @@ export function KUBrowser({ title, type }: { title: string, type: string }) {
                 </div>
 
                 {loading ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-4">
                         {[...Array(20)].map((_, i) => (
-                            <div key={i} className="aspect-[3/4] bg-white rounded-2xl border border-slate-100 animate-pulse"></div>
+                            <div key={i} className="aspect-[3/4.2] bg-white rounded-3xl border border-slate-100 animate-pulse"></div>
                         ))}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-4">
                         {kus.map((item) => (
                             <KUCard key={item.slug} item={item} />
                         ))}
@@ -208,76 +208,79 @@ function KUCard({ item }: { item: KU }) {
     const isReview = item.state === 'review';
     const isRelearning = item.state === 'relearning';
     const isLearning = item.state === 'learning';
-    const isNew = item.state === 'new';
 
-    // SRS Stage based styles - PRIMARY indicator
+    // Professional SRS Color System - High Contrast
     const srsStyles = {
-        new: "bg-white border-slate-100 border-dashed opacity-60 text-slate-400",
-        learning: "bg-blue-50 border-blue-200 text-blue-600 shadow-sm shadow-blue-50",
-        review: "bg-purple-50 border-purple-200 text-purple-600 shadow-sm shadow-purple-50",
-        relearning: "bg-amber-50 border-amber-300 text-amber-700 shadow-sm shadow-amber-50",
-        burned: "bg-slate-800 border-slate-900 text-white shadow-lg shadow-slate-200"
+        new: "bg-white border-slate-200 text-slate-800",
+        learning: "bg-blue-50 border-blue-200 text-blue-900 shadow-sm shadow-blue-50/50",
+        review: "bg-purple-50 border-purple-200 text-purple-900 shadow-sm shadow-purple-50/50",
+        relearning: "bg-amber-50 border-amber-200 text-amber-900 shadow-sm shadow-amber-50/50",
+        burned: "bg-slate-900 border-slate-950 text-white shadow-xl shadow-slate-200"
     }[item.state || 'new'];
 
-    // KU Type based accent bar - UNIFIED to brand Rose color
-    const typeAccent = "bg-rose-400";
-
+    // Distinctive Icon mapping
     const Icon = isBurned ? Flame : isReview ? Layers : isLearning ? Zap : isRelearning ? RefreshCcw : null;
     const router = useRouter();
 
     const handleClick = () => {
-        // Navigate to the detail page based on type and slug
-        // slug is already in format "type/identity", e.g. "kanji/女"
-        router.push(`/${item.slug}`);
+        // Ensure slug is properly decoded for navigation
+        const [type, identity] = item.slug.split('/');
+        router.push(`/${type}/${identity}`);
     };
 
     return (
         <div
             onClick={handleClick}
             className={cn(
-                "group relative aspect-[3/4.2] rounded-[20px] border-2 flex flex-col items-center justify-center p-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer overflow-hidden",
+                "group relative aspect-[3/4.2] rounded-[24px] border-[1.5px] flex flex-col items-center justify-center p-4 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] cursor-pointer overflow-hidden",
                 srsStyles
             )}
         >
-            {/* Type Accent Bar at bottom - Unified */}
-            <div className={cn("absolute bottom-0 left-0 w-full h-1", typeAccent)} />
+            {/* Visual Type Accent - Bottom Bar */}
+            <div className={cn(
+                "absolute bottom-0 left-0 w-full h-1.5 opacity-80",
+                item.type === 'kanji' ? "bg-rose-500" : item.type === 'vocabulary' ? "bg-blue-500" : "bg-emerald-500"
+            )} />
 
-            {/* Status Icon */}
+            {/* Status Badge */}
             {Icon && (
-                <div className="absolute top-2 right-2 opacity-80">
-                    <Icon size={12} className={isBurned ? "text-orange-400" : ""} />
+                <div className={cn(
+                    "absolute top-3 right-3 p-1 rounded-lg",
+                    isBurned ? "bg-white/10" : "bg-black/5"
+                )}>
+                    <Icon size={10} className={isBurned ? "text-orange-400" : "text-current"} />
                 </div>
             )}
 
-            {/* Reading (Above character) */}
+            {/* Reading Hint (Vibrant) */}
             {item.reading && (
                 <div className={cn(
-                    "text-[10px] font-bold mb-0.5 opacity-60 font-japanese",
-                    isBurned ? "text-slate-400" : "text-slate-500"
+                    "text-[11px] font-black mb-1 font-japanese tracking-wider",
+                    isBurned ? "text-rose-300" : "text-rose-500"
                 )}>
                     {item.reading}
                 </div>
             )}
 
+            {/* Main Character - High Weight Japanese Font */}
             <div className={cn(
-                "text-2xl font-black mb-1 font-japanese transition-transform group-hover:scale-110 duration-500 line-clamp-2 px-2 text-center",
-                item.type === 'grammar' ? "text-lg" : "text-2xl",
-                isBurned ? "text-white" : ""
+                "font-black font-japanese transition-all duration-700 group-hover:scale-110 mb-2 truncate max-w-full px-1",
+                item.type === 'grammar' ? "text-lg md:text-xl" : "text-3xl md:text-4xl",
+                isBurned ? "text-white" : "text-slate-900"
             )}>
                 {item.character || item.search_key || item.slug.split('/').pop() || '?'}
             </div>
 
+            {/* Meaning - Professional Weight */}
             <div className={cn(
-                "text-xs font-bold text-center line-clamp-2 px-1 leading-tight transition-colors",
-                isBurned ? "text-slate-400 group-hover:text-slate-300" : "text-slate-500 group-hover:text-slate-900"
+                "text-[10px] md:text-xs font-bold text-center line-clamp-2 leading-tight px-1 uppercase tracking-tighter transition-opacity",
+                isBurned ? "text-slate-400" : "text-slate-500 group-hover:text-slate-900"
             )}>
                 {item.meaning}
             </div>
 
-            {/* Level indicator bottom right */}
-            <div className="absolute bottom-2 right-2 text-[8px] font-black opacity-30">
-                {item.level}
-            </div>
+            {/* Decorative Grid Pattern (Subtle) */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none group-hover:opacity-[0.05] transition-opacity bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:10px_10px]"></div>
         </div>
     );
 }

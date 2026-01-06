@@ -1,3 +1,4 @@
+import { YoutubeTranscript } from 'youtube-transcript';
 
 export interface TranscriptSegment {
     text: string;
@@ -8,14 +9,39 @@ export interface TranscriptSegment {
 export class YoutubeScraper {
 
     async fetchTranscript(videoId: string, lang: string = 'ja'): Promise<TranscriptSegment[]> {
-        console.log(`📡 [MOCK] Fetching transcript for ${videoId} (Lang: ${lang})...`);
+        console.log(`📡 Fetching transcript for ${videoId}...`);
 
-        // Return a mock transcript
-        return [
-            { text: "This is a mock transcript.", duration: 2000, offset: 0 },
-            { text: "Actual YouTube fetching is disabled.", duration: 3000, offset: 2000 },
-            { text: "To enable, integrate a backend proxy.", duration: 3000, offset: 5000 }
-        ];
+        const langAttempts = ['ja', 'ja-JP', 'ja-jp', 'jp'];
+
+        for (const l of langAttempts) {
+            try {
+                const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang: l });
+                if (transcript && transcript.length > 0) {
+                    console.log(`✅ Success with lang: ${l}`);
+                    return this.normalize(transcript);
+                }
+            } catch (e) {
+                // Continue to next attempt
+            }
+        }
+
+        try {
+            // Final fallback: Let the library decide (usually gets primary or auto-generated)
+            console.log(`📡 Final fallback: Auto-fetching best available transcript...`);
+            const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+            return this.normalize(transcript);
+        } catch (finalError) {
+            console.error("❌ All transcript fetch attempts failed for:", videoId);
+            return [];
+        }
+    }
+
+    private normalize(transcript: any[]) {
+        return transcript.map(item => ({
+            text: item.text,
+            duration: item.duration,
+            offset: item.offset
+        }));
     }
 
     extractVideoId(url: string): string | null {
