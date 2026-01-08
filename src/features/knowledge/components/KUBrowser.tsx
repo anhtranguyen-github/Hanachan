@@ -1,13 +1,12 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/services/supabase/client';
-import { ChevronRight, Filter, Search, BookOpen, Layers, Zap, Flame, Lock, RefreshCcw } from 'lucide-react';
-import { PageHeader } from '@/ui/components/PageHeader';
+import { RefreshCcw, Lock } from 'lucide-react';
 import { useUser } from '@/features/auth/AuthContext';
+import { getLocalLevelData } from '../actions';
 
 interface KU {
     slug: string;
@@ -17,9 +16,8 @@ interface KU {
     level: number;
     type: string;
     state?: 'new' | 'learning' | 'review' | 'relearning' | 'burned';
-    // Extended metadata for different types
+    srs_stage?: number;
     reading?: string;
-    secondary_text?: string;
 }
 
 const JLPT_MAPPING = [
@@ -33,197 +31,181 @@ const JLPT_MAPPING = [
 export function KUBrowser({ title, type }: { title: string, type: string }) {
     const supabase = createClient();
     const { user } = useUser();
+
+    const isGrammar = type === 'grammar';
     const [selectedJlpt, setSelectedJlpt] = useState('N5');
-    const [selectedLevel, setSelectedLevel] = useState(1);
+    const [selectedLevel, setSelectedLevel] = useState(isGrammar ? 5 : 1);
+
     const [kus, setKus] = useState<KU[]>([]);
     const [loading, setLoading] = useState(true);
-
-    const currentJlpt = JLPT_MAPPING.find(j => j.label === selectedJlpt)!;
-    const levelsInJlpt = Array.from(
-        { length: currentJlpt.range[1] - currentJlpt.range[0] + 1 },
-        (_, i) => currentJlpt.range[0] + i
-    );
 
     useEffect(() => {
         const fetchKUs = async () => {
             if (!user) return;
             setLoading(true);
 
-            // 1. Fetch the basic KUs with their type-specific metadata
-            // We use simple joins for the metadata targets
-            const { data: kuData, error: kuError } = await supabase
-                .from('knowledge_units')
-                .select(`
-                    slug, character, search_key, meaning, level, type,
-                    ku_kanji (meaning_data, reading_data),
-                    ku_vocabulary (reading_primary, meaning_data),
-                    ku_radicals (name)
-                `)
-                .eq('type', type)
-                .eq('level', selectedLevel);
+            try {
+                const localData = await getLocalLevelData(selectedLevel, type);
 
-            if (kuData) {
-                // 2. Fetch learning states for the current user and THESE specific slugs
-                const slugs = kuData.map(k => k.slug);
-                const { data: stateData } = await supabase
-                    .from('user_learning_states')
-                    .select('slug:ku_id, state')
-                    .eq('user_id', user.id)
-                    .in('ku_id', slugs);
+                if (localData && localData.length > 0) {
+                    const slugs = localData.map((k: any) => k.slug);
+                    const { data: stateData } = await supabase
+                        .from('user_learning_states')
+                        .select('slug:ku_id, state, srs_stage')
+                        .eq('user_id', user.id)
+                        .in('ku_id', slugs);
 
-                // 3. Create a map for quick state lookup
-                const stateMap = (stateData || []).reduce((acc: any, s: any) => {
-                    acc[s.slug] = s.state;
-                    return acc;
-                }, {});
+                    const stateMap = (stateData || []).reduce((acc: any, s: any) => {
+                        acc[s.slug] = { state: s.state, srs_stage: s.srs_stage };
+                        return acc;
+                    }, {});
 
-                // 4. Format the final list
-                const formatted = kuData.map((item: any) => {
-                    let meaning = item.meaning || item.search_key || '';
-                    let reading = '';
-
-                    if (item.type === 'kanji' && item.ku_kanji?.[0]) {
-                        const k = item.ku_kanji[0];
-                        meaning = meaning || k.meaning_data?.meanings?.[0] || '';
-                        reading = k.reading_data?.onyomi?.[0] || k.reading_data?.kunyomi?.[0] || '';
-                    } else if (item.type === 'vocabulary' && item.ku_vocabulary?.[0]) {
-                        const v = item.ku_vocabulary[0];
-                        meaning = meaning || v.meaning_data?.meanings?.[0] || '';
-                        reading = v.reading_primary || '';
-                    } else if (item.type === 'radical' && item.ku_radicals?.[0]) {
-                        meaning = meaning || item.ku_radicals[0].name || '';
-                    }
-
-                    return {
-                        ...item,
-                        meaning: meaning,
-                        reading: reading,
-                        state: stateMap[item.slug] || 'new'
-                    };
-                });
-                setKus(formatted);
+                    const formatted = localData.map((item: any) => {
+                        const status = stateMap[item.slug];
+                        return {
+                            ...item,
+                            state: status?.state || 'new',
+                            srs_stage: status?.srs_stage || 0
+                        };
+                    });
+                    setKus(formatted);
+                } else {
+                    setKus([]);
+                }
+            } catch (error) {
+                console.error("Error fetching local data:", error);
+                setKus([]);
             }
             setLoading(false);
         };
         fetchKUs();
-    }, [type, selectedLevel, user]);
+    }, [type, selectedLevel, user, supabase]);
 
     const handleJlptChange = (jlpt: string) => {
         setSelectedJlpt(jlpt);
-        const mapping = JLPT_MAPPING.find(j => j.label === jlpt)!;
-        setSelectedLevel(mapping.range[0]);
+        if (!isGrammar) {
+            const mapping = JLPT_MAPPING.find(j => j.label === jlpt)!;
+            setSelectedLevel(mapping.range[0]);
+        } else {
+            const val = parseInt(jlpt.replace('N', ''));
+            setSelectedLevel(val);
+        }
     };
 
+    const getSRSColor = (item: KU) => {
+        const stage = item.srs_stage || 0;
+        const state = item.state || 'new';
+        if (state === 'new') return 'bg-blue-400';
+        if (state === 'burned') return 'bg-slate-900';
+        if (stage >= 1 && stage <= 4) return 'bg-pink-500';
+        if (stage >= 5 && stage <= 6) return 'bg-purple-500';
+        if (stage === 7) return 'bg-indigo-600';
+        if (stage >= 8) return 'bg-sky-500';
+        return 'bg-slate-200';
+    };
+
+    const currentMapping = JLPT_MAPPING.find(j => j.label === selectedJlpt)!;
+    const levelsInJlpt = Array.from(
+        { length: currentMapping.range[1] - currentMapping.range[0] + 1 },
+        (_, i) => currentMapping.range[0] + i
+    );
+
     return (
-        <div className="max-w-7xl mx-auto space-y-8 pb-20 animate-in fade-in duration-500">
-            {/* Header with Search & Info */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <PageHeader
-                    title={title}
-                    subtitle={`Browsing Official Curriculum (Levels ${currentJlpt.range[0]}-${currentJlpt.range[1]})`}
-                    icon={type === 'radical' ? Zap : type === 'kanji' ? Layers : BookOpen}
-                    iconColor="text-rose-500"
-                />
-
-                {/* Legend - Professional Pill Layout */}
-                <div className="flex flex-wrap gap-x-5 gap-y-2.5 items-center bg-white/50 backdrop-blur-sm p-4 px-6 rounded-full border border-slate-100 shadow-sm">
-                    <LegendItem icon={Lock} label="New" color="bg-slate-50 text-slate-300 border-slate-100 border-dashed" />
-                    <LegendItem icon={Zap} label="Learning" color="bg-blue-50 text-blue-500 border-blue-100" />
-                    <LegendItem icon={Layers} label="Review" color="bg-purple-50 text-purple-600 border-purple-100" />
-                    <LegendItem icon={RefreshCcw} label="Relearn" color="bg-amber-50 text-amber-600 border-amber-100" />
-                    <LegendItem icon={Flame} label="Burned" color="bg-slate-800 text-white border-slate-900 icon-white" />
+        <div className="max-w-6xl mx-auto py-12 px-6">
+            <header className="mb-12 flex items-baseline justify-between">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight capitalize">{title}</h1>
+                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                        Official Curriculum <span className="w-1 h-1 rounded-full bg-slate-200" /> {selectedJlpt}
+                    </p>
                 </div>
-            </div>
+                <div className="flex gap-1">
+                    {['bg-blue-400', 'bg-pink-500', 'bg-purple-500', 'bg-indigo-600', 'bg-sky-500', 'bg-slate-900'].map(c => (
+                        <div key={c} className={cn("w-1.5 h-1.5 rounded-full", c)} />
+                    ))}
+                </div>
+            </header>
 
-            {/* JLPT & Level Navigation */}
-            <div className="space-y-4">
-                {/* JLPT Tabs */}
-                <div className="flex gap-2 p-1.5 bg-slate-100 rounded-2xl w-fit">
-                    {JLPT_MAPPING.map(jlpt => (
+            <nav className="mb-12">
+                <div className="flex gap-8 border-b border-slate-100 mb-6">
+                    {['N5', 'N4', 'N3', 'N2', 'N1'].map(jlpt => (
                         <button
-                            key={jlpt.label}
-                            onClick={() => handleJlptChange(jlpt.label)}
+                            key={jlpt}
+                            onClick={() => handleJlptChange(jlpt)}
                             className={cn(
-                                "px-6 py-2 rounded-xl font-bold text-sm transition-all",
-                                selectedJlpt === jlpt.label
-                                    ? "bg-white text-rose-500 shadow-sm"
-                                    : "text-slate-500 hover:text-slate-700"
+                                "pb-3 text-sm font-bold transition-colors relative",
+                                selectedJlpt === jlpt ? "text-slate-900" : "text-slate-400 hover:text-slate-600"
                             )}
                         >
-                            {jlpt.label}
+                            {jlpt}
+                            {selectedJlpt === jlpt && (
+                                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-slate-900" />
+                            )}
                         </button>
                     ))}
                 </div>
 
-                {/* Granular Level Sub-Tabs */}
-                <div className="flex flex-wrap gap-2">
-                    <span className="text-xs font-bold text-slate-400 self-center mr-2 uppercase tracking-widest">Levels ❯</span>
-                    {levelsInJlpt.map(lvl => (
-                        <button
-                            key={lvl}
-                            onClick={() => setSelectedLevel(lvl)}
-                            className={cn(
-                                "w-10 h-10 rounded-xl font-bold text-sm transition-all border flex items-center justify-center",
-                                selectedLevel === lvl
-                                    ? "bg-rose-500 text-white border-rose-500 shadow-lg shadow-rose-200"
-                                    : "bg-white text-slate-500 border-slate-200 hover:border-rose-200 hover:text-rose-500"
-                            )}
-                        >
-                            {lvl}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Content Grid */}
-            <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                    <div className="h-0.5 flex-1 bg-slate-100"></div>
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
-                        Level {selectedLevel} <span className="ml-2 lowercase font-bold">({kus.length} items)</span>
-                    </h3>
-                    <div className="h-0.5 flex-1 bg-slate-100"></div>
-                </div>
-
-                {loading ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-4">
-                        {[...Array(20)].map((_, i) => (
-                            <div key={i} className="aspect-[3/4.2] bg-white rounded-3xl border border-slate-100 animate-pulse"></div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-4">
-                        {kus.map((item) => (
-                            <KUCard key={item.slug} item={item} />
+                {!isGrammar && (
+                    <div className="flex flex-wrap gap-2">
+                        {levelsInJlpt.map(lvl => (
+                            <button
+                                key={lvl}
+                                onClick={() => setSelectedLevel(lvl)}
+                                className={cn(
+                                    "w-10 h-10 rounded-lg text-xs font-bold transition-all border",
+                                    selectedLevel === lvl
+                                        ? "bg-slate-900 text-white border-slate-900"
+                                        : "bg-white text-slate-500 border-slate-200 hover:border-slate-800 hover:text-slate-800"
+                                )}
+                            >
+                                {lvl}
+                            </button>
                         ))}
                     </div>
                 )}
-            </div>
+            </nav>
+
+            <main>
+                <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-widest">
+                        {isGrammar ? `${selectedJlpt} Library` : `Level ${selectedLevel}`}
+                    </h2>
+                    <span className="text-[10px] font-bold text-slate-400">
+                        {kus.filter(k => k.state !== 'new').length} / {kus.length} Mastered
+                    </span>
+                </div>
+
+                {loading ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                        {[...Array(12)].map((_, i) => (
+                            <div key={i} className="aspect-square bg-slate-50 rounded-lg border border-slate-100 animate-pulse" />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                        {kus.map((item) => (
+                            <KUCard key={item.slug} item={item} srsColor={getSRSColor(item)} />
+                        ))}
+                    </div>
+                )}
+
+                {!loading && kus.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-24 text-slate-200">
+                        <RefreshCcw size={32} className="mb-2 opacity-50" />
+                        <p className="text-[10px] font-bold tracking-widest uppercase">No data found</p>
+                    </div>
+                )}
+            </main>
         </div>
     );
 }
 
-function KUCard({ item }: { item: KU }) {
-    const isBurned = item.state === 'burned';
-    const isReview = item.state === 'review';
-    const isRelearning = item.state === 'relearning';
-    const isLearning = item.state === 'learning';
-
-    // Professional SRS Color System - High Contrast
-    const srsStyles = {
-        new: "bg-white border-slate-200 text-slate-800",
-        learning: "bg-blue-50 border-blue-200 text-blue-900 shadow-sm shadow-blue-50/50",
-        review: "bg-purple-50 border-purple-200 text-purple-900 shadow-sm shadow-purple-50/50",
-        relearning: "bg-amber-50 border-amber-200 text-amber-900 shadow-sm shadow-amber-50/50",
-        burned: "bg-slate-900 border-slate-950 text-white shadow-xl shadow-slate-200"
-    }[item.state || 'new'];
-
-    // Distinctive Icon mapping
-    const Icon = isBurned ? Flame : isReview ? Layers : isLearning ? Zap : isRelearning ? RefreshCcw : null;
+function KUCard({ item, srsColor }: { item: KU, srsColor: string }) {
     const router = useRouter();
+    const isLocked = !item.state || item.state === 'new';
+    const isGrammar = item.type === 'grammar';
 
     const handleClick = () => {
-        // Ensure slug is properly decoded for navigation
         const [type, identity] = item.slug.split('/');
         router.push(`/${type}/${identity}`);
     };
@@ -232,66 +214,31 @@ function KUCard({ item }: { item: KU }) {
         <div
             onClick={handleClick}
             className={cn(
-                "group relative aspect-[3/4.2] rounded-[24px] border-[1.5px] flex flex-col items-center justify-center p-4 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] cursor-pointer overflow-hidden",
-                srsStyles
+                "group cursor-pointer relative flex flex-col p-4 rounded-xl transition-all border border-slate-100",
+                "bg-white hover:border-slate-300 hover:bg-slate-50/50",
+                isLocked && "opacity-80 grayscale-[0.8]"
             )}
         >
-            {/* Visual Type Accent - Bottom Bar */}
-            <div className={cn(
-                "absolute bottom-0 left-0 w-full h-1.5 opacity-80",
-                item.type === 'kanji' ? "bg-rose-500" : item.type === 'vocabulary' ? "bg-blue-500" : "bg-emerald-500"
-            )} />
+            <div className="flex flex-col h-full space-y-2">
+                <div className={cn("w-1 h-1 rounded-full", srsColor)} />
 
-            {/* Status Badge */}
-            {Icon && (
-                <div className={cn(
-                    "absolute top-3 right-3 p-1 rounded-lg",
-                    isBurned ? "bg-white/10" : "bg-black/5"
-                )}>
-                    <Icon size={10} className={isBurned ? "text-orange-400" : "text-current"} />
+                <div className="space-y-0.5">
+                    <div className={cn(
+                        "font-japanese font-bold text-slate-900",
+                        isGrammar ? "text-xs" : "text-xl"
+                    )}>
+                        {item.character || '?'}
+                    </div>
+                    {item.reading && !isGrammar && (
+                        <div className="text-[9px] font-bold text-slate-300 font-japanese uppercase">
+                            {item.reading}
+                        </div>
+                    )}
+                    <div className="text-[10px] font-medium text-slate-400 line-clamp-2 leading-snug group-hover:text-slate-600 transition-colors">
+                        {item.meaning}
+                    </div>
                 </div>
-            )}
-
-            {/* Reading Hint (Vibrant) */}
-            {item.reading && (
-                <div className={cn(
-                    "text-[11px] font-black mb-1 font-japanese tracking-wider",
-                    isBurned ? "text-rose-300" : "text-rose-500"
-                )}>
-                    {item.reading}
-                </div>
-            )}
-
-            {/* Main Character - High Weight Japanese Font */}
-            <div className={cn(
-                "font-black font-japanese transition-all duration-700 group-hover:scale-110 mb-2 truncate max-w-full px-1",
-                item.type === 'grammar' ? "text-lg md:text-xl" : "text-3xl md:text-4xl",
-                isBurned ? "text-white" : "text-slate-900"
-            )}>
-                {item.character || item.search_key || item.slug.split('/').pop() || '?'}
             </div>
-
-            {/* Meaning - Professional Weight */}
-            <div className={cn(
-                "text-[10px] md:text-xs font-bold text-center line-clamp-2 leading-tight px-1 uppercase tracking-tighter transition-opacity",
-                isBurned ? "text-slate-400" : "text-slate-500 group-hover:text-slate-900"
-            )}>
-                {item.meaning}
-            </div>
-
-            {/* Decorative Grid Pattern (Subtle) */}
-            <div className="absolute inset-0 opacity-[0.03] pointer-events-none group-hover:opacity-[0.05] transition-opacity bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:10px_10px]"></div>
-        </div>
-    );
-}
-
-function LegendItem({ icon: Icon, label, color }: { icon: any, label: string, color: string }) {
-    return (
-        <div className="flex items-center gap-2 group cursor-help">
-            <div className={cn("w-7 h-7 rounded-full flex items-center justify-center border-2 transition-transform group-hover:scale-110", color)}>
-                <Icon size={12} className={color.includes('icon-white') ? "text-white" : ""} />
-            </div>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
         </div>
     );
 }

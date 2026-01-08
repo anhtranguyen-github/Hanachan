@@ -2,136 +2,217 @@
 
 import { createClient } from "@/services/supabase/server";
 import { revalidatePath } from "next/cache";
+import fs from 'fs/promises';
+import path from 'path';
+
+// --- V7 Data Helpers ---
+
+async function readV7Table(tableName: string) {
+    const filePath = path.join(process.cwd(), 'data_v7', `${tableName}.json`);
+    const content = await fs.readFile(filePath, 'utf-8');
+    return JSON.parse(content);
+}
+
+// --- Server Actions ---
+
+
+export async function getLocalRelations(type: string, identity: string) {
+    const slug = `${type}/${decodeURIComponent(identity)}`;
+
+    try {
+        if (type === 'kanji') {
+            const data = await readV7Table('ku_kanji');
+            const item = data.find((i: any) => i.ku_id === slug);
+            if (item) {
+                return {
+                    related_vocab: item.metadata?.raw_v6?.amalgamations?.map((a: any) => ({
+                        id: a.vocab,
+                        type: 'vocabulary',
+                        display: a.vocab,
+                        subText: a.meaning
+                    })) || [],
+                    components: item.metadata?.raw_v6?.components?.map((c: any) => ({
+                        id: c,
+                        type: 'radical',
+                        display: c,
+                        subText: 'Component'
+                    })) || []
+                };
+            }
+        } else if (type === 'vocabulary') {
+            const data = await readV7Table('ku_vocabulary');
+            const item = data.find((i: any) => i.ku_id === slug);
+
+            // Get sentences from relations
+            const allToSentence = await readV7Table('ku_to_sentence');
+            const allSentences = await readV7Table('sentences');
+            const sIds = allToSentence.filter((r: any) => r.ku_id === slug).map((r: any) => r.sentence_id);
+            const itemSentences = allSentences.filter((s: any) => sIds.includes(s.id));
+
+            if (item) {
+                return {
+                    components: item.metadata?.raw_v6?.components?.map((c: any) => ({
+                        id: c,
+                        type: 'kanji',
+                        display: c,
+                        subText: 'Kanji'
+                    })) || [],
+                    examples: itemSentences.map((s: any) => ({
+                        jp: s.text_ja,
+                        en: s.text_en,
+                        source: 'local'
+                    })) || []
+                };
+            }
+        } else if (type === 'grammar') {
+            const data = await readV7Table('ku_grammar');
+            const item = data.find((i: any) => i.ku_id === slug);
+
+            // Get sentences
+            const allToSentence = await readV7Table('ku_to_sentence');
+            const allSentences = await readV7Table('sentences');
+            const sIds = allToSentence.filter((r: any) => r.ku_id === slug).map((r: any) => r.sentence_id);
+            const itemSentences = allSentences.filter((s: any) => sIds.includes(s.id));
+
+            if (item) {
+                const raw = item.metadata?.raw_v6 || {};
+                const relatedGrammar = raw.related_grammar?.map((slug: string) => ({
+                    id: slug,
+                    type: 'grammar',
+                    display: slug, // We only have slug here, usually requires a lookup
+                    subText: 'Related Grammar'
+                })) || [];
+
+                const relatedKanji = raw.related_kanji?.map((char: string) => ({
+                    id: char,
+                    type: 'kanji',
+                    display: char,
+                    subText: 'Related Kanji'
+                })) || [];
+
+                return {
+                    related_grammar: relatedGrammar,
+                    related_kanji: relatedKanji,
+                    examples: itemSentences.map((s: any) => ({
+                        jp: s.text_ja,
+                        en: s.text_en,
+                        source: 'local'
+                    })) || []
+                };
+            }
+        } else if (type === 'radical') {
+            const data = await readV7Table('ku_radicals');
+            const item = data.find((i: any) => i.ku_id === slug);
+            if (item) {
+                return {
+                    found_in_kanji: item.metadata?.raw_v6?.found_in_kanji?.map((k: any) => {
+                        const decoded = decodeURIComponent(k);
+                        return {
+                            id: decoded,
+                            type: 'kanji',
+                            display: decoded,
+                            subText: 'Kanji'
+                        };
+                    }) || []
+                };
+            }
+        }
+    } catch (e) {
+        console.error("Error in getLocalRelations (V7):", e);
+    }
+    return null;
+}
+
+
+export async function getLocalLevelData(level: number, type: string) {
+    try {
+        const kus = await readV7Table('knowledge_units');
+        const list = kus.filter((k: any) => k.level === level && k.type === (type === 'vocab' ? 'vocabulary' : type));
+
+        // For reading data in explorer, we might want to join with detail tables
+        // but for now, we'll try to get basic items.
+        // To show reading in the browser, cards need 'reading'.
+
+        let detailTable = '';
+        if (type === 'kanji') detailTable = 'ku_kanji';
+        else if (type === 'vocabulary' || type === 'vocab') detailTable = 'ku_vocabulary';
+
+        let readingsMap = new Map();
+        if (detailTable) {
+            const details = await readV7Table(detailTable);
+            details.forEach((d: any) => {
+                const r = d.reading_primary || d.reading_data?.onyomi?.[0] || d.reading_data?.[0];
+                if (r) readingsMap.set(d.ku_id, r);
+            });
+        }
+
+        return list.map((item: any) => ({
+            ...item,
+            reading: readingsMap.get(item.slug) || ''
+        }));
+    } catch (e) {
+        console.error("Error in getLocalLevelData (V7):", e);
+        return [];
+    }
+}
+
+export async function getLocalKU(type: string, id: string) {
+    const slug = `${type}/${decodeURIComponent(id)}`;
+
+    try {
+        const kus = await readV7Table('knowledge_units');
+        const base = kus.find((k: any) => k.slug === slug);
+        if (!base) return null;
+
+        let detailName = '';
+        if (type === 'kanji') detailName = 'ku_kanji';
+        else if (type === 'vocabulary') detailName = 'ku_vocabulary';
+        else if (type === 'radical') detailName = 'ku_radicals';
+        else if (type === 'grammar') detailName = 'ku_grammar';
+
+        const details = await readV7Table(detailName);
+        const detail = details.find((d: any) => d.ku_id === slug);
+
+
+        return {
+            ...base,
+            ...detail,
+            // Consistency with frontend expectations
+            meanings: detail?.meaning_data?.meanings || [],
+            readings: detail?.reading_data || (detail?.reading_primary ? [detail.reading_primary] : []),
+            metadata: detail?.metadata?.raw_v6 || detail?.metadata || {}
+        };
+
+    } catch (e) {
+        console.error("Error in getLocalKU (V7):", e);
+        return null;
+    }
+}
 
 export async function seedDatabaseAction() {
     const supabase = createClient();
 
-    const mockKUs = [
-        {
-            slug: 'kanji/三',
-            character: '三',
-            type: 'kanji',
-            level: 1,
-            meaning: 'Three',
-            search_key: 'three',
-            details: {
-                meaning_data: { meanings: ['Three'] },
-                reading_data: { onyomi: ['サン'], kunyomi: ['み', 'みっ'] },
-                metadata: { meaning_mnemonic: 'Think of three lines.', reading_mnemonic: 'San sounds like sun.' }
-            }
-        },
-        {
-            slug: 'vocabulary/一人',
-            character: '一人',
-            type: 'vocabulary',
-            level: 1,
-            meaning: 'One Person',
-            search_key: 'alone',
-            details: {
-                reading_primary: 'ひとり',
-                meaning_data: { meanings: ['One Person', 'Alone'] },
-                metadata: { meaning_mnemonic: 'One person standing alone.', reading_mnemonic: 'Hitori is lonely.' }
-            }
-        },
-        {
-            slug: 'grammar/かろう',
-            character: '〜かろう',
-            type: 'grammar',
-            level: 10,
-            meaning: 'Probably / Is likely',
-            search_key: 'karou',
-            details: {
-                title: '〜かろう',
-                meaning_summary: 'Literary/formal way to express probability for i-adjectives.',
-                meaning_story: 'Derived from "ku arou". Used in formal context.',
-                structure_json: 'i-adj (base) + かろう',
-                metadata: {
-                    examples: [
-                        { japanese: '良かろう。', english: 'It should be fine.' },
-                        { japanese: '寒かろう。', english: 'It must be cold.' }
-                    ]
-                }
-            }
-        },
-        {
-            slug: 'radical/tree',
-            character: '木',
-            type: 'radical',
-            level: 1,
-            meaning: 'Tree',
-            search_key: 'tree',
-            details: {
-                name: 'Tree',
-                meaning_story: 'This radical looks like a tree with branches and roots.'
-            }
-        }
-    ];
+    // In V7, seeding can be more robust by reading the new normalized files
+    // This is a partial version, ideally we'd loop through the 30k units
+    // but for now keeping the mock signature or implement a batch seed.
 
-    for (const item of mockKUs) {
-        // Insert Knowledge Unit Base
-        const { data: ku, error: kuErr } = await supabase
-            .from('knowledge_units')
-            .upsert({
+    try {
+        const units = await readV7Table('knowledge_units');
+        // Limit to first few for "seed" demo to avoid timeout
+        const subset = units.slice(0, 10);
+
+        for (const item of subset) {
+            await supabase.from('knowledge_units').upsert({
                 slug: item.slug,
                 character: item.character,
                 type: item.type,
                 level: item.level,
                 meaning: item.meaning,
                 search_key: item.search_key
-            })
-            .select()
-            .single();
-
-        if (kuErr) {
-            console.error(`Error seeding KU ${item.slug}:`, kuErr);
-            continue;
-        }
-
-        // Insert Type-Specific Details
-        let detailTable = '';
-        const detailData: any = { ku_id: item.slug };
-
-        if (item.type === 'kanji') {
-            detailTable = 'ku_kanji';
-            Object.assign(detailData, {
-                character: item.character,
-                meaning_data: item.details.meaning_data,
-                reading_data: item.details.reading_data,
-                metadata: item.details.metadata
-            });
-        } else if (item.type === 'vocabulary') {
-            detailTable = 'ku_vocabulary';
-            Object.assign(detailData, {
-                character: item.character,
-                reading_primary: item.details.reading_primary,
-                meaning_data: item.details.meaning_data,
-                metadata: item.details.metadata
-            });
-        } else if (item.type === 'grammar') {
-            detailTable = 'ku_grammar';
-            Object.assign(detailData, {
-                title: item.details.title,
-                meaning_summary: item.details.meaning_summary,
-                meaning_story: item.details.meaning_story,
-                structure_json: item.details.structure_json,
-                metadata: item.details.metadata
-            });
-        } else if (item.type === 'radical') {
-            detailTable = 'ku_radicals';
-            Object.assign(detailData, {
-                character: item.character,
-                name: item.details.name,
-                meaning_story: item.details.meaning_story
             });
         }
-
-        if (detailTable) {
-            const { error: detailErr } = await supabase
-                .from(detailTable)
-                .upsert(detailData);
-
-            if (detailErr) console.error(`Error seeding detail for ${item.slug}:`, detailErr);
-        }
+    } catch (e) {
+        console.error("Seed failed:", e);
     }
 
     revalidatePath('/');

@@ -91,7 +91,8 @@ export async function fetchNewItems(userId: string, deckId?: string, limit = 5) 
                 meaning,
                 ku_kanji(meaning_data, reading_data),
                 ku_vocabulary(meaning_data, reading_primary),
-                ku_radicals(name)
+                ku_radicals(name),
+                ku_grammar(meaning_summary, structure_json)
             )
         `)
         .eq('user_id', userId)

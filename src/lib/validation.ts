@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // --- SHARED ENUMS ---
 export const KUTypeSchema = z.enum(['radical', 'kanji', 'vocabulary', 'grammar']);
-export const SRSStageSchema = z.enum(['new', 'learning', 'review', 'burned']);
+export const SRSStageSchema = z.enum(['new', 'learning', 'review', 'relearning', 'burned']);
 export const RatingSchema = z.enum(['again', 'hard', 'good', 'easy']);
 export const SourceTypeSchema = z.enum(['youtube', 'chat', 'manual', 'analyze']);
 

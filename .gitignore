@@ -63,3 +63,7 @@ processed_data/
 
 src/db/local.db
 dbsu/raw_data/content_grammar.json
+data_flattened/
+data_flattened/
+data_v7/
+data_v6/
