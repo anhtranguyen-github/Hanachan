@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - 2026-01-26
+### Changed
+- **Global**: Performed a project-wide code formatting and whitespace cleanup to maintain consistency across 200+ files.
+
 ## [Unreleased] - 2026-01-24
 ### Refactored
 - **Architecture**: Enforced "Clean-lite" structure across all `src/features/`.
