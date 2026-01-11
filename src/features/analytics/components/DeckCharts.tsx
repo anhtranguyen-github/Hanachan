@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { getStageName, type ItemState } from '@/types/srs';
+import { getStageName, type ItemState } from '@/features/srs/types';
 import { LEARNING_STATES } from '@/config/design.config';
 
 interface DeckStatsChartProps {
