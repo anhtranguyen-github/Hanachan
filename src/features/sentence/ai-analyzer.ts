@@ -3,6 +3,7 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { JsonOutputParser } from "@langchain/core/output_parsers";
 import dotenv from 'dotenv';
 import path from 'path';
+import { MOCK_ANALYSIS_RESULT } from "@/lib/data-mock";
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
@@ -56,12 +57,15 @@ export const aiSentenceAnalyzer = {
             const result = await chain.invoke({ input: text });
             return result;
         } catch (e) {
-            console.error("AI Analysis failed", e);
+            console.error("AI Analysis failed, using mocks", e);
             return {
-                translation: "Failed to translate",
-                grammar_points: [],
+                translation: MOCK_ANALYSIS_RESULT.translation,
+                grammar_points: MOCK_ANALYSIS_RESULT.grammar_points,
                 recommendations: [],
-                cloze_suggestion: { text: "", cloze_index: 0 }
+                cloze_suggestion: {
+                    text: MOCK_ANALYSIS_RESULT.cloze_suggestion.text,
+                    cloze_index: 0
+                }
             };
         }
     },

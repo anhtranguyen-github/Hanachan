@@ -1,7 +1,6 @@
-import { tokenize } from "./tokenize";
-import { processTokens, extractPotentialKUSlugs, AnalyzedUnit } from "./token-processor";
-import { aiSentenceAnalyzer, AIAnalysisResult } from "./ai-analyzer";
-import { createClient } from "@/services/supabase/server";
+import { MOCK_ANALYSIS_RESULT } from "@/lib/data-mock";
+import { AnalyzedUnit } from "./token-processor";
+import { AIAnalysisResult } from "./ai-analyzer";
 
 export interface FullAnalysisResult extends AIAnalysisResult {
     units: AnalyzedUnit[];
@@ -15,40 +14,19 @@ export interface FullAnalysisResult extends AIAnalysisResult {
 
 export class SentenceService {
     async analyze(text: string): Promise<FullAnalysisResult> {
-        // Stage 1: Tokenization
-        const rawTokens = await tokenize(text);
+        console.log(`[Mock] Analyzing: ${text}`);
 
-        // Stage 2: CKB Mapping
-        const potentialSlugs = extractPotentialKUSlugs(text, rawTokens);
-        const supabase = createClient();
-
-        // Fetch existing KUs from DB
-        const { data: existingKUs } = await supabase
-            .from('knowledge_units')
-            .select('slug')
-            .in('slug', potentialSlugs);
-
-        const ckbSlugs = new Set(existingKUs?.map(ku => ku.slug) || []);
-        const units = processTokens(rawTokens, ckbSlugs);
-
-        // Stage 3: AI Insight
-        const aiResult = await aiSentenceAnalyzer.analyze(text);
-
-        // Stage 4: Stats calculation
-        const vocabUnits = units.filter(u => u.type === 'vocabulary' || u.type === 'kanji');
-        const total_units = vocabUnits.length;
-        const known_units = vocabUnits.filter(u => u.is_in_ckb).length;
-        const percentage = total_units > 0 ? (known_units / total_units) * 100 : 0;
-
+        // Return mock data for frontend development
+        // In real backend, we would use an AI tokenizer or keep kuromoji if necessary
         return {
-            ...aiResult,
-            units,
-            raw_text: text,
-            coverage_stats: {
-                total_units,
-                known_units,
-                percentage
-            }
+            ...MOCK_ANALYSIS_RESULT,
+            raw_text: text, // Echo back input
+            cloze_suggestion: {
+                text: text.replace("聴く", "[聴く]"), // Simple mock behavior
+                cloze_index: 0
+            },
+            // Ensure types match
+            units: MOCK_ANALYSIS_RESULT.units as unknown as AnalyzedUnit[]
         };
     }
 
@@ -56,5 +34,6 @@ export class SentenceService {
         // This is handled by mining action but could be here
         return null;
     }
+}
 }
 export const sentenceService = new SentenceService();

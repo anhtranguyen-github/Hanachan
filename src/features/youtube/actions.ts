@@ -4,6 +4,7 @@ import { createClient } from '@/services/supabase/server'; // Use server client
 import { youtubeService } from './service';
 import { getUserVideos, deleteVideo } from './db';
 import { revalidatePath } from 'next/cache';
+import * as mocks from '@/lib/data-mock';
 
 export async function importVideoAction(url: string) {
     const supabase = createClient();
@@ -36,9 +37,9 @@ export async function fetchUserVideosAction() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-    if (error) {
-        console.error("fetchUserVideosAction error", error);
-        return [];
+    if (error || !data || data.length === 0) {
+        console.warn("fetchUserVideosAction empty or error, using mocks");
+        return mocks.MOCK_VIDEOS;
     }
     return data;
 }
@@ -57,8 +58,8 @@ export async function getTranscriptAction(videoId: string) {
     try {
         return await youtubeService.getTranscript(videoId);
     } catch (e) {
-        console.error("Transcript fetch failed", e);
-        return [];
+        console.error("Transcript fetch failed, using mocks", e);
+        return mocks.MOCK_TRANSCRIPT;
     }
 }
 

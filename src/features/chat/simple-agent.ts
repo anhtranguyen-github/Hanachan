@@ -1,4 +1,4 @@
-import { kbService } from '@/features/knowledge/kb-service';
+import { MockDB } from '@/lib/mock-db';
 import { analyzeSentenceAction } from '@/features/sentence/actions';
 
 // Skill: prompt-engineering-patterns (Role-Based)
@@ -36,12 +36,12 @@ export class SimpleAgent {
             toolsUsed.push('knowledge_base_search');
             // Extract keyword (naive)
             const keyword = message.replace(/search|find|lookup|for/gi, '').trim();
-            const results = kbService.search({ search: keyword });
+            const results = await MockDB.searchKnowledgeUnits(keyword);
 
             if (results.length > 0) {
                 const top = results.slice(0, 3);
                 reply = `I found ${results.length} matches in your knowledge base.\n\n` +
-                    top.map(k => `• **${k.slug}** (${k.type}): ${k.meanings.join(', ')}`).join('\n');
+                    top.map(k => `• **${k.slug}** (${k.type}): ${k.meaning}`).join('\n');
             } else {
                 reply = `I couldn't find "${keyword}" in your knowledge base. You might want to mine it from a video!`;
             }
