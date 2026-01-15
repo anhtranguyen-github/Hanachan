@@ -16,4 +16,23 @@ export async function analyzeSentenceAction(text: string): Promise<{ success: bo
         return { success: false, error: "Failed to analyze sentence. " + e.message };
     }
 }
+export async function mineSentenceAction(text: string) {
+    const result = await sentenceService.mine(text, '00000000-0000-0000-0000-000000000001');
+    return result;
+}
 
+export async function fetchMinedSentencesAction() {
+    // Return mock mined sentences
+    return [
+        {
+            id: 'mock-s-1',
+            text_ja: '猫は魚が好きです。',
+            text_en: 'Cats like fish.',
+            source_type: 'manual',
+            created_at: new Date().toISOString(),
+            user_sentence_cards: [
+                { front: '猫', back: 'Cat' }
+            ]
+        }
+    ];
+}

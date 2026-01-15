@@ -3,52 +3,21 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 
 export async function login(prevState: any, formData: FormData) {
-    const supabase = await createClient()
-
-    const data = {
-        email: formData.get('email') as string,
-        password: formData.get('password') as string,
-    }
-
-    const { error } = await supabase.auth.signInWithPassword(data)
-
-    if (error) {
-        return { error: error.message }
-    }
-
+    // Mock login
+    console.log("Mock login for:", formData.get('email'));
     revalidatePath('/', 'layout')
-    redirect('/')
+    redirect('/dashboard')
 }
 
 export async function signup(prevState: any, formData: FormData) {
-    const supabase = await createClient()
-
-    const data = {
-        email: formData.get('email') as string,
-        password: formData.get('password') as string,
-        options: {
-            data: {
-                display_name: formData.get('fullName') as string,
-            }
-        }
-    }
-
-    const { error } = await supabase.auth.signUp(data)
-
-    if (error) {
-        return { error: error.message }
-    }
-
-    revalidatePath('/', 'layout')
-    return { success: true, message: 'Check email to continue sign in process' }
+    // Mock signup
+    return { success: true, message: 'Mock account created! (Local Only)' }
 }
 
 export async function logout() {
-    const supabase = await createClient()
-    await supabase.auth.signOut()
+    // Mock logout
     revalidatePath('/', 'layout')
     redirect('/login')
 }

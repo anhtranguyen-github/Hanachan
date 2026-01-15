@@ -1,56 +1,29 @@
-import { createClient } from '@/services/supabase/server';
 import { UserProfile, UserSettings } from './types';
 
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
-    const supabase = createClient();
-    const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-    if (error) {
-        console.error('Error fetching user profile:', error);
-        return null;
-    }
-    return data as UserProfile;
+    return {
+        id: userId,
+        email: 'demo@hanachan.app',
+        display_name: 'Hanachan Learner',
+        avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Hanachan',
+        created_at: new Date().toISOString()
+    };
 }
 
 export async function updateUserProfile(userId: string, data: Partial<UserProfile>): Promise<void> {
-    const supabase = createClient();
-    const { error } = await supabase
-        .from('users')
-        .update(data)
-        .eq('id', userId);
-
-    if (error) {
-        throw new Error(`Failed to update user profile: ${error.message}`);
-    }
+    console.log(`🛠️ [Mock] Updating profile for ${userId}:`, data);
 }
 
 export async function getUserSettings(userId: string): Promise<UserSettings | null> {
-    const supabase = createClient();
-    const { data, error } = await supabase
-        .from('user_settings')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-    if (error) {
-        console.error('Error fetching user settings:', error);
-        return null;
-    }
-    return data as UserSettings;
+    return {
+        user_id: userId,
+        target_retention: 0.9,
+        fsrs_weights: [1, 2, 3, 4],
+        updated_at: new Date().toISOString()
+    };
 }
 
 export async function updateUserSettings(userId: string, settings: Partial<UserSettings>): Promise<void> {
-    const supabase = createClient();
-    const { error } = await supabase
-        .from('user_settings')
-        .update(settings)
-        .eq('user_id', userId);
-
-    if (error) {
-        throw new Error(`Failed to update user settings: ${error.message}`);
-    }
+    console.log(`🛠️ [Mock] Updating settings for ${userId}:`, settings);
 }
+

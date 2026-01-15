@@ -2,101 +2,65 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    /* Base background is that soft pinkish hue from the screenshots */
-    --background: 0 0% 100%;
-    /* Default to white for components */
-    --page-background: 350 100% 99%;
-    /* #FFFAFA - Snow/Pinkish white */
-
-    --foreground: 222.2 84% 4.9%;
-
-    /* Brand Sakura Pink */
-    --primary: 343 100% 91%;
-    /* Light Pink Pill Background */
-    --primary-foreground: 343 80% 50%;
-    /* Darker Pink Text */
-
-    --brand-pink: 350 89% 60%;
-    /* The main button pink */
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --border: 214.3 31.8% 91.4%;
-
-    --radius: 1rem;
-    /* Large rounded corners */
-  }
+:root {
+  --primary: #0D9488;
+  --primary-foreground: #F0FDFA;
+  --secondary: #2DD4BF;
+  --secondary-foreground: #134E4A;
+  --accent: #EA580C;
+  --accent-foreground: #FFFFFF;
+  --background: #F0FDFA;
+  --foreground: #134E4A;
 }
 
 @layer base {
   body {
-    @apply bg-[hsl(var(--page-background))] text-foreground font-sans antialiased;
+    @apply bg-background text-foreground;
   }
 }
 
 @layer components {
-
-  /* The Sidebar Active State (Pink Pill) */
-  .nav-item-active {
-    @apply bg-rose-100 text-rose-600 font-bold;
+  .clay-card {
+    @apply bg-white rounded-clay border-2 border-primary-dark p-6 shadow-clay transition-all duration-200;
   }
 
-  .nav-item {
-    @apply text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors;
+  .clay-card-hover {
+    @apply hover:-translate-y-1 hover:shadow-clay-lg active:translate-y-0 active:shadow-clay-sm;
   }
 
-  /* The Main White Card container seen in screenshots */
-  .app-card {
-    @apply bg-white rounded-[24px] shadow-sm border border-slate-100;
+  .clay-btn {
+    @apply px-6 py-2.5 rounded-clay font-black transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 border-2 border-primary-dark shadow-clay-sm;
   }
 
-  /* Primary Action Button (Study Now, Analyze) */
-  .btn-primary {
-    @apply bg-rose-400 hover:bg-rose-500 text-white shadow-md shadow-rose-200 transition-all active:scale-95;
+  .clay-btn-primary {
+    @apply bg-primary text-white hover:bg-primary-dark;
   }
 
-  /* SRS Buttons */
-  .btn-srs-again {
-    @apply bg-red-50 text-red-600 border border-red-100 hover:bg-red-100;
+  .clay-btn-secondary {
+    @apply bg-secondary text-primary-dark hover:bg-primary/20;
   }
 
-  .btn-srs-hard {
-    @apply bg-pink-50 text-pink-600 border border-pink-100 hover:bg-pink-100;
+  .clay-btn-accent {
+    @apply bg-accent text-white hover:bg-accent/90;
   }
 
-  .btn-srs-medium {
-    @apply bg-amber-50 text-amber-600 border border-amber-100 hover:bg-amber-100;
+  .clay-input {
+    @apply px-4 py-2.5 rounded-clay border-2 border-primary-dark bg-white text-primary-dark font-bold focus:outline-none focus:ring-4 focus:ring-primary/20 transition-all shadow-clay-inset;
   }
 
-  .btn-srs-easy {
-    @apply bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100;
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
   }
 
-  .font-japanese {
-    font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', 'MS PGothic', sans-serif;
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
   }
-}
 
-/* 3D Flip Card Utilities */
-.perspective-1000 {
-  perspective: 1000px;
-}
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-primary/20 rounded-full;
+  }
 
-.transform-style-3d {
-  transform-style: preserve-3d;
-}
-
-.backface-hidden {
-  backface-visibility: hidden;
-}
-
-.rotate-y-180 {
-  transform: rotateY(180deg);
-}
-
-.rotate-x-12 {
-  transform: rotateX(12deg);
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/40;
+  }
 }

@@ -4,7 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased] - 2026-01-26
 ### Changed
-- **Global**: Performed a project-wide code formatting and whitespace cleanup to maintain consistency across 200+ files.
+- **UI/UX**: Rebuilt the entire frontend with a **Claymorphism** design system.
+  - Implemented custom Tailwind config for soft 3D shadows and rounded corners.
+  - Added Noto Sans JP and Noto Serif JP fonts.
+- **Architecture**: Switched to a **Mock-Only** data layer for all features.
+  - Integrated `src/lib/mock-db` into all routes.
+  - Removed Supabase dependencies and related boilerplate code to achieve a minimal stack.
+- **Features**: Implemented full functional flows for:
+  - **Dashboard**: Interactive progress overview.
+  - **Learn**: End-to-end SRS study session (Queue -> Grade -> Result).
+  - **Content**: Detailed lists for Kanji, Vocabulary, Grammar, and Sentences with learning status.
+  - **Learn Evolution**: Implemented custom deck creation and a global SRS overview dashboard.
+- **Analytic Overhaul**: Revamped the main dashboard with Level/XP systems, review forecasts, and retention analysis diagrams.
+- **Immersion**: YouTube player shell, Sentence Analyzer with mock tokens, and AI Chatbot UI.
+- **Chatbot Evolution**: Added conversation history sidebar and multi-session support with MockDB integration.
+- **Sentence Insights**: Detailed view for mined phrases with morphological breakdown and source context.
+- **Analyzer Upgrades**: Interactive modals for deep-dives into grammar points and individual tokens directly from the analyzer.
+- **Cleanup**: Removed unused scripts (`check_users.ts`), redundant packages, and auth callback routes.
+- **Fixes**:
+  - Resolved `next/font` weight errors for Noto Sans/Serif JP.
+  - Fixed `ReferenceError` for missing `Link` imports and `stage` variables across library pages.
+  - Ensured all functional links to detail pages are active and correctly typed.
+
 
 ## [Unreleased] - 2026-01-24
 ### Refactored

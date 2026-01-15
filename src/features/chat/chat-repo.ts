@@ -1,132 +1,49 @@
-import { createAdminClient } from '@/services/supabase/server';
+import { MockDB } from '@/lib/mock-db';
 import { ChatMessage, ChatSession } from './types';
 
 export class ChatRepository {
 
     async getSession(sessionId: string): Promise<ChatSession | null> {
-        const supabase = createAdminClient();
-
-        // 1. Get Session Info
-        const { data: session } = await supabase
-            .from('chat_sessions')
-            .select('*')
-            .eq('id', sessionId)
-            .single();
-
-        if (!session) return null;
-
-        // 2. Get Messages
-        const { data: messages } = await supabase
-            .from('chat_messages')
-            .select('*')
-            .eq('session_id', sessionId)
-            .order('created_at', { ascending: true });
-
-        return {
-            id: session.id,
-            userId: session.user_id,
-            updatedAt: session.updated_at,
-            messages: (messages || []).map(m => ({
-                role: m.role,
-                content: m.content,
-                timestamp: m.created_at
-            }))
-        };
+        return await MockDB.getChatSession(sessionId);
     }
 
     async createSession(sessionId: string, userId: string): Promise<ChatSession> {
-        const supabase = createAdminClient();
-
-        // Upsert Session to ensure existence
-        const { error } = await supabase
-            .from('chat_sessions')
-            .upsert({
-                id: sessionId,
-                user_id: userId,
-                title: "New Chat",
-                updated_at: new Date().toISOString()
-            });
-
-        if (error) console.error("❌ Error creating session:", error);
-
-        return {
+        const newSession: any = {
             id: sessionId,
-            userId,
+            user_id: userId,
+            title: "New Chat",
+            mode: 'chat',
             messages: [],
-            updatedAt: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            created_at: new Date().toISOString()
         };
+        // Note: we don't have a direct MockDB.createChatSession yet, 
+        // but for now this works as we can just return it.
+        // In a real mock store we'd push to the local 'chats' array.
+        return newSession;
     }
 
     async addMessage(sessionId: string, message: ChatMessage) {
-        const supabase = createAdminClient();
-
-        const { error } = await supabase
-            .from('chat_messages')
-            .insert({
-                session_id: sessionId,
-                role: message.role,
-                content: message.content,
-                created_at: message.timestamp
-            });
-
-        if (error) console.error("❌ Error saving message:", error);
+        await MockDB.addChatMessage(sessionId, message);
     }
 
-    // SRS Retrieval from DB
     async getSRSStates(userId: string): Promise<any[]> {
-        const supabase = createAdminClient();
-        const { data } = await supabase
-            .from('user_learning_states')
-            .select('*')
-            .eq('user_id', userId);
-        return data || [];
+        return await MockDB.fetchDueItems(userId);
     }
 
-    // Analysis History (merged from db.ts)
     async logAnalysis(analysis: any): Promise<any | null> {
-        const supabase = createAdminClient();
-        const { data, error } = await supabase
-            .from('user_analysis_history')
-            .insert(analysis)
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Error logging analysis:', error);
-            return null;
-        }
-        return data;
+        // Just return the analysis as if saved
+        return { ...analysis, id: Math.random().toString() };
     }
 
     async getUserAnalysisHistory(userId: string): Promise<any[]> {
-        const supabase = createAdminClient();
-        const { data, error } = await supabase
-            .from('user_analysis_history')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error('Error fetching analysis history:', error);
-            return [];
-        }
-        return data || [];
+        return []; // Not implemented in MockDB yet
     }
 
     async getUserSessions(userId: string): Promise<any[]> {
-        const supabase = createAdminClient();
-        const { data, error } = await supabase
-            .from('chat_sessions')
-            .select('*')
-            .eq('user_id', userId)
-            .order('updated_at', { ascending: false });
-
-        if (error) {
-            console.error('Error fetching user sessions:', error);
-            return [];
-        }
-        return data || [];
+        return await MockDB.getChatSessions(userId);
     }
 }
 
 export const chatRepo = new ChatRepository();
+

@@ -2,57 +2,58 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { createClient } from '@/services/supabase/client';
-import { Session, User } from '@supabase/supabase-js';
+
+interface User {
+    id: string;
+    email: string;
+    user_metadata: {
+        display_name: string;
+        avatar_url?: string;
+    };
+}
 
 interface AuthContextType {
     user: User | null;
-    session: Session | null;
     loading: boolean;
     signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
-    session: null,
     loading: true,
     signOut: async () => { },
 });
 
+// Mock user for local development
+const MOCK_USER: User = {
+    id: '00000000-0000-0000-0000-000000000001',
+    email: 'learner@hanachan.app',
+    user_metadata: {
+        display_name: 'Hana Learner',
+        avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Hana'
+    }
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
-    const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
-    const supabase = createClient();
 
     useEffect(() => {
-        const setData = async () => {
-            const { data: { session }, error } = await supabase.auth.getSession();
-            if (error) throw error;
-            setSession(session);
-            setUser(session?.user || null);
+        // Simulate loading state
+        const timer = setTimeout(() => {
+            setUser(MOCK_USER);
             setLoading(false);
-        };
+        }, 500);
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            setUser(session?.user || null);
-            setLoading(false);
-        });
-
-        setData();
-
-        return () => {
-            subscription.unsubscribe();
-        };
+        return () => clearTimeout(timer);
     }, []);
 
     const value = {
         user,
-        session,
         loading,
         signOut: async () => {
-            await supabase.auth.signOut();
+            setUser(null);
+            console.log("Mock signed out");
         },
     };
 

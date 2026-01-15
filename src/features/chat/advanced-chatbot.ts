@@ -10,10 +10,7 @@ import { classifyIntent } from './chat-router';
 import { sentenceService } from '../sentence/service';
 import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
 import { sentenceRepo } from '../sentence/sentence-repo'; // Updated to new repo
-import dotenv from 'dotenv';
-import path from 'path';
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 export class AdvancedChatService {
     private llm: ChatOpenAI;

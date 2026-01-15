@@ -1,6 +1,6 @@
-import { MOCK_ANALYSIS_RESULT } from "@/lib/data-mock";
-import { AnalyzedUnit } from "./token-processor";
-import { AIAnalysisResult } from "./ai-analyzer";
+import { MOCK_ANALYSIS_RESULT } from "@/lib/mock-db/seeds";
+import { AnalyzedUnit } from "../analysis/token-processor";
+import { AIAnalysisResult } from "../analysis/ai-analyzer";
 
 export interface FullAnalysisResult extends AIAnalysisResult {
     units: AnalyzedUnit[];
@@ -17,7 +17,6 @@ export class SentenceService {
         console.log(`[Mock] Analyzing: ${text}`);
 
         // Return mock data for frontend development
-        // In real backend, we would use an AI tokenizer or keep kuromoji if necessary
         return {
             ...MOCK_ANALYSIS_RESULT,
             raw_text: text, // Echo back input
@@ -30,10 +29,10 @@ export class SentenceService {
         };
     }
 
-    async mine() {
-        // This is handled by mining action but could be here
-        return null;
+    async mine(text: string, userId: string) {
+        console.log(`[Mock] Mining sentence for user ${userId}: ${text}`);
+        return { success: true, sentenceId: 'mock-s-' + Math.random().toString(36).substr(2, 5) };
     }
 }
-}
+
 export const sentenceService = new SentenceService();

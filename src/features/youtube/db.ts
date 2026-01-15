@@ -1,89 +1,50 @@
-import { createClient } from '@/services/supabase/client';
+import { MockDB } from '@/lib/mock-db';
 import { UserVideo } from './types';
-import { SupabaseClient } from '@supabase/supabase-js';
 
 export const TABLE_NAME = 'user_youtube_videos';
 
-export async function addVideo(video: Partial<UserVideo> & { user_id: string; video_id: string }, client?: SupabaseClient) {
-    const supabase = client || createClient();
-
-    // Check if exists
-    const { data: existing } = await supabase
-        .from(TABLE_NAME)
-        .select('*')
-        .eq('user_id', video.user_id)
-        .eq('video_id', video.video_id)
-        .single();
-
-    if (existing) return existing as UserVideo;
-
-    const { data, error } = await supabase
-        .from(TABLE_NAME)
-        .insert({
-            user_id: video.user_id,
-            video_id: video.video_id,
-            title: video.title || '',
-            thumbnail_url: video.thumbnail_url || `https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`,
-            channel_title: video.channel_title || '',
-            status: video.status || 'learning',
-            last_watched_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-    if (error) {
-        console.error("Failed to add video to DB:", error);
-        throw error;
-    }
-
-    return data as UserVideo;
+export async function addVideo(video: Partial<UserVideo> & { user_id: string; video_id: string }) {
+    // Mock implementation
+    return {
+        id: Math.random().toString(),
+        user_id: video.user_id,
+        video_id: video.video_id,
+        title: video.title || 'MOCK VIDEO',
+        status: 'learning',
+        created_at: new Date().toISOString()
+    } as UserVideo;
 }
 
 export async function getUserVideos(userId: string) {
-    const supabase = createClient();
-
-    const { data, error } = await supabase
-        .from(TABLE_NAME)
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error("Failed to fetch videos:", error);
-        return [];
-    }
-
-    return data as UserVideo[];
+    const videos = await MockDB.getYouTubeVideos();
+    return videos.map(v => ({
+        id: v.id,
+        user_id: userId,
+        video_id: v.video_id,
+        title: v.title,
+        status: 'learning',
+        channel_title: v.channel,
+        thumbnail_url: v.thumbnail_url
+    })) as UserVideo[];
 }
 
 export async function deleteVideo(id: string) {
-    const supabase = createClient();
-    const { error } = await supabase
-        .from(TABLE_NAME)
-        .delete()
-        .eq('id', id);
-
-    if (error) throw error;
+    // No-op for mock
 }
 
-export async function getVideoByYoutubeId(userId: string, videoId: string, client?: SupabaseClient) {
-    const supabase = client || createClient();
-    const { data } = await supabase
-        .from(TABLE_NAME)
-        .select('*')
-        .eq('user_id', userId)
-        .eq('video_id', videoId)
-        .single();
-
-    return data as UserVideo | null;
+export async function getVideoByYoutubeId(userId: string, videoId: string) {
+    const video = await MockDB.getYouTubeVideo(videoId);
+    if (!video) return null;
+    return {
+        id: video.id,
+        user_id: userId,
+        video_id: video.video_id,
+        title: video.title,
+        status: 'learning'
+    } as UserVideo;
 }
 
 export async function updateVideoStatus(id: string, status: string) {
-    const supabase = createClient();
-    const { error } = await supabase
-        .from(TABLE_NAME)
-        .update({ status })
-        .eq('id', id);
-
-    if (error) throw error;
+    // No-op for mock
 }
+

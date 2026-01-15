@@ -124,3 +124,42 @@ export interface FSRSHistory {
     new_state?: SRSState; // inferred
     reviewed_at: string;
 }
+// 7. CHAT
+export interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: string;
+    metadata?: Record<string, any>;
+}
+
+export interface ChatSession {
+    id: UUID;
+    user_id: UUID;
+    title: string;
+    mode: 'chat' | 'analyze' | 'srs';
+    messages: ChatMessage[];
+    updated_at: string;
+    created_at: string;
+}
+
+// 8. YOUTUBE
+export interface YouTubeVideo {
+    id: UUID;
+    video_id: string; // The YouTube ID (e.g. dQw4w9WgXcQ)
+    title: string;
+    channel: string;
+    duration: number | null;
+    thumbnail_url?: string;
+    created_by: UUID | null;
+    created_at: string;
+}
+
+export interface YouTubeSubtitle {
+    id: UUID;
+    video_id: UUID; // Our internal UUID
+    start_time: number;
+    end_time: number;
+    text_ja: string;
+    sentence_id?: UUID;
+    created_at: string;
+}

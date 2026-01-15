@@ -1,20 +1,14 @@
-import { createClient } from '@/services/supabase/server';
 import { DailyStats } from './types';
 
 export async function getDailyStats(userId: string, date: string): Promise<DailyStats | null> {
-    const supabase = createClient();
-    const { data, error } = await supabase
-        .from('user_daily_stats')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('day', date)
-        .single();
-
-    if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching daily stats:', error);
-        return null;
-    }
-    return data as DailyStats;
+    // Mock implementation
+    return {
+        user_id: userId,
+        day: date,
+        reviews_count: 42,
+        new_items_count: 5,
+        success_rate: 0.85
+    } as DailyStats;
 }
 
 export async function incrementDailyStats(
@@ -23,43 +17,10 @@ export async function incrementDailyStats(
     field: keyof Omit<DailyStats, 'user_id' | 'day' | 'success_rate'>,
     increment: number = 1
 ): Promise<void> {
-    const supabase = createClient();
-
-    // Postgres UPSERT with increment using RPC or multiple calls.
-    // Simplifying for now with a raw query or simple check.
-    // Best practice: use a Supabase function (RPC) for atomicity.
-
-    const { data: existing } = await supabase
-        .from('user_daily_stats')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('day', date)
-        .single();
-
-    if (existing) {
-        await supabase
-            .from('user_daily_stats')
-            .update({ [field]: (existing[field] || 0) + increment })
-            .eq('user_id', userId)
-            .eq('day', date);
-    } else {
-        await supabase
-            .from('user_daily_stats')
-            .insert({
-                user_id: userId,
-                day: date,
-                [field]: increment
-            });
-    }
+    console.log(`🛠️ [Mock] Incrementing ${field} by ${increment} for ${userId} on ${date}`);
 }
 
 export async function upsertDailyStats(stats: Partial<DailyStats> & { user_id: string; day: string }): Promise<void> {
-    const supabase = createClient();
-    const { error } = await supabase
-        .from('user_daily_stats')
-        .upsert(stats);
-
-    if (error) {
-        throw new Error(`Failed to upsert daily stats: ${error.message}`);
-    }
+    console.log(`🛠️ [Mock] Upserting daily stats for ${stats.user_id} on ${stats.day}`);
 }
+
