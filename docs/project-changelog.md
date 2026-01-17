@@ -67,3 +67,10 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Professional Development Skills in `.agents/skills/`.
 - Master Production Workflow in `.agents/workflows/dev-pro.md`.
+## [2026-01-27] Unified Quick View System
+- **Type**: UI/UX & Logic
+- **Changes**: 
+    - Created `QuickViewModal` shared component for words and grammar.
+    - Integrated modal triggers in Sentence Detail, YouTube Player, Sentence Analyzer, and Chatbot.
+    - Standardized token and grammar point interactions across the platform.
+- **Reasoning**: To provide a seamless, non-disruptive learning experience where users can deeply explore linguistic details without context-switching.

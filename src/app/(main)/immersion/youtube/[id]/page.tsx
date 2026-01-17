@@ -36,6 +36,8 @@ import {
 import { clsx } from 'clsx';
 import Link from 'next/link';
 
+import { QuickViewModal, QuickViewData } from '@/components/shared/QuickViewModal';
+
 export default function YouTubePlayerPage() {
     const { id } = useParams();
     const router = useRouter();
@@ -49,6 +51,10 @@ export default function YouTubePlayerPage() {
     const [translationEnabled, setTranslationEnabled] = useState(true);
     const [selectedToken, setSelectedToken] = useState<any>(null);
     const [showAnalysis, setShowAnalysis] = useState(false);
+
+    // Modal state
+    const [quickViewOpen, setQuickViewOpen] = useState(false);
+    const [quickViewData, setQuickViewData] = useState<QuickViewData | null>(null);
 
     // Mining state
     const [miningSentence, setMiningSentence] = useState<any>(null);
@@ -188,6 +194,30 @@ export default function YouTubePlayerPage() {
             text_en: "AI Refined translation for better natural flow."
         });
         setIsGenerating(false);
+    };
+
+    const openTokenModal = (token: any) => {
+        setQuickViewData({
+            type: 'TOKEN',
+            title: token.surface,
+            meaning: token.meaning,
+            reading: token.reading,
+            level: 'N5',
+            explanation: `Linguistic analysis for "${token.surface}" extracted from current video segment.`,
+        });
+        setQuickViewOpen(true);
+    };
+
+    const openGrammarModal = (gp: any) => {
+        setQuickViewData({
+            type: 'GRAMMAR',
+            title: gp.title || gp.surface,
+            meaning: gp.meaning || 'Grammar Point',
+            level: 'N5',
+            explanation: gp.explanation || 'Detailed grammar explanation goes here.',
+            examples: gp.examples || []
+        });
+        setQuickViewOpen(true);
     };
 
     if (loading) return <div className="p-12 animate-pulse text-center font-black">Loading Player Ecosystem...</div>;
@@ -376,7 +406,7 @@ export default function YouTubePlayerPage() {
                                             <div
                                                 key={i}
                                                 className="flex flex-col items-center cursor-pointer hover:bg-primary/5 p-1 rounded-clay transition-all group/word active:scale-95 border-b-2 border-transparent hover:border-primary"
-                                                onClick={() => { setSelectedToken(token); setShowAnalysis(true); }}
+                                                onClick={() => { openTokenModal(token); setSelectedToken(token); setShowAnalysis(true); }}
                                             >
                                                 {furiganaEnabled && token.reading && token.reading !== token.surface && (
                                                     <span className="text-xs font-black text-primary leading-none mb-1 opacity-60 group-hover/word:opacity-100">
@@ -475,7 +505,10 @@ export default function YouTubePlayerPage() {
                                             Grammar Points
                                         </h3>
                                         <div className="flex flex-col gap-4">
-                                            <div className="p-5 bg-white border-2 border-primary-dark rounded-clay shadow-clay-sm hover:-translate-y-1 transition-all cursor-pointer group">
+                                            <div
+                                                onClick={() => openGrammarModal({ title: '～について', meaning: 'Topic marker equivalent to "About"', explanation: 'Topic marker equivalent to "About" or "Regarding". Connects a noun to the topic of discussion.' })}
+                                                className="p-5 bg-white border-2 border-primary-dark rounded-clay shadow-clay-sm hover:-translate-y-1 transition-all cursor-pointer group"
+                                            >
                                                 <div className="flex justify-between items-center mb-1">
                                                     <div className="font-black text-primary text-lg">～について</div>
                                                     <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -484,7 +517,10 @@ export default function YouTubePlayerPage() {
                                                     Topic marker equivalent to "About" or "Regarding". Connects a noun to the topic of discussion.
                                                 </p>
                                             </div>
-                                            <div className="p-5 bg-white border-2 border-primary-dark rounded-clay shadow-clay-sm hover:-translate-y-1 transition-all cursor-pointer group">
+                                            <div
+                                                onClick={() => openGrammarModal({ title: '～は', meaning: 'Topic Maker', explanation: 'The fundamental particle identifying the subject/topic of the entire sentence.' })}
+                                                className="p-5 bg-white border-2 border-primary-dark rounded-clay shadow-clay-sm hover:-translate-y-1 transition-all cursor-pointer group"
+                                            >
                                                 <div className="flex justify-between items-center mb-1">
                                                     <div className="font-black text-primary text-lg">～は (Topic Maker)</div>
                                                     <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -634,6 +670,13 @@ export default function YouTubePlayerPage() {
                     </div>
                 </div>
             )}
+            {/* Quick View Modal */}
+            <QuickViewModal
+                isOpen={quickViewOpen}
+                onClose={() => setQuickViewOpen(false)}
+                data={quickViewData}
+                onAddToDeck={(d) => console.log('Add to deck', d)}
+            />
         </div>
     );
 }

@@ -14,16 +14,23 @@ import {
     Globe,
     Layers,
     Clock,
-    Volume2
+    Volume2,
+    BookOpen
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import Link from 'next/link';
+
+import { QuickViewModal, QuickViewData } from '@/components/shared/QuickViewModal';
 
 export default function SentenceDetailPage() {
     const { id } = useParams();
     const router = useRouter();
     const [sentence, setSentence] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+
+    // Modal state
+    const [quickViewOpen, setQuickViewOpen] = useState(false);
+    const [quickViewData, setQuickViewData] = useState<QuickViewData | null>(null);
 
     useEffect(() => {
         if (id) {
@@ -38,13 +45,42 @@ export default function SentenceDetailPage() {
     if (!sentence) return <div className="p-12 text-center font-black">Sentence not found.</div>;
 
     const tokens = [
-        { surface: '猫', meaning: 'Cat', reading: 'ねこ', type: 'kanji', id: 'kanji/日' },
-        { surface: 'は', meaning: 'Particle', reading: 'は', type: 'particle' },
-        { surface: '魚', meaning: 'Fish', reading: 'さかな', type: 'vocab', id: 'vocabulary/猫' },
-        { surface: 'が', meaning: 'Particle', reading: 'が', type: 'particle' },
-        { surface: '好き', meaning: 'Like', reading: 'すき', type: 'vocab' },
-        { surface: 'です', meaning: 'Copula', reading: 'です', type: 'particle' },
+        { surface: '猫', meaning: 'Cat', reading: 'ねこ', type: 'vocabulary', level: 'N5', explanation: 'A common domestic animal. Frequently used in beginner sentences.' },
+        { surface: 'は', meaning: 'Topic Marker', reading: 'wa', type: 'particle', level: 'N5', explanation: 'Indicates the topic of the sentence.' },
+        { surface: '魚', meaning: 'Fish', reading: 'さかな', type: 'vocabulary', level: 'N5', explanation: 'Aquatic animal used as food.' },
+        { surface: 'が', meaning: 'Subject Marker', reading: 'ga', type: 'particle', level: 'N5' },
+        { surface: '好き', meaning: 'Like / Fond of', reading: 'すき', type: 'vocabulary', level: 'N5' },
+        { surface: 'です', meaning: 'Is / Am / Are', reading: 'desu', type: 'particle', level: 'N5' },
     ];
+
+    const grammarPoints = [
+        { title: '〜は〜です', meaning: 'A is B', level: 'N5', explanation: 'The standard polite way to state that A is B.', examples: [{ ja: '私は学生です。', en: 'I am a student.' }] },
+        { title: '〜が好きです', meaning: 'To like something', level: 'N5', explanation: 'Uses the "ga" particle to mark the object of liking.', examples: [{ ja: '寿司が好きです。', en: 'I like sushi.' }] }
+    ];
+
+    const openTokenModal = (token: any) => {
+        setQuickViewData({
+            type: 'TOKEN',
+            title: token.surface,
+            meaning: token.meaning,
+            reading: token.reading,
+            level: token.level,
+            explanation: token.explanation,
+        });
+        setQuickViewOpen(true);
+    };
+
+    const openGrammarModal = (gp: any) => {
+        setQuickViewData({
+            type: 'GRAMMAR',
+            title: gp.title,
+            meaning: gp.meaning,
+            level: gp.level,
+            explanation: gp.explanation,
+            examples: gp.examples,
+        });
+        setQuickViewOpen(true);
+    };
 
     return (
         <div className="flex flex-col gap-10 max-w-5xl mx-auto pb-20">
@@ -94,25 +130,47 @@ export default function SentenceDetailPage() {
 
                         <div className="flex flex-wrap gap-x-2 gap-y-10 py-6">
                             {tokens.map((token, i) => (
-                                <div key={i} className="flex flex-col items-center gap-2 group cursor-pointer relative">
+                                <div
+                                    key={i}
+                                    onClick={() => openTokenModal(token)}
+                                    className="flex flex-col items-center gap-2 group cursor-pointer relative"
+                                >
                                     <span className="text-[10px] font-black text-primary opacity-0 group-hover:opacity-100 transition-opacity absolute -top-4">
                                         {token.reading}
                                     </span>
-                                    {token.id ? (
-                                        <Link
-                                            href={`/content/${token.type}/${encodeURIComponent(token.surface)}`}
-                                            className="text-3xl font-black text-primary-dark border-b-4 border-primary hover:bg-primary/5 px-1 transition-all"
-                                        >
-                                            {token.surface}
-                                        </Link>
-                                    ) : (
-                                        <span className="text-3xl font-black text-primary-dark border-b-4 border-primary-dark/10 px-1">
-                                            {token.surface}
-                                        </span>
-                                    )}
+                                    <span className="text-3xl font-black text-primary-dark border-b-4 border-primary hover:bg-primary/5 px-1 transition-all">
+                                        {token.surface}
+                                    </span>
                                     <span className="text-[10px] font-bold text-primary-dark/40">
                                         {token.meaning}
                                     </span>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* Grammar Points */}
+                    <section className="clay-card p-8 bg-white">
+                        <h3 className="text-xs font-black text-primary-dark opacity-30 uppercase tracking-widest mb-8 flex items-center gap-2">
+                            <BookOpen className="w-4 h-4 text-secondary" />
+                            Key Grammar Points
+                        </h3>
+
+                        <div className="flex flex-col gap-4">
+                            {grammarPoints.map((gp, i) => (
+                                <div
+                                    key={i}
+                                    onClick={() => openGrammarModal(gp)}
+                                    className="p-4 bg-background rounded-clay border-2 border-primary-dark flex items-center justify-between group cursor-pointer hover:-translate-y-1 transition-all shadow-clay-sm"
+                                >
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xl font-black text-primary-dark">{gp.title}</span>
+                                            <span className="bg-primary/10 text-primary text-[8px] font-black px-1.5 py-0.5 rounded border border-primary/20">{gp.level}</span>
+                                        </div>
+                                        <p className="text-sm font-bold text-primary-dark/60">{gp.meaning}</p>
+                                    </div>
+                                    <Zap className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-all" />
                                 </div>
                             ))}
                         </div>
@@ -150,9 +208,12 @@ export default function SentenceDetailPage() {
                         <div className="h-px bg-primary-dark/5" />
 
                         <div className="flex flex-col gap-3">
-                            <button className="clay-btn w-full py-4 text-white bg-primary">
+                            <button
+                                onClick={() => openGrammarModal(grammarPoints[0])}
+                                className="clay-btn w-full py-4 text-white bg-primary"
+                            >
                                 <Zap className="w-5 h-5 fill-current" />
-                                Start Analyzer
+                                Open Drill Modal
                             </button>
                             <button className="clay-btn w-full py-4 bg-white !text-primary-dark border-dashed">
                                 <ExternalLink className="w-5 h-5" />
@@ -172,6 +233,13 @@ export default function SentenceDetailPage() {
                     </section>
                 </div>
             </div>
+
+            <QuickViewModal
+                isOpen={quickViewOpen}
+                onClose={() => setQuickViewOpen(false)}
+                data={quickViewData}
+                onAddToDeck={(d) => console.log('Add to deck', d)}
+            />
         </div>
     );
 }

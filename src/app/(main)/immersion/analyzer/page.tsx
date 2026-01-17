@@ -4,14 +4,40 @@
 import React, { useState } from 'react';
 import { Search, Eraser, FileText, Zap, Save, X, BookOpen, Volume2, ArrowRight } from 'lucide-react';
 import { clsx } from 'clsx';
-import Link from 'next/link';
+import { QuickViewModal, QuickViewData } from '@/components/shared/QuickViewModal';
 
 export default function AnalyzerPage() {
     const [text, setText] = useState('');
     const [analyzing, setAnalyzing] = useState(false);
     const [result, setResult] = useState<any>(null);
-    const [selectedToken, setSelectedToken] = useState<any>(null);
-    const [selectedGrammar, setSelectedGrammar] = useState<any>(null);
+
+    // Modal state
+    const [quickViewOpen, setQuickViewOpen] = useState(false);
+    const [quickViewData, setQuickViewData] = useState<QuickViewData | null>(null);
+
+    const openTokenModal = (token: any) => {
+        setQuickViewData({
+            type: 'TOKEN',
+            title: token.surface,
+            meaning: token.meaning,
+            reading: token.reading,
+            level: token.level || 'N5',
+            explanation: token.explanation || `Linguistic entry for "${token.surface}".`,
+        });
+        setQuickViewOpen(true);
+    };
+
+    const openGrammarModal = (g: any) => {
+        setQuickViewData({
+            type: 'GRAMMAR',
+            title: g.point,
+            meaning: 'Grammar Point',
+            explanation: g.explanation,
+            examples: g.example ? [{ ja: g.example, en: 'Example translation' }] : [],
+            level: 'N5'
+        });
+        setQuickViewOpen(true);
+    };
 
     const handleAnalyze = () => {
         if (!text.trim()) return;
@@ -91,7 +117,7 @@ export default function AnalyzerPage() {
                                 <div
                                     key={i}
                                     className="relative group cursor-pointer"
-                                    onClick={() => setSelectedToken(token)}
+                                    onClick={() => openTokenModal(token)}
                                 >
                                     <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-xs font-black text-primary bg-primary/10 px-2 py-0.5 rounded border-2 border-primary/20 opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 whitespace-nowrap">
                                         {token.reading}
@@ -127,7 +153,7 @@ export default function AnalyzerPage() {
                                 {result.grammar.map((g: any, i: number) => (
                                     <div
                                         key={i}
-                                        onClick={() => setSelectedGrammar(g)}
+                                        onClick={() => openGrammarModal(g)}
                                         className="p-5 bg-white border-2 border-primary-dark rounded-clay shadow-clay cursor-pointer hover:-translate-y-1 active:translate-y-0 transition-all hover:bg-primary/5 group"
                                     >
                                         <div className="flex justify-between items-center mb-1">
@@ -156,93 +182,13 @@ export default function AnalyzerPage() {
                 </div>
             )}
 
-            {/* Token Detail Modal */}
-            {selectedToken && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-primary-dark/20 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="clay-card max-w-sm w-full bg-white p-8 relative animate-in zoom-in-95 duration-200">
-                        <button
-                            onClick={() => setSelectedToken(null)}
-                            className="absolute top-4 right-4 p-2 hover:bg-primary/5 rounded-full"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
-
-                        <div className="flex flex-col items-center gap-6 text-center">
-                            <div className="text-7xl font-black text-primary-dark">{selectedToken.surface}</div>
-                            <div className="flex flex-col gap-1">
-                                <div className="flex items-center justify-center gap-2">
-                                    <span className="text-xl font-black text-primary">{selectedToken.reading}</span>
-                                    <Volume2 className="w-5 h-5 text-primary cursor-pointer" />
-                                </div>
-                                <div className="text-2xl font-black text-primary-dark capitalize">{selectedToken.meaning}</div>
-                            </div>
-
-                            <div className="w-full grid grid-cols-2 gap-3 mt-4">
-                                <div className="bg-background rounded-clay border-2 border-primary-dark p-3">
-                                    <div className="text-[10px] font-black text-primary-dark/40 uppercase">Level</div>
-                                    <div className="font-black text-primary">{selectedToken.level || 'Custom'}</div>
-                                </div>
-                                <div className="bg-background rounded-clay border-2 border-primary-dark p-3">
-                                    <div className="text-[10px] font-black text-primary-dark/40 uppercase">Type</div>
-                                    <div className="font-black text-primary-dark capitalize">{selectedToken.type}</div>
-                                </div>
-                            </div>
-
-                            {selectedToken.slug ? (
-                                <Link
-                                    href={`/content/${selectedToken.type}/${encodeURIComponent(selectedToken.surface)}`}
-                                    className="clay-btn w-full bg-secondary py-3"
-                                >
-                                    View in Library
-                                </Link>
-                            ) : (
-                                <div className="text-xs font-bold text-primary-dark/40 italic">
-                                    {selectedToken.explanation || 'Detailed dictionary entry coming soon.'}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Grammar Detail Modal */}
-            {selectedGrammar && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-primary-dark/20 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="clay-card max-w-md w-full bg-white p-10 relative animate-in zoom-in-95 duration-200">
-                        <button
-                            onClick={() => setSelectedGrammar(null)}
-                            className="absolute top-4 right-4 p-2 hover:bg-primary/5 rounded-full"
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
-
-                        <div className="flex flex-col gap-6">
-                            <div className="flex flex-col gap-2">
-                                <h3 className="text-3xl font-black text-primary-dark">{selectedGrammar.point}</h3>
-                                <div className="h-1 w-20 bg-primary rounded-full" />
-                            </div>
-
-                            <div className="bg-primary/5 p-6 rounded-clay border-2 border-primary border-dashed font-bold text-primary-dark leading-relaxed">
-                                {selectedGrammar.explanation}
-                            </div>
-
-                            <div className="flex flex-col gap-2">
-                                <div className="text-[10px] font-black uppercase text-primary-dark/40 tracking-widest">Example Usage</div>
-                                <div className="p-4 bg-background rounded-clay border-2 border-primary-dark text-lg font-black text-primary-dark italic">
-                                    “{selectedGrammar.example}”
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => setSelectedGrammar(null)}
-                                className="clay-btn w-full py-4 text-white bg-primary mt-4"
-                            >
-                                Got it!
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Quick View Modal */}
+            <QuickViewModal
+                isOpen={quickViewOpen}
+                onClose={() => setQuickViewOpen(false)}
+                data={quickViewData}
+                onAddToDeck={(d) => console.log('Add to deck', d)}
+            />
         </div>
     );
 }

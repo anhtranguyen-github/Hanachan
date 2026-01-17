@@ -24,3 +24,7 @@
 - [ ] Mobile optimization and PWA features.
 - [ ] Audio playback for all vocabulary.
 - [ ] Detailed performance analytics.
+## Next Steps
+- Implement real API integration for Sentence Analyzer.
+- Add "Add to Deck" logic for real persistence.
+- Expand Sentence Library with batch actions.
