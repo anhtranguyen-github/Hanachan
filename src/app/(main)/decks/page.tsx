@@ -268,7 +268,7 @@ function DeckCard({ deck }: { deck: any }) {
 
             <div className="p-4 bg-background border-t-2 border-primary-dark flex gap-3">
                 <Link
-                    href={`/learn/${deck.id}/session`}
+                    href={`/decks/${deck.id}/session`}
                     className={clsx(
                         "clay-btn flex-1 py-3 text-sm flex items-center justify-center gap-2",
                         !isStudyable ? "opacity-50 grayscale pointer-events-none" : "bg-primary"
@@ -278,7 +278,7 @@ function DeckCard({ deck }: { deck: any }) {
                     {stats.due > 0 ? `Review (${stats.due})` : stats.new > 0 ? 'Start Learning' : 'Complete'}
                 </Link>
                 <Link
-                    href={`/learn/${deck.id}`}
+                    href={`/decks/${deck.id}`}
                     className="w-12 h-12 clay-card p-0 flex items-center justify-center bg-white hover:bg-primary/5 shadow-none"
                 >
                     <BarChart3 className="w-5 h-5 text-primary-dark/40" />

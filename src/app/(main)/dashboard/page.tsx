@@ -132,7 +132,7 @@ export default function DashboardPage() {
                         <Zap className="w-5 h-5 text-primary fill-current" />
                     </div>
                     <div className="text-5xl font-black text-primary-dark">{stats.reviewsDue}</div>
-                    <Link href="/learn" className="clay-btn bg-primary py-2 text-xs">Review Now</Link>
+                    <Link href="/review" className="clay-btn bg-primary py-2 text-xs">Review Now</Link>
                 </div>
 
                 {/* Total Burned */}

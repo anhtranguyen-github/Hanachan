@@ -53,6 +53,8 @@ Mô phỏng học SRS trong chat
 
 6. Học SRS
 
+Học các card đến hạn
+
 Học flashcard theo deck
 
 Trả lời flashcard

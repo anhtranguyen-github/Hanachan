@@ -57,7 +57,7 @@ export default function DeckDetailsPage() {
         <div className="flex flex-col gap-10 pb-20 max-w-6xl mx-auto">
             <header className="flex items-center justify-between">
                 <button
-                    onClick={() => router.push('/learn')}
+                    onClick={() => router.push('/decks')}
                     className="flex items-center gap-2 font-black text-primary-dark/40 hover:text-primary transition-colors"
                 >
                     <ChevronLeft className="w-5 h-5" />
@@ -104,7 +104,7 @@ export default function DeckDetailsPage() {
                         </div>
 
                         <button
-                            onClick={() => router.push(`/learn/${deckId}/session`)}
+                            onClick={() => router.push(`/decks/${deckId}/session`)}
                             className="clay-btn w-full py-4 text-lg bg-primary mt-4"
                         >
                             <Play className="w-5 h-5 fill-current" />

@@ -74,3 +74,19 @@ All notable changes to this project will be documented in this file.
     - Integrated modal triggers in Sentence Detail, YouTube Player, Sentence Analyzer, and Chatbot.
     - Standardized token and grammar point interactions across the platform.
 - **Reasoning**: To provide a seamless, non-disruptive learning experience where users can deeply explore linguistic details without context-switching.
+## [2026-01-27] Global Review System & Navigation Refactor
+- **Type**: UI/Logic
+- **Changes**: 
+    - Rebranded "Learn" to "Decks" in Sidebar and Routes.
+    - Added dedicated "Review" dashboard at `/review`.
+    - Implemented "Quick Review All" session that aggregate due items across all decks.
+    - Updated Sidebar icons and navigation flow.
+- **Reasoning**: To create a clear distinction between "Curriculum Management" (Decks) and "Active Practice" (Review). The "Review All" feature significantly reduces friction for daily study.
+## [2026-01-27] Advanced JLPT & Level Filtering
+- **Type**: UI/UX
+- **Changes**: 
+    - Integrated JLPT level selector (N5-N1) across Kanji, Vocabulary, and Grammar libraries.
+    - Implemented "Level Roadmap" for granular level navigation within JLPT ranges.
+    - Added loading skeletons for smoother content transitions.
+    - Updated search UI to integrate better with level range controls.
+- **Reasoning**: Allows users to focus on specific JLPT milestones and follow the structured curriculum path (Level 1-60) more easily.

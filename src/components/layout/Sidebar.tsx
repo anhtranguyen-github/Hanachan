@@ -20,7 +20,8 @@ import { clsx } from 'clsx';
 
 const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Learn', href: '/learn', icon: GraduationCap },
+    { name: 'Review', href: '/review', icon: Flame },
+    { name: 'Decks', href: '/decks', icon: GraduationCap },
     {
         name: 'Content',
         icon: BookOpen,

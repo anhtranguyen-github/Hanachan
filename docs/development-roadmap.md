@@ -28,3 +28,20 @@
 - Implement real API integration for Sentence Analyzer.
 - Add "Add to Deck" logic for real persistence.
 - Expand Sentence Library with batch actions.
+## Finished
+- Unified Quick View Modal System.
+- Global Review Center & Multi-Deck Sessions.
+- Navigation Rebranding (Learn -> Decks).
+
+## Next
+- Add "Review Forecast" interactive charts.
+- Implement "Burned" items showcase.
+## Finished
+- Unified Quick View Modal System.
+- Global Review Center & Multi-Deck Sessions.
+- Navigation Rebranding (Learn -> Decks).
+- JLPT & Level range filtering logic.
+
+## Next
+- Data persistence for custom deck items.
+- Batch "Add to Deck" from library view.

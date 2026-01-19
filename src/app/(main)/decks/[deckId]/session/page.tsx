@@ -103,7 +103,7 @@ export default function StudySessionPage() {
                     </div>
                 </div>
                 <button
-                    onClick={() => router.push('/learn')}
+                    onClick={() => router.push('/decks')}
                     className="clay-btn text-xl px-12 py-4"
                 >
                     Back to Decks
