@@ -1,47 +1,140 @@
-import { MockDB } from '@/lib/mock-db';
+import { supabase } from '@/lib/supabase';
 import { ChatMessage, ChatSession } from './types';
 
 export class ChatRepository {
 
     async getSession(sessionId: string): Promise<ChatSession | null> {
-        return await MockDB.getChatSession(sessionId);
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId);
+        if (!isUuid) return null;
+
+        const { data: session, error: sessionError } = await supabase
+            .from('chat_sessions')
+            .select('*')
+            .eq('id', sessionId)
+            .maybeSingle();
+
+        if (sessionError || !session) return null;
+
+        const { data: messages, error: messagesError } = await supabase
+            .from('chat_messages')
+            .select('*')
+            .eq('session_id', sessionId)
+            .order('created_at', { ascending: true });
+
+        // Fetch actions for these messages
+        const messageIds = (messages || []).map(m => m.id);
+        const { data: actions } = await supabase
+            .from('chat_message_actions')
+            .select('*')
+            .in('message_id', messageIds);
+
+        const messagesWithActions = (messages || []).map(m => ({
+            ...m,
+            metadata: {
+                ...m.metadata,
+                actions: actions?.filter(a => a.message_id === m.id) || []
+            }
+        }));
+
+        return {
+            ...session,
+            messages: messagesWithActions
+        } as unknown as ChatSession;
     }
 
     async createSession(sessionId: string, userId: string): Promise<ChatSession> {
-        const newSession: any = {
-            id: sessionId,
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId);
+
+        const insertData: any = {
             user_id: userId,
-            title: "New Chat",
-            mode: 'chat',
-            messages: [],
-            updated_at: new Date().toISOString(),
-            created_at: new Date().toISOString()
+            mode: 'chat'
         };
-        // Note: we don't have a direct MockDB.createChatSession yet, 
-        // but for now this works as we can just return it.
-        // In a real mock store we'd push to the local 'chats' array.
-        return newSession;
+
+        if (isUuid) {
+            insertData.id = sessionId;
+        }
+
+        const { data, error } = await supabase
+            .from('chat_sessions')
+            .insert(insertData)
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Error creating chat session:", error);
+            throw error;
+        }
+
+        return { ...data, messages: [] } as unknown as ChatSession;
     }
 
     async addMessage(sessionId: string, message: ChatMessage) {
-        await MockDB.addChatMessage(sessionId, message);
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId);
+        if (!isUuid) {
+            console.error("Cannot add message to invalid session ID:", sessionId);
+            return null;
+        }
+
+        const { data, error } = await supabase
+            .from('chat_messages')
+            .insert({
+                session_id: sessionId,
+                role: message.role,
+                content: message.content,
+                metadata: message.metadata || {}
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Error adding chat message:", error);
+            return null;
+        }
+
+        // If message has actions in metadata, log them to the separate table too
+        if (message.metadata?.actions) {
+            for (const action of message.metadata.actions) {
+                await this.logAction(data.id, action);
+            }
+        }
+
+        return data;
+    }
+
+    async logAction(messageId: string, action: any) {
+        const { error } = await supabase
+            .from('chat_message_actions')
+            .insert({
+                message_id: messageId,
+                action_type: action.type.toUpperCase(), // Map to DB enum (ANALYZE, etc)
+                target_ku_id: action.data?.ku_id,
+                target_sentence_id: action.data?.sentenceId
+            });
+
+        if (error) {
+            console.error("Error logging chat action:", error);
+        }
     }
 
     async getSRSStates(userId: string): Promise<any[]> {
-        return await MockDB.fetchDueItems(userId);
-    }
+        const { data } = await supabase
+            .from('user_learning_states')
+            .select('*, knowledge_units(*)')
+            .eq('user_id', userId)
+            .lt('next_review', new Date().toISOString());
 
-    async logAnalysis(analysis: any): Promise<any | null> {
-        // Just return the analysis as if saved
-        return { ...analysis, id: Math.random().toString() };
-    }
-
-    async getUserAnalysisHistory(userId: string): Promise<any[]> {
-        return []; // Not implemented in MockDB yet
+        return data || [];
     }
 
     async getUserSessions(userId: string): Promise<any[]> {
-        return await MockDB.getChatSessions(userId);
+        const { data, error } = await supabase
+            .from('chat_sessions')
+            .select('*')
+            .eq('user_id', userId)
+            .order('started_at', { ascending: false });
+
+        if (error) return [];
+        return data;
     }
 }
 

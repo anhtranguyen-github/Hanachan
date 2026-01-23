@@ -1,13 +1,12 @@
 // SRS Glossary - Terminology and definitions for the Spaced Repetition System
 
 export type GlossaryKey =
-    | 'apprentice'
-    | 'guru'
-    | 'master'
-    | 'enlightened'
+    | 'new'
+    | 'learning'
+    | 'review'
     | 'burned'
     | 'lesson'
-    | 'review'
+    | 'review_action'
     | 'level'
     | 'radical'
     | 'kanji'
@@ -21,29 +20,24 @@ export interface GlossaryEntry {
 }
 
 export const SRS_GLOSSARY: Record<GlossaryKey, GlossaryEntry> = {
-    apprentice: {
-        term: 'Apprentice',
-        definition: 'The initial learning stage (stages 1-4) where items are reviewed frequently to build familiarity.',
+    new: {
+        term: 'New',
+        definition: 'Items that have not been started yet and are waiting in the lesson queue.',
         category: 'stage'
     },
-    guru: {
-        term: 'Guru',
-        definition: 'An intermediate mastery stage (stages 5-6) where items are reviewed less frequently as understanding solidifies.',
+    learning: {
+        term: 'Learning',
+        definition: 'Items recently introduced that are in the short-term memory loop.',
         category: 'stage'
     },
-    master: {
-        term: 'Master',
-        definition: 'An advanced mastery stage (stage 7) where items are well-known and reviewed infrequently.',
-        category: 'stage'
-    },
-    enlightened: {
-        term: 'Enlightened',
-        definition: 'A near-perfect mastery stage (stage 8) where items are deeply ingrained and rarely reviewed.',
+    review: {
+        term: 'Review',
+        definition: 'Items that have been moved to long-term memory and are scheduled for periodic reinforcement.',
         category: 'stage'
     },
     burned: {
         term: 'Burned',
-        definition: 'The final mastery stage (stage 9) where items are considered permanently learned and no longer reviewed.',
+        definition: 'Items that are considered permanently mastered and are no longer actively reviewed.',
         category: 'stage'
     },
     lesson: {
@@ -51,7 +45,7 @@ export const SRS_GLOSSARY: Record<GlossaryKey, GlossaryEntry> = {
         definition: 'An initial learning session where new items are introduced with mnemonics and examples.',
         category: 'action'
     },
-    review: {
+    review_action: {
         term: 'Review',
         definition: 'A practice session where previously learned items are tested to reinforce memory.',
         category: 'action'
@@ -78,7 +72,7 @@ export const SRS_GLOSSARY: Record<GlossaryKey, GlossaryEntry> = {
     },
     srs_stage: {
         term: 'SRS Stage',
-        definition: 'A numbered level (1-9) representing how well an item is known, determining review frequency.',
+        definition: 'A mastery level representing how well an item is known, determining its review frequency.',
         category: 'concept'
     }
 };

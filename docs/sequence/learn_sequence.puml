@@ -1,0 +1,69 @@
+@startuml Learn Sequence
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam sequenceMessageAlign center
+
+actor User
+participant "SessionContent (UI)" as UI
+participant "ReviewSessionController" as Controller
+participant "LearningService" as Service
+participant "learningRepository" as Repo
+database "Supabase" as DB
+
+User -> UI : Opens Learn Session
+activate UI
+UI -> Service : fetchNewItems(userId, level, limit)
+activate Service
+Service -> Repo : fetchNewItems(userId, limit, level)
+activate Repo
+Repo -> DB : SELECT FROM knowledge_units...
+activate DB
+DB --> Repo : [KnowledgeUnits]
+deactivate DB
+Repo --> Service : [KnowledgeUnits]
+deactivate Repo
+Service --> UI : [Items]
+deactivate Service
+
+UI -> Controller : initSession(items)
+activate Controller
+Controller --> UI : Transformation Complete
+deactivate Controller
+
+UI -> UI : setPhase('lesson-view')
+
+loop for each Item
+    User -> UI : View Lesson Slide
+    User -> UI : Click "Next Acquisition"
+end
+
+User -> UI : Click "Start Quiz"
+UI -> UI : setPhase('quiz')
+
+loop for each Item in Quiz
+    User -> UI : Submit Answer (Enter)
+    UI -> Controller : getNextItem()
+    activate Controller
+    Controller --> UI : currentCard
+    deactivate Controller
+    
+    UI -> Service : submitReview(userId, kuId, rating, state)
+    activate Service
+    Service -> Repo : updateUserState(userId, kuId, newState)
+    activate Repo
+    Repo -> DB : UPSERT INTO user_learning_states...
+    activate DB
+    DB --> Repo : Success
+    deactivate DB
+    Repo --> Service : Success
+    deactivate Repo
+    Service --> UI : updatedState
+    deactivate Service
+end
+
+UI -> UI : setPhase('complete')
+UI -> User : Show "Batch Complete" screen
+deactivate UI
+
+@enduml

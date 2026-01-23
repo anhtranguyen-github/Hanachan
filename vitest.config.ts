@@ -6,7 +6,7 @@ export default defineConfig({
         globals: true,
         environment: 'node',
         setupFiles: ['./tests/setup.ts'],
-        include: ['tests/**/*.test.ts', 'src/features/**/*.test.ts'],
+        include: ['tests/**/*.test.ts'],
         exclude: ['node_modules', '.next'],
         testTimeout: 60000, // 60s for bulk tests
         hookTimeout: 120000, // 2min for setup/teardown

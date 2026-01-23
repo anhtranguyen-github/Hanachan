@@ -1,115 +1,122 @@
-
 'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { login } from '@/features/auth/actions';
-import { useFormState, useFormStatus } from 'react-dom';
-import { Sparkles, Mail, Lock, ArrowRight, Github } from 'lucide-react';
-import { clsx } from 'clsx';
-
-function SubmitButton() {
-    const { pending } = useFormStatus();
-    return (
-        <button
-            type="submit"
-            disabled={pending}
-            className="clay-btn w-full bg-primary py-4 text-xl disabled:opacity-50"
-        >
-            {pending ? 'Signing in...' : 'Sign In'}
-            {!pending && <ArrowRight className="w-6 h-6" />}
-        </button>
-    );
-}
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 export default function LoginPage() {
-    const [state, formAction] = useFormState(login as any, null);
+    const router = useRouter();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+
+        try {
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (signInError) {
+                setError(signInError.message);
+                setLoading(false);
+            } else {
+                // AuthContext will detect the change and sync usage
+                router.push('/dashboard');
+                router.refresh();
+            }
+        } catch (err: any) {
+            setError(err.message || 'An unexpected error occurred');
+            setLoading(false);
+        }
+    };
 
     return (
-        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-primary-light/20 via-transparent to-transparent">
+        <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-black">
             {/* Logo */}
-            <div className="flex items-center gap-4 mb-12">
-                <div className="w-16 h-16 bg-primary rounded-clay border-4 border-primary-dark flex items-center justify-center text-white font-black text-3xl shadow-clay">
-                    花
-                </div>
-                <div className="flex flex-col">
-                    <h1 className="text-4xl font-black text-primary-dark tracking-tighter">HanaChan</h1>
-                    <p className="text-primary-dark opacity-50 font-bold text-sm uppercase tracking-widest">Master Japanese</p>
-                </div>
+            <div className="flex flex-col items-center mb-12">
+                <div className="text-6xl font-black border-4 border-black p-4 mb-4">花</div>
+                <h1 className="text-4xl font-bold uppercase tracking-tighter underline decoration-4">HanaChan</h1>
+                <p className="text-xs font-bold uppercase tracking-widest mt-2 grayscale">Advanced Japanese Language Interface</p>
             </div>
 
             <div className="w-full max-w-md">
-                <div className="clay-card p-8 bg-white overflow-visible">
-                    <header className="mb-8">
-                        <h2 className="text-2xl font-black text-primary-dark">Welcome back!</h2>
-                        <p className="text-primary-dark/60 font-bold">Sign in to continue your journey.</p>
+                <div className="mn-card border-2">
+                    <header className="mb-8 border-b border-black pb-4">
+                        <h2 className="text-xl font-bold uppercase">Authentication</h2>
+                        <p className="text-gray-500 text-sm italic">Identify yourself to access the learning core.</p>
                     </header>
 
-                    <form action={formAction} className="flex flex-col gap-6">
+                    <form onSubmit={handleLogin} className="flex flex-col gap-6">
                         <div className="flex flex-col gap-2">
-                            <label className="text-xs font-black uppercase text-primary-dark/50 ml-2">Email Address</label>
-                            <div className="relative">
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-dark/30" />
-                                <input
-                                    name="email"
-                                    type="email"
-                                    placeholder="name@example.com"
-                                    className="clay-input pl-12 h-14"
-                                    required
-                                />
-                            </div>
+                            <label className="text-[10px] font-bold uppercase">Email Address</label>
+                            <input
+                                name="email"
+                                type="email"
+                                placeholder="USER@HANACHAN.APP"
+                                className="mn-input w-full"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
                         </div>
 
                         <div className="flex flex-col gap-2">
-                            <div className="flex justify-between items-center px-2">
-                                <label className="text-xs font-black uppercase text-primary-dark/50">Password</label>
-                                <Link href="#" className="text-xs font-black text-primary hover:underline">Forgot?</Link>
+                            <div className="flex justify-between items-center">
+                                <label className="text-[10px] font-bold uppercase">Password</label>
+                                <Link href="#" className="text-[10px] uppercase underline">Recovery</Link>
                             </div>
-                            <div className="relative">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-dark/30" />
-                                <input
-                                    name="password"
-                                    type="password"
-                                    placeholder="••••••••"
-                                    className="clay-input pl-12 h-14"
-                                    required
-                                />
-                            </div>
+                            <input
+                                name="password"
+                                type="password"
+                                placeholder="••••••••"
+                                className="mn-input w-full"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
                         </div>
 
-                        {state?.error && (
-                            <div className="p-4 bg-red-50 border-2 border-red-500 rounded-clay text-red-600 font-bold text-sm animate-shake">
-                                {state.error}
+                        {error && (
+                            <div className="p-4 border border-black text-sm font-bold uppercase">
+                                ERROR: {error}
                             </div>
                         )}
 
-                        <SubmitButton />
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="mn-btn mn-btn-primary w-full py-4 text-xl disabled:opacity-50"
+                        >
+                            {loading ? 'SIGNING IN...' : 'SIGN IN'}
+                        </button>
                     </form>
 
-                    <div className="relative my-10">
+                    <div className="relative my-8">
                         <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t-2 border-primary-dark/10"></div>
+                            <div className="w-full border-t border-black"></div>
                         </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-white px-4 font-black text-primary-dark/30">Or join with</span>
+                        <div className="relative flex justify-center text-[10px] uppercase">
+                            <span className="bg-white px-4 font-bold">Protocol Alternates</span>
                         </div>
                     </div>
 
-                    <button className="clay-btn bg-white !text-primary-dark w-full border-2 py-3 hover:bg-primary/5">
-                        <Github className="w-5 h-5" />
-                        Continue with Github
+                    <button className="mn-btn w-full border text-black hover:bg-black hover:text-white uppercase">
+                        Link via Github
                     </button>
                 </div>
 
-                <p className="mt-8 text-center text-primary-dark/60 font-bold">
-                    Don't have an account? {' '}
-                    <Link href="/signup" className="text-primary hover:underline">Join HanaChan today</Link>
-                </p>
+                <div className="mt-8 text-center text-sm font-bold">
+                    NEW APPLICANT? {' '}
+                    <Link href="/signup" className="underline uppercase hover:bg-black hover:text-white px-2 py-1">Register Hub</Link>
+                </div>
             </div>
-
-            {/* Floating Decorative Elements */}
-            <div className="fixed bottom-10 right-10 w-32 h-32 bg-secondary/10 rounded-full blur-3xl -z-10" />
-            <div className="fixed top-20 left-10 w-48 h-48 bg-primary/10 rounded-full blur-3xl -z-10" />
         </div>
     );
 }

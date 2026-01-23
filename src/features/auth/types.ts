@@ -43,6 +43,7 @@ export interface UserProfile {
     display_name?: string | null;
     avatar_url?: string | null;
     role: Role;
+    level: number;
     created_at?: string;
 }
 

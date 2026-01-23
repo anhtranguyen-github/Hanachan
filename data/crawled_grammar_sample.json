@@ -1,0 +1,1166 @@
+[
+  {
+    "slug": "adjective-て-b",
+    "title": "Adjective + て + B",
+    "meaning": "And...",
+    "level": 1,
+    "structure": {
+      "patterns": [
+        "［い］Adjective［い］ + く + て［な］Adjective + で + PhraseNoun + で + Phrase"
+      ],
+      "variants": {
+        "standard": "［い］Adjective［い］ + く + て［な］Adjective + で + PhraseNoun + で + Phrase",
+        "polite": null
+      }
+    },
+    "details": "接続助詞",
+    "cautions": [
+      "Caution Like other て forms (ている 1, ている 2, and ている 3), the て (or で) form of other words can have several possible meanings. These meanings are as follows. Linking - Like 'and' in English. Reasons - Like 'with (A)', or 'because of (A)' in English. Manner - Like 'to do (B) in an (A) way' in English.",
+      "Caution As with all other conjugations of いい, remember that it will be よくて, and not いくて."
+    ],
+    "about": "The て form of an い-Adjective , or で form of a noun (or な-Adjective ) is exactly the same as the て form of a verb, in that it carries the meaning of 'and', and is used for linking. Building on from the adjective +て, noun + で grammar point, instead of linking adjectives, adjective + て + (B) is used for linking an adjective to an entire phrase. With this construction, the phrase is simply added after て (with い-Adjectives ), or で (with nouns and な-Adjectives ), without any extra consideration for the phrase following it (this means that the (B) phrase will behave as if it was its own sentence). As with adjective +て, noun + で , it should be noted that て and で are different structures here. て is the same conjunction particle that is used with verbs (meaning that い-Adjectives are similar to verbs), while で is actually a form of だ that is used for conjugation. It is the same で as the one that is used in the formal version of だ , である . Which we will learn later.",
+    "fun_facts": [],
+    "details_expanded": {
+      "part_of_speech": "助詞",
+      "word_type": "接続助詞",
+      "register": "一般",
+      "rare_kanji": null
+    },
+    "furigana": "～て (Qualities and States)",
+    "resources": {
+      "online": [
+        {
+          "title": "Expressing a sequence of states",
+          "url": "https://guidetojapanese.org/learn/grammar/compound",
+          "source": "Tae Kim"
+        }
+      ],
+      "offline": [
+        {
+          "book": "Tae Kim's Japanese Grammar Guide",
+          "page": "Page 103"
+        }
+      ]
+    },
+    "examples": [
+      {
+        "sentence_text": "トミーは漫画家（まんがか）でたまに学校（がっこう）で国語（こくご）を教（おし）えている。",
+        "translation": "Tommy is a cartoonist, and occasionally teaches the national language at school.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/トミーは漫画家でたまに学校で国語を教えている。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "トミーは漫画家（まんがか）"
+          },
+          {
+            "type": "grammar_point",
+            "content": "で"
+          },
+          {
+            "type": "text",
+            "content": "たまに学校（がっこう）で国語（こくご）を教（おし）えている。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "マサミは綺麗（きれい）で水泳（すいえい）が趣味（しゅみ）です。",
+        "translation": "Masami is beautiful, and swimming is her hobby.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/マサミは綺麗で水泳が趣味です。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "マサミは綺麗（きれい）"
+          },
+          {
+            "type": "grammar_point",
+            "content": "で"
+          },
+          {
+            "type": "text",
+            "content": "水泳（すいえい）が趣味（しゅみ）です。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "田中（たなか）さんの犬（いぬ）は大（おお）きくて遊（あそ）ぶのが好（す）きです。",
+        "translation": "Tanaka-san's dog is big and likes playing.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/田中さんの犬は大きくて遊ぶのが好きです。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "田中（たなか）さんの犬（いぬ）は大（おお）きく"
+          },
+          {
+            "type": "grammar_point",
+            "content": "て"
+          },
+          {
+            "type": "text",
+            "content": "遊（あそ）ぶのが好（す）きです。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "りさは背（せ）がたかくてかわいいです。",
+        "translation": "Risa is tall and cute.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/りさは背が高くてかわいいです。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "りさは背（せ）が"
+          },
+          {
+            "type": "grammar_point",
+            "content": "たかくて"
+          },
+          {
+            "type": "text",
+            "content": "かわいいです。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "しずかで平和（へいわ）なところに住（す）みたい。",
+        "translation": "I want to live in a quiet and peaceful place.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/静かで平和なところに住みたい。.mp3",
+        "sentence_structure": [
+          {
+            "type": "grammar_point",
+            "content": "しずかで"
+          },
+          {
+            "type": "text",
+            "content": "平和（へいわ）なところに住（す）みたい。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "ほろさんはしんせつで優（やさ）しい。",
+        "translation": "Holo is kind and gentle.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/ほろさんは親切で優しい。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "ほろさんは"
+          },
+          {
+            "type": "grammar_point",
+            "content": "しんせつで"
+          },
+          {
+            "type": "text",
+            "content": "優（やさ）しい。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "「ルフィさんはあかるくていい人（ひと）ですよね。」「そうですよ。」",
+        "translation": "'Luffy is a bright and good-natured person, isn't he?''That's right.'",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/「ルフィさんは明るくていい人ですよね。」「そうですよ。」.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "「ルフィさんは"
+          },
+          {
+            "type": "grammar_point",
+            "content": "あかるくて"
+          },
+          {
+            "type": "text",
+            "content": "いい人（ひと）ですよね。」「そうですよ。」"
+          }
+        ]
+      },
+      {
+        "sentence_text": "新田（にった）さんはかなしくて寂（さび）しかったんです。",
+        "translation": "Nitta was (used to be) sad and lonely.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/新田さんは悲しくて寂しかったんです。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "新田（にった）さんは"
+          },
+          {
+            "type": "grammar_point",
+            "content": "かなしくて"
+          },
+          {
+            "type": "text",
+            "content": "寂（さび）しかったんです。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "クエンティンさんは映画監督（えいがかんとく）で俳優（はいゆう）です。",
+        "translation": "Mr. Quentin is a movie director and actor.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/クエンティンさんは映画監督で俳優です。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "クエンティンさんは映画監督（えいがかんとく）"
+          },
+          {
+            "type": "grammar_point",
+            "content": "で"
+          },
+          {
+            "type": "text",
+            "content": "俳優（はいゆう）です。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "つよくて冷（つめ）たい風（かぜ）が吹（ふ）いている。",
+        "translation": "A strong and cold wind is blowing.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/強くて冷たい風が吹いている。.mp3",
+        "sentence_structure": [
+          {
+            "type": "grammar_point",
+            "content": "つよくて"
+          },
+          {
+            "type": "text",
+            "content": "冷（つめ）たい風（かぜ）が吹（ふ）いている。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "ハリーの部屋（へや）はせまくて汚（きたな）かった。",
+        "translation": "Harry's room was small and dirty.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/ハリーの部屋は狭くて汚かった。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "ハリーの部屋（へや）は"
+          },
+          {
+            "type": "grammar_point",
+            "content": "せまくて"
+          },
+          {
+            "type": "text",
+            "content": "汚（きたな）かった。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "サーリーの部屋（へや）はきたなくてハリーの部屋（へや）は綺麗（きれい）です。",
+        "translation": "Sally's room is dirty, and Harry's room is tidy.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/サーリーの部屋は汚くてハリーの部屋は綺麗です。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "サーリーの部屋（へや）は"
+          },
+          {
+            "type": "grammar_point",
+            "content": "きたなくて"
+          },
+          {
+            "type": "text",
+            "content": "ハリーの部屋（へや）は綺麗（きれい）です。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "シンプルで便利（べんり）なスマホを買（か）うつもりだよ。",
+        "translation": "I plan to buy a simple and convenient smartphone.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/シンプルで便利なスマホを買うつもりだよ。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "シンプル"
+          },
+          {
+            "type": "grammar_point",
+            "content": "で"
+          },
+          {
+            "type": "text",
+            "content": "便利（べんり）なスマホを買（か）うつもりだよ。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "丸（まる）くて大（おお）きくて赤（あか）いリンゴが大好（だいす）きですよ！",
+        "translation": "I love big, round, and red apples!",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/丸くて大きくて赤いリンゴが大好きですよ！.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "丸（まる）"
+          },
+          {
+            "type": "grammar_point",
+            "content": "くて"
+          },
+          {
+            "type": "text",
+            "content": "大（おお）き"
+          },
+          {
+            "type": "grammar_point",
+            "content": "くて"
+          },
+          {
+            "type": "text",
+            "content": "赤（あか）いリンゴが大好（だいす）きですよ！"
+          }
+        ]
+      },
+      {
+        "sentence_text": "彼（かれ）はアメリカの数学者（すうがくしゃ）で大学教授（だいがくきょうじゅ）だった。",
+        "translation": "He was an American mathematician and a university professor.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/彼はアメリカの数学者で大学教授だった。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "彼（かれ）はアメリカの数学者（すうがくしゃ）"
+          },
+          {
+            "type": "grammar_point",
+            "content": "で"
+          },
+          {
+            "type": "text",
+            "content": "大学教授（だいがくきょうじゅ）だった。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "このスマホは新（あたら）しくて速（はや）い。",
+        "translation": "This phone is new and fast. (Linking)",
+        "audio_url": null,
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "このスマホは新（あたら）しくて速（はや）い。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "このアイスクリームは甘（あま）くて美味（おい）しい。",
+        "translation": "This ice cream is delicious because it is sweet. (Reasons)",
+        "audio_url": null,
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "このアイスクリームは甘（あま）くて美味（おい）しい。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "声（こえ）を出（だ）して話（はな）してください。",
+        "translation": "Please project when you speak. (Manner)",
+        "audio_url": null,
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "声（こえ）を出（だ）して話（はな）してください。"
+          }
+        ]
+      }
+    ],
+    "related": [
+      {
+        "title": "Adjective + て・Noun + で",
+        "url": "https://bunpro.jp/grammar_points/adjective-%E3%81%A6-noun-%E3%81%A7",
+        "comparison_text": "Ready to transform your studies? Learn N5 in under a month! Try now, no credit card required!\nTry Bunpro Learn More Structure ［い］Adjective［ い ］  +  く  +  て ［な］Adjective  +  で  + Phrase Noun +  で  + Phrase\nDetails Part of Speech Particle\nWord Type Conjunctive Particle\nRegister Standard\nAbout Adjective + て + B The  て  form of an  い-Adjective , or  で  form of a noun (or  な-Adjective ) is exactly the same as the  て  form of a verb, in that it carries the meaning of 'and', and is used for linking.\nBuilding on from the  adjective +て, noun + で  grammar point, instead of linking adjectives,  adjective + て + (B)  is used for linking an adjective to an entire phrase. With this construction, the phrase is simply added after  て  (with  い-Adjectives ), or  で  (with nouns and  な-Adjectives ), without any extra consideration for the phrase following it (this means that the (B) phrase will behave as if it was its own sentence).\nAs with  adjective +て, noun + で , it should be noted that  て  and  で  are different structures here.  て  is the same conjunction particle that is used with verbs (meaning that  い-Adjectives  are similar to verbs), while  で  is actually a form of  だ  that is used for conjugation. It is the same  で  as the one that is used in the formal version of  だ ,  である . Which we will learn later.\nCaution Like other  て  forms ( ている 1 ,  ている 2 , and  ている 3 ), the  て  (or  で ) form of other words can have several possible meanings. These meanings are as follows.\nLinking - Like 'and' in English.\nReasons - Like 'with (A)', or 'because of (A)' in English.\nManner - Like 'to do (B) in an (A) way' in English.\nCaution As with all other conjugations of  いい , remember that it will be よくて, and not いくて.\nRelated Expand All\nAdjective + て・Noun + で And... (Conjunctive)\nN5 Grammar\nBoth of these patterns involve connecting an adjective or noun phrase to the rest of the sentence using the て form. The meaning of the connection depends on context. Sometimes it simply links words, as in 大きくてきれい ('big and pretty'), while in other cases, the first part may provide a reason for the second, as in 甘くておいしい ('sweet and tasty').\nし～し  And, Giving reasons\nN4 Grammar\nし～し lists multiple reasons, similar to 'because of A, B, and so on' in English. In contrast, Adjective + て + B just connects adjectives. While it can imply the first quality supports the second (e.g. 甘くておいしい = 'sweet and delicious'), it doesn't suggest a broader conclusion. し often implies one, as in 甘いし、おいしいし, meaning 'It's sweet and delicious… (so I like it).'\nExamples --:--\nりさ は 背 ( せ ) が 高 ( たか ) くて かわい い です 。\nRisa is  tall and  cute.\n静 ( しず ) かで 平和 ( へいわ ) な ところ に 住 ( す ) み たい 。\nI want to live in a  quiet and  peaceful place.\nほろさん は 親切 ( しんせつ ) で 優 ( やさ ) し い 。\nHolo is  kind and  gentle.\n「ルフィさん は 明 ( あか ) るくて いい 人 ( ひと ) です よ ね 。」 「そう です よ 。」\n'Luffy is a  bright and  good-natured person, isn't he?' 'That's right.'\n新田 ( にった ) さん は 悲 ( かな ) しくて 寂 ( さび ) し かった んです 。\nNitta was (used to be)  sad and  lonely.\nGet more example sentences! Premium users get access to 12 example sentences on all Grammar Points.\nTry Bunpro Online Expressing a sequence of states Tae Kim\nOffline Tae Kim's Japanese Grammar Guide Page 103\nAdjective + て + B – Grammar Discussion Most Recent Replies (10 in total)\nTerilian\nmonths later revising stuff and back here again\ngrafik 748×615 57.9 KB\nDaru\nTerilian: In my understanding the first sentence could also be seen as “This phone is fast because its new” (eg. if the context was that someone is surprised your phone is so much faster than his/hers) instead of “fast  and  new”\nYou answered your own question: it depends in the context!\nRemember that while it is 3 separate uses, the basic meaning stays the same. So really, its as if the 3 are happening at the same time, yet context define which of the three is happening. So even the same exact sentence can come off differently depending on the context.\ndollicia\nHi everyone\nGot questions about Adjective + て + B?  Join us to discuss, ask, and learn together!\nJoin the Discussion",
+        "slug": "adjective-%E3%81%A6-noun-%E3%81%A7"
+      },
+      {
+        "title": "し～し ",
+        "url": "https://bunpro.jp/grammar_points/%E3%81%97-%E3%81%97",
+        "comparison_text": "Ready to transform your studies? Learn N5 in under a month! Try now, no credit card required!\nTry Bunpro Learn More Structure ［い］Adjective［ い ］  +  く  +  て ［な］Adjective  +  で  + Phrase Noun +  で  + Phrase\nDetails Part of Speech Particle\nWord Type Conjunctive Particle\nRegister Standard\nAbout Adjective + て + B The  て  form of an  い-Adjective , or  で  form of a noun (or  な-Adjective ) is exactly the same as the  て  form of a verb, in that it carries the meaning of 'and', and is used for linking.\nBuilding on from the  adjective +て, noun + で  grammar point, instead of linking adjectives,  adjective + て + (B)  is used for linking an adjective to an entire phrase. With this construction, the phrase is simply added after  て  (with  い-Adjectives ), or  で  (with nouns and  な-Adjectives ), without any extra consideration for the phrase following it (this means that the (B) phrase will behave as if it was its own sentence).\nAs with  adjective +て, noun + で , it should be noted that  て  and  で  are different structures here.  て  is the same conjunction particle that is used with verbs (meaning that  い-Adjectives  are similar to verbs), while  で  is actually a form of  だ  that is used for conjugation. It is the same  で  as the one that is used in the formal version of  だ ,  である . Which we will learn later.\nCaution Like other  て  forms ( ている 1 ,  ている 2 , and  ている 3 ), the  て  (or  で ) form of other words can have several possible meanings. These meanings are as follows.\nLinking - Like 'and' in English.\nReasons - Like 'with (A)', or 'because of (A)' in English.\nManner - Like 'to do (B) in an (A) way' in English.\nCaution As with all other conjugations of  いい , remember that it will be よくて, and not いくて.\nRelated Expand All\nAdjective + て・Noun + で And... (Conjunctive)\nN5 Grammar\nBoth of these patterns involve connecting an adjective or noun phrase to the rest of the sentence using the て form. The meaning of the connection depends on context. Sometimes it simply links words, as in 大きくてきれい ('big and pretty'), while in other cases, the first part may provide a reason for the second, as in 甘くておいしい ('sweet and tasty').\nし～し  And, Giving reasons\nN4 Grammar\nし～し lists multiple reasons, similar to 'because of A, B, and so on' in English. In contrast, Adjective + て + B just connects adjectives. While it can imply the first quality supports the second (e.g. 甘くておいしい = 'sweet and delicious'), it doesn't suggest a broader conclusion. し often implies one, as in 甘いし、おいしいし, meaning 'It's sweet and delicious… (so I like it).'\nExamples --:--\nりさ は 背 ( せ ) が 高 ( たか ) くて かわい い です 。\nRisa is  tall and  cute.\n静 ( しず ) かで 平和 ( へいわ ) な ところ に 住 ( す ) み たい 。\nI want to live in a  quiet and  peaceful place.\nほろさん は 親切 ( しんせつ ) で 優 ( やさ ) し い 。\nHolo is  kind and  gentle.\n「ルフィさん は 明 ( あか ) るくて いい 人 ( ひと ) です よ ね 。」 「そう です よ 。」\n'Luffy is a  bright and  good-natured person, isn't he?' 'That's right.'\n新田 ( にった ) さん は 悲 ( かな ) しくて 寂 ( さび ) し かった んです 。\nNitta was (used to be)  sad and  lonely.\nGet more example sentences! Premium users get access to 12 example sentences on all Grammar Points.\nTry Bunpro Online Expressing a sequence of states Tae Kim\nOffline Tae Kim's Japanese Grammar Guide Page 103\nAdjective + て + B – Grammar Discussion Most Recent Replies (10 in total)\nTerilian\nmonths later revising stuff and back here again\ngrafik 748×615 57.9 KB\nDaru\nTerilian: In my understanding the first sentence could also be seen as “This phone is fast because its new” (eg. if the context was that someone is surprised your phone is so much faster than his/hers) instead of “fast  and  new”\nYou answered your own question: it depends in the context!\nRemember that while it is 3 separate uses, the basic meaning stays the same. So really, its as if the 3 are happening at the same time, yet context define which of the three is happening. So even the same exact sentence can come off differently depending on the context.\ndollicia\nHi everyone\nGot questions about Adjective + て + B?  Join us to discuss, ask, and learn together!\nJoin the Discussion",
+        "slug": "%E3%81%97-%E3%81%97"
+      }
+    ]
+  },
+  {
+    "slug": "adjective-て-noun-で",
+    "title": "Adjective + て・Noun + で",
+    "meaning": "And... (Conjunctive)",
+    "level": 1,
+    "structure": {
+      "patterns": [
+        "［い］Adjective［い］ + く + ておもしろい + く + て新（あたら）しい + く + て［な］Adjective + でしずか + で好（す）き + でNoun + で先生（せんせい） + で仕事（しごと）+ でExceptions: いい→よくて"
+      ],
+      "variants": {
+        "standard": "［い］Adjective［い］ + く + ておもしろい + く + て新（あたら）しい + く + て［な］Adjective + でしずか + で好（す）き + でNoun + で先生（せんせい） + で仕事（しごと）+ でExceptions: いい→よくて",
+        "polite": null
+      }
+    },
+    "details": "助詞・助動詞",
+    "cautions": [
+      "Caution Like other て forms (ている 1, ている 2, and ている 3), the て (or で) form of other words can have several possible meanings. These meanings are as follows. Linking - Like 'and' in English. Reasons - Like 'with (A)', or 'because of (A)' in English. Manner - Like 'to do (B) in an (A) way' in English.",
+      "Caution As with all other conjugations of いい, remember that it will be よくて, and not いくて."
+    ],
+    "about": "The て form of an い-Adjective , or で form of a noun (or な-Adjective ) is exactly the same as the て form of a verb, in that it carries the meaning of 'and', and is used for linking. It will allow us to list multiple qualities/traits of something. For い-Adjectives , we will need to change the last い to く (the form used for conjugation), and then simply add て . For nouns and な-Adjectives , we will need to add で to the base form (not な or だ ). It should be noted that て and で are different structures here. て is the same conjunction particle that is used with verbs (meaning that い-Adjectives are similar to verbs), while で is actually a form of だ that is used for conjugation. It is the same で as the one that is used in the formal version of だ , である . Which we will learn later.",
+    "fun_facts": [],
+    "details_expanded": {
+      "part_of_speech": "形容詞・名詞",
+      "word_type": "助詞・助動詞",
+      "register": "一般",
+      "rare_kanji": null
+    },
+    "furigana": "～て (Adjectives and Nouns)",
+    "resources": {
+      "online": [
+        {
+          "title": "Expressing a sequence of states",
+          "url": "https://guidetojapanese.org/learn/grammar/compound",
+          "source": "Tae Kim"
+        },
+        {
+          "title": "て vs. と",
+          "url": "https://www.tofugu.com/japanese-grammar/te-form/",
+          "source": "Tofugu"
+        }
+      ],
+      "offline": [
+        {
+          "book": "Tae Kim's Japanese Grammar Guide",
+          "page": "Page 103"
+        },
+        {
+          "book": "みんなの日本語 I",
+          "page": "Page 104 [CH 16]"
+        }
+      ]
+    },
+    "examples": [
+      {
+        "sentence_text": "あの自転車（じてんしゃ）は便利（べんり）で軽（かる）い。",
+        "translation": "That bicycle is useful and light.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/あの自転車は便利で軽い。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "あの自転車（じてんしゃ）は便利（べんり）"
+          },
+          {
+            "type": "grammar_point",
+            "content": "で"
+          },
+          {
+            "type": "text",
+            "content": "軽（かる）い。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "このパソコンは新（あたら）しくて早（はや）い。",
+        "translation": "This computer is new and fast.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/このパソコンは新しくて早い。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "このパソコンは新（あたら）しく"
+          },
+          {
+            "type": "grammar_point",
+            "content": "て"
+          },
+          {
+            "type": "text",
+            "content": "早（はや）い。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "音楽（おんがく）を作（つく）るのは仕事（しごと）で趣味（しゅみ）だ。",
+        "translation": "Making music is both work, and my hobby.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/音楽を作るのは仕事で趣味だ。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "音楽（おんがく）を作（つく）るのは仕事（しごと）"
+          },
+          {
+            "type": "grammar_point",
+            "content": "で"
+          },
+          {
+            "type": "text",
+            "content": "趣味（しゅみ）だ。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "新（あたら）しい → あたらしくて",
+        "translation": "New → New and...",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/新しい → あたらしくて.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "新（あたら）しい → "
+          },
+          {
+            "type": "grammar_point",
+            "content": "あたらしくて"
+          }
+        ]
+      },
+      {
+        "sentence_text": "大（おお）きい → おおきくて",
+        "translation": "Big → Big and...",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/大きい → 大きくて.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "大（おお）きい → "
+          },
+          {
+            "type": "grammar_point",
+            "content": "おおきくて"
+          }
+        ]
+      },
+      {
+        "sentence_text": "嫌（きら）い → きらいで",
+        "translation": "Dislike → Dislike and...",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/嫌い → 嫌いで.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "嫌（きら）い → "
+          },
+          {
+            "type": "grammar_point",
+            "content": "きらいで"
+          }
+        ]
+      },
+      {
+        "sentence_text": "静（しず）か → しずかで",
+        "translation": "Quiet → Quiet and...",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/静か → 静かで.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "静（しず）か → "
+          },
+          {
+            "type": "grammar_point",
+            "content": "しずかで"
+          }
+        ]
+      },
+      {
+        "sentence_text": "病気（びょうき） → びょうきで",
+        "translation": "Disease → Disease and...",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/病気 → 病気で.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "病気（びょうき） → "
+          },
+          {
+            "type": "grammar_point",
+            "content": "びょうきで"
+          }
+        ]
+      },
+      {
+        "sentence_text": "暑（あつ）い → あつくて",
+        "translation": "Hot (weather) → Hot and...",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/暑い → 暑くて.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "暑（あつ）い → "
+          },
+          {
+            "type": "grammar_point",
+            "content": "あつくて"
+          }
+        ]
+      },
+      {
+        "sentence_text": "かわいい → かわいくて",
+        "translation": "Cute → Cute and...",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/かわいい → かわいくて.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "かわいい → "
+          },
+          {
+            "type": "grammar_point",
+            "content": "かわいくて"
+          }
+        ]
+      },
+      {
+        "sentence_text": "好（す）き → すきで",
+        "translation": "Liking → Liking and...",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/好き → 好きで.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "好（す）き → "
+          },
+          {
+            "type": "grammar_point",
+            "content": "すきで"
+          }
+        ]
+      },
+      {
+        "sentence_text": "暇（ひま） → ひまで",
+        "translation": "Unoccupied → Unoccupied and...",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/暇 → 暇で.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "暇（ひま） → "
+          },
+          {
+            "type": "grammar_point",
+            "content": "ひまで"
+          }
+        ]
+      },
+      {
+        "sentence_text": "仕事（しごと） → しごとで",
+        "translation": "Work → Work and...",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/仕事 → 仕事で.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "仕事（しごと） → "
+          },
+          {
+            "type": "grammar_point",
+            "content": "しごとで"
+          }
+        ]
+      },
+      {
+        "sentence_text": "いい → よくて",
+        "translation": "Good → Good and...",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/いい → よくて.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "いい → "
+          },
+          {
+            "type": "grammar_point",
+            "content": "よくて"
+          }
+        ]
+      },
+      {
+        "sentence_text": "寒（さむ）い → さむくて",
+        "translation": "Cold (weather) → Cold and...",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/寒い → 寒くて.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "寒（さむ）い → "
+          },
+          {
+            "type": "grammar_point",
+            "content": "さむくて"
+          }
+        ]
+      },
+      {
+        "sentence_text": "あの人（ひと）は綺麗（きれい）で優（やさ）しい。",
+        "translation": "That person is beautiful and nice.",
+        "audio_url": null,
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "あの人（ひと）は綺麗（きれい）で優（やさ）しい。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "大雨（おおあめ）でバスが止（と）まりました。",
+        "translation": "The bus stopped with rain. (With rain as the reason)",
+        "audio_url": null,
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "大雨（おおあめ）でバスが止（と）まりました。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "私（わたし）はご飯（はん）を急（いそ）いで食（た）べる。",
+        "translation": "I eat food in a hurry.",
+        "audio_url": null,
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "私（わたし）はご飯（はん）を急（いそ）いで食（た）べる。"
+          }
+        ]
+      }
+    ],
+    "related": [
+      {
+        "title": "Verb + て+ B",
+        "url": "https://bunpro.jp/grammar_points/verb-%E3%81%A6-b",
+        "comparison_text": "Ready to transform your studies? Learn N5 in under a month! Try now, no credit card required!\nTry Bunpro Learn More Structure ［い］Adjective［ い ］  +  く  +  て おもしろ い  +  く  +  て 新 ( あたら ) し い  +  く  +  て ［な］Adjective  +  で しずか +  で 好 ( す ) き +  で Noun +  で 先生 ( せんせい )  +  で 仕事 ( しごと ) +  で Exceptions: いい → よく て\nDetails Part of Speech Adjective + Conjunctions\nWord Type Particle / Auxiliary Verb\nRegister Standard\nAbout Adjective + て・Noun + で The  て  form of an  い-Adjective , or  で  form of a noun (or  な-Adjective ) is exactly the same as the  て  form of a verb, in that it carries the meaning of 'and', and is used for linking. It will allow us to list multiple qualities/traits of something.\nFor  い-Adjectives , we will need to change the last い to く (the form used for conjugation), and then simply add  て .\nFor nouns and  な-Adjectives , we will need to add  で  to the base form (not  な  or  だ ).\nIt should be noted that  て  and  で  are different structures here.  て  is the same conjunction particle that is used with verbs (meaning that  い-Adjectives  are similar to verbs), while  で  is actually a form of  だ  that is used for conjugation. It is the same  で  as the one that is used in the formal version of  だ ,  である . Which we will learn later.\nCaution Like other  て  forms ( ている 1 ,  ている 2 , and  ている 3 ), the  て  (or  で ) form of other words can have several possible meanings. These meanings are as follows.\nLinking - Like 'and' in English.\nReasons - Like 'with (A)', or 'because of (A)' in English.\nManner - Like 'to do (B) in an (A) way' in English.\nCaution As with all other conjugations of  いい , remember that it will be よくて, and not いくて.\nRelated Expand All\nVerb + て+ B And, And then, After that (sequence)\nN5 Grammar\nAdjective + て, Noun + で, and Verb + て+ B are the same fundamental pattern, using the て form to connect elements in a sentence. The construction of the て form depends on whether the word is an い-Adjective, な-Adjective, noun, or verb, but the function remains consistent, similar to the English 'and.'\nなくて To not ~ and ~, Not ~ and ~ (Conjugations)\nN4 Grammar\nAdjective + て or Noun + で is used to connect adjective or noun phrases with the rest of the sentence, similar to the English 'and.' なくて is similar, but connects phrases that are in the negative (ない) form. For example, 安くてよかった means 'I'm glad it was inexpensive,' while 高くなくてよかった would mean 'I'm glad that it wasn't expensive'.\n連用形 Formal Conjunctive\nN3 Grammar\n連用形 also replaces て or で after adjectives and nouns in formal writing. For example, 優しくて becomes 優しく, e.g. とても優しくて、綺麗です 'She's very kind, and pretty.' → とても優しく、綺麗です. (Same meaning, but more formal and literary.)\nAdjective + て + B And..., Both and (Conjunctive)\nN5 Grammar\nBoth of these patterns involve connecting an adjective or noun phrase to the rest of the sentence using the て form. The meaning of the connection depends on context. Sometimes it simply links words, as in 大きくてきれい ('big and pretty'), while in other cases, the first part may provide a reason for the second, as in 甘くておいしい ('sweet and tasty').\nVerb[て] + B And・and so, Due to, Because of, Since, Conjunctive\nN4 Grammar\nBoth of these patterns involve connecting a word or phrase (adjectives and nouns in one case, verbs in the other) to the rest of the sentence using the て form. The meaning of the connection depends on context. Sometimes it simply links words, as in 大きくてきれい ('big and pretty'), while in other cases, the て form expresses reason or method, as in 歩いて行った ('went by walking').\nExamples --:--\n新 ( あたら ) し い  →  新 ( あたら ) しくて\nNew →  New and...\n大 ( おお ) き い  →  大 ( おお ) きくて\nBig →  Big and...\n嫌 ( きら ) い  →  嫌 ( きら ) いで\nDislike →  Dislike and...\n静 ( しず ) か →  静 ( しず ) かで\nQuiet →  Quiet and...\n病気 ( びょうき )  →  病気 ( びょうき ) で\nDisease →  Disease and...\nGet more example sentences! Premium users get access to 12 example sentences on all Grammar Points.\nTry Bunpro Online Expressing a sequence of states Tae Kim\nて vs. と Tofugu\nOffline Tae Kim's Japanese Grammar Guide Page 103\nみんなの日本語 I Page 104 [CH 16]\nAdjective + て・Noun + で – Grammar Discussion Most Recent Replies (13 in total)\nIcyIceBear\nきらい is な adjective so it should be 嫌いで\nIt looks like an い adjective and there’s so way to tell it’s not in this case, it’s one you just have to remember. Don’t worry, it’s one of few\nOldRosy\nThank you!\ncyberjus\nHaving this earlier in the N5 lessons would have reenforced some of the other points. Like ～てもいい\nGot questions about Adjective + て・Noun + で?  Join us to discuss, ask, and learn together!\nJoin the Discussion",
+        "slug": "verb-%E3%81%A6-b"
+      },
+      {
+        "title": "なくて",
+        "url": "https://bunpro.jp/grammar_points/%E3%81%AA%E3%81%8F%E3%81%A6-conjunction",
+        "comparison_text": "Ready to transform your studies? Learn N5 in under a month! Try now, no credit card required!\nTry Bunpro Learn More Structure ［い］Adjective［ い ］  +  く  +  て おもしろ い  +  く  +  て 新 ( あたら ) し い  +  く  +  て ［な］Adjective  +  で しずか +  で 好 ( す ) き +  で Noun +  で 先生 ( せんせい )  +  で 仕事 ( しごと ) +  で Exceptions: いい → よく て\nDetails Part of Speech Adjective + Conjunctions\nWord Type Particle / Auxiliary Verb\nRegister Standard\nAbout Adjective + て・Noun + で The  て  form of an  い-Adjective , or  で  form of a noun (or  な-Adjective ) is exactly the same as the  て  form of a verb, in that it carries the meaning of 'and', and is used for linking. It will allow us to list multiple qualities/traits of something.\nFor  い-Adjectives , we will need to change the last い to く (the form used for conjugation), and then simply add  て .\nFor nouns and  な-Adjectives , we will need to add  で  to the base form (not  な  or  だ ).\nIt should be noted that  て  and  で  are different structures here.  て  is the same conjunction particle that is used with verbs (meaning that  い-Adjectives  are similar to verbs), while  で  is actually a form of  だ  that is used for conjugation. It is the same  で  as the one that is used in the formal version of  だ ,  である . Which we will learn later.\nCaution Like other  て  forms ( ている 1 ,  ている 2 , and  ている 3 ), the  て  (or  で ) form of other words can have several possible meanings. These meanings are as follows.\nLinking - Like 'and' in English.\nReasons - Like 'with (A)', or 'because of (A)' in English.\nManner - Like 'to do (B) in an (A) way' in English.\nCaution As with all other conjugations of  いい , remember that it will be よくて, and not いくて.\nRelated Expand All\nVerb + て+ B And, And then, After that (sequence)\nN5 Grammar\nAdjective + て, Noun + で, and Verb + て+ B are the same fundamental pattern, using the て form to connect elements in a sentence. The construction of the て form depends on whether the word is an い-Adjective, な-Adjective, noun, or verb, but the function remains consistent, similar to the English 'and.'\nなくて To not ~ and ~, Not ~ and ~ (Conjugations)\nN4 Grammar\nAdjective + て or Noun + で is used to connect adjective or noun phrases with the rest of the sentence, similar to the English 'and.' なくて is similar, but connects phrases that are in the negative (ない) form. For example, 安くてよかった means 'I'm glad it was inexpensive,' while 高くなくてよかった would mean 'I'm glad that it wasn't expensive'.\n連用形 Formal Conjunctive\nN3 Grammar\n連用形 also replaces て or で after adjectives and nouns in formal writing. For example, 優しくて becomes 優しく, e.g. とても優しくて、綺麗です 'She's very kind, and pretty.' → とても優しく、綺麗です. (Same meaning, but more formal and literary.)\nAdjective + て + B And..., Both and (Conjunctive)\nN5 Grammar\nBoth of these patterns involve connecting an adjective or noun phrase to the rest of the sentence using the て form. The meaning of the connection depends on context. Sometimes it simply links words, as in 大きくてきれい ('big and pretty'), while in other cases, the first part may provide a reason for the second, as in 甘くておいしい ('sweet and tasty').\nVerb[て] + B And・and so, Due to, Because of, Since, Conjunctive\nN4 Grammar\nBoth of these patterns involve connecting a word or phrase (adjectives and nouns in one case, verbs in the other) to the rest of the sentence using the て form. The meaning of the connection depends on context. Sometimes it simply links words, as in 大きくてきれい ('big and pretty'), while in other cases, the て form expresses reason or method, as in 歩いて行った ('went by walking').\nExamples --:--\n新 ( あたら ) し い  →  新 ( あたら ) しくて\nNew →  New and...\n大 ( おお ) き い  →  大 ( おお ) きくて\nBig →  Big and...\n嫌 ( きら ) い  →  嫌 ( きら ) いで\nDislike →  Dislike and...\n静 ( しず ) か →  静 ( しず ) かで\nQuiet →  Quiet and...\n病気 ( びょうき )  →  病気 ( びょうき ) で\nDisease →  Disease and...\nGet more example sentences! Premium users get access to 12 example sentences on all Grammar Points.\nTry Bunpro Online Expressing a sequence of states Tae Kim\nて vs. と Tofugu\nOffline Tae Kim's Japanese Grammar Guide Page 103\nみんなの日本語 I Page 104 [CH 16]\nAdjective + て・Noun + で – Grammar Discussion Most Recent Replies (13 in total)\nIcyIceBear\nきらい is な adjective so it should be 嫌いで\nIt looks like an い adjective and there’s so way to tell it’s not in this case, it’s one you just have to remember. Don’t worry, it’s one of few\nOldRosy\nThank you!\ncyberjus\nHaving this earlier in the N5 lessons would have reenforced some of the other points. Like ～てもいい\nGot questions about Adjective + て・Noun + で?  Join us to discuss, ask, and learn together!\nJoin the Discussion",
+        "slug": "%E3%81%AA%E3%81%8F%E3%81%A6-conjunction"
+      },
+      {
+        "title": "連用形",
+        "url": "https://bunpro.jp/grammar_points/%E9%80%A3%E7%94%A8%E5%BD%A2",
+        "comparison_text": "Ready to transform your studies? Learn N5 in under a month! Try now, no credit card required!\nTry Bunpro Learn More Structure ［い］Adjective［ い ］  +  く  +  て おもしろ い  +  く  +  て 新 ( あたら ) し い  +  く  +  て ［な］Adjective  +  で しずか +  で 好 ( す ) き +  で Noun +  で 先生 ( せんせい )  +  で 仕事 ( しごと ) +  で Exceptions: いい → よく て\nDetails Part of Speech Adjective + Conjunctions\nWord Type Particle / Auxiliary Verb\nRegister Standard\nAbout Adjective + て・Noun + で The  て  form of an  い-Adjective , or  で  form of a noun (or  な-Adjective ) is exactly the same as the  て  form of a verb, in that it carries the meaning of 'and', and is used for linking. It will allow us to list multiple qualities/traits of something.\nFor  い-Adjectives , we will need to change the last い to く (the form used for conjugation), and then simply add  て .\nFor nouns and  な-Adjectives , we will need to add  で  to the base form (not  な  or  だ ).\nIt should be noted that  て  and  で  are different structures here.  て  is the same conjunction particle that is used with verbs (meaning that  い-Adjectives  are similar to verbs), while  で  is actually a form of  だ  that is used for conjugation. It is the same  で  as the one that is used in the formal version of  だ ,  である . Which we will learn later.\nCaution Like other  て  forms ( ている 1 ,  ている 2 , and  ている 3 ), the  て  (or  で ) form of other words can have several possible meanings. These meanings are as follows.\nLinking - Like 'and' in English.\nReasons - Like 'with (A)', or 'because of (A)' in English.\nManner - Like 'to do (B) in an (A) way' in English.\nCaution As with all other conjugations of  いい , remember that it will be よくて, and not いくて.\nRelated Expand All\nVerb + て+ B And, And then, After that (sequence)\nN5 Grammar\nAdjective + て, Noun + で, and Verb + て+ B are the same fundamental pattern, using the て form to connect elements in a sentence. The construction of the て form depends on whether the word is an い-Adjective, な-Adjective, noun, or verb, but the function remains consistent, similar to the English 'and.'\nなくて To not ~ and ~, Not ~ and ~ (Conjugations)\nN4 Grammar\nAdjective + て or Noun + で is used to connect adjective or noun phrases with the rest of the sentence, similar to the English 'and.' なくて is similar, but connects phrases that are in the negative (ない) form. For example, 安くてよかった means 'I'm glad it was inexpensive,' while 高くなくてよかった would mean 'I'm glad that it wasn't expensive'.\n連用形 Formal Conjunctive\nN3 Grammar\n連用形 also replaces て or で after adjectives and nouns in formal writing. For example, 優しくて becomes 優しく, e.g. とても優しくて、綺麗です 'She's very kind, and pretty.' → とても優しく、綺麗です. (Same meaning, but more formal and literary.)\nAdjective + て + B And..., Both and (Conjunctive)\nN5 Grammar\nBoth of these patterns involve connecting an adjective or noun phrase to the rest of the sentence using the て form. The meaning of the connection depends on context. Sometimes it simply links words, as in 大きくてきれい ('big and pretty'), while in other cases, the first part may provide a reason for the second, as in 甘くておいしい ('sweet and tasty').\nVerb[て] + B And・and so, Due to, Because of, Since, Conjunctive\nN4 Grammar\nBoth of these patterns involve connecting a word or phrase (adjectives and nouns in one case, verbs in the other) to the rest of the sentence using the て form. The meaning of the connection depends on context. Sometimes it simply links words, as in 大きくてきれい ('big and pretty'), while in other cases, the て form expresses reason or method, as in 歩いて行った ('went by walking').\nExamples --:--\n新 ( あたら ) し い  →  新 ( あたら ) しくて\nNew →  New and...\n大 ( おお ) き い  →  大 ( おお ) きくて\nBig →  Big and...\n嫌 ( きら ) い  →  嫌 ( きら ) いで\nDislike →  Dislike and...\n静 ( しず ) か →  静 ( しず ) かで\nQuiet →  Quiet and...\n病気 ( びょうき )  →  病気 ( びょうき ) で\nDisease →  Disease and...\nGet more example sentences! Premium users get access to 12 example sentences on all Grammar Points.\nTry Bunpro Online Expressing a sequence of states Tae Kim\nて vs. と Tofugu\nOffline Tae Kim's Japanese Grammar Guide Page 103\nみんなの日本語 I Page 104 [CH 16]\nAdjective + て・Noun + で – Grammar Discussion Most Recent Replies (13 in total)\nIcyIceBear\nきらい is な adjective so it should be 嫌いで\nIt looks like an い adjective and there’s so way to tell it’s not in this case, it’s one you just have to remember. Don’t worry, it’s one of few\nOldRosy\nThank you!\ncyberjus\nHaving this earlier in the N5 lessons would have reenforced some of the other points. Like ～てもいい\nGot questions about Adjective + て・Noun + で?  Join us to discuss, ask, and learn together!\nJoin the Discussion",
+        "slug": "%E9%80%A3%E7%94%A8%E5%BD%A2"
+      },
+      {
+        "title": "Adjective + て + B",
+        "url": "https://bunpro.jp/grammar_points/adjective-%E3%81%A6-b",
+        "comparison_text": "Ready to transform your studies? Learn N5 in under a month! Try now, no credit card required!\nTry Bunpro Learn More Structure ［い］Adjective［ い ］  +  く  +  て おもしろ い  +  く  +  て 新 ( あたら ) し い  +  く  +  て ［な］Adjective  +  で しずか +  で 好 ( す ) き +  で Noun +  で 先生 ( せんせい )  +  で 仕事 ( しごと ) +  で Exceptions: いい → よく て\nDetails Part of Speech Adjective + Conjunctions\nWord Type Particle / Auxiliary Verb\nRegister Standard\nAbout Adjective + て・Noun + で The  て  form of an  い-Adjective , or  で  form of a noun (or  な-Adjective ) is exactly the same as the  て  form of a verb, in that it carries the meaning of 'and', and is used for linking. It will allow us to list multiple qualities/traits of something.\nFor  い-Adjectives , we will need to change the last い to く (the form used for conjugation), and then simply add  て .\nFor nouns and  な-Adjectives , we will need to add  で  to the base form (not  な  or  だ ).\nIt should be noted that  て  and  で  are different structures here.  て  is the same conjunction particle that is used with verbs (meaning that  い-Adjectives  are similar to verbs), while  で  is actually a form of  だ  that is used for conjugation. It is the same  で  as the one that is used in the formal version of  だ ,  である . Which we will learn later.\nCaution Like other  て  forms ( ている 1 ,  ている 2 , and  ている 3 ), the  て  (or  で ) form of other words can have several possible meanings. These meanings are as follows.\nLinking - Like 'and' in English.\nReasons - Like 'with (A)', or 'because of (A)' in English.\nManner - Like 'to do (B) in an (A) way' in English.\nCaution As with all other conjugations of  いい , remember that it will be よくて, and not いくて.\nRelated Expand All\nVerb + て+ B And, And then, After that (sequence)\nN5 Grammar\nAdjective + て, Noun + で, and Verb + て+ B are the same fundamental pattern, using the て form to connect elements in a sentence. The construction of the て form depends on whether the word is an い-Adjective, な-Adjective, noun, or verb, but the function remains consistent, similar to the English 'and.'\nなくて To not ~ and ~, Not ~ and ~ (Conjugations)\nN4 Grammar\nAdjective + て or Noun + で is used to connect adjective or noun phrases with the rest of the sentence, similar to the English 'and.' なくて is similar, but connects phrases that are in the negative (ない) form. For example, 安くてよかった means 'I'm glad it was inexpensive,' while 高くなくてよかった would mean 'I'm glad that it wasn't expensive'.\n連用形 Formal Conjunctive\nN3 Grammar\n連用形 also replaces て or で after adjectives and nouns in formal writing. For example, 優しくて becomes 優しく, e.g. とても優しくて、綺麗です 'She's very kind, and pretty.' → とても優しく、綺麗です. (Same meaning, but more formal and literary.)\nAdjective + て + B And..., Both and (Conjunctive)\nN5 Grammar\nBoth of these patterns involve connecting an adjective or noun phrase to the rest of the sentence using the て form. The meaning of the connection depends on context. Sometimes it simply links words, as in 大きくてきれい ('big and pretty'), while in other cases, the first part may provide a reason for the second, as in 甘くておいしい ('sweet and tasty').\nVerb[て] + B And・and so, Due to, Because of, Since, Conjunctive\nN4 Grammar\nBoth of these patterns involve connecting a word or phrase (adjectives and nouns in one case, verbs in the other) to the rest of the sentence using the て form. The meaning of the connection depends on context. Sometimes it simply links words, as in 大きくてきれい ('big and pretty'), while in other cases, the て form expresses reason or method, as in 歩いて行った ('went by walking').\nExamples --:--\n新 ( あたら ) し い  →  新 ( あたら ) しくて\nNew →  New and...\n大 ( おお ) き い  →  大 ( おお ) きくて\nBig →  Big and...\n嫌 ( きら ) い  →  嫌 ( きら ) いで\nDislike →  Dislike and...\n静 ( しず ) か →  静 ( しず ) かで\nQuiet →  Quiet and...\n病気 ( びょうき )  →  病気 ( びょうき ) で\nDisease →  Disease and...\nGet more example sentences! Premium users get access to 12 example sentences on all Grammar Points.\nTry Bunpro Online Expressing a sequence of states Tae Kim\nて vs. と Tofugu\nOffline Tae Kim's Japanese Grammar Guide Page 103\nみんなの日本語 I Page 104 [CH 16]\nAdjective + て・Noun + で – Grammar Discussion Most Recent Replies (13 in total)\nIcyIceBear\nきらい is な adjective so it should be 嫌いで\nIt looks like an い adjective and there’s so way to tell it’s not in this case, it’s one you just have to remember. Don’t worry, it’s one of few\nOldRosy\nThank you!\ncyberjus\nHaving this earlier in the N5 lessons would have reenforced some of the other points. Like ～てもいい\nGot questions about Adjective + て・Noun + で?  Join us to discuss, ask, and learn together!\nJoin the Discussion",
+        "slug": "adjective-%E3%81%A6-b"
+      },
+      {
+        "title": "Verb[て] + B",
+        "url": "https://bunpro.jp/grammar_points/verb%E3%81%A6-b2",
+        "comparison_text": "Ready to transform your studies? Learn N5 in under a month! Try now, no credit card required!\nTry Bunpro Learn More Structure ［い］Adjective［ い ］  +  く  +  て おもしろ い  +  く  +  て 新 ( あたら ) し い  +  く  +  て ［な］Adjective  +  で しずか +  で 好 ( す ) き +  で Noun +  で 先生 ( せんせい )  +  で 仕事 ( しごと ) +  で Exceptions: いい → よく て\nDetails Part of Speech Adjective + Conjunctions\nWord Type Particle / Auxiliary Verb\nRegister Standard\nAbout Adjective + て・Noun + で The  て  form of an  い-Adjective , or  で  form of a noun (or  な-Adjective ) is exactly the same as the  て  form of a verb, in that it carries the meaning of 'and', and is used for linking. It will allow us to list multiple qualities/traits of something.\nFor  い-Adjectives , we will need to change the last い to く (the form used for conjugation), and then simply add  て .\nFor nouns and  な-Adjectives , we will need to add  で  to the base form (not  な  or  だ ).\nIt should be noted that  て  and  で  are different structures here.  て  is the same conjunction particle that is used with verbs (meaning that  い-Adjectives  are similar to verbs), while  で  is actually a form of  だ  that is used for conjugation. It is the same  で  as the one that is used in the formal version of  だ ,  である . Which we will learn later.\nCaution Like other  て  forms ( ている 1 ,  ている 2 , and  ている 3 ), the  て  (or  で ) form of other words can have several possible meanings. These meanings are as follows.\nLinking - Like 'and' in English.\nReasons - Like 'with (A)', or 'because of (A)' in English.\nManner - Like 'to do (B) in an (A) way' in English.\nCaution As with all other conjugations of  いい , remember that it will be よくて, and not いくて.\nRelated Expand All\nVerb + て+ B And, And then, After that (sequence)\nN5 Grammar\nAdjective + て, Noun + で, and Verb + て+ B are the same fundamental pattern, using the て form to connect elements in a sentence. The construction of the て form depends on whether the word is an い-Adjective, な-Adjective, noun, or verb, but the function remains consistent, similar to the English 'and.'\nなくて To not ~ and ~, Not ~ and ~ (Conjugations)\nN4 Grammar\nAdjective + て or Noun + で is used to connect adjective or noun phrases with the rest of the sentence, similar to the English 'and.' なくて is similar, but connects phrases that are in the negative (ない) form. For example, 安くてよかった means 'I'm glad it was inexpensive,' while 高くなくてよかった would mean 'I'm glad that it wasn't expensive'.\n連用形 Formal Conjunctive\nN3 Grammar\n連用形 also replaces て or で after adjectives and nouns in formal writing. For example, 優しくて becomes 優しく, e.g. とても優しくて、綺麗です 'She's very kind, and pretty.' → とても優しく、綺麗です. (Same meaning, but more formal and literary.)\nAdjective + て + B And..., Both and (Conjunctive)\nN5 Grammar\nBoth of these patterns involve connecting an adjective or noun phrase to the rest of the sentence using the て form. The meaning of the connection depends on context. Sometimes it simply links words, as in 大きくてきれい ('big and pretty'), while in other cases, the first part may provide a reason for the second, as in 甘くておいしい ('sweet and tasty').\nVerb[て] + B And・and so, Due to, Because of, Since, Conjunctive\nN4 Grammar\nBoth of these patterns involve connecting a word or phrase (adjectives and nouns in one case, verbs in the other) to the rest of the sentence using the て form. The meaning of the connection depends on context. Sometimes it simply links words, as in 大きくてきれい ('big and pretty'), while in other cases, the て form expresses reason or method, as in 歩いて行った ('went by walking').\nExamples --:--\n新 ( あたら ) し い  →  新 ( あたら ) しくて\nNew →  New and...\n大 ( おお ) き い  →  大 ( おお ) きくて\nBig →  Big and...\n嫌 ( きら ) い  →  嫌 ( きら ) いで\nDislike →  Dislike and...\n静 ( しず ) か →  静 ( しず ) かで\nQuiet →  Quiet and...\n病気 ( びょうき )  →  病気 ( びょうき ) で\nDisease →  Disease and...\nGet more example sentences! Premium users get access to 12 example sentences on all Grammar Points.\nTry Bunpro Online Expressing a sequence of states Tae Kim\nて vs. と Tofugu\nOffline Tae Kim's Japanese Grammar Guide Page 103\nみんなの日本語 I Page 104 [CH 16]\nAdjective + て・Noun + で – Grammar Discussion Most Recent Replies (13 in total)\nIcyIceBear\nきらい is な adjective so it should be 嫌いで\nIt looks like an い adjective and there’s so way to tell it’s not in this case, it’s one you just have to remember. Don’t worry, it’s one of few\nOldRosy\nThank you!\ncyberjus\nHaving this earlier in the N5 lessons would have reenforced some of the other points. Like ～てもいい\nGot questions about Adjective + て・Noun + で?  Join us to discuss, ask, and learn together!\nJoin the Discussion",
+        "slug": "verb%E3%81%A6-b2"
+      }
+    ]
+  },
+  {
+    "slug": "adjective-の-は",
+    "title": "Adjective + の(は)",
+    "meaning": "The 'one' that... (Indefinite pronoun, Adjective nominalization)",
+    "level": 1,
+    "structure": {
+      "patterns": [
+        "［な］Adjective + な + の + は(1)［い］Adjective + の + は(1)(1) が、も"
+      ],
+      "variants": {
+        "standard": "［な］Adjective + な + の + は(1)［い］Adjective + の + は(1)(1) が、も",
+        "polite": null
+      }
+    },
+    "details": "格助詞",
+    "cautions": [
+      "Caution の may be used more than once in the same sentence, referring to the same noun."
+    ],
+    "about": "One of the roles that the particle の can take in Japanese is replacing a noun that has already been mentioned, or one that has not been mentioned yet. In this way, it is similar to 'the one that (A)' in English. When using this expression, we will need to use な before の , when a な-Adjective is being used. When using this expression, の will be followed by は , が , or も , depending on what the speaker/writer wants to express.",
+    "fun_facts": [],
+    "details_expanded": {
+      "part_of_speech": "表現",
+      "word_type": "格助詞",
+      "register": "一般",
+      "rare_kanji": null
+    },
+    "furigana": "(Adjective) + のは",
+    "resources": {
+      "online": [
+        {
+          "title": "Adjective + のも",
+          "url": "https://japanese.stackexchange.com/questions/47646/use-of-adjective-%E3%81%AE%E3%82%82",
+          "source": "Japanese StackExchange"
+        },
+        {
+          "title": "Meaning of 「〜の(は)」 after an adjective",
+          "url": "https://community.bunpro.jp/t/meaning-of-after-an-adjective/3504/3?",
+          "source": "Bunpro Community Discussion"
+        },
+        {
+          "title": "の: one (indefinite pronoun)",
+          "url": "https://maggiesensei.com/2013/07/17/how-to-use-%E3%81%AEno-one-indefinite-pronoun/",
+          "source": "Maggie Sensei"
+        }
+      ],
+      "offline": [
+        {
+          "book": "[DBJG] A Dictionary of Basic Japanese Grammar",
+          "page": "Page 315"
+        },
+        {
+          "book": "Genki I 2nd Edition",
+          "page": "Page 233"
+        },
+        {
+          "book": "みんなの日本語 I",
+          "page": "Page 81 [CH 12]"
+        }
+      ]
+    },
+    "examples": [
+      {
+        "sentence_text": "心配（しんぱい）なのはあなたです。",
+        "translation": "The one that is to be worried about is you.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/心配なのはあなたです。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "心配（しんぱい）な"
+          },
+          {
+            "type": "grammar_point",
+            "content": "のは"
+          },
+          {
+            "type": "text",
+            "content": "あなたです。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "熱（あつ）いのがこれです。",
+        "translation": "This is the one that is hot. (Specifically highlighting one thing out of several)",
+        "audio_url": "",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "熱（あつ）い"
+          },
+          {
+            "type": "grammar_point",
+            "content": "のが"
+          },
+          {
+            "type": "text",
+            "content": "これです。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "安（やす）いのはあのペンだ。",
+        "translation": "The one that is cheap is that pen. (Without much consideration for other things)",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/安いのはあのペンだ。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "安（やす）い"
+          },
+          {
+            "type": "grammar_point",
+            "content": "のは"
+          },
+          {
+            "type": "text",
+            "content": "あのペンだ。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "可愛（かわい）いのは私（わたし）の犬（いぬ）です。",
+        "translation": "The one that is cute is my dog.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/可愛いのは私の犬です。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "可愛（かわい）い"
+          },
+          {
+            "type": "grammar_point",
+            "content": "のは"
+          },
+          {
+            "type": "text",
+            "content": "私（わたし）の犬（いぬ）です。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "冷（つめ）たいのも好（す）きです。",
+        "translation": "I also like the one that is cold.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/冷たいのも好きです。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "冷（つめ）たい"
+          },
+          {
+            "type": "grammar_point",
+            "content": "のも"
+          },
+          {
+            "type": "text",
+            "content": "好（す）きです。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "新（あたら）しいのは彼（かれ）の車（くるま）だ。",
+        "translation": "The one that is new is his car.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/新しいのは彼の車だ。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "新（あたら）しい"
+          },
+          {
+            "type": "grammar_point",
+            "content": "のは"
+          },
+          {
+            "type": "text",
+            "content": "彼（かれ）の車（くるま）だ。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "元気（げんき）なのは社長（しゃちょう）です。",
+        "translation": "The one that is energetic is the manager.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/元気なのは社長です。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "元気（げんき）"
+          },
+          {
+            "type": "grammar_point",
+            "content": "なのは"
+          },
+          {
+            "type": "text",
+            "content": "社長（しゃちょう）です。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "難（むずか）しいのは歴史（れきし）だ。",
+        "translation": "The one that is difficult is history.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/難しいのは歴史だ。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "難（むずか）しい"
+          },
+          {
+            "type": "grammar_point",
+            "content": "のは"
+          },
+          {
+            "type": "text",
+            "content": "歴史（れきし）だ。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "彼女（かのじょ）が素敵（すてき）なのは服（ふく）だけだ。",
+        "translation": "The only (one) thing that is great about her is her clothes.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/彼女が素敵なのは服だけだ。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "彼女（かのじょ）が素敵（すてき）"
+          },
+          {
+            "type": "grammar_point",
+            "content": "なのは"
+          },
+          {
+            "type": "text",
+            "content": "服（ふく）だけだ。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "暑（あつ）いのも好（す）きだから、エアコンがなくてもいい。",
+        "translation": "I also like the heat, so it's alright if I don't have an air conditioner.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/暑いのも好きだから、エアコンがなくてもいい。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "暑（あつ）い"
+          },
+          {
+            "type": "grammar_point",
+            "content": "のも"
+          },
+          {
+            "type": "text",
+            "content": "好（す）きだから、エアコンがなくてもいい。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "この中（なか）で一番（いちばん）好（す）きなのは赤（あか）いの。",
+        "translation": "The one I like the most out of these is the red one.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/この中で一番好きなのは赤いの。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "この中（なか）で一番（いちばん）好（す）きな"
+          },
+          {
+            "type": "grammar_point",
+            "content": "の"
+          },
+          {
+            "type": "grammar_point",
+            "content": "は"
+          },
+          {
+            "type": "text",
+            "content": "赤（あか）い"
+          },
+          {
+            "type": "grammar_point",
+            "content": "の"
+          },
+          {
+            "type": "text",
+            "content": "。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "高（たか）いのは子供（こども）の人形（にんぎょう）だ。",
+        "translation": "The one that is expensive is the child's doll.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/高いのは子供の人形だ。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "高（たか）い"
+          },
+          {
+            "type": "grammar_point",
+            "content": "のは"
+          },
+          {
+            "type": "text",
+            "content": "子供（こども）の人形（にんぎょう）だ。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "大変（たいへん）なのは忙（いそが）しい仕事（しごと）。",
+        "translation": "The one that is difficult is a busy job.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/大変なのは忙しい仕事。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "大変（たいへん）"
+          },
+          {
+            "type": "grammar_point",
+            "content": "なのは"
+          },
+          {
+            "type": "text",
+            "content": "忙（いそが）しい仕事（しごと）。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "「この家（いえ）の中（なか）で一番（いちばん）明（あか）るい部屋（へや）はどれ？」「息子（むすこ）の部屋（へや）が一番（いちばん）明（あか）るいの。」",
+        "translation": "'Which room is the most well-lit in this house?''The one that is the most well-lit is my son's room.'",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/「この家の中で一番明るい部屋はどれ？」「息子の部屋が一番明るいの。」.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "「この家（いえ）の中（なか）で一番（いちばん）明（あか）るい部屋（へや）はどれ？」「息子（むすこ）の部屋（へや）が一番（いちばん）明（あか）るい"
+          },
+          {
+            "type": "grammar_point",
+            "content": "の"
+          },
+          {
+            "type": "text",
+            "content": "。」"
+          }
+        ]
+      },
+      {
+        "sentence_text": "心配（しんぱい）なのは彼（かれ）のことだ。",
+        "translation": "The one that I am worried about is him.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/心配なのは彼のことだ。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "心配（しんぱい）"
+          },
+          {
+            "type": "grammar_point",
+            "content": "なのは"
+          },
+          {
+            "type": "text",
+            "content": "彼（かれ）のことだ。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "まずいのは彼女（かのじょ）が作（つく）ったカレーです。",
+        "translation": "The one that is unsavory is the curry that she made.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/まずいのは彼女が作ったカレーです。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "まずい"
+          },
+          {
+            "type": "grammar_point",
+            "content": "のは"
+          },
+          {
+            "type": "text",
+            "content": "彼女（かのじょ）が作（つく）ったカレーです。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "必要（ひつよう）なのはペンと紙（かみ）だけです。",
+        "translation": "The only things (ones) that you need are a pen and paper.",
+        "audio_url": "https://dk3kgylsgq3k1.cloudfront.net/audio/grammar/n5/必要なのはペンと紙だけです。.mp3",
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "必要（ひつよう）"
+          },
+          {
+            "type": "grammar_point",
+            "content": "なのは"
+          },
+          {
+            "type": "text",
+            "content": "ペンと紙（かみ）だけです。"
+          }
+        ]
+      },
+      {
+        "sentence_text": "ここにある車（くるま）の中（なか）で好（す）きなのはあの赤（あか）いの。",
+        "translation": "Out of the cars that are here, the one that I like is that red one over there.",
+        "audio_url": null,
+        "sentence_structure": [
+          {
+            "type": "text",
+            "content": "ここにある車（くるま）の中（なか）で好（す）きなのはあの赤（あか）いの。"
+          }
+        ]
+      }
+    ],
+    "related": [
+      {
+        "title": "のはXの方だ",
+        "url": "https://bunpro.jp/grammar_points/%E3%81%AE%E3%81%AFx%E3%81%AE%E6%96%B9%E3%81%A0",
+        "comparison_text": "Ready to transform your studies? Learn N5 in under a month! Try now, no credit card required!\nTry Bunpro Learn More Structure ［な］Adjective +  な  +  の  + は (1) ［い］Adjective  +  の  + は (1) (1) が 、 も\nDetails Part of Speech Expression\nWord Type Case Marking Particle\nRegister Standard\nAbout Adjective + の(は) One of the roles that the particle  の  can take in Japanese is replacing a noun that has already been mentioned, or one that has not been mentioned yet. In this way, it is similar to 'the one that (A)' in English. When using this expression, we will need to use  な  before  の , when a  な-Adjective  is being used.\nWhen using this expression,  の  will be followed by  は ,  が , or  も , depending on what the speaker/writer wants to express.\nCaution の  may be used more than once in the same sentence, referring to the same noun.\nSynonyms Expand All\nのはXの方だ It is...that..., It is...who..., ...is the one that..., ...is the one who...\nN3 Grammar\nBoth structures single out and highlight something. That is, expressing '(A) is the one that (B)'. Adjective + の(は) is the simpler form, e.g. 新しいのはどっち？ ('Which one is new?') のはXの方だ expands on this to specify and contrast. A common use is in insistent apologies, e.g. いいえ、謝らないといけないのは僕のほうだ ('No, I'm the one who needs to apologize.')\nの Verb nominalizer, The one who..., That which...\nN5 Grammar\nBoth of these patterns use の to turn a phrase into a noun. For example, the verb 走る ('to run') becomes 走るのが好き ('I like running') because the subject marker が must follow a noun. The Adjective + の(は) pattern works similarly, turning adjectives into noun phrases (e.g., 赤い ('red') becomes 赤いのはきれいです ('The red one is pretty')).\nRelated Expand All\nParticle + の Combined particles\nN3 Grammar\nParticle + の is used when particles like から, と, へ, で, or まで combine with の to describe a noun. For example, 先生への手紙 means 'a letter to (my) teacher,' and 駅までの道 means 'the road to the station.' Adjective + の(は) is a pattern where の replaces a noun, allowing the adjective to form a descriptive phrase. For example, 高いのはこれです means 'This is the expensive one.'\nExamples --:--\n新 ( あたら ) し い のは 彼 ( かれ ) の 車 ( くるま ) だ 。\nThe one that  is new is his car.\n元気 ( げんき ) なのは 社長 ( しゃちょう ) です 。\nThe one that  is energetic is the manager.\n難 ( むずか ) し い のは 歴史 ( れきし ) だ 。\nThe one that  is difficult is history.\n彼女 ( かのじょ ) が 素敵 ( すてき ) なのは 服 ( ふく ) だけ だ 。\nThe  only ( one ) thing  that  is great about her is her clothes.\n暑 ( あつ ) い のも 好 ( す ) き だ から 、エアコン が なく てもいい 。\nI  also  like the  heat , so it's alright if I don't have an air conditioner.\nGet more example sentences! Premium users get access to 12 example sentences on all Grammar Points.\nTry Bunpro Online Adjective + のも Japanese StackExchange\nMeaning of 「〜の(は)」 after an adjective Bunpro Community Discussion\nの: one (indefinite pronoun) Maggie Sensei\nOffline [DBJG] A Dictionary of Basic Japanese Grammar Page 315\nGenki I 2nd Edition Page 233\nみんなの日本語 I Page 81 [CH 12]\nAdjective + の(は) – Grammar Discussion Most Recent Replies (17 in total)\npasi\nWhy does 「この家の中で一番明るい部屋はどれ？」息子の部屋が一番明るい の  not take のは? Is it just because it is at the end of the sentence? The grammar point text doesn’t give any examples of it without the second particle.\nNinToaster\nI would guess that its informal speech and thus the は particle is removed to make it easier to say since its already known in the previous sentence (Case Omission).\nKattosan\nI’m guessing that is a explanatory の.\nGot questions about Adjective + の(は)?  Join us to discuss, ask, and learn together!\nJoin the Discussion",
+        "slug": "%E3%81%AE%E3%81%AFx%E3%81%AE%E6%96%B9%E3%81%A0"
+      },
+      {
+        "title": "の",
+        "url": "https://bunpro.jp/grammar_points/%E3%81%AE%E3%81%AF",
+        "comparison_text": "Ready to transform your studies? Learn N5 in under a month! Try now, no credit card required!\nTry Bunpro Learn More Structure ［な］Adjective +  な  +  の  + は (1) ［い］Adjective  +  の  + は (1) (1) が 、 も\nDetails Part of Speech Expression\nWord Type Case Marking Particle\nRegister Standard\nAbout Adjective + の(は) One of the roles that the particle  の  can take in Japanese is replacing a noun that has already been mentioned, or one that has not been mentioned yet. In this way, it is similar to 'the one that (A)' in English. When using this expression, we will need to use  な  before  の , when a  な-Adjective  is being used.\nWhen using this expression,  の  will be followed by  は ,  が , or  も , depending on what the speaker/writer wants to express.\nCaution の  may be used more than once in the same sentence, referring to the same noun.\nSynonyms Expand All\nのはXの方だ It is...that..., It is...who..., ...is the one that..., ...is the one who...\nN3 Grammar\nBoth structures single out and highlight something. That is, expressing '(A) is the one that (B)'. Adjective + の(は) is the simpler form, e.g. 新しいのはどっち？ ('Which one is new?') のはXの方だ expands on this to specify and contrast. A common use is in insistent apologies, e.g. いいえ、謝らないといけないのは僕のほうだ ('No, I'm the one who needs to apologize.')\nの Verb nominalizer, The one who..., That which...\nN5 Grammar\nBoth of these patterns use の to turn a phrase into a noun. For example, the verb 走る ('to run') becomes 走るのが好き ('I like running') because the subject marker が must follow a noun. The Adjective + の(は) pattern works similarly, turning adjectives into noun phrases (e.g., 赤い ('red') becomes 赤いのはきれいです ('The red one is pretty')).\nRelated Expand All\nParticle + の Combined particles\nN3 Grammar\nParticle + の is used when particles like から, と, へ, で, or まで combine with の to describe a noun. For example, 先生への手紙 means 'a letter to (my) teacher,' and 駅までの道 means 'the road to the station.' Adjective + の(は) is a pattern where の replaces a noun, allowing the adjective to form a descriptive phrase. For example, 高いのはこれです means 'This is the expensive one.'\nExamples --:--\n新 ( あたら ) し い のは 彼 ( かれ ) の 車 ( くるま ) だ 。\nThe one that  is new is his car.\n元気 ( げんき ) なのは 社長 ( しゃちょう ) です 。\nThe one that  is energetic is the manager.\n難 ( むずか ) し い のは 歴史 ( れきし ) だ 。\nThe one that  is difficult is history.\n彼女 ( かのじょ ) が 素敵 ( すてき ) なのは 服 ( ふく ) だけ だ 。\nThe  only ( one ) thing  that  is great about her is her clothes.\n暑 ( あつ ) い のも 好 ( す ) き だ から 、エアコン が なく てもいい 。\nI  also  like the  heat , so it's alright if I don't have an air conditioner.\nGet more example sentences! Premium users get access to 12 example sentences on all Grammar Points.\nTry Bunpro Online Adjective + のも Japanese StackExchange\nMeaning of 「〜の(は)」 after an adjective Bunpro Community Discussion\nの: one (indefinite pronoun) Maggie Sensei\nOffline [DBJG] A Dictionary of Basic Japanese Grammar Page 315\nGenki I 2nd Edition Page 233\nみんなの日本語 I Page 81 [CH 12]\nAdjective + の(は) – Grammar Discussion Most Recent Replies (17 in total)\npasi\nWhy does 「この家の中で一番明るい部屋はどれ？」息子の部屋が一番明るい の  not take のは? Is it just because it is at the end of the sentence? The grammar point text doesn’t give any examples of it without the second particle.\nNinToaster\nI would guess that its informal speech and thus the は particle is removed to make it easier to say since its already known in the previous sentence (Case Omission).\nKattosan\nI’m guessing that is a explanatory の.\nGot questions about Adjective + の(は)?  Join us to discuss, ask, and learn together!\nJoin the Discussion",
+        "slug": "%E3%81%AE%E3%81%AF"
+      },
+      {
+        "title": "Particle + の",
+        "url": "https://bunpro.jp/grammar_points/particle-%E3%81%AE",
+        "comparison_text": "Ready to transform your studies? Learn N5 in under a month! Try now, no credit card required!\nTry Bunpro Learn More Structure ［な］Adjective +  な  +  の  + は (1) ［い］Adjective  +  の  + は (1) (1) が 、 も\nDetails Part of Speech Expression\nWord Type Case Marking Particle\nRegister Standard\nAbout Adjective + の(は) One of the roles that the particle  の  can take in Japanese is replacing a noun that has already been mentioned, or one that has not been mentioned yet. In this way, it is similar to 'the one that (A)' in English. When using this expression, we will need to use  な  before  の , when a  な-Adjective  is being used.\nWhen using this expression,  の  will be followed by  は ,  が , or  も , depending on what the speaker/writer wants to express.\nCaution の  may be used more than once in the same sentence, referring to the same noun.\nSynonyms Expand All\nのはXの方だ It is...that..., It is...who..., ...is the one that..., ...is the one who...\nN3 Grammar\nBoth structures single out and highlight something. That is, expressing '(A) is the one that (B)'. Adjective + の(は) is the simpler form, e.g. 新しいのはどっち？ ('Which one is new?') のはXの方だ expands on this to specify and contrast. A common use is in insistent apologies, e.g. いいえ、謝らないといけないのは僕のほうだ ('No, I'm the one who needs to apologize.')\nの Verb nominalizer, The one who..., That which...\nN5 Grammar\nBoth of these patterns use の to turn a phrase into a noun. For example, the verb 走る ('to run') becomes 走るのが好き ('I like running') because the subject marker が must follow a noun. The Adjective + の(は) pattern works similarly, turning adjectives into noun phrases (e.g., 赤い ('red') becomes 赤いのはきれいです ('The red one is pretty')).\nRelated Expand All\nParticle + の Combined particles\nN3 Grammar\nParticle + の is used when particles like から, と, へ, で, or まで combine with の to describe a noun. For example, 先生への手紙 means 'a letter to (my) teacher,' and 駅までの道 means 'the road to the station.' Adjective + の(は) is a pattern where の replaces a noun, allowing the adjective to form a descriptive phrase. For example, 高いのはこれです means 'This is the expensive one.'\nExamples --:--\n新 ( あたら ) し い のは 彼 ( かれ ) の 車 ( くるま ) だ 。\nThe one that  is new is his car.\n元気 ( げんき ) なのは 社長 ( しゃちょう ) です 。\nThe one that  is energetic is the manager.\n難 ( むずか ) し い のは 歴史 ( れきし ) だ 。\nThe one that  is difficult is history.\n彼女 ( かのじょ ) が 素敵 ( すてき ) なのは 服 ( ふく ) だけ だ 。\nThe  only ( one ) thing  that  is great about her is her clothes.\n暑 ( あつ ) い のも 好 ( す ) き だ から 、エアコン が なく てもいい 。\nI  also  like the  heat , so it's alright if I don't have an air conditioner.\nGet more example sentences! Premium users get access to 12 example sentences on all Grammar Points.\nTry Bunpro Online Adjective + のも Japanese StackExchange\nMeaning of 「〜の(は)」 after an adjective Bunpro Community Discussion\nの: one (indefinite pronoun) Maggie Sensei\nOffline [DBJG] A Dictionary of Basic Japanese Grammar Page 315\nGenki I 2nd Edition Page 233\nみんなの日本語 I Page 81 [CH 12]\nAdjective + の(は) – Grammar Discussion Most Recent Replies (17 in total)\npasi\nWhy does 「この家の中で一番明るい部屋はどれ？」息子の部屋が一番明るい の  not take のは? Is it just because it is at the end of the sentence? The grammar point text doesn’t give any examples of it without the second particle.\nNinToaster\nI would guess that its informal speech and thus the は particle is removed to make it easier to say since its already known in the previous sentence (Case Omission).\nKattosan\nI’m guessing that is a explanatory の.\nGot questions about Adjective + の(は)?  Join us to discuss, ask, and learn together!\nJoin the Discussion",
+        "slug": "particle-%E3%81%AE"
+      }
+    ]
+  }
+]

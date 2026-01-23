@@ -1,0 +1,49 @@
+@startuml Chatbot CTA Sequence
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+
+actor User
+participant "ChatbotPage (UI)" as UI
+participant "/api/chat (Handler)" as API
+participant "SimpleAgent (chatAgent)" as Agent
+participant "kuRepository" as Repo
+participant "analyzeSentenceAction" as Action
+database "Supabase" as DB
+
+User -> UI : Sends message (e.g. "Analyze 私は猫です")
+activate UI
+UI -> API : POST {message, history}
+activate API
+API -> Agent : process(message, history)
+activate Agent
+
+alt intent == 'SEARCH'
+    Agent -> Repo : search(keyword)
+    activate Repo
+    Repo -> DB : SELECT FROM knowledge_units ...
+    activate DB
+    DB --> Repo : [KU_Data]
+    deactivate DB
+    Repo --> Agent : [KU_Data]
+    deactivate Repo
+else intent == 'ANALYZE'
+    Agent -> Action : analyzeSentenceAction(text)
+    activate Action
+    note right: Uses internal NLP tools
+    Action --> Agent : [Analysis_Results]
+    deactivate Action
+end
+
+Agent -> Agent : generateResponse()
+Agent --> API : {reply, toolsUsed}
+deactivate Agent
+API --> UI : {success, reply, toolsUsed}
+deactivate API
+
+UI -> User : Displays AI message + Link/CTA
+User -> UI : Clicks on Result/CTA
+UI -> UI : Redirect/Navigate to detail page
+deactivate UI
+
+@enduml

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -6,98 +5,91 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard,
-    GraduationCap,
     BookOpen,
     Languages,
-    Settings,
-    Youtube,
     MessageSquare,
-    Search,
+    Flame,
+    LogOut,
     ChevronRight,
-    Flame
+    Search
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useUser } from '@/features/auth/AuthContext';
 
 const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Review', href: '/review', icon: Flame },
-    { name: 'Decks', href: '/decks', icon: GraduationCap },
+    { name: 'Training', href: '/review', icon: Flame },
     {
-        name: 'Content',
+        name: 'Library',
         icon: BookOpen,
         children: [
-            { name: 'Kanji', href: '/content/kanji' },
-            { name: 'Vocabulary', href: '/content/vocabulary' },
-            { name: 'Grammar', href: '/content/grammar' },
-            { name: 'Sentences', href: '/content/sentences' },
+            { name: 'All Content', href: '/content' },
+            { name: 'Radicals', href: '/content?type=radical' },
+            { name: 'Kanji', href: '/content?type=kanji' },
+            { name: 'Vocabulary', href: '/content?type=vocabulary' },
+            { name: 'Grammar', href: '/content?type=grammar' },
         ]
     },
     {
         name: 'Immersion',
         icon: Languages,
         children: [
-            { name: 'YouTube', href: '/immersion/youtube', icon: Youtube },
-            { name: 'Analyzer', href: '/immersion/analyzer', icon: Search },
             { name: 'Chatbot', href: '/immersion/chatbot', icon: MessageSquare },
         ]
     },
 ];
 
-import { useUser } from '@/features/auth/AuthContext';
-import { LogOut } from 'lucide-react';
-
 export function Sidebar() {
     const pathname = usePathname();
-    const { user, signOut } = useUser();
+    const { signOut } = useUser();
 
     return (
-        <aside className="w-64 h-screen h-full bg-white border-r-4 border-primary-dark flex flex-col p-4 gap-6 sticky top-0 transition-all duration-300">
-            <div className="flex items-center gap-3 px-2 py-4">
-                <Link href="/dashboard" className="w-10 h-10 bg-primary rounded-clay border-2 border-primary-dark flex items-center justify-center text-white font-bold text-xl shadow-clay hover:scale-105 transition-transform">
-                    花
-                </Link>
-                <h1 className="text-2xl font-black tracking-tight text-primary-dark">HanaChan</h1>
+        <aside className="w-[280px] h-screen bg-surface border-r border-border flex flex-col p-6 sticky top-0 overflow-y-auto">
+            {/* Branding */}
+            <div className="flex items-center gap-3 px-2 mb-12">
+                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center rotate-3 border-b-2 border-primary-dark">
+                    <span className="text-foreground font-black text-xl italic uppercase">花</span>
+                </div>
+                <div>
+                    <h1 className="text-xl font-black tracking-tight text-foreground">HANACHAN</h1>
+                    <p className="text-[9px] font-bold uppercase text-primary-dark tracking-widest">Master Japanese</p>
+                </div>
             </div>
 
-            <nav className="flex-1 flex flex-col gap-2 overflow-y-auto pr-2 custom-scrollbar">
+            {/* Navigation */}
+            <nav className="flex-1 space-y-8">
                 {navItems.map((item) => (
-                    <div key={item.name} className="flex flex-col gap-1">
+                    <div key={item.name} className="space-y-2">
                         {item.href ? (
                             <Link
                                 href={item.href}
                                 className={clsx(
-                                    "flex items-center justify-between p-3 rounded-clay border-2 transition-all duration-200 group",
+                                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all group border border-transparent",
                                     pathname === item.href
-                                        ? "bg-primary text-white border-primary-dark shadow-clay"
-                                        : "border-transparent hover:bg-primary-light/20 text-primary-dark"
+                                        ? "bg-primary/20 text-foreground border-primary/10"
+                                        : "text-foreground/60 hover:text-foreground hover:bg-surface-muted"
                                 )}
                             >
-                                <div className="flex items-center gap-3">
-                                    <item.icon className={clsx("w-5 h-5", pathname === item.href ? "text-white" : "text-primary")} />
-                                    <span className="font-bold">{item.name}</span>
-                                </div>
-                                {pathname === item.href && <div className="w-2 h-2 bg-secondary rounded-full animate-pulse" />}
+                                <item.icon size={20} className={clsx(pathname === item.href ? "text-primary-dark" : "text-foreground/40 group-hover:text-foreground/60")} />
+                                <span className="font-bold text-sm tracking-tight">{item.name}</span>
+                                {pathname === item.href && <ChevronRight size={14} className="ml-auto text-primary-dark opacity-60" />}
                             </Link>
                         ) : (
-                            <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-3 p-3 text-primary-dark/60 font-black uppercase text-xs tracking-widest mt-4">
-                                    <item.icon className="w-4 h-4" />
-                                    <span>{item.name}</span>
-                                </div>
+                            <div className="space-y-1 pt-2">
+                                <div className="px-4 text-[10px] font-bold uppercase text-foreground/30 tracking-widest mb-2">{item.name}</div>
                                 {item.children?.map((child) => (
                                     <Link
-                                        key={child.name}
+                                        key={child.href}
                                         href={child.href}
                                         className={clsx(
-                                            "flex items-center gap-3 p-3 pl-10 rounded-clay border-2 transition-all duration-200",
+                                            "flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm group border border-transparent",
                                             pathname === child.href
-                                                ? "bg-primary/10 text-primary-dark border-primary-dark shadow-clay"
-                                                : "border-transparent hover:bg-primary-light/10 text-primary-dark"
+                                                ? "text-foreground bg-primary/10 border-primary/5 font-bold"
+                                                : "text-foreground/60 hover:text-foreground hover:bg-surface-muted"
                                         )}
                                     >
-                                        <span className={clsx("font-bold text-sm", pathname === child.href ? "text-primary" : "text-primary-dark/80")}>
-                                            {child.name}
-                                        </span>
+                                        <div className={clsx("w-1.5 h-1.5 rounded-full transition-all", pathname === child.href ? "bg-primary-dark" : "bg-border")} />
+                                        <span className="font-medium">{child.name}</span>
                                     </Link>
                                 ))}
                             </div>
@@ -106,29 +98,16 @@ export function Sidebar() {
                 ))}
             </nav>
 
-            <div className="flex flex-col gap-4">
-
-                <div className="p-4 bg-white border-2 border-primary-dark rounded-clay flex items-center gap-3">
-                    <img
-                        src={user?.user_metadata?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Hana'}
-                        className="w-10 h-10 rounded-full border-2 border-primary-dark shadow-clay"
-                        alt="User avatar"
-                    />
-                    <div className="flex-1 overflow-hidden">
-                        <div className="text-xs font-black text-primary-dark truncate">{user?.user_metadata?.display_name || 'Hana Learner'}</div>
-                        <button
-                            onClick={() => {
-                                signOut().then(() => window.location.href = '/login');
-                            }}
-                            className="text-[10px] font-black text-secondary hover:underline flex items-center gap-1 mt-1"
-                        >
-                            <LogOut className="w-3 h-3" />
-                            Log Out
-                        </button>
-                    </div>
-                </div>
+            {/* Footer */}
+            <div className="pt-6 border-t border-border">
+                <button
+                    onClick={() => signOut()}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/40 hover:text-primary-dark hover:bg-primary/5 transition-all group"
+                >
+                    <LogOut size={18} className="text-foreground/20 group-hover:text-primary-dark" />
+                    <span className="font-bold text-xs uppercase tracking-widest">Sign Out</span>
+                </button>
             </div>
         </aside>
     );
 }
-

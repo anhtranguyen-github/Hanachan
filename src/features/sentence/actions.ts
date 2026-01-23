@@ -1,6 +1,7 @@
 'use server';
 
 import { sentenceService, FullAnalysisResult } from './service';
+import { sentenceRepository } from './db';
 
 export async function analyzeSentenceAction(text: string): Promise<{ success: boolean; data?: FullAnalysisResult; error?: string }> {
     try {
@@ -16,23 +17,44 @@ export async function analyzeSentenceAction(text: string): Promise<{ success: bo
         return { success: false, error: "Failed to analyze sentence. " + e.message };
     }
 }
-export async function mineSentenceAction(text: string) {
-    const result = await sentenceService.mine(text, '00000000-0000-0000-0000-000000000001');
-    return result;
+export async function getSentenceAction(id: string) {
+    try {
+        const sentence = await sentenceRepository.getById(id);
+        return { success: true, data: sentence };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
 }
 
-export async function fetchMinedSentencesAction() {
-    // Return mock mined sentences
-    return [
-        {
-            id: 'mock-s-1',
-            text_ja: '猫は魚が好きです。',
-            text_en: 'Cats like fish.',
-            source_type: 'manual',
-            created_at: new Date().toISOString(),
-            user_sentence_cards: [
-                { front: '猫', back: 'Cat' }
-            ]
+export async function fetchSentencesAction(userId: string) {
+    try {
+        const sentences = await sentenceRepository.getUserSentences(userId);
+        return { success: true, data: sentences };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function createSentenceAction(data: any) {
+    try {
+        const result = await sentenceRepository.create(data);
+        if (!result) {
+            return { success: false, error: "Failed to create sentence." };
         }
-    ];
+        return { success: true, data: result };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function mineSentenceAction(userId: string, text: string, preAnalysis?: FullAnalysisResult) {
+    try {
+        const result = await sentenceService.mine(text, userId, preAnalysis);
+        if (!result.success) {
+            return { success: false, error: "Failed to create sentence record." };
+        }
+        return { success: true, data: result };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
 }

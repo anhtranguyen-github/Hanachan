@@ -1,0 +1,63 @@
+@startuml Review Sequence
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+
+actor User
+participant "ReviewPage (UI)" as UI
+participant "ReviewSessionController" as Controller
+participant "LearningService" as Service
+participant "FSRSEngine" as FSRS
+participant "learningRepository" as Repo
+database "Supabase" as DB
+
+User -> UI : Clicks "Begin Reviews"
+activate UI
+UI -> Service : fetchDueItems(userId)
+activate Service
+Service -> Repo : fetchDueItems(userId)
+activate Repo
+Repo -> DB : SELECT FROM user_learning_states WHERE next_review <= NOW()
+activate DB
+DB --> Repo : [DueStates]
+deactivate DB
+Repo --> Service : [DueStates]
+deactivate Repo
+Service --> UI : [Items]
+deactivate Service
+
+UI -> Controller : initSession(items)
+activate Controller
+Controller --> UI : Ready
+deactivate Controller
+
+loop for each Due Item
+    User -> UI : Entry answer & Reveal
+    UI -> Controller : submitAnswer(userInput)
+    activate Controller
+    Controller -> UI : isCorrect
+    deactivate Controller
+    
+    UI -> Service : submitReview(userId, kuId, rating, currentState)
+    activate Service
+    Service -> FSRS : calculateNextReview(currentState, rating)
+    activate FSRS
+    note right: Implements FSRS algorithm\n(Stability, Difficulty updates)
+    FSRS --> Service : {next_review, next_state}
+    deactivate FSRS
+    
+    Service -> Repo : updateUserState(userId, kuId, next_state)
+    activate Repo
+    Repo -> DB : UPDATE user_learning_states SET ...
+    activate DB
+    DB --> Repo : Success
+    deactivate DB
+    Repo --> Service : Updated Data
+    deactivate Repo
+    
+    Service --> UI : updatedState
+    deactivate Service
+end
+
+UI -> User : Show "Review Complete"
+@enduml

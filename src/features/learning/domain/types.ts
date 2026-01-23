@@ -61,7 +61,7 @@ export interface Deck {
     }>;
 }
 
-// Stage name mapping (WaniKani-style)
+// Stage name mapping (Interval-style)
 export const getStageName = (stage: number): string => {
     if (stage === 0) return 'new';
     if (stage >= 9) return 'burned';

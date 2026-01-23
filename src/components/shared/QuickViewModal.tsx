@@ -1,9 +1,9 @@
-
 'use client';
 
 import React from 'react';
-import { X, Volume2, Plus, Search, BookOpen, Layers, ArrowRight, CheckCircle2, Brain } from 'lucide-react';
-import { clsx } from 'clsx';
+import { X } from 'lucide-react';
+import { RichTextRenderer } from './RichTextRenderer';
+import { AudioPlayer } from './AudioPlayer';
 
 export type QuickViewType = 'TOKEN' | 'GRAMMAR';
 
@@ -12,11 +12,15 @@ export interface QuickViewData {
     title: string;
     subtitle?: string;
     meaning: string;
+    meanings?: string[];
     reading?: string;
     explanation?: string;
+    reading_mnemonic?: string;
     examples?: { ja: string; en: string }[];
     level?: string;
     ku_type?: string;
+    audio_items?: any[];
+    components?: { character: string; meaning: string; slug: string }[];
     raw?: any;
 }
 
@@ -33,115 +37,126 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ isOpen, onClose,
     const isToken = data.type === 'TOKEN';
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-primary-dark/20 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="clay-card max-w-lg w-full bg-white p-8 relative animate-in zoom-in-95 duration-200 border-4 border-primary-dark">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm overflow-y-auto" data-testid="quick-view-modal">
+            <div className="bg-surface border border-border max-w-lg w-full p-8 rounded-[var(--radius)] relative flex flex-col gap-6 my-auto shadow-2xl">
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 p-2 hover:bg-primary/5 rounded-full text-primary-dark/30 transition-colors"
+                    className="absolute top-4 right-4 p-2 rounded-xl border border-border text-foreground/20 hover:text-foreground hover:border-foreground/20 transition-all z-10"
                 >
-                    <X className="w-6 h-6" />
+                    <X className="w-4 h-4" />
                 </button>
 
-                <div className="flex flex-col gap-8">
-                    {/* Header */}
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className={clsx(
-                                "w-12 h-12 rounded-clay border-2 border-primary-dark flex items-center justify-center text-white shadow-clay",
-                                isToken ? "bg-primary" : "bg-accent"
-                            )}>
-                                {isToken ? <Search className="w-6 h-6" /> : <BookOpen className="w-6 h-6" />}
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-black text-primary-dark uppercase">
-                                    {isToken ? 'Word Analysis' : 'Grammar Note'}
-                                </h2>
-                                <p className="text-[10px] font-black uppercase text-primary-dark/40 tracking-widest">
-                                    {data.level ? `Hana-chan ${data.level}` : 'Linguistic Detail'}
-                                </p>
-                            </div>
-                        </div>
+                <header className="border-b border-border/60 pb-4">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-xs font-bold uppercase tracking-widest text-foreground/40">
+                            {isToken ? 'Quick Analysis' : 'Concept Note'}
+                        </h2>
                         {data.level && (
-                            <span className="bg-primary-dark text-white p-2 rounded px-4 font-black">
-                                {data.level}
+                            <span className="text-[9px] uppercase font-bold bg-primary/20 text-foreground px-3 py-1 rounded-lg">
+                                LEVEL {data.level}
                             </span>
                         )}
                     </div>
+                </header>
 
-                    {/* Content Display */}
-                    <div className="flex flex-col gap-6">
-                        <div className="p-8 bg-background rounded-clay border-2 border-primary-dark shadow-inset text-center">
-                            <div className="flex flex-col items-center gap-2">
-                                {data.reading && (
-                                    <span className="text-sm font-black text-primary opacity-60">
-                                        {data.reading}
-                                    </span>
-                                )}
-                                <div className="flex items-center gap-3">
-                                    <span className="text-5xl font-black text-primary-dark">
-                                        {data.title}
-                                    </span>
-                                    {isToken && (
-                                        <button className="p-2 bg-white rounded-clay border-2 border-primary-dark shadow-clay-sm hover:scale-110 active:scale-95 transition-all text-primary">
-                                            <Volume2 className="w-5 h-5" />
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="text-2xl font-bold text-primary-dark/60 capitalize mt-2 italic shadow-sm">
-                                    {data.meaning}
-                                </div>
+                <div className="flex flex-col gap-6 max-h-[70vh] overflow-y-auto pr-2 scrollbar-hide">
+                    {/* Character Insight Card */}
+                    <div className="rounded-2xl border border-border p-8 text-center bg-surface-muted/30 relative overflow-hidden group">
+                        <div className="absolute top-4 right-4 z-10">
+                            {data.audio_items && <AudioPlayer items={data.audio_items} />}
+                        </div>
+                        {data.reading && (
+                            <div className="text-sm font-bold text-foreground/40 mb-1 tracking-tight">
+                                {data.reading}
                             </div>
+                        )}
+                        <div className="text-6xl font-black text-foreground italic tracking-tighter jp-text" data-testid="quick-view-character">
+                            {data.title}
+                        </div>
+                        <div className="text-xl font-bold italic mt-4 text-primary-dark">
+                            {data.meaning}
                         </div>
 
-                        {data.explanation && (
-                            <div className="flex flex-col gap-1.5 text-left">
-                                <span className="text-[10px] font-black uppercase text-primary-dark/40 tracking-widest ml-1">Explanation</span>
-                                <div className="p-4 bg-white border-2 border-primary-dark rounded-clay font-bold text-primary-dark/80 italic leading-relaxed">
-                                    {data.explanation}
-                                </div>
-                            </div>
-                        )}
-
-                        {data.examples && data.examples.length > 0 && (
-                            <div className="flex flex-col gap-1.5 text-left">
-                                <span className="text-[10px] font-black uppercase text-primary-dark/40 tracking-widest ml-1">Context Examples</span>
-                                <div className="flex flex-col gap-3">
-                                    {data.examples.map((ex, i) => (
-                                        <div key={i} className="p-4 bg-white border-2 border-primary-dark rounded-clay shadow-clay-sm hover:-translate-y-1 transition-all">
-                                            <p className="font-black text-primary-dark">{ex.ja}</p>
-                                            <p className="text-[10px] font-bold text-primary-dark/40 mt-1 italic">{ex.en}</p>
-                                        </div>
-                                    ))}
-                                </div>
+                        {data.meanings && data.meanings.length > 1 && (
+                            <div className="text-[11px] font-medium text-foreground/40 mt-2 uppercase tracking-wide">
+                                {data.meanings.slice(1).join(' • ')}
                             </div>
                         )}
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex gap-4">
-                        {isToken ? (
-                            <button
-                                onClick={() => onAddToDeck && onAddToDeck(data)}
-                                className="clay-btn bg-secondary py-4 flex-1 shadow-clay"
-                            >
-                                <Plus className="w-5 h-5" />
-                                Add to Deck
-                            </button>
-                        ) : (
-                            <button className="clay-btn bg-primary py-4 flex-1 text-white shadow-clay">
-                                <Brain className="w-5 h-5" />
-                                Start Focused Drill
-                            </button>
-                        )}
-                        <button
-                            onClick={onClose}
-                            className="clay-btn bg-white !text-primary-dark hover:bg-primary/5 px-6 py-4 shadow-none border-dashed border-2"
-                        >
-                            Got it!
-                        </button>
-                    </div>
+                    {/* Mnemonics */}
+                    {(data.explanation || data.reading_mnemonic) && (
+                        <div className="space-y-4">
+                            {data.explanation && (
+                                <div className="p-5 rounded-2xl bg-surface border border-border">
+                                    <div className="text-[9px] uppercase font-bold mb-2 text-foreground/20 tracking-widest">Meaning Strategy</div>
+                                    <div className="text-sm text-foreground/70 font-medium leading-relaxed italic">
+                                        <RichTextRenderer content={data.explanation} />
+                                    </div>
+                                </div>
+                            )}
+
+                            {data.reading_mnemonic && (
+                                <div className="p-5 rounded-2xl bg-primary/5 border border-primary/10">
+                                    <div className="text-[9px] uppercase font-bold mb-2 text-primary-dark tracking-widest">Reading Strategy</div>
+                                    <div className="text-sm text-foreground/80 font-medium leading-relaxed italic">
+                                        <RichTextRenderer content={data.reading_mnemonic} />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Structural Breakdown */}
+                    {data.components && data.components.length > 0 && (
+                        <div className="space-y-3">
+                            <div className="text-[9px] uppercase font-bold text-foreground/20 tracking-widest pl-1">Structural Units</div>
+                            <div className="flex flex-wrap gap-2">
+                                {data.components.map((c, i) => (
+                                    <div key={i} className="bg-surface border border-border px-4 py-2 rounded-xl flex items-center gap-2">
+                                        <span className="font-bold text-foreground text-sm">{c.character}</span>
+                                        <span className="text-[10px] text-foreground/40 font-bold uppercase tracking-tight">{c.meaning}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Context Samples */}
+                    {data.examples && data.examples.length > 0 && (
+                        <div className="space-y-4">
+                            <div className="text-[9px] uppercase font-bold text-foreground/20 tracking-widest pl-1">Context Models</div>
+                            <div className="space-y-3">
+                                {data.examples.map((ex, i) => (
+                                    <div key={i} className="bg-surface-muted/30 p-5 rounded-2xl border border-border">
+                                        <div className="font-bold text-foreground text-lg mb-1 leading-tight">{ex.ja}</div>
+                                        <div className="text-sm text-foreground/40 italic font-medium leading-tight">{ex.en}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
+
+                <footer className="flex gap-3 pt-6 border-t border-border/60">
+                    {onAddToDeck && (
+                        <button
+                            onClick={() => onAddToDeck(data)}
+                            className="flex-[2] mn-btn mn-btn-primary !py-4"
+                        >
+                            {isToken ? 'SAVE UNIT' : 'MARK FOCUS'}
+                        </button>
+                    )}
+                    <button
+                        onClick={onClose}
+                        className="flex-1 rounded-xl bg-surface border border-border text-[10px] font-bold text-foreground/40 uppercase tracking-widest hover:text-foreground hover:bg-surface-muted/30 transition-all"
+                    >
+                        DISMISS
+                    </button>
+                </footer>
             </div>
         </div>
     );
 };
+
+

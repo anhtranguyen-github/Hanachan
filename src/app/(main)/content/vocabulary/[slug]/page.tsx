@@ -1,159 +1,168 @@
+import React from 'react';
+import { getLocalKU } from '@/features/knowledge/actions';
+import Link from 'next/link';
+import { RichTextRenderer } from '@/components/shared/RichTextRenderer';
+import { AudioPlayer } from '@/components/shared/AudioPlayer';
+import { ChevronLeft, Zap, Target, Layers, PlayCircle, Info, Languages } from 'lucide-react';
 
-'use client';
+export default async function VocabularyDetailPage({ params }: { params: { slug: string } }) {
+    const slug = params.slug;
+    const vocab: any = await getLocalKU('vocabulary', slug);
 
-import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { MockDB } from '@/lib/mock-db';
-import {
-    ChevronLeft,
-    Volume2,
-    Play,
-    BookOpen,
-    Info,
-    Calendar,
-    Zap,
-    Tag,
-    MessageCircle,
-    Sparkles
-} from 'lucide-react';
-import { clsx } from 'clsx';
-
-const SRS_STAGES: Record<string, { label: string, color: string }> = {
-    'new': { label: 'New', color: 'bg-gray-100 text-gray-600 border-gray-300' },
-    'learning': { label: 'Learning', color: 'bg-blue-100 text-blue-600 border-blue-300' },
-    'review': { label: 'Review', color: 'bg-green-100 text-green-600 border-green-300' },
-    'relearning': { label: 'Relearn', color: 'bg-orange-100 text-orange-600 border-orange-300' },
-    'burned': { label: 'Burned', color: 'bg-purple-100 text-purple-600 border-purple-300' },
-};
-
-export default function VocabularyDetailPage() {
-    const { slug } = useParams();
-    const router = useRouter();
-    const [item, setItem] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        if (slug) {
-            MockDB.fetchItemDetails('vocabulary', `vocabulary/${decodeURIComponent(slug as string)}`).then(res => {
-                setItem(res);
-                setLoading(false);
-            });
-        }
-    }, [slug]);
-
-    if (loading) return <div className="p-12 animate-pulse text-center font-black">Loading Vocabulary...</div>;
-    if (!item) return <div className="p-12 text-center font-black">Vocabulary not found.</div>;
-
-    const state = item.user_learning_states || { state: 'new' };
-    const stage = SRS_STAGES[state.state];
-
-    return (
-        <div className="flex flex-col gap-10 max-w-5xl mx-auto pb-20">
-            <button
-                onClick={() => router.back()}
-                className="flex items-center gap-2 font-black text-primary-dark/40 hover:text-primary transition-colors w-fit"
-            >
-                <ChevronLeft className="w-5 h-5" />
-                Back to Library
-            </button>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                <div className="lg:col-span-1 flex flex-col gap-6">
-                    <div className="clay-card p-8 bg-white flex flex-col items-center text-center gap-6">
-                        <div className="w-32 h-32 bg-primary/5 rounded-[40px] border-4 border-primary-dark flex items-center justify-center text-6xl font-black text-primary-dark shadow-clay">
-                            {item.character}
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <div className="flex items-center justify-center gap-2">
-                                <span className="text-2xl font-black text-primary">
-                                    {item.ku_vocabulary?.reading_primary}
-                                </span>
-                                <Volume2 className="w-6 h-6 text-primary cursor-pointer hover:scale-110 transition-transform" />
-                            </div>
-                            <h2 className="text-4xl font-black text-primary-dark capitalize">{item.meaning}</h2>
-                        </div>
-
-                        <div className={`px-4 py-1 rounded-full text-xs font-black uppercase border-2 ${stage.color}`}>
-                            {stage.label}
-                        </div>
-                    </div>
-
-                    <div className="clay-card p-6 bg-primary-dark text-white border-primary-dark">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Zap className="w-5 h-5 text-secondary fill-current" />
-                            <h3 className="font-black text-sm uppercase">Quick Actions</h3>
-                        </div>
-                        <div className="flex flex-col gap-3">
-                            <button className="clay-btn bg-white !text-primary-dark w-full py-3">
-                                Add to Custom Deck
-                            </button>
-                            <button className="clay-btn bg-secondary w-full py-3">
-                                Mark as Burned
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="lg:col-span-2 flex flex-col gap-8">
-                    <section className="clay-card p-8 bg-white">
-                        <h3 className="text-xl font-black text-primary-dark mb-6 flex items-center gap-2">
-                            <Tag className="w-6 h-6 text-primary" />
-                            Dictionary Info
-                        </h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-background border-2 border-primary-dark rounded-clay">
-                                <span className="text-[10px] font-black uppercase text-primary-dark/40 block mb-1">Part of Speech</span>
-                                <span className="font-bold text-primary-dark capitalize">
-                                    {item.ku_vocabulary?.parts_of_speech?.join(', ') || 'Noun'}
-                                </span>
-                            </div>
-                            <div className="p-4 bg-background border-2 border-primary-dark rounded-clay">
-                                <span className="text-[10px] font-black uppercase text-primary-dark/40 block mb-1">JLPT Level</span>
-                                <span className="font-bold text-primary-dark">N{6 - (item.level || 5)}</span>
-                            </div>
-                        </div>
-                        <div className="mt-6 p-4 bg-primary/5 border-2 border-primary-dark border-dashed rounded-clay">
-                            <h4 className="text-[10px] font-black uppercase text-primary mb-2">Meaning Details</h4>
-                            <p className="font-bold text-primary-dark/80">
-                                Primary: {item.meaning}
-                                {item.ku_vocabulary?.meaning_data?.meanings?.length > 1 && (
-                                    <span className="block mt-1 text-sm">
-                                        Other values: {item.ku_vocabulary.meaning_data.meanings.slice(1).join(', ')}
-                                    </span>
-                                )}
-                            </p>
-                        </div>
-                    </section>
-
-                    <section className="clay-card p-8 bg-white">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-black text-primary-dark flex items-center gap-2">
-                                <MessageCircle className="w-6 h-6 text-primary" />
-                                Example Sentences
-                            </h3>
-                            <button className="text-xs font-black text-primary flex items-center gap-1 hover:underline">
-                                <Sparkles className="w-4 h-4" />
-                                Generate New
-                            </button>
-                        </div>
-                        <div className="flex flex-col gap-4">
-                            {[
-                                { ja: '猫は魚が好きです。', en: 'Cats like fish.', origin: 'System' },
-                                { ja: '学校に猫がいました。', en: 'There was a cat at school.', origin: 'Mined' },
-                            ].map((s, i) => (
-                                <div key={i} className="p-6 bg-background rounded-[24px] border-2 border-primary-dark flex flex-col gap-2">
-                                    <div className="text-xl font-black text-primary-dark leading-relaxed">{s.ja}</div>
-                                    <div className="text-sm font-bold text-primary-dark/50 italic">{s.en}</div>
-                                    <div className="mt-2 flex items-center justify-between">
-                                        <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-white border border-primary-dark/10 rounded-full">{s.origin}</span>
-                                        <button className="text-[10px] font-black text-primary hover:underline">Analyze</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-                </div>
+    if (!vocab) return (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+            <div className="mn-card p-12 text-center">
+                <h2 className="text-xl font-bold uppercase mb-4 text-foreground">Vocabulary Not Found</h2>
+                <Link href="/content?type=vocabulary" className="mn-btn mn-btn-primary">BACK TO LIBRARY</Link>
             </div>
         </div>
     );
+
+    const kuVocab = vocab.ku_vocabulary || {};
+    const pitch = kuVocab.pitch_accent_data || kuVocab.pitch;
+    const pitchEntries = Array.isArray(pitch) ? pitch : (pitch ? [pitch] : []);
+
+    const audioData = kuVocab.audio_data;
+    let audioItems: any[] = [];
+    if (Array.isArray(audioData)) {
+        audioItems = audioData;
+    } else if (audioData && typeof audioData === 'object') {
+        audioItems = Object.values(audioData);
+    }
+
+    return (
+        <div className="max-w-5xl mx-auto py-12 px-8 space-y-12">
+            <Link href="/content?type=vocabulary" className="flex items-center gap-3 text-foreground/40 hover:text-primary-dark transition-all font-bold uppercase text-[10px] tracking-widest group">
+                <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                Back to Vocabulary Library
+            </Link>
+
+            {/* Premium Header Card */}
+            <header className="premium-card p-12 bg-surface border-border flex flex-col md:flex-row items-center gap-12 relative overflow-hidden group">
+                <div className="relative">
+                    <div className="w-48 h-48 bg-primary/10 rounded-3xl flex items-center justify-center text-6xl font-black text-foreground tracking-tighter border-b-4 border-primary/20 group-hover:scale-105 transition-transform duration-500 jp-text text-center px-4 leading-tight">
+                        {vocab.character}
+                    </div>
+                    <div className="absolute -top-3 -left-3 bg-foreground text-surface px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
+                        LEVEL {vocab.level}
+                    </div>
+                </div>
+
+                <div className="flex-1 space-y-6 text-center md:text-left">
+                    <div className="space-y-2">
+                        <div className="text-3xl font-bold text-primary-dark tracking-wide jp-text">{kuVocab.reading_primary}</div>
+                        <h1 className="text-6xl font-black text-foreground tracking-tight uppercase leading-none">
+                            {vocab.meanings?.[0] || vocab.meaning}
+                        </h1>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                        {vocab.meanings?.slice(1).map((m: string, i: number) => (
+                            <span key={i} className="px-3 py-1 bg-surface-muted rounded-lg text-sm font-bold text-foreground/40">
+                                {m}
+                            </span>
+                        ))}
+                    </div>
+
+                    <div className="flex items-center gap-6 justify-center md:justify-start pt-2">
+                        <AudioPlayer items={audioItems as any[]} showLabels />
+                    </div>
+                </div>
+            </header>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Meaning Explanation */}
+                <section className="premium-card p-10 bg-surface border-border space-y-6">
+                    <div className="flex items-center gap-3">
+                        <Target size={18} className="text-primary-dark" />
+                        <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Meaning Strategy</h2>
+                    </div>
+                    <div className="text-lg font-medium text-foreground/70 leading-relaxed">
+                        <RichTextRenderer content={kuVocab.meaning_data?.explanation || vocab.mnemonics?.meaning || "No meaning mnemonic found."} />
+                    </div>
+                </section>
+
+                {/* Reading Explanation */}
+                <section className="premium-card p-10 bg-primary/5 border-primary/10 space-y-6">
+                    <div className="flex items-center gap-3">
+                        <PlayCircle size={18} className="text-primary-dark" />
+                        <h2 className="text-[10px] font-bold text-foreground/60 uppercase tracking-widest">Reading Strategy</h2>
+                    </div>
+                    <div className="text-lg font-medium text-foreground/80 leading-relaxed">
+                        <RichTextRenderer content={kuVocab.reading_data?.explanation || vocab.mnemonics?.reading || "No reading mnemonic available."} />
+                    </div>
+                </section>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Kanji Composition */}
+                <section className="premium-card p-10 md:col-span-2 bg-surface border-border space-y-8">
+                    <div className="flex items-center gap-3">
+                        <Layers size={18} className="text-primary-dark" />
+                        <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Structural Components</h2>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        {vocab.kanji?.map((k: any, i: number) => (
+                            <Link key={i} href={`/content/kanji/${k.character || k.slug}`} className="flex flex-col items-center gap-2 p-6 rounded-xl bg-surface-muted/50 border border-border hover:border-primary/40 transition-all group">
+                                <span className="text-4xl font-bold text-foreground jp-text group-hover:scale-105 transition-transform">{k.character}</span>
+                                <span className="text-[9px] font-bold text-foreground/30 uppercase tracking-widest text-center leading-tight">{k.meaning}</span>
+                            </Link>
+                        ))}
+                    </div>
+                </section>
+
+                {/* Metadata */}
+                <section className="premium-card p-10 bg-surface border-border space-y-8">
+                    <div className="flex items-center gap-3">
+                        <Info size={18} className="text-foreground/40" />
+                        <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Attributes</h2>
+                    </div>
+                    <div className="space-y-6">
+                        <div className="space-y-1">
+                            <span className="text-[8px] font-bold text-foreground/20 uppercase tracking-widest">Grammar Class</span>
+                            <div className="text-sm font-bold text-foreground">{(kuVocab.parts_of_speech || []).join(', ') || 'N/A'}</div>
+                        </div>
+                        <div className="space-y-2">
+                            <span className="text-[8px] font-bold text-foreground/20 uppercase tracking-widest">Accent Pattern</span>
+                            <div className="flex flex-wrap gap-2">
+                                {pitchEntries.map((p: any, idx: number) => (
+                                    <span key={idx} className="bg-surface-muted text-foreground/60 px-3 py-1 rounded-lg border border-border text-[9px] font-bold">
+                                        PATTERN: {p.type}
+                                    </span>
+                                ))}
+                                {pitchEntries.length === 0 && <span className="text-xs text-foreground/20">No data</span>}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            {/* Context Sentences */}
+            <section className="space-y-8">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Languages size={18} className="text-primary-dark" />
+                        <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Usage Context</h2>
+                    </div>
+                    <div className="px-4 py-1.5 rounded-lg bg-surface border border-border text-[9px] font-bold text-foreground/30 uppercase tracking-widest">
+                        {(vocab.sentences || []).length} SAMPLES
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    {(vocab.sentences || []).map((s: any, i: number) => (
+                        <div key={i} className="premium-card p-10 bg-surface border-border group hover:bg-surface-muted/30 transition-all overflow-hidden relative">
+                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary/20 group-hover:bg-primary transition-colors" />
+                            <div className="space-y-4 pl-4">
+                                <div className="text-3xl font-bold text-foreground jp-text leading-relaxed tracking-tight group-hover:text-primary-dark transition-colors">{s.text_ja}</div>
+                                <div className="text-lg text-foreground/40 font-medium">“{s.text_en}”</div>
+                            </div>
+                        </div>
+                    ))}
+                    {(vocab.sentences || []).length === 0 && <div className="premium-card p-12 text-center text-foreground/20 border-dashed">No sample sentences currently available.</div>}
+                </div>
+            </section>
+        </div>
+    );
 }
+

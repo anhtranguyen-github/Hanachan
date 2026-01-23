@@ -2,11 +2,11 @@
 import { Deck, DeckItem } from './types';
 
 export function isSystemDeck(deck: Deck): boolean {
-    return deck.type === 'system' || !deck.user_id;
+    return deck.deck_type === 'system' || !deck.owner_id;
 }
 
 export function canModifyDeck(deck: Deck, userId: string): boolean {
-    return deck.user_id === userId;
+    return deck.owner_id === userId;
 }
 
 export function validateDeckItem(item: DeckItem): boolean {

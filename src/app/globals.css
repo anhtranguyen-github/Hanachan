@@ -3,64 +3,132 @@
 @tailwind utilities;
 
 :root {
-  --primary: #0D9488;
-  --primary-foreground: #F0FDFA;
-  --secondary: #2DD4BF;
-  --secondary-foreground: #134E4A;
-  --accent: #EA580C;
-  --accent-foreground: #FFFFFF;
-  --background: #F0FDFA;
-  --foreground: #134E4A;
+  /* Soft Sakura Palette - Non-Glaring & Low Contrast */
+  --primary: #F4ACB7;
+  /* Muted Pink */
+  --primary-dark: #D88C9A;
+  /* Deep Dusty Pink */
+  --secondary: #FFCAD4;
+  /* Pale Peach/Pink */
+  --accent: #FFE5D9;
+  /* Warm Beige */
+
+  /* Neutral Palette - Warm & Soft */
+  --background: #FDF8F8;
+  /* Rose-tinted Off-White (Reduces Glare) */
+  --foreground: #4A4E69;
+  /* Deep Lavender Grey (Softer than Black) */
+  --surface: #FFFFFF;
+  /* Card Surface */
+  --surface-muted: #F2E8E9;
+  /* Muted Rose Grey */
+  --border: #E5D0D4;
+  /* Soft Pinkish Grey */
+
+  /* Functional Colors - Muted Pastels */
+  --radical: #A2D2FF;
+  /* Soft Blue */
+  --kanji: #F4ACB7;
+  /* Matches Primary */
+  --vocab: #CDB4DB;
+  /* Soft Orchid */
+  --grammar: #B7E4C7;
+  /* Soft Sage Green */
+
+  --radius: 20px;
 }
 
 @layer base {
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased selection:bg-[#F4ACB74D];
+    font-family: var(--font-noto-sans), sans-serif;
   }
 }
 
 @layer components {
-  .clay-card {
-    @apply bg-white rounded-clay border-2 border-primary-dark p-6 shadow-clay transition-all duration-200;
+
+  /* Soft Minimal Card */
+  .premium-card,
+  .mn-card {
+    @apply bg-surface rounded-[var(--radius)] border border-border shadow-sm transition-all duration-300;
   }
 
-  .clay-card-hover {
-    @apply hover:-translate-y-1 hover:shadow-clay-lg active:translate-y-0 active:shadow-clay-sm;
+  .premium-card:hover {
+    @apply border-[#F4ACB766] -translate-y-1 shadow-md;
   }
 
-  .clay-btn {
-    @apply px-6 py-2.5 rounded-clay font-black transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 border-2 border-primary-dark shadow-clay-sm;
+  /* Soft Buttons */
+  .mn-btn {
+    @apply relative px-8 py-4 rounded-[var(--radius)] font-bold text-sm tracking-wide transition-all duration-200 flex items-center justify-center gap-3 overflow-hidden active:scale-95 border border-transparent;
   }
 
-  .clay-btn-primary {
-    @apply bg-primary text-white hover:bg-primary-dark;
+  .mn-btn-primary {
+    @apply bg-primary text-[#592E38] hover:bg-primary-dark hover:text-white shadow-md hover:shadow-lg;
   }
 
-  .clay-btn-secondary {
-    @apply bg-secondary text-primary-dark hover:bg-primary/20;
+  .mn-btn-secondary {
+    @apply bg-secondary text-[#592E38] hover:opacity-90;
   }
 
-  .clay-btn-accent {
-    @apply bg-accent text-white hover:bg-accent/90;
+  .mn-btn-outline {
+    @apply border-border text-foreground hover:bg-surface-muted hover:border-[#F4ACB733];
   }
 
-  .clay-input {
-    @apply px-4 py-2.5 rounded-clay border-2 border-primary-dark bg-white text-primary-dark font-bold focus:outline-none focus:ring-4 focus:ring-primary/20 transition-all shadow-clay-inset;
+  .mn-btn-ghost {
+    @apply text-foreground hover:bg-surface-muted;
   }
 
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
+  /* Status Badges */
+  .badge {
+    @apply text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg border border-transparent;
   }
 
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+  .badge-locked {
+    @apply bg-surface-muted text-foreground/40 border-border;
   }
 
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-primary/20 rounded-full;
+  .badge-new {
+    @apply bg-[#A2D2FF33] text-[#3A6EA5];
   }
 
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-primary/40;
+  .badge-review {
+    @apply bg-[#F4ACB733] text-[#8E4A56];
   }
+
+  .badge-burned {
+    @apply bg-[#FFE5D980] text-[#8A6A4B];
+  }
+}
+
+/* Custom Scrollbar - Soft */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Typography */
+.jp-text {
+  font-family: 'Noto Sans JP', sans-serif;
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+}
+
+.text-sakura {
+  color: var(--primary-dark);
+}
+
+.bg-sakura-light {
+  background-color: var(--secondary);
 }

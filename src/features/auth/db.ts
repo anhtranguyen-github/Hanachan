@@ -1,29 +1,69 @@
+import { supabase } from '@/lib/supabase';
 import { UserProfile, UserSettings } from './types';
 
+/**
+ * Ensures a record exists in the public.users table for a given auth user.
+ * This is a safeguard for environments without Supabase DB triggers.
+ */
+export async function provisionUserProfile(userId: string, email: string, displayName?: string): Promise<void> {
+    const { data: existing } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+
+    if (!existing) {
+        await supabase.from('users').insert({
+            id: userId,
+            display_name: displayName || email.split('@')[0],
+        });
+
+        // Also Provision Default Settings
+        await supabase.from('user_settings').insert({
+            user_id: userId,
+            target_retention: 0.9
+        });
+    }
+}
+
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
-    return {
-        id: userId,
-        email: 'demo@hanachan.app',
-        display_name: 'Hanachan Learner',
-        avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Hanachan',
-        created_at: new Date().toISOString()
-    };
+    const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+    if (error) {
+        console.error("Error fetching profile:", error);
+        return null;
+    }
+
+    return data as UserProfile | null;
 }
 
 export async function updateUserProfile(userId: string, data: Partial<UserProfile>): Promise<void> {
-    console.log(`🛠️ [Mock] Updating profile for ${userId}:`, data);
+    await supabase.from('users').update(data).eq('id', userId);
 }
 
 export async function getUserSettings(userId: string): Promise<UserSettings | null> {
-    return {
-        user_id: userId,
-        target_retention: 0.9,
-        fsrs_weights: [1, 2, 3, 4],
-        updated_at: new Date().toISOString()
-    };
+    const { data, error } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (error) {
+        console.error("Error fetching settings:", error);
+        return null;
+    }
+
+    return data as UserSettings | null;
 }
 
 export async function updateUserSettings(userId: string, settings: Partial<UserSettings>): Promise<void> {
-    console.log(`🛠️ [Mock] Updating settings for ${userId}:`, settings);
+    await supabase.from('user_settings').upsert({
+        user_id: userId,
+        ...settings,
+        updated_at: new Date().toISOString()
+    });
 }
-

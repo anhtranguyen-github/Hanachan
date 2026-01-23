@@ -1,144 +1,297 @@
-
-'use client';
-
-import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { MockDB } from '@/lib/mock-db';
-import {
-    ChevronLeft,
-    BookOpen,
-    Info,
-    Layers,
-    HelpCircle,
-    CheckCircle2,
-    AlertTriangle,
-    Flame,
-    Plus
-} from 'lucide-react';
+import React from 'react';
+import { getGrammarBySlug, GrammarData } from '@/lib/grammar-loader';
+import Link from 'next/link';
+import { ChevronLeft, BookOpen, Lightbulb, Info, Target, PlayCircle, Layers, ExternalLink, Volume2, AlertTriangle } from 'lucide-react';
 import { clsx } from 'clsx';
 
-export default function GrammarDetailPage() {
-    const { slug } = useParams();
-    const router = useRouter();
-    const [item, setItem] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+export default async function GrammarDetailPage({ params }: { params: { slug: string } }) {
+    const slug = decodeURIComponent(params.slug);
+    const grammar: GrammarData | null = getGrammarBySlug(slug);
 
-    useEffect(() => {
-        if (slug) {
-            MockDB.fetchItemDetails('grammar', `grammar/${decodeURIComponent(slug as string)}`).then(res => {
-                setItem(res);
-                setLoading(false);
-            });
-        }
-    }, [slug]);
+    if (!grammar) return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center space-y-4">
+            <div className="w-16 h-16 bg-surface-muted rounded-full flex items-center justify-center border border-border">
+                <Info size={32} className="text-foreground/20" />
+            </div>
+            <h1 className="text-2xl font-black text-foreground uppercase tracking-tighter">Grammar Not Found</h1>
+            <p className="text-foreground/40 text-sm">Could not find: {slug}</p>
+            <Link href="/content?type=grammar" className="mn-btn mn-btn-primary">Return to Library</Link>
+        </div>
+    );
 
-    if (loading) return <div className="p-12 animate-pulse text-center font-black">Loading Grammar...</div>;
-    if (!item) return <div className="p-12 text-center font-black">Grammar not found.</div>;
+    const jlptLevel = 6 - Math.ceil((grammar.level || 1) / 10);
 
     return (
-        <div className="flex flex-col gap-10 max-w-5xl mx-auto pb-20">
-            <button
-                onClick={() => router.back()}
-                className="flex items-center gap-2 font-black text-primary-dark/40 hover:text-primary transition-colors w-fit"
-            >
-                <ChevronLeft className="w-5 h-5" />
-                Back to Library
-            </button>
+        <div className="max-w-6xl mx-auto py-12 px-8">
+            {/* Breadcrumbs */}
+            <div className="mb-12">
+                <Link
+                    href="/content?type=grammar"
+                    className="flex items-center gap-2 text-foreground/40 hover:text-primary-dark font-bold text-[10px] uppercase tracking-widest transition-all group"
+                >
+                    <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                    Back to Library
+                </Link>
+            </div>
 
-            {/* Hero Header */}
-            <section className="clay-card p-10 bg-primary/5 flex flex-col items-center text-center gap-4">
-                <div className="px-4 py-1 bg-primary text-white text-xs font-black rounded-full border-2 border-primary-dark shadow-clay mb-2">
-                    JLPT N5
-                </div>
-                <h1 className="text-6xl font-black text-primary-dark tracking-tight">{item.character}</h1>
-                <p className="text-2xl font-black text-primary capitalize">{item.meaning}</p>
-                <p className="max-w-2xl text-primary-dark/60 font-bold mt-4 leading-relaxed">
-                    {item.ku_grammar?.details || 'This grammar point is used to express reasons or subjective explanations.'}
-                </p>
-            </section>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="flex flex-col gap-8">
-                    <section className="clay-card p-8 bg-white h-fit">
-                        <h3 className="text-xl font-black text-primary-dark mb-6 flex items-center gap-2">
-                            <Layers className="w-6 h-6 text-primary" />
-                            Construction
-                        </h3>
-                        <div className="flex flex-col gap-4">
-                            <div className="p-4 bg-background border-2 border-primary-dark rounded-[24px]">
-                                <div className="text-xs font-black uppercase text-primary-dark/40 mb-2">Structure</div>
-                                <div className="text-xl font-black text-primary-dark flex items-center gap-2">
-                                    <span className="bg-primary/10 px-2 py-1 rounded border-2 border-primary/20">Verb (Plain)</span>
-                                    <Plus className="w-4 h-4 text-primary-dark/40" />
-                                    <span className="text-primary">{item.character}</span>
-                                </div>
-                            </div>
-                            <div className="p-4 bg-background border-2 border-primary-dark rounded-[24px]">
-                                <div className="text-xs font-black uppercase text-primary-dark/40 mb-2">Example</div>
-                                <div className="text-lg font-bold text-primary-dark">
-                                    行く + <span className="text-primary">{item.character}</span> → 行く{item.character}
-                                </div>
-                            </div>
+            {/* Header section */}
+            <header className="flex flex-col md:flex-row items-start md:items-end justify-between gap-8 mb-16">
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className="px-3 py-1 rounded-lg bg-primary/20 text-foreground text-[10px] font-bold uppercase tracking-widest border border-primary/20">
+                            Grammar Point
                         </div>
-                    </section>
-
-                    <section className="clay-card p-8 bg-white h-fit border-dashed">
-                        <h3 className="text-xl font-black text-primary-dark mb-4 flex items-center gap-2">
-                            <AlertTriangle className="w-6 h-6 text-secondary" />
-                            Usage Note
-                        </h3>
-                        <div className="p-4 bg-secondary/5 rounded-clay border-2 border-primary-dark text-sm font-bold text-primary-dark/80 leading-relaxed italic">
-                            {item.ku_grammar?.cautions || 'Be careful when using this in formal situations. It can sound a bit informal or insistent.'}
+                        <div className="px-3 py-1 rounded-lg bg-surface-muted text-foreground/40 text-[10px] font-bold uppercase tracking-widest border border-border">
+                            JLPT N{jlptLevel} • LEVEL {grammar.level}
                         </div>
-                    </section>
+                        {grammar.details.register && grammar.details.register !== '一般' && (
+                            <div className="px-3 py-1 rounded-lg bg-secondary/20 text-secondary text-[10px] font-bold uppercase tracking-widest border border-secondary/20">
+                                {grammar.details.register}
+                            </div>
+                        )}
+                    </div>
+                    <div className="space-y-2">
+                        <h1 className="text-6xl font-black text-foreground tracking-tight leading-none jp-text">
+                            {grammar.title}
+                        </h1>
+                        {grammar.title_with_furigana && grammar.title_with_furigana !== grammar.title && (
+                            <p className="text-xl font-bold text-foreground/40 jp-text">
+                                {grammar.title_with_furigana}
+                            </p>
+                        )}
+                    </div>
+                    {/* Meanings Pills */}
+                    <div className="flex flex-wrap gap-2 pt-2">
+                        {grammar.meanings.map((m, i) => (
+                            <div key={i} className="px-4 py-2 rounded-xl bg-primary/10 border border-primary/10 text-base font-bold text-foreground tracking-tight">
+                                {m}
+                            </div>
+                        ))}
+                    </div>
                 </div>
+            </header>
 
-                <div className="flex flex-col gap-8">
-                    <section className="clay-card p-8 bg-primary-dark text-white border-primary-dark flex flex-col gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                <div className="lg:col-span-2 space-y-12">
+                    {/* About / Description */}
+                    <section className="space-y-6">
                         <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-primary rounded-clay flex items-center justify-center border-2 border-white/20">
-                                <Flame className="w-6 h-6 text-white fill-current" />
-                            </div>
-                            <div>
-                                <h3 className="font-black text-lg">Mastery Session</h3>
-                                <p className="text-xs font-bold opacity-70">Focus on {item.character} to level up</p>
-                            </div>
+                            <Target size={18} className="text-primary-dark" />
+                            <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Explanation</h2>
                         </div>
-
-                        <div className="flex flex-col gap-2">
-                            <div className="flex justify-between items-center text-xs font-black uppercase opacity-60">
-                                <span>Coverage</span>
-                                <span>42%</span>
+                        <div className="premium-card p-10 bg-surface border-border">
+                            <div className="text-lg leading-relaxed text-foreground/80 tracking-tight font-medium whitespace-pre-line">
+                                {grammar.about.text || grammar.about.description || "No description provided."}
                             </div>
-                            <div className="w-full h-2 bg-white/10 rounded-full border border-white/20 overflow-hidden">
-                                <div className="h-full bg-primary" style={{ width: '42%' }} />
-                            </div>
-                        </div>
-
-                        <button className="clay-btn bg-white !text-primary-dark w-full py-4 text-lg">
-                            Start Focused Drill
-                        </button>
-                    </section>
-
-                    <section className="clay-card p-8 bg-white h-full">
-                        <h3 className="text-xl font-black text-primary-dark mb-6 flex items-center gap-2">
-                            <CheckCircle2 className="w-6 h-6 text-green-500" />
-                            Review Phrases
-                        </h3>
-                        <div className="flex flex-col gap-4">
-                            {[
-                                '行きたい{item.character}',
-                                '食べるときに{item.character}',
-                                '知らなかった{item.character}'
-                            ].map((phrase, i) => (
-                                <div key={i} className="flex items-center gap-3 p-3 bg-background border-2 border-primary-dark rounded-clay group cursor-pointer hover:bg-primary/5 transition-colors">
-                                    <div className="w-6 h-6 bg-white border border-primary-dark/10 rounded font-black text-[10px] flex items-center justify-center">{i + 1}</div>
-                                    <div className="font-bold text-primary-dark truncate">{phrase.replace('{item.character}', item.character)}</div>
-                                </div>
-                            ))}
                         </div>
                     </section>
+
+                    {/* Examples Section */}
+                    {grammar.examples && grammar.examples.length > 0 && (
+                        <section className="space-y-6">
+                            <div className="flex items-center gap-3">
+                                <PlayCircle size={18} className="text-secondary" />
+                                <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">
+                                    Example Sentences ({grammar.examples.length})
+                                </h2>
+                            </div>
+                            <div className="space-y-4">
+                                {grammar.examples.slice(0, 8).map((ex, i) => (
+                                    <div key={i} className="premium-card p-8 bg-surface border-border group hover:bg-surface-muted/30 transition-all relative overflow-hidden">
+                                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary/20 group-hover:bg-primary transition-colors" />
+                                        <div className="space-y-4 pl-4">
+                                            {/* Sentence with highlighted grammar point */}
+                                            <div className="text-2xl font-bold text-foreground jp-text leading-relaxed">
+                                                {ex.sentence_structure && ex.sentence_structure.length > 0 ? (
+                                                    ex.sentence_structure.map((part, idx) => (
+                                                        <span
+                                                            key={idx}
+                                                            className={clsx(
+                                                                part.type === 'grammar_point' && "text-primary-dark bg-primary/10 px-1 rounded"
+                                                            )}
+                                                        >
+                                                            {part.content}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    ex.sentence_text
+                                                )}
+                                            </div>
+                                            <div className="text-base text-foreground/50 font-medium">
+                                                {ex.translation}
+                                            </div>
+                                            {ex.audio_url && (
+                                                <a
+                                                    href={ex.audio_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-2 text-[10px] font-bold text-primary-dark uppercase tracking-widest hover:underline"
+                                                >
+                                                    <Volume2 size={14} />
+                                                    Play Audio
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* Cautions Section */}
+                    {grammar.cautions && grammar.cautions.length > 0 && (
+                        <section className="space-y-6">
+                            <div className="flex items-center gap-3">
+                                <AlertTriangle size={18} className="text-accent" />
+                                <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Important Notes</h2>
+                            </div>
+                            <div className="premium-card p-8 bg-accent/5 border-accent/20">
+                                <ul className="space-y-4">
+                                    {grammar.cautions.map((c, i) => (
+                                        <li key={i} className="flex gap-3 text-sm font-medium text-foreground/80 leading-relaxed">
+                                            <span className="text-accent font-bold shrink-0">⚠</span>
+                                            <span>{c.text}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </section>
+                    )}
                 </div>
+
+                <aside className="space-y-12">
+                    {/* Structure/Patterns */}
+                    {grammar.structure && (grammar.structure.patterns?.length > 0 || grammar.structure.variants) && (
+                        <section className="space-y-6">
+                            <div className="flex items-center gap-3">
+                                <Layers size={18} className="text-primary-dark" />
+                                <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Construction</h2>
+                            </div>
+                            <div className="premium-card p-8 bg-surface border-border space-y-6">
+                                {grammar.structure.variants?.standard && (
+                                    <div className="space-y-2">
+                                        <div className="text-[8px] uppercase font-bold text-foreground/20 tracking-widest">Standard</div>
+                                        <div className="text-base font-bold text-foreground border-l-2 border-primary/40 pl-4 jp-text">
+                                            {grammar.structure.variants.standard}
+                                        </div>
+                                    </div>
+                                )}
+                                {grammar.structure.variants?.polite && (
+                                    <div className="space-y-2">
+                                        <div className="text-[8px] uppercase font-bold text-foreground/20 tracking-widest">Polite</div>
+                                        <div className="text-base font-bold text-foreground border-l-2 border-secondary/40 pl-4 jp-text">
+                                            {grammar.structure.variants.polite}
+                                        </div>
+                                    </div>
+                                )}
+                                {!grammar.structure.variants?.standard && grammar.structure.patterns && (
+                                    <div className="space-y-3">
+                                        {grammar.structure.patterns.map((p, i) => (
+                                            <div key={i} className="text-sm font-bold text-foreground border-b border-border pb-2 last:border-0 jp-text">{p}</div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* Details */}
+                    {(grammar.details.part_of_speech || grammar.details.word_type) && (
+                        <section className="space-y-6">
+                            <div className="flex items-center gap-3">
+                                <Info size={18} className="text-foreground/40" />
+                                <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Details</h2>
+                            </div>
+                            <div className="premium-card p-6 bg-surface-muted/30 border-border space-y-3">
+                                {grammar.details.part_of_speech && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-foreground/40 font-medium">Part of Speech</span>
+                                        <span className="font-bold text-foreground">{grammar.details.part_of_speech}</span>
+                                    </div>
+                                )}
+                                {grammar.details.word_type && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-foreground/40 font-medium">Type</span>
+                                        <span className="font-bold text-foreground">{grammar.details.word_type}</span>
+                                    </div>
+                                )}
+                                {grammar.details.register && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-foreground/40 font-medium">Register</span>
+                                        <span className="font-bold text-foreground">{grammar.details.register}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* Related Grammar */}
+                    {grammar.related && grammar.related.length > 0 && (
+                        <section className="space-y-6">
+                            <div className="flex items-center gap-3">
+                                <BookOpen size={18} className="text-secondary" />
+                                <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Related Grammar ({grammar.related.length})</h2>
+                            </div>
+                            <div className="space-y-3">
+                                {grammar.related.slice(0, 6).map((rel, i) => (
+                                    <Link
+                                        key={i}
+                                        href={`/content/grammar/${encodeURIComponent(rel.slug)}`}
+                                        className="block p-5 premium-card bg-surface border-border hover:border-primary/20 transition-all group"
+                                    >
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="space-y-1">
+                                                <div className="font-bold text-foreground group-hover:text-primary-dark transition-colors tracking-tight jp-text">
+                                                    {rel.title}
+                                                </div>
+                                                <div className="text-xs text-foreground/40 font-medium">
+                                                    {rel.meaning}
+                                                </div>
+                                            </div>
+                                            <div className="text-[10px] font-bold text-foreground/20 shrink-0">
+                                                N{6 - parseInt(rel.level) || rel.level}
+                                            </div>
+                                        </div>
+                                        {rel.comparison_text && (
+                                            <div className="mt-3 pt-3 border-t border-border text-xs text-foreground/50 leading-relaxed line-clamp-3">
+                                                {rel.comparison_text.substring(0, 200)}...
+                                            </div>
+                                        )}
+                                    </Link>
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* Resources */}
+                    {grammar.resources && (grammar.resources.online?.length > 0 || grammar.resources.offline?.length > 0) && (
+                        <section className="space-y-6">
+                            <div className="flex items-center gap-3">
+                                <ExternalLink size={18} className="text-foreground/40" />
+                                <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Resources</h2>
+                            </div>
+                            <div className="premium-card p-6 bg-surface border-border space-y-4">
+                                {grammar.resources.online?.map((r, i) => (
+                                    <a
+                                        key={i}
+                                        href={r.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-between text-sm hover:text-primary-dark transition-colors"
+                                    >
+                                        <span className="font-medium text-foreground/70 truncate pr-2">{r.title}</span>
+                                        <span className="text-[9px] font-bold text-foreground/30 uppercase shrink-0">{r.source}</span>
+                                    </a>
+                                ))}
+                                {grammar.resources.offline?.map((r, i) => (
+                                    <div key={i} className="text-sm text-foreground/50">
+                                        📚 {r.book} - {r.page}
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    )}
+                </aside>
             </div>
         </div>
     );

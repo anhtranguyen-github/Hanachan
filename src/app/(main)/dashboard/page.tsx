@@ -1,244 +1,228 @@
-
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { MockDB } from '@/lib/mock-db';
-import { useUser } from '@/features/auth/AuthContext';
-import {
-    Flame,
-    Calendar,
-    Target,
-    ArrowRight,
-    BookOpen,
-    Zap,
-    TrendingUp,
-    Activity,
-    Award,
-    Clock,
-    CheckCircle2,
-    ChevronRight,
-    LucideIcon,
-    PieChart,
-    BarChart3,
-    History,
-    Sparkles,
-    MousePointer2,
-    Layers,
-    Filter
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { fetchUserDashboardStats, fetchCurriculumStats, fetchDeckStats } from '@/features/learning/service';
+import { useUser } from '@/features/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 export default function DashboardPage() {
     const { user } = useUser();
+    const [userLevel, setUserLevel] = useState(1);
     const [stats, setStats] = useState<any>(null);
+    const [mounted, setMounted] = useState(false);
+
+    const refreshData = async () => {
+        if (!user) return;
+        try {
+            const userId = user.id;
+
+            // 1. Fetch real user level
+            const { data: profile } = await supabase
+                .from('users')
+                .select('level')
+                .eq('id', userId)
+                .single();
+
+            const currentLevel = profile?.level || 1;
+            setUserLevel(currentLevel);
+
+            const dashboardStats = await fetchUserDashboardStats(userId);
+            const curriculumStats = await fetchCurriculumStats();
+            const levelStats = await fetchDeckStats(userId, `level-${currentLevel}`);
+
+            setStats({
+                ...dashboardStats,
+                curriculum: curriculumStats,
+                levelStats: levelStats,
+                due: dashboardStats.reviewsDue,
+                new: levelStats.new,
+                retention: dashboardStats.retention,
+                streak: dashboardStats.streak || 0,
+                progression: {
+                    percentage: Math.round((levelStats.learned / Math.max(levelStats.total, 1)) * 100),
+                    passed: levelStats.learned,
+                    total: levelStats.total,
+                }
+            });
+        } catch (error) {
+            console.error("Failed to refresh dashboard data:", error);
+            // Fallback to prevent infinite loading
+            setStats({
+                due: 0,
+                new: 0,
+                retention: 0,
+                streak: 0,
+                reviewsToday: 0,
+                mistakes: 0,
+                progression: { percentage: 0, passed: 0, total: 100 },
+                recentLevels: [1, 2, 3],
+                heatmap: [],
+                typeMastery: { radical: 0, kanji: 0, vocabulary: 0, grammar: 0 }
+            });
+        }
+    };
 
     useEffect(() => {
+        setMounted(true);
         if (user) {
-            MockDB.fetchUserDashboardStats(user.id).then(setStats);
+            refreshData();
         }
     }, [user]);
 
-    if (!stats) return <div className="p-12 animate-pulse text-center font-black">Loading your stats...</div>;
-
-    const maxForecast = Math.max(...stats.forecast.map((f: any) => f.count), 1);
-    const maxDaily = Math.max(...stats.dailyReviews, 1);
+    if (!mounted || !stats) {
+        return (
+            <div className="h-screen flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            </div>
+        );
+    }
 
     return (
-        <div className="flex flex-col gap-10 pb-20">
-            {/* Executive Summary */}
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                <div>
-                    <h1 className="text-4xl font-black text-primary-dark tracking-tight">Okaeri, {user?.user_metadata?.display_name}! 👋</h1>
-                    <p className="text-primary-dark opacity-70 font-bold mt-2">Retention is holding steady at <span className="text-primary">{stats.retention * 100}%</span> this week.</p>
+        <div className="space-y-8 pb-10 animate-in fade-in duration-1000" data-testid="dashboard-root">
+            {/* Header Area */}
+            <header className="flex justify-between items-end">
+                <div className="space-y-1">
+                    <h1 className="text-4xl font-black text-gray-900 tracking-tight">
+                        Konnichiwa, {user?.user_metadata?.display_name || 'Learner'}!
+                    </h1>
+                    <div className="flex items-center gap-4">
+                        <span className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">
+                            Mastery Level {userLevel}
+                        </span>
+                        <div className="flex gap-1">
+                            {[1, 2, 3].map(i => <div key={i} className="w-1.5 h-1.5 rounded-full bg-primary/30"></div>)}
+                        </div>
+                    </div>
                 </div>
-                <div className="flex gap-3">
-                    <div className="px-5 py-3 bg-white border-2 border-primary-dark rounded-clay shadow-clay flex items-center gap-3">
-                        <Activity className="w-5 h-5 text-primary" />
-                        <span className="font-black text-primary-dark text-sm">Active Habit</span>
+                <div className="flex gap-4">
+                    {/* Streak Counter - Matches Demo v2 */}
+                    <div className="bg-orange-50 px-6 py-3 rounded-2xl border-2 border-orange-100 flex items-center gap-3 shadow-sm">
+                        <span className="text-2xl animate-pulse">🔥</span>
+                        <div>
+                            <span className="block text-xl font-black text-orange-600 leading-none">{stats.streak || 0}</span>
+                            <span className="text-[10px] font-black text-orange-300 uppercase tracking-widest">Day Streak</span>
+                        </div>
                     </div>
                 </div>
             </header>
 
-            {/* Global Mastery & Heatmap */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* 1. Global Activity Heatmap */}
-                <section className="lg:col-span-2 clay-card p-8 bg-white overflow-hidden">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-black text-primary-dark flex items-center gap-2">
-                            <Calendar className="w-6 h-6 text-primary" />
-                            Activity Heatmap
-                        </h2>
-                        <div className="flex items-center gap-1">
-                            <span className="text-[8px] font-black text-primary-dark/30 uppercase mr-1">Less</span>
-                            {[0, 1, 2, 3, 4].map(v => (
-                                <div key={v} className={clsx("w-3 h-3 rounded-sm", v === 0 ? "bg-primary-dark/5" : v === 1 ? "bg-primary/20" : v === 2 ? "bg-primary/50" : v === 3 ? "bg-primary" : "bg-primary-dark")} />
-                            ))}
-                            <span className="text-[8px] font-black text-primary-dark/30 uppercase ml-1">More</span>
+            <div className="grid grid-cols-12 gap-6">
+                {/* SRS Summary Cluster (8 Columns) */}
+                <div className="col-span-12 lg:col-span-8 grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-fr">
+                    <Link href="/learn" className="group" data-testid="learn-card">
+                        <div className="h-full bg-primary text-white p-8 rounded-[40px] shadow-xl shadow-primary/20 relative overflow-hidden transition-all hover:scale-[1.02] active:scale-95">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-bl-[60px] transform group-hover:scale-110 transition-transform"></div>
+                            <span className="block text-5xl font-black mb-1">{stats.new}</span>
+                            <span className="text-xs font-black uppercase tracking-widest opacity-60">Lessons Available</span>
+                            <div className="mt-8 flex items-center gap-2 text-xs font-bold">
+                                <span>Start Discovery</span>
+                                <span className="group-hover:translate-x-1 transition-transform">→</span>
+                            </div>
+                        </div>
+                    </Link>
+
+                    <Link href="/review" className="group" data-testid="review-card">
+                        <div className="h-full bg-kanji text-white p-8 rounded-[40px] shadow-xl shadow-kanji/20 relative overflow-hidden transition-all hover:scale-[1.02] active:scale-95">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-bl-[60px] transform group-hover:scale-110 transition-transform"></div>
+                            <span className="block text-5xl font-black mb-1">{stats.due}</span>
+                            <span className="text-xs font-black uppercase tracking-widest opacity-60">Reviews Due</span>
+                            <div className="mt-8 flex items-center gap-2 text-xs font-bold">
+                                <span>Clear Queue</span>
+                                <span className="group-hover:translate-x-1 transition-transform">→</span>
+                            </div>
+                        </div>
+                    </Link>
+
+                    <div className="bg-white border-2 border-gray-300 p-8 rounded-[40px] flex flex-col justify-between shadow-sm">
+                        <div className="space-y-1">
+                            <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Daily Precision</span>
+                            <span className="block text-4xl font-black text-gray-900 tracking-tighter">{stats.retention}%</span>
+                        </div>
+                        <div className="mt-4 flex items-center gap-2">
+                            <div className="flex-1 h-2 bg-gray-50 rounded-full overflow-hidden">
+                                <div className="h-full bg-emerald-500" style={{ width: `${stats.retention}%` }}></div>
+                            </div>
                         </div>
                     </div>
-                    <div className="flex flex-wrap gap-1.5 justify-between">
-                        {stats.heatmap.slice(0, 364).map((v: number, i: number) => (
+                </div>
+
+                {/* Accuracy Breakdown (4 Columns) - Dark Design from demo */}
+                <div className="col-span-12 lg:col-span-4 bg-gray-900 text-white p-8 rounded-[40px] shadow-2xl space-y-8">
+                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-500">Today's Activity</h3>
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm font-bold text-gray-500">Correct Answers</span>
+                            <span className="text-xl font-black text-emerald-400" data-testid="stats-correct-answers">{(stats.reviewsToday || 0) - (stats.mistakes || 0)}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm font-bold text-gray-500">Mistakes</span>
+                            <span className="text-xl font-black text-rose-400">{stats.mistakes || 0}</span>
+                        </div>
+
+                        <div className="pt-6 border-t border-gray-800">
+                            <div className="flex justify-between items-end mb-2">
+                                <div>
+                                    <span className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1">Daily Target</span>
+                                    <span className="text-lg font-black italic">{stats.reviewsToday} / 200 items</span>
+                                </div>
+                                <span className="text-xs font-bold text-primary">{Math.round((stats.reviewsToday / 200) * 100)}%</span>
+                            </div>
+                            <div className="h-5 bg-gray-800 rounded-2xl p-1 overflow-hidden">
+                                <div
+                                    className="h-full bg-primary rounded-xl shadow-[0_0_20px_rgba(244,172,183,0.5)] transition-all duration-1000"
+                                    style={{ width: `${Math.min(100, (stats.reviewsToday / 200) * 100)}%` }}
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Level Progression Detail (Full Width) */}
+                <div className="col-span-12 bg-white border-2 border-gray-300 p-10 rounded-[56px] space-y-10 shadow-sm animate-in slide-in-from-bottom-4 duration-1000">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <h3 className="text-3xl font-black text-gray-900 tracking-tighter">Level {userLevel} Mastery</h3>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-none">Complete Kanji items to unlock next stage</p>
+                        </div>
+                        <div className="text-right">
+                            <span className="text-5xl font-black text-kanji tracking-tighter">{stats.progression.passed}</span>
+                            <span className="text-2xl font-black text-gray-200"> / {stats.progression.total}</span>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                        {Array.from({ length: stats.progression.total }).map((_, i) => (
                             <div
                                 key={i}
                                 className={clsx(
-                                    "w-3.5 h-3.5 rounded-sm transition-all hover:scale-150 cursor-help",
-                                    v === 0 ? "bg-primary-dark/5" : v === 1 ? "bg-primary/20" : v === 2 ? "bg-primary/50" : v === 3 ? "bg-primary" : "bg-primary-dark"
+                                    "w-10 h-3 rounded-full transition-all duration-700",
+                                    i < stats.progression.passed
+                                        ? "bg-kanji shadow-[0_0_15px_rgba(244,172,183,0.4)]"
+                                        : "bg-gray-50 border border-gray-100"
                                 )}
-                                title={`Intensity Level: ${v}`}
                             />
                         ))}
                     </div>
-                    <div className="mt-6 flex justify-between text-[10px] font-black text-primary-dark/30 uppercase tracking-[0.2em]">
-                        <span>Jan 2025</span>
-                        <span>May 2025</span>
-                        <span>Sep 2025</span>
-                        <span>Dec 2025</span>
-                    </div>
-                </section>
 
-                {/* 2. Knowledge Type Mastery Funnel */}
-                <section className="clay-card p-8 bg-primary-dark text-white flex flex-col gap-6 relative overflow-hidden">
-                    <div className="absolute right-[-20px] top-[-20px] opacity-10">
-                        <Layers className="w-48 h-48" />
-                    </div>
-                    <h2 className="text-xl font-black uppercase tracking-widest relative z-10">Content Mastery</h2>
-                    <div className="flex flex-col gap-4 relative z-10">
-                        {Object.entries(stats.typeMastery).map(([type, value]: [string, any]) => (
-                            <div key={type} className="flex flex-col gap-1.5">
-                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest opacity-60">
-                                    <span>{type}</span>
-                                    <span>{value}%</span>
-                                </div>
-                                <div className="w-full h-2.5 bg-white/10 rounded-full border border-white/20 overflow-hidden">
-                                    <div
-                                        className={clsx("h-full transition-all duration-1000", type === 'radical' ? "bg-secondary" : "bg-primary")}
-                                        style={{ width: `${value}%` }}
-                                    />
-                                </div>
+                    <div className="flex justify-between items-center pt-4 border-t border-gray-50">
+                        <div className="flex gap-6">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-kanji shadow-[0_0_5px_rgba(244,172,183,1)]"></div>
+                                <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Mastered</span>
                             </div>
-                        ))}
-                    </div>
-                    <p className="text-[10px] font-bold opacity-40 italic mt-auto">Global coverage: {stats.totalKUCoverage.toFixed(1)}% of curriculum</p>
-                </section>
-            </div>
-
-            {/* FSRS Learning Dynamics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {/* Reviews Due */}
-                <div className="clay-card p-6 bg-white border-primary flex flex-col gap-4">
-                    <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-black uppercase opacity-40 tracking-widest">Reviews Due</span>
-                        <Zap className="w-5 h-5 text-primary fill-current" />
-                    </div>
-                    <div className="text-5xl font-black text-primary-dark">{stats.reviewsDue}</div>
-                    <Link href="/review" className="clay-btn bg-primary py-2 text-xs">Review Now</Link>
-                </div>
-
-                {/* Total Burned */}
-                <div className="clay-card p-6 bg-white border-dashed flex flex-col gap-4">
-                    <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-black uppercase opacity-40 tracking-widest">Total Burned</span>
-                        <Flame className="w-5 h-5 text-secondary fill-current" />
-                    </div>
-                    <div className="text-5xl font-black text-primary-dark">{stats.totalBurned}</div>
-                    <p className="text-[10px] font-bold opacity-40">Items permanently memorized</p>
-                </div>
-
-                {/* Stability Dist */}
-                <div className="clay-card p-6 bg-white flex flex-col gap-3">
-                    <span className="text-[10px] font-black uppercase opacity-40 tracking-widest">Stability Profile</span>
-                    <div className="flex-1 flex items-end gap-2 h-20">
-                        <div className="flex-1 bg-red-100 border-2 border-red-500 rounded-clay h-[20%]" title="Low Stability" />
-                        <div className="flex-1 bg-primary/20 border-2 border-primary rounded-clay h-[50%]" title="Medium Stability" />
-                        <div className="flex-1 bg-secondary/20 border-2 border-secondary rounded-clay h-[30%]" title="High Stability" />
-                    </div>
-                    <div className="flex justify-between text-[8px] font-black opacity-40">
-                        <span>L</span>
-                        <span>M</span>
-                        <span>H</span>
-                    </div>
-                </div>
-
-                {/* Difficulty Dist */}
-                <div className="clay-card p-6 bg-white flex flex-col gap-3">
-                    <span className="text-[10px] font-black uppercase opacity-40 tracking-widest">Difficulty Spread</span>
-                    <div className="flex-1 flex items-end gap-2 h-20">
-                        <div className="flex-1 bg-gray-100 border-2 border-gray-400 rounded-clay h-[40%]" title="Easy" />
-                        <div className="flex-1 bg-primary/20 border-2 border-primary rounded-clay h-[45%]" title="Normal" />
-                        <div className="flex-1 bg-red-100 border-2 border-red-500 rounded-clay h-[15%]" title="Hard" />
-                    </div>
-                    <div className="flex justify-between text-[8px] font-black opacity-40">
-                        <span>EZ</span>
-                        <span>OK</span>
-                        <span>HD</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Performance Trends */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* 1. Daily Review Counts (Last 7 Days) */}
-                <section className="clay-card p-8 bg-white border-dashed">
-                    <div className="flex justify-between items-center mb-10">
-                        <h2 className="text-xl font-black text-primary-dark flex items-center gap-2">
-                            <BarChart3 className="w-6 h-6 text-primary" />
-                            Processing Trends
-                        </h2>
-                        <span className="text-[10px] font-black uppercase text-primary-dark/30">Last 7 Sessions</span>
-                    </div>
-                    <div className="flex items-end justify-between h-40 gap-4">
-                        {stats.dailyReviews.map((v: number, i: number) => (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-                                <div
-                                    className="w-full bg-primary/10 group-hover:bg-primary transition-all border-x-2 border-t-2 border-primary-dark rounded-t-clay relative overflow-hidden"
-                                    style={{ height: `${(v / maxDaily) * 100}%` }}
-                                >
-                                    <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                                </div>
-                                <span className="text-[10px] font-black opacity-40 uppercase">Day {i + 1}</span>
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-gray-200"></div>
+                                <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Pending</span>
                             </div>
-                        ))}
-                    </div>
-                </section>
-
-                {/* 2. Review Forecast (Next 7 Days) */}
-                <section className="clay-card p-8 bg-white overflow-hidden relative">
-                    <div className="absolute right-4 top-4 p-2 bg-secondary/10 rounded-full border border-secondary/20">
-                        <TrendingUp className="w-5 h-5 text-secondary" />
-                    </div>
-                    <h2 className="text-xl font-black text-primary-dark mb-10">Capacity Forecast</h2>
-                    <div className="flex items-end justify-between h-40 gap-4">
-                        {stats.forecast.map((f: any, i: number) => (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-                                <div
-                                    className="w-full bg-secondary/10 group-hover:bg-secondary transition-all border-x-2 border-t-2 border-primary-dark rounded-t-clay"
-                                    style={{ height: `${(f.count / maxForecast) * 100}%` }}
-                                />
-                                <span className="text-[10px] font-black opacity-40 uppercase">D{i}</span>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-            </div>
-
-            {/* Behavioral Insights */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {[
-                    { label: 'Analyzer Usage', value: stats.actionFrequencies.analyze, icon: MousePointer2, color: 'text-primary' },
-                    { label: 'Flashcards Linked', value: stats.actionFrequencies.flashcard, icon: History, color: 'text-secondary' },
-                    { label: 'SRS Reviews', value: stats.actionFrequencies.srs, icon: Sparkles, color: 'text-primary' },
-                ].map((item, i) => (
-                    <div key={i} className="clay-card p-6 bg-white flex flex-col items-center justify-center text-center gap-4 group hover:-translate-y-2 transition-all">
-                        <div className={clsx("w-12 h-12 rounded-clay border-2 border-primary-dark flex items-center justify-center shadow-clay", item.color)}>
-                            <item.icon className="w-6 h-6 " />
                         </div>
-                        <div>
-                            <div className="text-3xl font-black text-primary-dark">{item.value}</div>
-                            <div className="text-[10px] font-black uppercase opacity-40 tracking-widest">{item.label}</div>
+                        <div className="text-[10px] font-black text-gray-200 uppercase tracking-[0.4em]">
+                            Curriculum Pipeline v2 // Active
                         </div>
                     </div>
-                ))}
+                </div>
             </div>
         </div>
     );

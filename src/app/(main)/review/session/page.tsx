@@ -1,230 +1,175 @@
-
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { MockDB } from '@/lib/mock-db';
-import { useUser } from '@/features/auth/AuthContext';
-import {
-    CheckCircle2,
-    XCircle,
-    Clock,
-    ChevronRight,
-    FlipHorizontal,
-    Volume2,
-    BrainCircuit,
-    ChevronLeft,
-    RotateCcw
-} from 'lucide-react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Loader2, ArrowLeft, CheckCircle2, Zap } from 'lucide-react';
+import { fetchDueItems } from '@/features/learning/service';
+import { ReviewSessionController, QuizItem } from '@/features/learning/ReviewSessionController';
+import { Rating } from '@/features/learning/domain/FSRSEngine';
+import { GlassCard } from '@/components/premium/GlassCard';
+import { ReviewCardDisplay } from '@/features/learning/components/ReviewCardDisplay';
 import { clsx } from 'clsx';
+import { useUser } from '@/features/auth/AuthContext';
 
-type SessionState = 'LOADING' | 'STUDY' | 'RESULT';
-
-export default function GlobalReviewSessionPage() {
-    const router = useRouter();
+function SessionContent() {
     const { user } = useUser();
-    const [sessionState, setSessionState] = useState<SessionState>('LOADING');
-    const [queue, setQueue] = useState<any[]>([]);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [showAnswer, setShowAnswer] = useState(false);
-    const [sessionStats, setSessionStats] = useState({ correct: 0, total: 0 });
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const [controller, setController] = useState<ReviewSessionController | null>(null);
+    const [currentCard, setCurrentCard] = useState<QuizItem | null>(null);
+    const [phase, setPhase] = useState<'init' | 'quiz' | 'complete'>('init');
+    const [stats, setStats] = useState({ mistakes: 0, totalItems: 0, completed: 0 });
 
-    useEffect(() => {
-        if (user) {
-            async function initSession() {
-                // Fetch ALL due items for the user
-                const dueItems = await MockDB.fetchDueItems(user!.id);
+    const loadSession = async () => {
+        if (!user) return;
+        const userId = user.id;
 
-                // For a "Quick Review All", we just take everything due
-                setQueue(dueItems);
-                setSessionState('STUDY');
-                setSessionStats({ correct: 0, total: dueItems.length });
+        try {
+            const items = await fetchDueItems(userId);
+
+            if (items.length === 0) {
+                setPhase('complete');
+                console.log(`[ReviewSession] Phase changed to 'complete' (no items due).`);
+                return;
             }
-            initSession();
-        }
-    }, [user]);
 
-    const handleGrade = (grade: number) => {
-        if (grade >= 3) setSessionStats(s => ({ ...s, correct: s.correct + 1 }));
+            const newController = new ReviewSessionController(userId);
+            await newController.initSession(items);
 
-        if (currentIndex < queue.length - 1) {
-            setCurrentIndex(currentIndex + 1);
-            setShowAnswer(false);
-        } else {
-            setSessionState('RESULT');
+            setController(newController);
+            const firstCard = newController.getNextItem();
+            setCurrentCard(firstCard);
+            setStats({ mistakes: 0, totalItems: items.length, completed: 0 });
+            setPhase('quiz');
+        } catch (error) {
+            console.error("[ReviewSession] loadSession error:", error);
+            setPhase('complete');
         }
     };
 
-    if (sessionState === 'LOADING') {
+    useEffect(() => {
+        if (user) {
+            loadSession();
+        }
+    }, [user]);
+
+    const handleAnswer = async (rating: Rating, userInput: string) => {
+        if (!controller) return;
+
+        const success = await controller.submitAnswer(rating);
+        if (!success) {
+            setStats(s => ({ ...s, mistakes: s.mistakes + 1 }));
+        }
+
+        const next = controller.getNextItem();
+        if (next) {
+            setCurrentCard(next);
+            const progress = controller.getProgress();
+            setStats(s => ({ ...s, completed: progress.completed }));
+        } else {
+            setPhase('complete');
+        }
+    };
+
+    if (phase === 'init') {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] animate-pulse">
-                <BrainCircuit className="w-16 h-16 text-primary-dark/20 mb-4" />
-                <p className="font-black text-primary-dark/40 italic">Assembling your knowledge graph...</p>
+            <div className="min-h-screen flex flex-col items-center justify-center p-8 gap-8">
+                <Loader2 className="animate-spin text-primary" size={48} />
+                <p className="text-xs font-bold uppercase tracking-widest text-foreground/40">Synchronizing memory state...</p>
             </div>
         );
     }
 
-    if (sessionState === 'RESULT') {
+    if (phase === 'complete') {
+        const accuracy = stats.totalItems > 0 ? Math.round(((stats.totalItems - stats.mistakes) / stats.totalItems) * 100) : 100;
+
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8">
-                <div className="w-32 h-32 relative">
-                    <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
-                    <div className="relative w-full h-full bg-primary rounded-clay border-4 border-primary-dark flex items-center justify-center shadow-clay">
-                        <CheckCircle2 className="w-16 h-16 text-white" />
-                    </div>
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 max-w-2xl mx-auto space-y-16 animate-in fade-in duration-1000">
+                <div className="space-y-4 text-center">
+                    <h1 className="text-6xl font-black text-gray-900 tracking-tighter" data-testid="review-complete-header">Excellent Work!</h1>
+                    <p className="text-gray-400 font-medium">{stats.totalItems} items reviewed. Everything is up to date.</p>
                 </div>
-                <div className="text-center px-6">
-                    <h1 className="text-4xl font-black text-primary-dark mb-2">Review Clear! 🌟</h1>
-                    <p className="text-primary-dark/60 font-bold max-w-md mx-auto">
-                        You've processed <span className="text-primary">{sessionStats.total}</span> items across all your decks. Your long-term memory is thanking you.
-                    </p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-sm px-6">
-                    <div className="clay-card p-6 text-center border-dashed">
-                        <div className="text-xs font-black uppercase text-primary-dark/50 mb-1">Retention</div>
-                        <div className="text-3xl font-black text-primary-dark">
-                            {sessionStats.total > 0 ? Math.round((sessionStats.correct / sessionStats.total) * 100) : 100}%
+
+                <div className="grid grid-cols-3 gap-6 w-full">
+                    {[
+                        { label: 'Accuracy', val: `${accuracy}%` },
+                        { label: 'Mistakes', val: stats.mistakes.toString() },
+                        { label: 'Next Due', val: '2h' }
+                    ].map(s => (
+                        <div key={s.label} className="bg-white border-2 border-gray-100 p-8 rounded-[40px] text-center shadow-sm">
+                            <span className="block text-3xl font-black text-kanji mb-1">{s.val}</span>
+                            <span className="text-[10px] font-black uppercase text-gray-300 tracking-widest">{s.label}</span>
                         </div>
-                    </div>
-                    <div className="clay-card p-6 text-center bg-primary">
-                        <div className="text-xs font-black uppercase text-white/50 mb-1">XP Gained</div>
-                        <div className="text-3xl font-black text-white">+{sessionStats.total * 10}</div>
-                    </div>
+                    ))}
                 </div>
+
                 <button
-                    onClick={() => router.push('/review')}
-                    className="clay-btn bg-white !text-primary-dark border-2 border-primary-dark text-xl px-12 py-4 shadow-clay"
+                    onClick={() => router.push('/dashboard')}
+                    className="block w-full py-6 bg-gray-900 text-white text-2xl font-black rounded-[32px] shadow-2xl hover:translate-y-[-4px] transition-all active:scale-95"
                 >
-                    Return to Center
+                    Back to Dashboard
                 </button>
             </div>
         );
     }
 
-    const currentState = queue[currentIndex];
-    const currentCard = currentState?.knowledge_units;
+    if (!currentCard || !controller) return null;
 
-    if (!currentCard) return (
-        <div className="text-center py-20 flex flex-col items-center gap-6">
-            <CheckCircle2 className="w-16 h-16 text-primary opacity-20" />
-            <h2 className="text-2xl font-black text-primary-dark">Nothing to review!</h2>
-            <button onClick={() => router.push('/review')} className="clay-btn px-8">Back to Dashboard</button>
-        </div>
-    );
+    const progress = (stats.completed / Math.max(stats.totalItems * 2, 1)) * 100;
 
     return (
-        <div className="max-w-2xl mx-auto flex flex-col gap-8 h-full">
-            {/* Header */}
-            <header className="flex items-center justify-between">
-                <button
-                    onClick={() => router.back()}
-                    className="flex items-center gap-2 font-black text-primary-dark/40 hover:text-primary transition-colors"
-                >
-                    <ChevronLeft className="w-5 h-5" />
-                    Exit Review
-                </button>
-                <div className="flex flex-col items-end">
-                    <span className="text-[10px] font-black uppercase text-primary-dark/40 tracking-widest">Global Review</span>
-                    <span className="text-sm font-black text-primary">Mixed Session</span>
+        <div className="min-h-screen bg-background py-12 px-6 flex flex-col max-w-5xl mx-auto space-y-12" data-testid="review-session-root">
+            <div className="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-primary/10 to-transparent -z-10" />
+
+            <header className="flex justify-between items-center px-6">
+                <div className="flex items-center gap-6">
+                    <div className="space-y-1">
+                        <span className={clsx("block text-xl font-black leading-none", currentCard?.type === 'kanji' ? 'text-kanji' : 'text-primary')}>
+                            {stats.completed + 1} / {stats.totalItems}
+                        </span>
+                        <span className="block text-[8px] font-black text-gray-300 uppercase tracking-widest leading-none">Items in queue</span>
+                    </div>
+                    <div className="w-48 h-3 bg-gray-100 rounded-full overflow-hidden border border-gray-100">
+                        <div
+                            className={clsx("h-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(0,0,0,0.1)]", currentCard?.type === 'kanji' ? 'bg-kanji' : 'bg-primary')}
+                            style={{ width: `${progress}%` }}
+                        />
+                    </div>
+                </div>
+
+                <div className="flex gap-4 items-center">
+                    <div className="bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-100 italic text-[10px] font-black text-orange-400 animate-pulse">
+                        Intra-session Loop Active
+                    </div>
+                    <button
+                        onClick={() => router.push('/review')}
+                        className="text-gray-300 hover:text-rose-500 font-black text-[10px] uppercase tracking-[0.2em] transition-colors"
+                    >
+                        End Session
+                    </button>
                 </div>
             </header>
 
-            {/* Progress Bar */}
-            <div className="flex items-center gap-4">
-                <div className="flex-1 h-3 bg-primary-dark/10 rounded-full border-2 border-primary-dark overflow-hidden">
-                    <div
-                        className="h-full bg-primary transition-all duration-300"
-                        style={{ width: `${((currentIndex + 1) / queue.length) * 100}%` }}
-                    />
-                </div>
-                <span className="text-xs font-black text-primary-dark whitespace-nowrap">
-                    {currentIndex + 1} / {queue.length}
-                </span>
+            <div className="relative z-10">
+                <ReviewCardDisplay
+                    card={currentCard}
+                    mode="review"
+                    onReveal={() => { }}
+                    onRate={handleAnswer}
+                />
             </div>
 
-            {/* Card Display */}
-            <div className="flex-1 perspective-1000 my-4">
-                <div className={clsx(
-                    "w-full min-h-[450px] clay-card !rounded-[40px] p-10 flex flex-col items-center justify-center text-center transition-all duration-500 relative bg-white",
-                    showAnswer && "border-primary"
-                )}>
-                    {!showAnswer ? (
-                        <div className="flex flex-col items-center gap-10">
-                            <div className="text-9xl font-black text-primary-dark drop-shadow-sm select-none">
-                                {currentCard.character || currentCard.title}
-                            </div>
-                            <button
-                                onClick={() => setShowAnswer(true)}
-                                className="clay-btn mt-12 bg-white !text-primary-dark border-dashed px-10 py-4 text-lg hover:scale-105 active:scale-95 transition-all"
-                            >
-                                <FlipHorizontal className="w-5 h-5 text-primary" />
-                                Show Answer
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center gap-6 w-full h-full animate-in zoom-in-95 duration-300">
-                            <div className="text-5xl font-black text-primary-dark opacity-20">{currentCard.character || currentCard.title}</div>
-
-                            <div className="flex flex-col items-center gap-2">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-3xl font-black text-primary">
-                                        {currentCard.reading ||
-                                            currentCard.ku_vocabulary?.reading_primary ||
-                                            currentCard.ku_kanji?.reading_data?.on?.[0]}
-                                    </span>
-                                    {(currentCard.type === 'vocabulary' || currentCard.ku_vocabulary) && (
-                                        <Volume2 className="w-6 h-6 text-primary cursor-pointer hover:scale-110 transition-transform" />
-                                    )}
-                                </div>
-                                <div className="text-4xl font-black text-primary-dark capitalize">
-                                    {currentCard.meaning}
-                                </div>
-                            </div>
-
-                            <div className="w-full h-0.5 bg-primary-dark/5 my-4" />
-
-                            <div className="w-full text-left bg-background p-6 rounded-clay border-2 border-primary-dark border-dashed flex flex-col gap-2">
-                                <h4 className="text-[10px] font-black uppercase text-primary flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />
-                                    Mnemonic Context
-                                </h4>
-                                <p className="text-primary-dark/80 font-bold leading-relaxed italic">
-                                    This item is currently at <span className="text-primary">Stage {currentState.srs_stage}</span> stability. Keep practicing to reach "Burned" status.
-                                </p>
-                            </div>
-
-                            {/* Grading Controls */}
-                            <div className="mt-auto flex flex-col gap-4 w-full pt-8">
-                                <div className="text-[10px] font-black uppercase text-primary-dark/20 text-center tracking-widest">How well did you recall this?</div>
-                                <div className="grid grid-cols-4 gap-3">
-                                    {[
-                                        { grade: 1, label: 'Again', color: 'bg-red-500', text: 'text-red-500', sub: '< 1m' },
-                                        { grade: 2, label: 'Hard', color: 'bg-orange-500', text: 'text-orange-500', sub: '2.5d' },
-                                        { grade: 3, label: 'Good', color: 'bg-green-500', text: 'text-green-500', sub: '4.8d' },
-                                        { grade: 4, label: 'Easy', color: 'bg-blue-500', text: 'text-blue-500', sub: '9.2d' },
-                                    ].map((g) => (
-                                        <button
-                                            key={g.grade}
-                                            onClick={() => handleGrade(g.grade)}
-                                            className={clsx(
-                                                "clay-btn !bg-white !text-primary-dark border-2 border-primary-dark/10 flex flex-col gap-1 p-3 h-auto group",
-                                                "hover:!border-primary transition-all active:scale-95",
-                                                g.grade === 1 && "hover:!bg-red-50",
-                                                g.grade === 2 && "hover:!bg-orange-50",
-                                                g.grade === 3 && "hover:!bg-green-50",
-                                                g.grade === 4 && "hover:!bg-blue-50"
-                                            )}
-                                        >
-                                            <span className={clsx("text-xs font-black", g.text)}>{g.label}</span>
-                                            <span className="text-[8px] font-bold opacity-30">{g.sub}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 text-[9px] font-black text-foreground/5 uppercase tracking-[0.5em] pointer-events-none font-mono">
+                SECURE_LEARNING_PROTOCOL // SAKURA-V2-ALGO-ACTIVE
             </div>
-        </div>
+        </div >
+    );
+}
+
+export default function ReviewSessionPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary" size={48} /></div>}>
+            <SessionContent />
+        </Suspense>
     );
 }

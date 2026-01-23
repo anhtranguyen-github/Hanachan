@@ -122,17 +122,15 @@ export interface NavSection {
 }
 
 export const NAV_CONFIG: NavSection[] = [
-    { id: 'chat', label: 'LLM Chat', href: '/chat', icon: MessageCircle, matchPaths: ['/chat'] },
-    { id: 'study-plan', label: 'Learn', href: '/study-plan', icon: CalendarDays, matchPaths: ['/study-plan', '/study-plan/lesson', '/srs/lesson'] },
-    { id: 'review', label: 'Review', href: '/study-plan/study', icon: Repeat, matchPaths: ['/study-plan/study', '/study-plan/review', '/srs/review'] },
-    { id: 'kanji', label: 'Kanji', href: '/kanji', icon: Languages, matchPaths: ['/kanji', '/knowledge-base/kanji'] },
-    { id: 'vocabulary', label: 'Vocabulary', href: '/vocabulary', icon: Brain, matchPaths: ['/vocabulary'] },
-    { id: 'grammar', label: 'Grammar', href: '/grammar', icon: FileText, matchPaths: ['/grammar', '/knowledge-base/grammar'] },
+    { id: 'dashboard', label: 'Dashboard', href: '/dashboard', icon: User, matchPaths: ['/dashboard'] },
+    { id: 'study-plan', label: 'Learn', href: '/learn', icon: CalendarDays, matchPaths: ['/learn', '/study-plan'] },
+    { id: 'review', label: 'Review', href: '/review', icon: Repeat, matchPaths: ['/review'] },
+    { id: 'chat', label: 'AI Assistant', href: '/chat', icon: MessageCircle, matchPaths: ['/chat'] },
+    { id: 'kanji', label: 'Knowledge Base', href: '/knowledge-base', icon: Library, matchPaths: ['/kanji', '/vocabulary', '/grammar', '/knowledge-base'] },
 ];
 
 export const UTILITY_NAV: NavSection[] = [
-    { id: 'settings', label: 'Settings', href: '/settings', icon: Settings, matchPaths: ['/settings'] },
-    { id: 'profile', label: 'Profile', href: '/profile', icon: User, matchPaths: ['/profile', '/dashboard'] },
+    { id: 'profile', label: 'Profile', href: '/profile', icon: User, matchPaths: ['/profile'] },
 ];
 
 // 3. COMPONENT CONFIGURATIONS
@@ -167,148 +165,3 @@ export function resolveActiveSectionId(pathname: string | null): string | null {
     return null;
 }
 
-// 5. SRS GLOSSARY
-export type GlossaryKey =
-    | 'apprentice'
-    | 'guru'
-    | 'master'
-    | 'enlightened'
-    | 'burned'
-    | 'lesson'
-    | 'review'
-    | 'lessons'
-    | 'reviews'
-    | 'ghost_reviews'
-    | 'critical_items'
-    | 'level'
-    | 'radical'
-    | 'kanji'
-    | 'vocabulary'
-    | 'srs_stage'
-    | 'level_up'
-    | 'jlpt'
-    | 'spread'
-    | 'accuracy'
-    | 'forecast';
-
-export interface GlossaryEntry {
-    term: string;
-    definition: string;
-    category: 'stage' | 'item' | 'action' | 'concept' | 'metric';
-}
-
-export const SRS_GLOSSARY: Record<GlossaryKey, GlossaryEntry> = {
-    apprentice: {
-        term: 'Apprentice',
-        definition: 'Items you\'re still learning. Review frequently (4h → 8h → 1d → 2d).',
-        category: 'stage'
-    },
-    guru: {
-        term: 'Guru',
-        definition: 'An intermediate mastery stage (stages 5-6) where items are reviewed less frequently as understanding solidifies.',
-        category: 'stage'
-    },
-    master: {
-        term: 'Master',
-        definition: 'An advanced mastery stage (stage 7) where items are well-known and reviewed infrequently.',
-        category: 'stage'
-    },
-    enlightened: {
-        term: 'Enlightened',
-        definition: 'A near-perfect mastery stage (stage 8) where items are deeply ingrained and rarely reviewed.',
-        category: 'stage'
-    },
-    burned: {
-        term: 'Burned',
-        definition: 'The final mastery stage (stage 9) where items are considered permanently learned and no longer reviewed. 🔥',
-        category: 'stage'
-    },
-    lesson: {
-        term: 'Lesson',
-        definition: 'An initial learning session where new items are introduced with mnemonics and examples.',
-        category: 'action'
-    },
-    lessons: {
-        term: 'Lessons',
-        definition: 'New items to learn. Complete lessons to add items to your review queue.',
-        category: 'action'
-    },
-    review: {
-        term: 'Review',
-        definition: 'A practice session where previously learned items are tested to reinforce memory.',
-        category: 'action'
-    },
-    reviews: {
-        term: 'Reviews',
-        definition: 'Practice items you\'ve already learned to strengthen memory using spaced repetition.',
-        category: 'action'
-    },
-    ghost_reviews: {
-        term: 'Ghost Reviews',
-        definition: 'Extra reviews for items you\'ve failed 3+ times in a row. Helps reinforce difficult items.',
-        category: 'action'
-    },
-    critical_items: {
-        term: 'Critical Items',
-        definition: 'Overdue items that need urgent attention (2+ days late).',
-        category: 'metric'
-    },
-    level: {
-        term: 'Level',
-        definition: 'A collection of radicals, kanji, and vocabulary organized by difficulty and prerequisite knowledge.',
-        category: 'concept'
-    },
-    radical: {
-        term: 'Radical',
-        definition: 'A fundamental building block of kanji characters, used to construct and remember kanji meanings.',
-        category: 'item'
-    },
-    kanji: {
-        term: 'Kanji',
-        definition: 'Chinese characters used in Japanese writing, each with specific meanings and readings.',
-        category: 'item'
-    },
-    vocabulary: {
-        term: 'Vocabulary',
-        definition: 'Japanese words composed of kanji and kana, representing complete concepts or ideas.',
-        category: 'item'
-    },
-    srs_stage: {
-        term: 'SRS Stage',
-        definition: 'A numbered level (1-9) representing how well an item is known, determining review frequency.',
-        category: 'concept'
-    },
-    level_up: {
-        term: 'Level Up',
-        definition: 'Unlock new content by Guru-ing 90% of current level\'s Kanji.',
-        category: 'action'
-    },
-    jlpt: {
-        term: 'JLPT',
-        definition: 'Japanese-Language Proficiency Test. Levels: N5 (easiest) to N1 (hardest).',
-        category: 'concept'
-    },
-    spread: {
-        term: 'Spread',
-        definition: 'Distribution of your items across SRS stages. Shows how many items at each level.',
-        category: 'metric'
-    },
-    accuracy: {
-        term: 'Accuracy',
-        definition: 'Percentage of reviews answered correctly. Higher is better!',
-        category: 'metric'
-    },
-    forecast: {
-        term: 'Forecast',
-        definition: 'Predicted number of reviews coming up. Helps you plan your study sessions.',
-        category: 'metric'
-    }
-};
-
-export function getGlossaryEntry(key: GlossaryKey): GlossaryEntry {
-    return SRS_GLOSSARY[key];
-}
-
-export function getGlossaryByCategory(category: GlossaryEntry['category']): GlossaryEntry[] {
-    return Object.values(SRS_GLOSSARY).filter(entry => entry.category === category);
-}

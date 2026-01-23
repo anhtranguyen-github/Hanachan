@@ -3,39 +3,36 @@ import { KnowledgeUnit, KUType } from "./types";
 
 export function getDetailsTableName(type: KUType): string {
     switch (type) {
-        case 'radical': return 'ku_radicals';
-        case 'kanji': return 'ku_kanji';
-        case 'vocabulary': return 'ku_vocabulary';
-        case 'grammar': return 'ku_grammar';
+        case 'radical': return 'radical_details';
+        case 'kanji': return 'kanji_details';
+        case 'vocabulary': return 'vocabulary_details';
+        case 'grammar': return 'grammar_details';
         default: throw new Error(`Unknown KU type: ${type}`);
     }
 }
 
 export function mapToKU(base: any, details: any, type: KUType): KnowledgeUnit {
-    let meaning = "";
-
-    if (type === 'radical') {
-        meaning = details.name || "";
-    } else if (type === 'grammar') {
-        meaning = details.title || "";
-    } else {
-        const mData = details.meaning_data;
-        if (mData) {
-            if (Array.isArray(mData.primary)) meaning = mData.primary[0];
-            else if (typeof mData.primary === 'string') meaning = mData.primary;
-            else if (Array.isArray(mData)) meaning = mData[0];
-        }
-    }
-
-    if (!meaning) meaning = base.slug;
-
-    return {
-        id: base.slug,
+    // In the new schema, basic info like 'meaning' and 'character' are already in the base table
+    const result: any = {
+        ...base,
+        id: base.id,
         slug: base.slug,
         type: base.type,
-        character: type === 'grammar' ? (details.title || base.slug) : (type === 'radical' ? (details.character || base.slug) : (details.character || base.slug)),
+        character: base.character || base.slug.split(':')[1],
         level: base.level,
-        meaning: meaning,
+        meaning: base.meaning,
         details: details
     };
+
+    // Attach details with the legacy key just in case some components rely on it
+    const legacyKey = type === 'radical' ? 'ku_radicals' :
+        type === 'kanji' ? 'ku_kanji' :
+            type === 'vocabulary' ? 'ku_vocabulary' : 'ku_grammar';
+    result[legacyKey] = details;
+
+    // Also attach with the new correct key
+    const currentKey = getDetailsTableName(type);
+    result[currentKey] = details;
+
+    return result;
 }

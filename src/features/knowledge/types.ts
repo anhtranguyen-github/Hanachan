@@ -2,7 +2,14 @@ import { z } from 'zod';
 import { KnowledgeUnitSchema, KUTypeSchema } from '@/lib/validation';
 
 export type KUType = z.infer<typeof KUTypeSchema>;
-export type KnowledgeUnit = z.infer<typeof KnowledgeUnitSchema>;
+export interface KnowledgeUnit extends z.infer<typeof KnowledgeUnitSchema> {
+    radicals?: any[];
+    kanji?: any[];
+    vocabulary?: any[];
+    sentences?: any[];
+    related_grammar?: any[];
+    user_learning_states?: any;
+}
 
 export interface RadicalDetails {
     ku_id: string;

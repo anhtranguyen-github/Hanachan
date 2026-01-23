@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { sendMessageAction, getSessionHistoryAction, createSessionAction, getUserSessionsAction } from '../actions';
 import { ChatMessage, ChatSession } from '../types';
 
-export function useChatSession(conversationId?: string) {
+export function useChatSession(userId?: string, conversationId?: string) {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [sessions, setSessions] = useState<any[]>([]);
@@ -24,9 +24,10 @@ export function useChatSession(conversationId?: string) {
     }, []);
 
     const loadSessions = useCallback(async () => {
-        const data = await getUserSessionsAction();
+        if (!userId) return;
+        const data = await getUserSessionsAction(userId);
         setSessions(data || []);
-    }, []);
+    }, [userId]);
 
     useEffect(() => {
         loadSessions();
@@ -39,7 +40,7 @@ export function useChatSession(conversationId?: string) {
     }, [conversationId, loadHistory]);
 
     const sendMessage = async (content: string) => {
-        if (!conversationId) return;
+        if (!userId || !conversationId) return;
 
         // Optimistic UI
         const userMsg: ChatMessage = {
@@ -51,7 +52,7 @@ export function useChatSession(conversationId?: string) {
         setIsLoading(true);
 
         try {
-            const result = await sendMessageAction(conversationId, content);
+            const result = await sendMessageAction(conversationId, userId, content) as any;
             if (result.success && result.reply) {
                 setMessages(prev => [...prev, {
                     role: 'assistant',
@@ -67,9 +68,10 @@ export function useChatSession(conversationId?: string) {
     };
 
     const createNewConversation = async () => {
-        const id = `session-${Date.now()}`;
+        if (!userId) return null;
+        const id = crypto.randomUUID();
         try {
-            await createSessionAction(id);
+            await createSessionAction(id, userId);
         } catch (error) {
             console.error('❌ createSessionAction failed:', error);
         }

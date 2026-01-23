@@ -1,7 +1,8 @@
-
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { syncUserAction } from './actions';
 
 interface User {
     id: string;
@@ -24,36 +25,49 @@ const AuthContext = createContext<AuthContextType>({
     signOut: async () => { },
 });
 
-// Mock user for local development
-const MOCK_USER: User = {
-    id: '00000000-0000-0000-0000-000000000001',
-    email: 'learner@hanachan.app',
-    user_metadata: {
-        display_name: 'Hana Learner',
-        avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Hana'
-    }
-};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Simulate loading state
-        const timer = setTimeout(() => {
-            setUser(MOCK_USER);
-            setLoading(false);
-        }, 500);
+        const syncProfile = async (u: User | null) => {
+            if (u) {
+                await syncUserAction(u.id, u.email, u.user_metadata.display_name);
+            }
+        };
 
-        return () => clearTimeout(timer);
+        // 1. Get initial session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            const u = session?.user as unknown as User || null;
+            setUser(u);
+            syncProfile(u);
+            setLoading(false);
+        }).catch(err => {
+            console.error("Auth check failed:", err);
+            setLoading(false);
+        });
+
+        // 2. Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            const u = session?.user as unknown as User || null;
+            setUser(u);
+            syncProfile(u);
+            setLoading(false);
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     const value = {
         user,
         loading,
         signOut: async () => {
-            setUser(null);
-            console.log("Mock signed out");
+            if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+                setUser(null);
+                return;
+            }
+            await supabase.auth.signOut();
         },
     };
 

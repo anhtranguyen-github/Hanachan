@@ -2,9 +2,14 @@ import { z } from 'zod';
 
 // --- SHARED ENUMS ---
 export const KUTypeSchema = z.enum(['radical', 'kanji', 'vocabulary', 'grammar']);
-export const SRSStageSchema = z.enum(['new', 'learning', 'review', 'relearning', 'burned']);
-export const RatingSchema = z.enum(['again', 'hard', 'good', 'easy']);
+export const SRSStageSchema = z.enum(['new', 'learning', 'review', 'burned']);
+export const RatingSchema = z.enum(['pass', 'fail']);
 export const SourceTypeSchema = z.enum(['youtube', 'chat', 'manual', 'analyze']);
+
+export const QuestionTypeSchema = z.enum(['fill_in', 'cloze']);
+export const SessionStatusSchema = z.enum(['active', 'finished']);
+export const BatchStatusSchema = z.enum(['in_progress', 'completed', 'abandoned']);
+export const AnswerStateSchema = z.enum(['unanswered', 'correct', 'incorrect']);
 
 // --- CORE KNOWLEDGE ---
 export const KnowledgeUnitSchema = z.object({
@@ -14,25 +19,29 @@ export const KnowledgeUnitSchema = z.object({
     character: z.string().min(1),
     level: z.number().int().min(1).max(60),
     meaning: z.string().min(1),
+    mnemonics: z.any().optional(),
     details: z.any().optional(),
 });
 
 // --- SRS & LEARNING ---
 export const SRSStateSchema = z.object({
-    stage: z.string(), // Allowing broader strings but logic often uses SRSStageSchema
-    interval: z.number().min(0),
-    ease_factor: z.number().min(1.3),
-    streak: z.number().int().min(0),
+    stage: SRSStageSchema,
+    stability: z.number().min(0),
+    difficulty: z.number().min(1.3),
+    reps: z.number().int().min(0),
+    lapses: z.number().int().min(0),
 });
 
 export const UserLearningStateSchema = z.object({
     user_id: z.string().uuid(),
     ku_id: z.string().min(1),
-    state: z.string(),
+    state: SRSStageSchema,
     next_review: z.string().datetime(),
     last_review: z.string().datetime().nullable().optional(),
-    srs_stage: z.number().int().min(0),
-    stability: z.number().optional(),
+    stability: z.number(),
+    difficulty: z.number(),
+    reps: z.number().int(),
+    lapses: z.number().int(),
 });
 
 // --- SENTENCE & MINING ---
@@ -61,6 +70,7 @@ export const ChatMessageSchema = z.object({
     role: z.enum(['user', 'assistant', 'system']),
     content: z.string().min(1),
     timestamp: z.string().datetime(),
+    metadata: z.any().optional(),
 });
 
 export const ChatSessionSchema = z.object({
@@ -74,7 +84,7 @@ export const ChatSessionSchema = z.object({
 export const DashboardStatsSchema = z.object({
     reviewsDue: z.number().int().min(0),
     totalLearned: z.number().int().min(0),
-    streak: z.number().int().min(0),
+    unlockedLevel: z.number().int().min(1).max(60),
     recentLevels: z.array(z.number().int()),
 });
 

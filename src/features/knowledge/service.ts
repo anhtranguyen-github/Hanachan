@@ -1,6 +1,6 @@
 import { kuRepository } from "./db";
 import { KnowledgeUnit, KUType } from "./types";
-import { uuidSchema } from "@/lib/validations";
+import { uuidSchema } from "@/lib/validation";
 
 export class KnowledgeService {
     async getById(id: string, type: KUType): Promise<KnowledgeUnit | null> {
@@ -14,11 +14,12 @@ export class KnowledgeService {
     }
 
     async getByLevel(level: number, type: KUType): Promise<KnowledgeUnit[]> {
-        return await kuRepository.getByLevel(level, type);
+        return await kuRepository.listByType(type, level);
     }
 
     async getAllByType(type: KUType): Promise<KnowledgeUnit[]> {
-        return await kuRepository.getAllByType(type);
+        const result = await kuRepository.getAllByType(type);
+        return result.data;
     }
 
     async getSentencesByKU(kuId: string): Promise<any[]> {
@@ -27,15 +28,18 @@ export class KnowledgeService {
     }
 
     async getLinkedKanjiByRadical(radicalSlug: string): Promise<any[]> {
-        return await kuRepository.getLinkedKanjiByRadical(radicalSlug);
+        // This functionality is handled in getBySlug for radicals
+        return [];
     }
 
     async getLinkedVocabByKanji(kanjiChar: string): Promise<any[]> {
-        return await kuRepository.getLinkedVocabByKanji(kanjiChar);
+        // This functionality is handled in getBySlug for kanji
+        return [];
     }
 
     async search(query: string, type?: KUType): Promise<KnowledgeUnit[]> {
-        return await kuRepository.search(query, type);
+        const result = await kuRepository.search(query, type);
+        return result.data || [];
     }
 }
 
