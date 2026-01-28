@@ -77,3 +77,6 @@ data/grammar.json
 supabase/
 bin/
 data/
+
+grammar_process/
+kanji_vocab_process/
