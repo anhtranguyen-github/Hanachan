@@ -134,7 +134,9 @@ Kiểm tra nghĩa + cách đọc (Phải vượt qua cả hai mới được ra 
 4.B.a Nếu trả lời đúng facet (nghĩa hoặc đọc)
 - Facet đó được đánh dấu là "tạm thời vượt qua" trong phiên này.
 - Nếu cả hai facet (nghĩa + đọc) đã xong: 
-  - Tính toán FSRS (Nếu có lỗi trong phiên này thì dùng Rating 'fail', nếu không có lỗi thì dùng 'pass').
+  - Tính toán FSRS: 
+    - Nếu có lỗi trong phiên: Rating 'fail' $\rightarrow$ Stability giảm 60% ($S \times 0.4$), Reps giảm 2 (min 1).
+    - Nếu không lỗi: Rating 'pass' $\rightarrow$ Stability tăng $\times 1.5$ (Đảm bảo $\ge$ Stability cũ).
   - Loại item khỏi hàng chờ chính thức.
 
 4.B.b Nếu trả lời sai 

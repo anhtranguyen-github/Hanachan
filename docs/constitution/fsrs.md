@@ -114,32 +114,31 @@ R(t) ≈ target_retention
 - Thẻ đang ở trạng thái Review nhưng người học trả lời sai
 
 **FSRS**
-- Stability (S) bị giảm
-- Difficulty (D) được điều chỉnh tăng
-- Không reset hoàn toàn như SM-2
+- Stability (S) bị giảm 60% ($S \times 0.4$)
+- Reps bị giảm 2 đơn vị ($max(1, reps - 2)$), không reset về 0 hoàn toàn để giữ đà (momentum).
+- Không quay về mốc 4h của newbie nếu đã có stability nền tảng (Stability Guard).
 
 **Vai trò**
-- Khôi phục trí nhớ đã suy giảm
+- Khôi phục trí nhớ đã suy giảm mà không xóa bỏ hoàn toàn thành quả học tập.
 
 ---
 
 ### 4.5 Burned
 
 **Mô tả**
-- Thẻ được coi là đã ghi nhớ vững chắc
-- Không còn cần ôn tập định kỳ
+- Thẻ được coi là đã ghi nhớ vĩnh viễn (lên tới 4 tháng)
+- Không còn xuất hiện trong hàng chờ ôn tập hàng ngày
 
 **FSRS**
-- Ngừng lập lịch ôn
-- Giữ dữ liệu để phân tích hoặc thống kê
+- Ngừng lập lịch ôn tự động
+- Lọc bỏ khỏi câu lệnh truy vấn hàng chờ
 
-**Quy tắc đề xuất**
-- `S > 365 ngày`
-- `R(due) > 0.95`
-- Không có lỗi (lapses) trong N lần ôn gần nhất
+**Quy tắc hiện tại**
+- `S >= 120 ngày`
+- Trạng thái `state = 'burned'`
 
 **Vai trò**
-- Kết thúc vòng đời của thẻ
+- Hoàn thành mục tiêu ghi nhớ cho Knowledge Unit.
 
 ---
 

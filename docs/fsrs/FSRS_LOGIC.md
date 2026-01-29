@@ -51,7 +51,7 @@ The "Stage" of a Knowledge Unit (KU) tells the system how well you know it. The 
 2.  **Initial Clear**: Every `lesson_item` for that KU must have `is_corrected = True`.
 3.  **Activation**: The moment the batch status becomes `completed`, an entry is created in `user_learning_states` with:
     - `state`: 'learning'
-    - `stability`: 0.1 (Review in ~15 minutes)
+    - `stability`: 0.1 (Review in ~144 minutes / 2.4h)
     - `difficulty`: 3.0 (Baseline)
     - `reps`: 1
 
@@ -67,8 +67,10 @@ Hệ thống **tự động** xác định độ khó và kết quả dựa trê
 
 | Kết quả | SRS Rating (Internal) | Tác động Stability (Interval) | Tác động Reps |
 | :--- | :--- | :--- | :--- |
-| **Incorrect** | `fail` | Giảm mạnh Stability ($S = S \times 0.5$) | Reset Reps về 0, Lapses +1 |
+| **Incorrect** | `fail` | Relearning Penalty ($S = S \times 0.4$) | `max(1, reps - 2)`, Lapses +1 |
 | **Correct** | `pass` | Tăng Stability ($S = S \times 1.5$*) | Reps +1 |
+
+**(*) Guard Logic:** Stability sau khi trả lời Đúng luôn $\ge$ Stability tại thời điểm trước đó (tránh văng ngược thời gian quá sâu).
 
 **(*) Fixed Intervals for Early Success:**
 Để đảm bảo nền tảng kiến thức vững chắc, các lần trả lời đúng đầu tiên (khi reps thấp) sẽ sử dụng mức tăng trưởng cố định:

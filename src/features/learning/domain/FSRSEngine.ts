@@ -32,46 +32,51 @@ export class FSRSEngine {
 
         // Initialize defaults if missing
         if (!difficulty) difficulty = this.DEFAULT_DIFFICULTY;
-        if (stability === undefined || stability === 0) stability = 0.1;
+        if (stability === undefined || stability === 0) stability = 0.1; // ~144 minutes (2.4h)
         if (reps === undefined) reps = 0;
         if (lapses === undefined) lapses = 0;
 
         // Handle Failure
         if (rating === 'fail') {
-            reps = 0;
+            // Smart Reset: Instead of 0, keep some momentum if it was advanced
+            reps = Math.max(1, reps - 2);
             lapses++;
-            // Penalty: Stability reduces significantly
-            stability = Math.max(0.1, stability * 0.5);
+
+            // Penalty: Stability reduces significantly but stays above a minimum
+            // Business Rule: Review fail uses relearning logic (0.3 - 0.5 * S)
+            stability = Math.max(0.1, stability * 0.4);
+
+            // Move back to learning/relearning stage
             stage = SRS_STAGES.LEARNING;
         }
         // Handle Success
         else {
+            const previousStability = stability;
             reps++;
 
             // Map binary pass to the 'Good' growth factor (1.5x)
             const factor = 1.5;
-
-            // Apply growth based on difficulty baseline (3.0)
             const difficultyAdjustment = (difficulty / 3.0);
 
-            // Fixed early intervals for low reps (foundation building)
-            // Note: Spec says initial state is reps=1. 
-            // 1st Review Success: reps becomes 2 -> 4 hours (0.166d)
-            // 2nd Review Success: reps becomes 3 -> 8 hours (0.333d)
-            // 3rd Review Success: reps becomes 4 -> 1 day
-            // 4th Review Success: reps becomes 5 -> 3 days
-            if (reps === 2) {
+            // Foundation Building (Fixed early intervals)
+            // Only apply if we are actually at the very beginning (reps 2-5)
+            // and NOT relearning from a high stability item
+            if (reps === 2 && stability < 0.166) {
                 stability = 0.166; // ~4 hours
-            } else if (reps === 3) {
+            } else if (reps === 3 && stability < 0.333) {
                 stability = 0.333; // ~8 hours
-            } else if (reps === 4) {
+            } else if (reps === 4 && stability < 1.0) {
                 stability = 1.0;   // 1 day
-            } else if (reps === 5) {
+            } else if (reps === 5 && stability < 3.0) {
                 stability = 3.0;   // 3 days
             } else {
-                // Dynamic growth for higher reps
+                // Dynamic growth for higher intervals
                 stability = stability * factor * difficultyAdjustment;
             }
+
+            // Stability Guard: Never schedule a SUCCESS for sooner than the 
+            // current stability state (prevents huge jumps backwards in time)
+            stability = Math.max(stability, previousStability);
 
             // Determine Stage based on Stability Thresholds
             if (stability >= this.BURNED_THRESHOLD_DAYS) {

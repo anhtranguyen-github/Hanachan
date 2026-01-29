@@ -19,7 +19,10 @@ Trong quá trình học, hệ thống xây dựng hàng đợi học tập dựa
 - **Review**: Các mục đã ổn định và cần ôn tập dựa trên lịch của FSRS.
 - **Relearning**: Các mục đã thuộc nhưng bị quên và cần học lại.
 
-Hệ thống tự động đánh giá mức độ ghi nhớ sau mỗi lần ôn thông qua tính chính xác của câu trả lời (Đúng/Sai). Kết quả này được ánh xạ trực tiếp vào thuật toán FSRS để tính toán lại `stability` và `difficulty`, từ đó đưa ra thời điểm `next_review` chính xác nhất.
+Hệ thống tự động đánh giá mức độ ghi nhớ sau mỗi lần ôn thông qua tính chính xác của câu trả lời (Đúng/Sai). Kết quả này được ánh xạ trực tiếp vào thuật toán FSRS:
+- **Phạt khi sai**: Áp dụng cơ chế *Relearning* (Stability giảm còn 40% giá trị cũ), giảm 2 Reps (giữ tối thiểu 1) thay vì xóa trắng tiến độ.
+- **Trình bảo vệ (Guard)**: Đảm bảo khoảng cách ôn tập mới khi trả lời đúng không bao giờ ngắn hơn khoảng cách hiện tại sau khi bị phạt.
+- Kết quả cuối cùng được cập nhật vào thời điểm `next_review` chính xác nhất.
 
 ## 3. Tính nhất quán của Trí nhớ (Memory Consistency)
 

@@ -8,6 +8,7 @@ export const learningRepository = {
             .from('user_learning_states')
             .select('*, knowledge_units(*, kanji_details(*), vocabulary_details(*), grammar_details(*))')
             .eq('user_id', userId)
+            .neq('state', 'burned')
             .lte('next_review', new Date().toISOString())
             .order('next_review', { ascending: true });
 
