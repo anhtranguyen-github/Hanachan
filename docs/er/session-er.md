@@ -76,11 +76,11 @@ class UserLearningState <<Entity>> {
   + ku_id : UUID <<PK, FK>>
   --
   state : Enum (NEW, LEARNING, REVIEW, BURNED)
-  stability : Double
+  stability : Double (Success: x1.5, Fail: x0.4)
   difficulty : Double
   last_review : Timestamp
   next_review : Timestamp
-  reps : Integer
+  reps : Integer (Fail: max(1, reps-2))
   lapses : Integer
 }
 

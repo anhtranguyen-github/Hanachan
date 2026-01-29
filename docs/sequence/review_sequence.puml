@@ -42,7 +42,7 @@ loop for each Due Item
     activate Service
     Service -> FSRS : calculateNextReview(currentState, rating)
     activate FSRS
-    note right: Implements FSRS algorithm\n(Stability, Difficulty updates)
+    note right: Implements Smart FSRS\nSuccess: S*1.5 + Guard\nFail: S*0.4 + Reps-2 Penalty
     FSRS --> Service : {next_review, next_state}
     deactivate FSRS
     

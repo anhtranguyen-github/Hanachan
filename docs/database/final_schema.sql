@@ -182,11 +182,11 @@ CREATE TABLE public.user_learning_states (
   user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   ku_id uuid NOT NULL REFERENCES public.knowledge_units(id) ON DELETE CASCADE,
   state text DEFAULT 'new' CHECK (state IN ('new', 'learning', 'review', 'burned')),
-  stability double precision DEFAULT 0,
+  stability double precision DEFAULT 0, -- Stability in days. Success: S*1.5. Fail: S*0.4.
   difficulty double precision DEFAULT 3.0,
   last_review timestamp with time zone,
   next_review timestamp with time zone DEFAULT now(),
-  reps integer DEFAULT 0,
+  reps integer DEFAULT 0, -- Increments on success. Fail: max(1, reps - 2).
   lapses integer DEFAULT 0,
   PRIMARY KEY (user_id, ku_id)
 );

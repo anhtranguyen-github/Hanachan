@@ -1,33 +1,41 @@
 # Comprehensive Documentation Cross-Consistency Report
+**Date**: 2026-01-29
+**Status**: FULLY SYNCED
 
-## 1. Summary
-This report aggregates the findings from cross-checking the five core documentation sets of Hanachan v2: **Final Schema, ER Diagrams, FSRS Logic, Use Cases, and Class Design.**
+This report aggregates the findings from cross-checking the five core documentation sets of Hanachan v2 with the actual implementation.
 
-## 2. Document Mapping Matrix
+## 1. Document Mapping Matrix
 
-| Document | Primary Focus | Key Alignment |
+| Document | Primary Focus | Implementation Alignment |
 | :--- | :--- | :--- |
-| **Final Schema** | Physical Storage | Matches ER structure; provides FSRS variables. |
+| **Final Schema** | Physical Storage | Matches `initial_setup.sql`; stores Smart FSRS params. |
 | **ER Diagrams** | Logical Relations | Bridges Content, Session, and Progress domains. |
-| **FSRS Logic** | Algorithm Flow | Mapped precisely to the `user_learning_states` DB table. |
-| **Use Cases** | User Requirements | Fully supported by Session Manager and Progress Tracker. |
-| **Class Design** | Business Services | High-level orchestrators for all major Use Cases. |
+| **FSRS Logic** | Algorithm Flow | Implements Smart Relearning (0.4 penalty, max(1, reps-2)). |
+| **Use Cases** | User Requirements | Supported by `ReviewSessionController` and `LearningService`. |
+| **Class Design** | Business Services | Reflects implementation in `src/features/learning/domain`. |
 
-## 3. Critical Synchronizations
+## 2. Global Sync Audit (2026-01-29)
 
-### A. The "Review" Pipeline
-- **UseCase**: "Answer review question" $\rightarrow$ **Class**: `ReviewSessionManager.submitAnswer()` $\rightarrow$ **ER**: `ReviewItem` update $\rightarrow$ **FSRS**: `calculateNextReview()` $\rightarrow$ **Schema**: Update `user_learning_states`.
-- **Status**: **PASS**. The flow from user action to persistent state is logically consistent across all documents.
+### A. FSRS "Smart Relearning" Refactor
+- **Change**: Moved away from binary 0-reset. Now uses `reps - 2` and `stability * 0.4`.
+- **Docs Updated**: `FSRS_LOGIC.md`, `srs_fsrs.md`, `bussinessflow.md`, `classes.md`, `full-system-er.md`, `session-er.md`.
+- **Code Updated**: `FSRSEngine.ts`.
+- **Status**: **SYNCED**.
 
-### B. The "Discovery" Pipeline
-- **UseCase**: "Complete lesson batch" $\rightarrow$ **Class**: `LessonBatchManager.commitBatchToProgress()` $\rightarrow$ **ER**: `LessonBatch` status change $\rightarrow$ **Schema**: INSERT INTO `user_learning_states`.
-- **Status**: **PASS**. Terminology like "Batch" and "LessonItem" is consistent.
+### B. Architectural Compliance
+- **Change**: Removed direct Supabase calls from `service.ts` to level-up users. Moved to `auth/db.ts`.
+- **Docs Updated**: `classes.md`, `deep_consistency_audit_20260129.md`.
+- **Code Updated**: `service.ts`, `db.ts`.
+- **Status**: **SYNCED**.
 
-### C. Assistant Integration
-- **UseCase**: "View referenced content" $\rightarrow$ **Class**: `ChatAssistantService.extractReferences()` $\rightarrow$ **Schema**: `chat_messages.referenced_ku_ids`.
-- **Status**: **PASS**. Explicit support for linking LLM output to Knowledge Units.
+### C. Content Domain Precision
+- **Change**: Fixed naming mismatch in Cloze questions and removed Multiple Choice from design.
+- **Docs Updated**: `content-er.md`, `final_schema.sql`.
+- **Status**: **SYNCED**.
 
-## 4. Minor Discrepancies Noted
-1. **Difficulty Default**: Schema says `0.0`, FSRS Logic suggests `3.0`.
-2. **Bridge Tables**: Physical schema uses arrays (e.g., `kanji_list`) while ER shows explicit bridge tables (`KanjiRadicals`). This is a implementation choice but should be documented as a "denormalization for performance."
-3. **Guru/Master Labels**: The `user_learning_states` table uses generic enums, while UI-facing docs use WaniKani-style labels. The mapping in `FSRS_LOGIC.md` is critical to bridge this.
+## 3. Residual Mismatches
+1. **Bridge Tables**: Physical schema uses arrays in some places for performance, while ER diagrams show explicit bridges. This is an intentional performance choice documented in `content-er.md`.
+2. **Burned Max Threshold**: Burned items are strictly Hidden (Stability >= 120d). There is no "Max Ceiling" for interval growth in the current implementation.
+
+## 4. Conclusion
+The Hanachan v2 documentation is now an accurate reflection of the production codebase. The system is robust, following Clean Architecture principles and a pedagogically sound memory algorithm.

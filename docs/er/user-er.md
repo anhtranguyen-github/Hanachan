@@ -15,7 +15,20 @@ class User <<Entity>> {
   display_name : String
   level : Integer -- Current curriculum level (1-60)
   last_activity_at : Timestamp
+  created_at : Timestamp
 }
+
+class UserSettings <<Entity>> {
+  user_id : UUID <<FK, PK>>
+  --
+  target_retention : Double (default 0.9)
+  furigana_enabled : Boolean
+  daily_goal : Integer
+  theme : String
+  updated_at : Timestamp
+}
+
+User ||--|| UserSettings
 
 @enduml
 ```

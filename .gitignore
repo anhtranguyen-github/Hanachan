@@ -70,13 +70,9 @@ data_v6/
 
 data/bin/
 
-tra@example.com
+tra@example.com/
 
-password
-data/grammar.json
-supabase/
-bin/
-data/
-
+password/
 grammar_process/
+
 kanji_vocab_process/

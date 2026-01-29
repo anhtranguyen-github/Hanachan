@@ -50,7 +50,13 @@ loop for each Item in Quiz
     
     UI -> Service : submitReview(userId, kuId, rating, state)
     activate Service
-    Service -> Repo : updateUserState(userId, kuId, newState)
+    Service -> FSRS : calculateNextReview(currentState, rating)
+    activate FSRS
+    note right: Implements Smart FSRS\nSuccess: S*1.5 + Guard
+    FSRS --> Service : {next_review, next_state}
+    deactivate FSRS
+    
+    Service -> Repo : updateUserState(userId, kuId, next_state)
     activate Repo
     Repo -> DB : UPSERT INTO user_learning_states...
     activate DB

@@ -106,9 +106,9 @@ class Question <<Entity>> {
   + id : UUID
   --
   ku_id : UUID <<FK>>
-  type : Enum (FILL_IN, CLOZE, MULTIPLE_CHOICE)
+  type : Enum (FILL_IN, CLOZE)
   prompt : String
-  cloze_text : String
+  cloze_text_with_blanks : String
   correct_answers : Array<String>
   hints : Array<String>
 }

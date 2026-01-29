@@ -11,18 +11,18 @@ Khi người dùng nhập nội dung, hệ thống thực hiện nhận diện m
 
 Kết quả phân tích này được sử dụng nội bộ để quyết định chiến lược phản hồi, đảm bảo nội dung trả lời ngắn gọn, đúng trọng tâm và không gây quá tải thông tin.
 
-## 2. Liên kết Tri thức tự động (Knowledge Mapping)
+## 2. Liên kết Tri thức tự động (Knowledge Mapping & RAG)
 
-Dựa trên kết quả phân tích, hệ thống tự động liên kết câu đầu vào với các thực thể kiến thức (Knowledge Units) đã tồn tại trong Database. 
-- Quá trình này diễn ra tự động thông qua các công cụ tìm kiếm vector hoặc khớp chuỗi chính xác.
+Hệ thống sử dụng kỹ thuật **RAG (Retrieval-Augmented Generation)** để làm giàu bối cảnh phản hồi:
+- **Trích xuất thực thể**: AI tự động nhận diện các mã Knowledge Unit (KU ID) xuất hiện trong bối cảnh hoặc câu hỏi.
+- **Truy vấn Database**: Dữ liệu chi tiết về Kanji/Vocab/Grammar được truy vấn từ Database và đưa vào Prompt làm "Grounding data".
 - Giúp chatbot hiểu được bối cảnh học tập hiện tại của người dùng (ví dụ: người dùng đang hỏi về một từ vựng đã có trong danh sách "Learning").
-- Tránh giải thích lặp lại các kiến thức mà hệ thống ghi nhận người học đã nắm vững.
 
 ## 3. Phản hồi tùy chỉnh và Điểm tương tác (CTA - Call To Action)
 
 Phản hồi của chatbot được thiết kế theo nguyên tắc "vừa đủ" (Just-in-time learning). Tập trung vào mục tiêu học tập tại thời điểm tương tác:
 - **Ngữ cảnh hóa**: Nếu người dùng chưa biết một ngữ pháp sử dụng trong câu, AI sẽ gợi ý tìm hiểu thêm.
-- **Hành động học tập (CTA)**: Các hành động như "Thêm vào Flashcard" hoặc "Xem ví dụ chi tiết" được gắn dưới dạng các điểm tương tác bổ trợ (Interactive buttons/links). Điều này cho phép người dùng chủ động đào sâu nội dung mà không làm gián đoạn dòng hội thoại.
+- **Hành động học tập (CTA)**: Các hành động như "Xem chi tiết bộ thủ" hoặc "Học tập từ vựng này" được gắn dưới dạng các nút bấm tương tác. Kỹ thuật này sử dụng cột `referenced_ku_ids` trong bảng `chat_messages` để render các component React tương ứng trên giao diện.
 
 ## 4. Thích nghi linh hoạt (Adaptive Learning)
 
