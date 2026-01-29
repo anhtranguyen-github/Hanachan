@@ -107,6 +107,8 @@ LessonBatchManager --> UserProfileManager : unlocks levels
 ### 1. `FSRSEngine`
 - **Responsibility**: Pure mathematical engine for the Free Spaced Repetition Scheduler.
 - **Business Rule**: Uses a `3.0` difficulty baseline. Promotes items from `learning` to `review` grade only when stability reaches **3 days**.
+- **Smart Relearning**: Implements "Non-zero Reps" (Reps-2) on fail and a stability penalty of `0.4x`. Includes a stability guard to prevent Success intervals from being shorter than the current state.
+- **Hiding Logic**: Items with stability > 120 days are marked as `burned` and filtered from active review queues.
 
 ### 2. `ReviewSessionManager` (ReviewSessionController)
 - **Responsibility**: Manages the "Active Recall" phase and session-level question state.

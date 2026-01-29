@@ -3,7 +3,7 @@ import { RatingSchema } from '@/lib/validation';
 import { learningRepository } from './db';
 import { kuRepository } from '../knowledge/db';
 import { analyticsService } from '../analytics/service';
-import { supabase } from '@/lib/supabase';
+import { getUserProfile, updateUserProfile } from '../auth/db';
 
 export async function submitReview(userId: string, kuId: string, rating: Rating, currentState: SRSState) {
     // 0. Validation
@@ -67,9 +67,9 @@ export async function checkAndUnlockNextLevel(userId: string, currentLevel: numb
 
     if (percentage >= 0.9) {
         console.log(`[LearningService] Level ${currentLevel} mastered (${Math.round(percentage * 100)}%). Unlocking Level ${currentLevel + 1}`);
-        const { data: profile } = await supabase.from('users').select('level').eq('id', userId).single();
+        const profile = await getUserProfile(userId);
         if (profile && profile.level === currentLevel) {
-            await supabase.from('users').update({ level: currentLevel + 1 }).eq('id', userId);
+            await updateUserProfile(userId, { level: currentLevel + 1 });
         }
     }
 }
