@@ -4,12 +4,22 @@ Hanachan is an advanced Japanese learning platform built with **Next.js 14**, **
 
 ## 🌸 Core Features
 
-*   **Sakura Design System**: A premium, vibrant UI using rounded aesthetics (`rounded-[40px]`), glassmorphism, and a curated pastel palette (Pink, Blue, Green, Purple).
-*   **FSRS Algorithm**: A fully client-side implementation of the Free Spaced Repetition Scheduler v4 to handle review intervals efficiently.
+### Learning System
+*   **Binary SRS Rating**: Simplified `pass`/`fail` rating system with 1.5x stability growth for successful recalls.
+*   **FSRS Algorithm**: Full implementation of the Free Spaced Repetition Scheduler v4 for optimal review scheduling.
+*   **Buffered Persistence**: SRS updates are deferred until session mastery to prevent conflicting database writes.
+*   **Session-Based Mastery**: Vocabulary units require both Reading and Meaning facets to be completed in the same session.
+
+### AI Chatbot (Hanachan AI)
+*   **Progress Reporting**: Ask "What is my current progress?" to get live stats (Level, Items Mastered, Reviews Due).
+*   **Entity Linking**: AI responses automatically detect Knowledge Units (Kanji, Vocabulary, Grammar) and provide interactive CTA buttons.
+*   **QuickView Modal**: Click any linked KU to see detailed information without leaving the chat.
+
+### UI/UX
+*   **Sakura Design System**: Premium UI with rounded aesthetics (`rounded-[40px]`), glassmorphism, and a curated pastel palette.
 *   **Batch Learning**: Structured "Discovery Batches" of 5 items to manage cognitive load.
-*   **Content Library**: A unified interface to browse Kanji, Radicals, Vocabulary, and Grammar with advanced filtering.
+*   **Content Library**: Unified interface to browse Kanji, Radicals, Vocabulary, and Grammar with advanced filtering.
 *   **Interactive Dashboard**: Real-time analytics, daily streaks, heatmaps, and level progression tracking.
-*   **E2E Coordination**: Full coordination between Learning, Reviewing, and Dashboard states verified by Playwright.
 
 ## 🚀 Getting Started
 
@@ -34,6 +44,7 @@ Hanachan is an advanced Japanese learning platform built with **Next.js 14**, **
     NEXT_PUBLIC_SUPABASE_URL=your_project_url
     NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
     SUPABASE_SERVICE_ROLE_KEY=your_service_role_key # For admin tasks/seeding
+    OPENAI_API_KEY=your_openai_key # For AI Chatbot
     ```
 
 ### Running Locally
@@ -48,7 +59,7 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 ## 🔑 Test Accounts
 
-Use these pre-configured accounts to explore the platform immediately without registration logic.
+Use these pre-configured accounts to explore the platform immediately.
 
 | Email                         | Password       | Level | Note |
 | :---------------------------- | :------------- | :---: | :--- |
@@ -58,38 +69,83 @@ Use these pre-configured accounts to explore the platform immediately without re
 
 > **Note:** If these users do not exist, run the initialization script:
 > ```bash
-> pnpm exec tsx tests/init-test-user.ts
+> pnpm exec tsx tests/setup-e2e-user.ts
 > ```
 
 ## 🧪 Running Tests
 
 We use **Playwright** for End-to-End (E2E) testing.
 
-### Run All Tests
+### Run All E2E Tests
 ```bash
+npm run test:e2e
+# or
 npx playwright test
 ```
 
-### Run Specific Flows
+### Run Specific Test Suites
 ```bash
-# Test the full Learning -> Dashboard -> Review loop
-npx playwright test tests/e2e/learning_coordination.spec.ts
+# Chatbot AI tests (Progress intent, Entity Linking)
+npx playwright test tests/e2e/chatbot.spec.ts
 
-# Test just the Review Session logic
+# Learning session flow
+npx playwright test tests/e2e/learning.spec.ts
+
+# Review session flow
 npx playwright test tests/e2e/review.spec.ts
+
+# Full session logic with sub-tasks
+npx playwright test tests/e2e/session_logic.spec.ts
 ```
 
 ## 📂 Project Structure
 
-*   `src/app`: Next.js App Router pages.
-*   `src/features`: Feature-based architecture (Auth, Learning, Knowledge, Analytics).
-*   `src/components`: Reusable UI components (Sakura design system).
-*   `tests/e2e`: Playwright test suites.
-*   `docs/`: Detailed documentation on FSRS, Batch Logic, and System Architecture.
+```
+src/
+├── app/                    # Next.js App Router pages
+│   ├── (main)/             # Authenticated routes (dashboard, learn, review, etc.)
+│   └── api/                # API routes (chat, auth)
+├── features/               # Feature-based architecture
+│   ├── auth/               # Authentication (Supabase Auth)
+│   ├── chat/               # AI Chatbot (LangChain + OpenAI)
+│   ├── knowledge/          # Knowledge Units (Kanji, Vocab, Grammar)
+│   ├── learning/           # SRS Engine, Session Controller
+│   └── analytics/          # User stats and progress tracking
+├── components/             # Reusable UI components
+│   ├── shared/             # QuickViewModal, AudioPlayer, etc.
+│   └── premium/            # GlassCard, SRSProgressIcon
+└── lib/                    # Utilities (Supabase client, validation)
+
+tests/
+├── e2e/                    # Playwright E2E tests
+├── unit/                   # Unit tests
+└── integration/            # Integration tests
+
+docs/
+├── businessflow/           # Business logic documentation
+├── class/                  # Class design specifications
+├── er/                     # Entity Relationship diagrams
+├── fsrs/                   # FSRS algorithm documentation
+└── reports/                # Audit and test reports
+```
+
+## 📚 Documentation
+
+| Document | Description |
+| :--- | :--- |
+| `docs/fsrs/FSRS_LOGIC.md` | FSRS algorithm implementation details |
+| `docs/businessflow/bussinessflow.md` | Study session business rules |
+| `docs/class/classes.md` | Class design and responsibilities |
+| `docs/er/full-system-er.md` | Complete Entity-Relationship diagram |
+| `docs/TESTING_CONSTRAINTS_AND_BUGS.md` | E2E testing guidelines |
 
 ## 🛠 Database Management
 
-Ensure your local Supabase instance is running.
+Ensure your Supabase instance is running and configured.
 
--   **Seed Database**: `pnpm exec tsx dbsu/scripts/seed.ts`
--   **Verify Connection**: `pnpm exec tsx dbsu/scripts/verify-supabase.ts`
+-   **Schema**: See `docs/database/final_schema.sql` for the complete database schema.
+-   **Verify Connection**: `pnpm exec tsx verify_init.ts`
+
+## 📄 License
+
+This project is for educational purposes as part of a graduation thesis.
