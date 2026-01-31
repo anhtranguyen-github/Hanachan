@@ -29,6 +29,7 @@ export class FSRSEngine {
 
     static calculateNextReview(current: SRSState, rating: Rating): NextReviewData {
         let { stage, stability, difficulty, reps, lapses } = current;
+        console.log(`[FSRS] Calc: Rating=${rating}, S=${stability}, R=${reps}, Stage=${stage}`);
 
         // Initialize defaults if missing
         if (!difficulty) difficulty = this.DEFAULT_DIFFICULTY;
@@ -37,7 +38,7 @@ export class FSRSEngine {
         if (lapses === undefined) lapses = 0;
 
         // Handle Failure
-        if (rating === 'fail') {
+        if (rating === 'fail' || rating === 'again') {
             // Smart Reset: Instead of 0, keep some momentum if it was advanced
             reps = Math.max(1, reps - 2);
             lapses++;
@@ -61,13 +62,13 @@ export class FSRSEngine {
             // Foundation Building (Fixed early intervals)
             // Only apply if we are actually at the very beginning (reps 2-5)
             // and NOT relearning from a high stability item
-            if (reps === 2 && stability < 0.166) {
+            if (reps === 1 && stability < 0.166) {
                 stability = 0.166; // ~4 hours
-            } else if (reps === 3 && stability < 0.333) {
+            } else if (reps === 2 && stability < 0.333) {
                 stability = 0.333; // ~8 hours
-            } else if (reps === 4 && stability < 1.0) {
+            } else if (reps === 3 && stability < 1.0) {
                 stability = 1.0;   // 1 day
-            } else if (reps === 5 && stability < 3.0) {
+            } else if (reps === 4 && stability < 3.0) {
                 stability = 3.0;   // 3 days
             } else {
                 // Dynamic growth for higher intervals

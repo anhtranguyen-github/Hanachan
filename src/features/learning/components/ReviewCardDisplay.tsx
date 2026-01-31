@@ -23,6 +23,7 @@ interface ReviewCardDisplayProps {
 }
 
 export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDisplayProps) {
+    console.log(`[ReviewCardDisplay] Rendering card: ${card.id}, Variant: ${card.prompt_variant}, Meaning: ${card.meaning}`);
     const [userInput, setUserInput] = useState('');
     const [submitted, setSubmitted] = useState(false);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -102,7 +103,7 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
                 <p className="text-3xl md:text-5xl font-black leading-relaxed text-white">
                     {parts[0]}
                     <span className="inline-block border-b-8 border-white px-2 min-w-[3ch] mx-2">
-                        {submitted ? card.cloze_answer : "?"}
+                        {submitted && isCorrect ? card.cloze_answer : "?"}
                     </span>
                     {parts[1]}
                 </p>
@@ -131,9 +132,11 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
                     {/* Prompt Header Badge */}
                     <div className="absolute top-6 left-1/2 -translate-x-1/2">
                         <span className="bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-white">
-                            {card.prompt_variant === 'meaning' ? "Recall Meaning" :
-                                card.prompt_variant === 'reading' ? "Recall Reading" :
-                                    "Fill in the Context"}
+                            {card.prompt || (
+                                card.prompt_variant === 'meaning' ? "Recall Meaning" :
+                                    card.prompt_variant === 'reading' ? "Recall Reading" :
+                                        "Fill in the Context"
+                            )}
                         </span>
                     </div>
                 </div>
@@ -165,6 +168,7 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
                                     <div
                                         className="w-[1px] h-[1px] opacity-[0.01] absolute pointer-events-none"
                                         data-testid="debug-answer"
+                                        data-ku-id={card.ku_id}
                                         data-answer={
                                             card.prompt_variant === 'meaning' ? card.meaning :
                                                 card.prompt_variant === 'reading' ? card.reading :
@@ -200,19 +204,25 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
                                         "p-6 rounded-3xl space-y-1 mb-4",
                                         isCorrect ? "bg-white/10" : "bg-rose-50"
                                     )}>
-                                        <p className={clsx(
-                                            "text-[10px] font-black uppercase tracking-widest",
-                                            isCorrect ? "text-white/60" : "text-rose-400"
-                                        )}>
-                                            {card.prompt_variant === 'meaning' ? "The Meaning is" : "The Reading is"}
-                                        </p>
-                                        <p className={clsx(
-                                            "text-4xl font-black",
-                                            isCorrect ? "text-white" : "text-rose-600"
-                                        )}>
-                                            {card.prompt_variant === 'meaning' ? card.meaning : card.reading || card.cloze_answer}
-                                        </p>
-                                        {!isCorrect && <p className="mt-2 text-rose-400/60 font-medium text-xs">You entered: {userInput}</p>}
+                                        {isCorrect ? (
+                                            <>
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-white/60">
+                                                    {card.prompt_variant === 'meaning' ? "The Meaning is" : "The Reading is"}
+                                                </p>
+                                                <p className="text-4xl font-black text-white">
+                                                    {card.prompt_variant === 'meaning' ? card.meaning : card.reading || card.cloze_answer}
+                                                </p>
+                                            </>
+                                        ) : (
+                                            <div className="py-4">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-rose-400 mb-2">Strict Loop Active</p>
+                                                <p className="text-lg font-black text-rose-600 leading-tight">
+                                                    Answer hidden.<br />
+                                                    Item re-queued.
+                                                </p>
+                                                <p className="mt-4 text-rose-400/60 font-medium text-xs">You entered: {userInput}</p>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="text-4xl">{isCorrect ? "✨" : "🛑"}</div>

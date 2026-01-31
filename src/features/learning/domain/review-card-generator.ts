@@ -63,191 +63,115 @@ function selectPromptVariant(kuType: string): PromptVariant {
 }
 
 /**
- * Generate a review card for any KU type
+ * Generate a review card for any KU type using stored questions
  */
 export async function generateReviewCard(
     ku: KnowledgeUnit,
-    userId?: string,
-    recentGrammarSentences?: string[]
+    facet: PromptVariant,
+    userId?: string
 ): Promise<ReviewCard | null> {
-    const variant = selectPromptVariant(ku.type);
-    console.log(`${LOG_PREFIX} Generating ${variant} card for ${ku.type}: ${ku.character || ku.slug}`);
+    console.log(`${LOG_PREFIX} Generating ${facet} card from DB for ${ku.type}: ${ku.character || ku.slug}`);
+
+    // Fetch stored question
+    const { data: question, error } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('ku_id', ku.id)
+        .eq('facet', facet)
+        .maybeSingle();
+
+    if (error) {
+        console.error(`${LOG_PREFIX} Error fetching stored question:`, error);
+        return null;
+    }
+
+    // Fallback if question not found (rare if seeded correctly)
+    if (!question) {
+        console.warn(`${LOG_PREFIX} No stored question found for ${ku.id} (${facet}). Falling back to manual.`);
+        // Note: Manual fallback removed for strict stored question enforcement
+        // return null;
+    }
+
+    // Common base
+    const baseCard = {
+        id: `${ku.id}-${facet}`,
+        ku_id: ku.id,
+        ku_type: ku.type,
+        level: ku.level,
+        character: ku.character,
+        meaning: ku.meaning,
+        prompt_variant: facet,
+        prompt: question?.prompt,
+        correct_answers: question?.correct_answers,
+    };
 
     switch (ku.type) {
         case 'radical':
-            return generateRadicalCard(ku);
+            return {
+                ...baseCard,
+                ku_type: 'radical',
+                prompt_variant: 'meaning',
+                radical_name: ku.ku_radicals?.name,
+                mnemonic: ku.mnemonics?.meaning,
+                image_url: ku.mnemonics?.image_url
+            } as RadicalReviewCard;
+
         case 'kanji':
-            return generateKanjiCard(ku, variant as 'meaning' | 'reading');
+            const kanjiReadingData = ku.ku_kanji?.reading_data || {};
+            return {
+                ...baseCard,
+                ku_type: 'kanji',
+                prompt_variant: facet as 'meaning' | 'reading',
+                readings: {
+                    onyomi: kanjiReadingData.onyomi || [],
+                    kunyomi: kanjiReadingData.kunyomi || [],
+                    primary: kanjiReadingData.primary || kanjiReadingData.onyomi?.[0]
+                },
+                mnemonic_meaning: ku.mnemonics?.meaning,
+                mnemonic_reading: ku.mnemonics?.reading
+            } as KanjiReviewCard;
+
         case 'vocabulary':
-            return generateVocabCard(ku, variant as 'meaning' | 'reading');
+            return {
+                ...baseCard,
+                ku_type: 'vocabulary',
+                prompt_variant: facet as 'meaning' | 'reading',
+                reading: ku.ku_vocabulary?.reading_primary || '',
+                parts_of_speech: ku.ku_vocabulary?.parts_of_speech,
+                audio_url: ku.ku_vocabulary?.audio,
+                pitch: ku.ku_vocabulary?.pitch
+            } as VocabReviewCard;
+
         case 'grammar':
-            return await generateGrammarCard(ku, userId, recentGrammarSentences);
+            return {
+                ...baseCard,
+                ku_type: 'grammar',
+                prompt_variant: 'cloze',
+                sentence_ja: question?.cloze_text_with_blanks || '', // Or other source
+                sentence_en: question?.hints?.[0],
+                cloze_display: question?.cloze_text_with_blanks || '',
+                cloze_answer: question?.correct_answers?.[0] || '',
+                cloze_start_index: 0, // Not strictly used by UI anymore if cloze_display is provided
+                cloze_end_index: 0,
+                sentence_id: question?.id || 'manual',
+                sentence_source: 'official'
+            } as GrammarReviewCard;
+
         default:
-            console.warn(`${LOG_PREFIX} Unknown KU type:`, ku.type);
             return null;
     }
 }
 
 /**
- * Generate radical review card
- * ALWAYS meaning prompt - radicals are semantic mnemonics
- * 
- * Prompt: Show radical symbol → Ask for meaning
- */
-function generateRadicalCard(ku: KnowledgeUnit): RadicalReviewCard {
-    return {
-        id: ku.id,
-        ku_id: ku.id,
-        ku_type: 'radical',
-        prompt_variant: 'meaning',  // Always meaning
-        level: ku.level,
-        character: ku.character,
-        meaning: ku.meaning,
-        radical_name: ku.ku_radicals?.name,
-        mnemonic: ku.mnemonics?.meaning,
-        image_url: ku.mnemonics?.image_url
-    };
-}
-
-/**
- * Generate kanji review card
- * EITHER meaning OR reading prompt (randomly selected)
- * 
- * Meaning: Show 食 → "What does this mean?"
- * Reading: Show 食 → "How do you read this?" (with optional context)
- */
-function generateKanjiCard(
-    ku: KnowledgeUnit,
-    variant: 'meaning' | 'reading'
-): KanjiReviewCard {
-    const readingData = ku.ku_kanji?.reading_data || {};
-
-    // For reading prompts, try to find a context word
-    let contextWord: string | undefined;
-    let contextReading: string | undefined;
-
-    if (variant === 'reading') {
-        // Try to use a common reading context if available
-        // This would typically come from vocabulary examples
-        // For now, we'll leave it optional
-    }
-
-    return {
-        id: ku.id,
-        ku_id: ku.id,
-        ku_type: 'kanji',
-        prompt_variant: variant,
-        level: ku.level,
-        character: ku.character,
-        meaning: ku.meaning,
-        readings: {
-            onyomi: readingData.onyomi || [],
-            kunyomi: readingData.kunyomi || [],
-            primary: readingData.primary || readingData.onyomi?.[0]
-        },
-        context_word: contextWord,
-        context_reading: contextReading,
-        mnemonic_meaning: ku.mnemonics?.meaning,
-        mnemonic_reading: ku.mnemonics?.reading
-    };
-}
-
-/**
- * Generate vocabulary review card
- * EITHER meaning OR reading prompt (randomly selected)
- * 
- * Meaning: Show 環境 → "What does this mean?"
- * Reading: Show 環境 → "How do you read this?"
- */
-function generateVocabCard(
-    ku: KnowledgeUnit,
-    variant: 'meaning' | 'reading'
-): VocabReviewCard {
-    return {
-        id: ku.id,
-        ku_id: ku.id,
-        ku_type: 'vocabulary',
-        prompt_variant: variant,
-        level: ku.level,
-        character: ku.character,
-        meaning: ku.meaning,
-        reading: ku.ku_vocabulary?.reading_primary || '',
-        parts_of_speech: ku.ku_vocabulary?.parts_of_speech,
-        audio_url: ku.ku_vocabulary?.audio,
-        pitch: ku.ku_vocabulary?.pitch
-    };
-}
-
-/**
- * Generate grammar review card with dynamic cloze
- * ALWAYS cloze prompt - grammar is never recalled in isolation
- * 
- * Prompt: Show sentence with blank → User fills in grammar point
- */
-async function generateGrammarCard(
-    ku: KnowledgeUnit,
-    userId?: string,
-    recentSentenceIds?: string[]
-): Promise<GrammarReviewCard | null> {
-    // Use the grammar cloze generator
-    const clozeCard = await generateGrammarClozeCard(
-        {
-            id: ku.id,
-            slug: ku.slug,
-            character: ku.character || ku.meaning,
-            meaning: ku.meaning,
-            level: ku.level,
-            ku_grammar: ku.ku_grammar
-        },
-        userId,
-        recentSentenceIds || []
-    );
-
-    // Ensure prompt_variant is set
-    if (clozeCard) {
-        clozeCard.prompt_variant = 'cloze';
-    }
-
-    return clozeCard;
-}
-
-/**
- * Fetch KU with all related data for review card generation
- */
-export async function fetchKUForReview(kuId: string): Promise<KnowledgeUnit | null> {
-    console.log(`${LOG_PREFIX} Fetching KU for review:`, kuId);
-
-    const { data, error } = await supabase
-        .from('knowledge_units')
-        .select(`
-            *,
-            ku_radicals(*),
-            ku_kanji(*),
-            ku_vocabulary(*),
-            ku_grammar(*)
-        `)
-        .eq('id', kuId)
-        .single();
-
-    if (error || !data) {
-        console.error(`${LOG_PREFIX} Error fetching KU:`, error);
-        return null;
-    }
-
-    return data as KnowledgeUnit;
-}
-
-/**
- * Generate review cards for a batch of KUs
- * 
- * This creates a mixed queue sorted by next_due (not by type),
- * as per the RPD specification.
+ * Generate review cards for a batch of (KU_ID, Facet) pairs
  */
 export async function generateReviewCards(
-    kuIds: string[],
+    items: { kuId: string; facet: string }[],
     userId?: string
 ): Promise<ReviewCard[]> {
-    console.log(`${LOG_PREFIX} Generating ${kuIds.length} review cards`);
+    console.log(`${LOG_PREFIX} Generating ${items.length} review cards from stored questions`);
+
+    const kuIds = items.map(i => i.kuId);
 
     // Fetch all KUs with their data
     const { data: kus, error } = await supabase
@@ -266,37 +190,22 @@ export async function generateReviewCards(
         return [];
     }
 
-    // Track recent grammar sentences to avoid repetition
-    const recentGrammarSentences: string[] = [];
-
-    // Generate cards for each KU
+    // Generate cards for each item
     const cards: ReviewCard[] = [];
-    for (const ku of kus) {
+    for (const item of items) {
+        const ku = kus.find(k => k.id === item.kuId);
+        if (!ku) continue;
+
         const card = await generateReviewCard(
             ku as KnowledgeUnit,
-            userId,
-            recentGrammarSentences
+            item.facet as PromptVariant,
+            userId
         );
 
         if (card) {
             cards.push(card);
-
-            // Track grammar sentence usage
-            if (card.ku_type === 'grammar' && 'sentence_id' in card) {
-                recentGrammarSentences.push(card.sentence_id);
-                // Keep only last 5
-                if (recentGrammarSentences.length > 5) {
-                    recentGrammarSentences.shift();
-                }
-            }
         }
     }
 
-    // Sort cards to match the original kuIds order (next_due ASC)
-    const sortedCards = kuIds
-        .map(id => cards.find(c => c.ku_id === id))
-        .filter((c): c is ReviewCard => !!c);
-
-    console.log(`${LOG_PREFIX} Generated ${sortedCards.length} cards (strictly ordered)`);
-    return sortedCards;
+    return cards;
 }

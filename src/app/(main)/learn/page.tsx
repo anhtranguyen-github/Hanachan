@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
-import { fetchNewItems, fetchDeckStats } from '@/features/learning/service';
+import { fetchNewItems, fetchLevelStats } from '@/features/learning/service';
 import { useUser } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
 
@@ -28,7 +28,7 @@ export default function LearnOverviewPage() {
             const currentLevel = profile?.level || 1;
             setUserLevel(currentLevel);
 
-            const deckStats = await fetchDeckStats(userId, `level-${currentLevel}`);
+            const levelStats = await fetchLevelStats(userId, `level-${currentLevel}`);
             const newItems = await fetchNewItems(userId, `level-${currentLevel}`, 20);
 
             // Group into batches of 5
@@ -45,7 +45,7 @@ export default function LearnOverviewPage() {
                 level: currentLevel,
                 batch: batches[0] || null,
                 batches: batches,
-                totalNew: deckStats.new
+                totalNew: levelStats.new
             });
         } catch (error) {
             console.error("Failed to load learn state:", error);

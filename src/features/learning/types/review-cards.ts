@@ -29,6 +29,8 @@ export interface BaseReviewCard {
     meaning: string;
     jlpt?: number;
     prompt_variant: PromptVariant;  // Which recall dimension are we testing?
+    prompt?: string;                // Stored prompt from database
+    correct_answers?: string[];     // Stored answers from database
 }
 
 /**
@@ -118,7 +120,7 @@ export type ReviewCard =
 export interface ReviewSession {
     id: string;
     user_id: string;
-    deck_id?: string;
+    level_id?: string;
     session_type: 'learn' | 'review'; // NEW: Distinguish between learn and review
     cards: ReviewCard[];
     current_index: number;
@@ -129,7 +131,7 @@ export interface ReviewSession {
 // Answer submission
 export interface ReviewAnswer {
     ku_id: string;
-    rating: 'pass' | 'fail';
+    rating: 'again' | 'good';
     response_time_ms?: number;
     user_input: string;    // Required for all interactions now
 }

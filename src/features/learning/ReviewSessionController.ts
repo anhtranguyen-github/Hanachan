@@ -1,6 +1,7 @@
 
 import { Rating, SRSState } from './domain/FSRSEngine';
 import { submitReview } from './service';
+import { learningRepository } from './db';
 
 export interface QuizItem {
     id: string; // Unique ID like "kuId-meaning"
@@ -22,11 +23,10 @@ export class ReviewSessionController {
     private completedCount = 0;
     private totalItems = 0;
     private userId: string;
+    private sessionId: string | null = null;
 
-    // Tracking facets for buffered persistence
-    private pendingFacets: Record<string, Set<string>> = {}; // kuId -> Set of variant names
-    private expectedFacets: Record<string, number> = {}; // kuId -> total variant count
-    private sessionFailures: Set<string> = new Set(); // Track KUs failed at least once this session
+    // State tracking for the current session
+    private firstAttemptDone: Set<string> = new Set(); // item.id (kuId-facet)
 
     constructor(userId: string) {
         this.userId = userId;
@@ -35,6 +35,22 @@ export class ReviewSessionController {
     async initSession(items: any[]) {
         this.queue = this.transformItems(items);
         this.totalItems = this.queue.length;
+
+        // Persist Session Header
+        try {
+            const session = await learningRepository.createReviewSession(this.userId, this.totalItems);
+            this.sessionId = session.id;
+
+            // Persist Session Items
+            const sessionItems = this.queue.map(item => ({
+                ku_id: item.ku_id,
+                facet: item.prompt_variant
+            }));
+            await learningRepository.createReviewSessionItems(this.sessionId!, sessionItems);
+        } catch (e) {
+            console.error("[ReviewSessionController] Failed to persist session header", e);
+        }
+
         return this.queue;
     }
 
@@ -53,20 +69,29 @@ export class ReviewSessionController {
                 reading = details?.onyomi?.[0] || details?.kunyomi?.[0] || ku.reading || "";
             }
 
-            const activeVariants: string[] = [];
+            let activeVariants: string[] = [];
 
-            if (ku.type === 'grammar') {
-                activeVariants.push('cloze');
-            } else if (ku.type === 'radical') {
-                activeVariants.push('meaning');
+            // If item already has a facet (from fetchDueItems), only review THAT facet
+            if (item.facet) {
+                activeVariants = [item.facet];
             } else {
-                // Kanji or Vocab
-                activeVariants.push('meaning');
-                if (reading) activeVariants.push('reading');
+                // Discovery mode: determine all facets
+                if (ku.type === 'grammar') {
+                    activeVariants.push('cloze');
+                } else if (ku.type === 'radical') {
+                    activeVariants.push('meaning');
+                } else {
+                    activeVariants.push('meaning');
+                    if (reading) activeVariants.push('reading');
+                }
             }
 
-            this.expectedFacets[ku.id] = activeVariants.length;
-            this.pendingFacets[ku.id] = new Set();
+            // Law: Meaning before Reading
+            activeVariants.sort((a, b) => {
+                if (a === 'meaning') return -1;
+                if (b === 'meaning') return 1;
+                return 0;
+            });
 
             activeVariants.forEach(variant => {
                 let sentence_ja = ku.grammar_details?.[0]?.sentence_ja || ku.sentence_ja;
@@ -78,8 +103,15 @@ export class ReviewSessionController {
                     if (Array.isArray(examples) && examples.length > 0) {
                         const randomIdx = Math.floor(Math.random() * examples.length);
                         const ex = examples[randomIdx];
-                        sentence_ja = ex.ja || sentence_ja;
-                        // Use provided cloze or the whole sentence as fallback
+                        sentence_ja = ex.sentence_text || ex.ja || sentence_ja;
+
+                        // Smart clozure: if ex has structure, find the grammar_point
+                        if (ex.sentence_structure) {
+                            const point = ex.sentence_structure.find((s: any) => s.type === 'grammar_point');
+                            if (point) cloze_answer = point.content;
+                        }
+
+                        // Fallback to explicit answer fields
                         cloze_answer = ex.cloze_answer || ex.answer || cloze_answer;
                     }
                 }
@@ -120,48 +152,57 @@ export class ReviewSessionController {
 
         const isSuccess = rating !== 'fail' && rating !== 'again';
 
-        if (isSuccess) {
-            // 1. Mark this specific facet as temporarily cleared for this session
-            this.pendingFacets[current.ku_id].add(current.prompt_variant);
+        // Law 1 & Law 2: FSRS update is per-facet and immediate on first attempt
+        if (!this.firstAttemptDone.has(current.id)) {
+            console.log(`[ReviewSessionController] First attempt for ${current.id}: ${rating}`);
+            await submitReview(this.userId, current.ku_id, current.prompt_variant, rating, current.currentState);
+            this.firstAttemptDone.add(current.id);
 
-            // 2. Check if all facets for this KU are now cleared
-            const isKUComplete = this.pendingFacets[current.ku_id].size === this.expectedFacets[current.ku_id];
-
-            if (isKUComplete) {
-                // Determine final rating: If failed once in session, result is 'fail'
-                const finalRating = this.sessionFailures.has(current.ku_id) ? 'fail' : 'pass';
-
-                console.log(`[ReviewSessionController] KU Mastery achieved for ${current.ku_id}. Persisting with rating: ${finalRating}`);
-                await submitReview(this.userId, current.ku_id, finalRating, current.currentState);
-
-                // Remove all variants of this KU from the queue
-                this.queue = this.queue.filter(item => item.ku_id !== current.ku_id);
-            } else {
-                // Shift this facet out as it's temporarily solved
-                this.queue.shift();
+            // Persist Attempt in session tracking
+            if (this.sessionId) {
+                await learningRepository.updateReviewSessionItem(
+                    this.sessionId,
+                    current.ku_id,
+                    current.prompt_variant,
+                    isSuccess ? 'correct' : 'incorrect',
+                    rating
+                );
             }
+        }
+
+        if (isSuccess) {
+            this.queue.shift();
             this.completedCount++;
+
+            // If queue is empty, finish session in DB
+            if (this.queue.length === 0 && this.sessionId) {
+                await learningRepository.completeReviewSession(this.sessionId, this.completedCount);
+            }
+
             return true;
         } else {
-            // FAILURE: Log failure for the KU to ensure SRS penalty at the end
+            // Correction Loop: Re-queue this facet to the end
             console.log(`[ReviewSessionController] Facet ${current.prompt_variant} failed for ${current.ku_id}. Item re-queued.`);
-
-            // Mark as failed for the whole session
-            this.sessionFailures.add(current.ku_id);
-
-            // Re-queue this facet to the end
             const failedItem = this.queue.shift()!;
-            this.queue.push(failedItem);
 
+            // On re-queue, we don't necessarily update status to 'pending' again in DB yet, 
+            // but we could if we wanted to track loops. Status 'incorrect' tells us it failed once.
+
+            this.queue.push(failedItem);
             return false;
         }
+    }
+
+    getSessionId() {
+        return this.sessionId;
     }
 
     getProgress() {
         return {
             completed: this.completedCount,
             total: this.totalItems,
-            queueSize: this.queue.length
+            queueSize: this.queue.length,
+            sessionId: this.sessionId
         };
     }
 }

@@ -32,7 +32,7 @@ export async function startReviewSessionAction(
     userId: string,
     options?: {
         type?: 'learn' | 'review';
-        deckId?: string;
+        levelId?: string;
         kuType?: 'radical' | 'kanji' | 'vocabulary' | 'grammar';
         level?: number;
         maxCards?: number;
@@ -74,7 +74,7 @@ export async function submitReviewAnswerAction(
     userId: string,
     card: ReviewCard,
     answer: ReviewAnswer
-): Promise<ActionResult<{ correct: boolean; rating: 'again' | 'hard' | 'good' | 'easy'; nextReview: string }>> {
+): Promise<ActionResult<{ correct: boolean; rating: 'again' | 'good'; nextReview: string }>> {
     console.log(`${LOG_PREFIX} submitReviewAnswerAction:`, { userId, kuId: card.ku_id, rating: answer.rating });
 
     try {
@@ -83,9 +83,9 @@ export async function submitReviewAnswerAction(
         // Revalidate relevant paths for global stats
         revalidatePath('/dashboard');
         revalidatePath('/review');
-        revalidatePath('/decks');
-        // Also revalidate the generic deck detail path pattern
-        revalidatePath('/decks/[id]', 'page');
+        revalidatePath('/levels');
+        // Also revalidate the generic level detail path pattern
+        revalidatePath('/levels/[id]', 'page');
 
         return {
             success: true,

@@ -10,11 +10,13 @@ import { ReviewCard, ReviewAnswer, ReviewSession } from '../types/review-cards';
 import { generateReviewCards } from './review-card-generator';
 import { calculateNextReview, Rating, SRSState } from './SRSAlgorithm';
 import { validateClozeAnswer } from './grammar-cloze';
+import { learningRepository } from '../db';
 
 const LOG_PREFIX = '[ReviewSession]';
 
 interface DueItem {
     ku_id: string;
+    facet: string;
     ku_type: string;
     next_review: string;
     state: string;
@@ -35,7 +37,7 @@ export async function getDueReviewItems(
     options?: {
         limit?: number;
         kuType?: 'radical' | 'kanji' | 'vocabulary' | 'grammar';
-        deckId?: string;
+        levelId?: string;
         level?: number;
     }
 ): Promise<DueItem[]> {
@@ -45,6 +47,7 @@ export async function getDueReviewItems(
         .from('user_learning_states')
         .select(`
             ku_id,
+            facet,
             state,
             next_review,
             knowledge_units!inner(id, type, level, character, meaning)
@@ -58,41 +61,22 @@ export async function getDueReviewItems(
         query = query.eq('knowledge_units.type', options.kuType);
     }
 
-    // Filter by level (direct or via virtual deckId)
+    // Filter by level (direct or via virtual levelId)
     let level = options?.level;
-    if (options?.deckId?.startsWith('virtual-level-')) {
-        level = parseInt(options.deckId.replace('virtual-level-', ''));
+    if (options?.levelId?.startsWith('virtual-level-')) {
+        level = parseInt(options.levelId.replace('virtual-level-', ''));
     }
 
     if (level) {
         query = query.eq('knowledge_units.level', level);
     }
 
-    // Filter by real Deck ID
-    if (options?.deckId && !options.deckId.startsWith('virtual-level-')) {
-        // 1. Check if it's a system deck with a level
-        const { data: deck } = await supabase
-            .from('decks')
-            .select('deck_type, level')
-            .eq('id', options.deckId)
-            .maybeSingle();
-
-        if (deck?.deck_type === 'system' && deck.level) {
-            query = query.eq('knowledge_units.level', deck.level);
-        } else {
-            // 2. Fetch from deck_items
-            const { data: deckItems } = await supabase
-                .from('deck_items')
-                .select('ku_id')
-                .eq('deck_id', options.deckId);
-
-            const kuIdsInDeck = (deckItems || []).map(i => i.ku_id).filter(Boolean) as string[];
-            if (kuIdsInDeck.length > 0) {
-                query = query.in('ku_id', kuIdsInDeck);
-            } else {
-                console.log(`${LOG_PREFIX} No items found in deck (user deck with no items)`);
-                return [];
-            }
+    // Filter by Level ID (virtual levels: level-1, level-2, etc.)
+    if (options?.levelId) {
+        const match = options.levelId.match(/^(?:virtual-)?level-(\d+)$/);
+        if (match) {
+            const levelNum = parseInt(match[1]);
+            query = query.eq('knowledge_units.level', levelNum);
         }
     }
 
@@ -120,7 +104,7 @@ export async function getNewItems(
     options?: {
         limit?: number;
         kuType?: 'radical' | 'kanji' | 'vocabulary' | 'grammar';
-        deckId?: string;
+        levelId?: string;
         level?: number;
     }
 ): Promise<any[]> {
@@ -149,42 +133,22 @@ export async function getNewItems(
         query = query.eq('type', options.kuType);
     }
 
-    // Filter by level (direct or via virtual deckId)
+    // Filter by level (direct or via virtual levelId)
     let level = options?.level;
-    if (options?.deckId?.startsWith('virtual-level-')) {
-        level = parseInt(options.deckId.replace('virtual-level-', ''));
+    if (options?.levelId?.startsWith('virtual-level-')) {
+        level = parseInt(options.levelId.replace('virtual-level-', ''));
     }
 
     if (level) {
         query = query.eq('level', level);
     }
 
-    // Filter by real Deck ID
-    if (options?.deckId && !options.deckId.startsWith('virtual-level-')) {
-        // 1. Check if it's a system deck with a level
-        const { data: deck } = await supabase
-            .from('decks')
-            .select('deck_type, level')
-            .eq('id', options.deckId)
-            .maybeSingle();
-
-        if (deck?.deck_type === 'system' && deck.level) {
-            // System deck: Query by level directly (no need to check deck_items)
-            query = query.eq('level', deck.level);
-        } else {
-            // 2. User deck: Fetch from deck_items
-            const { data: deckItems } = await supabase
-                .from('deck_items')
-                .select('ku_id')
-                .eq('deck_id', options.deckId);
-
-            const kuIdsInDeck = (deckItems || []).map(i => i.ku_id).filter(Boolean) as string[];
-            if (kuIdsInDeck.length > 0) {
-                query = query.in('id', kuIdsInDeck);
-            } else {
-                console.log(`${LOG_PREFIX} No items found in deck (user deck with no items)`);
-                return [];
-            }
+    // Filter by Level ID (virtual levels: level-1, level-2, etc.)
+    if (options?.levelId) {
+        const match = options.levelId.match(/^(?:virtual-)?level-(\d+)$/);
+        if (match) {
+            const levelNum = parseInt(match[1]);
+            query = query.eq('level', levelNum);
         }
     }
 
@@ -213,7 +177,7 @@ export async function startReviewSession(
     userId: string,
     options?: {
         type?: 'learn' | 'review'; // Explicit session type
-        deckId?: string;
+        levelId?: string;
         kuType?: 'radical' | 'kanji' | 'vocabulary' | 'grammar';
         level?: number;
         maxCards?: number;
@@ -231,30 +195,58 @@ export async function startReviewSession(
             limit: maxCards,
             kuType: options?.kuType,
             level: options?.level,
-            deckId: options?.deckId
+            levelId: options?.levelId
         });
-        cards = await generateReviewCards(newItems.map(n => n.id), userId);
+
+        // For LEARN, we usually initialize all facets. 
+        // For simplicity, let's start with 'meaning' (or 'cloze' for grammar)
+        const itemsToGenerate = newItems.flatMap(n => {
+            if (n.type === 'kanji' || n.type === 'vocabulary') {
+                return [
+                    { kuId: n.id, facet: 'meaning' },
+                    { kuId: n.id, facet: 'reading' }
+                ];
+            }
+            return [{ kuId: n.id, facet: n.type === 'grammar' ? 'cloze' : 'meaning' }];
+        });
+
+        cards = await generateReviewCards(itemsToGenerate, userId);
     } else {
         // REVIEW: Fetch strictly DUE items
         const dueItems = await getDueReviewItems(userId, {
             limit: maxCards,
             kuType: options?.kuType,
             level: options?.level,
-            deckId: options?.deckId
+            levelId: options?.levelId
         });
-        cards = await generateReviewCards(dueItems.map(d => d.ku_id), userId);
+        cards = await generateReviewCards(dueItems.map(d => ({ kuId: d.ku_id, facet: d.facet })), userId);
     }
 
     // Create session
     const session: ReviewSession = {
         id: crypto.randomUUID(),
         user_id: userId,
-        deck_id: options?.deckId,
+        level_id: options?.levelId,
         session_type: sessionType,
         cards: cards,
         current_index: 0,
         started_at: new Date().toISOString()
     };
+
+    // Persistence Hook (Relational Session Tracking)
+    try {
+        const dbSession = await learningRepository.createReviewSession(userId, cards.length);
+        // Overwrite random ID with DB ID for persistence
+        session.id = dbSession.id;
+
+        const sessionItems = cards.map(c => ({
+            ku_id: c.ku_id,
+            facet: c.prompt_variant
+        }));
+        await learningRepository.createReviewSessionItems(session.id, sessionItems);
+    } catch (e) {
+        console.error(`${LOG_PREFIX} Failed to persist session header`, e);
+    }
 
     console.log(`${LOG_PREFIX} ${sessionType} session created with ${cards.length} cards`);
     return session;
@@ -269,33 +261,28 @@ export async function startReviewSession(
 function validateAnswer(card: ReviewCard, userInput: string): { correct: boolean; similarity: number } {
     const normalized = userInput.trim().toLowerCase();
 
+    // Use stored correct_answers if available (from Questions table)
+    if (card.correct_answers && card.correct_answers.length > 0) {
+        const isCorrect = card.correct_answers.some(ans => {
+            const normAns = ans.trim().toLowerCase();
+            return normalized === normAns;
+        });
+        return { correct: isCorrect, similarity: isCorrect ? 1 : 0 };
+    }
+
+    // Fallback to legacy logic if correct_answers is missing (should not happen with seeding)
     // Grammar cloze uses its own validation logic
     if (card.ku_type === 'grammar') {
         return validateClozeAnswer(userInput, card.cloze_answer);
     }
-
-    // Radical: Meaning only
-    if (card.ku_type === 'radical') {
-        const expected = card.meaning.toLowerCase();
-        const synonyms = expected.split(',').map(s => s.trim());
-        const isCorrect = synonyms.some(s => normalized === s || normalized.includes(s));
-        return { correct: isCorrect, similarity: isCorrect ? 1 : 0 };
-    }
-
-    // Kanji / Vocab
+    // Kanji / Vocab Reading fallback
     if (card.ku_type === 'kanji' || card.ku_type === 'vocabulary') {
-        if (card.prompt_variant === 'meaning') {
-            const expected = card.meaning.toLowerCase();
-            const synonyms = expected.split(',').map(s => s.trim());
-            const isCorrect = synonyms.some(s => normalized === s);
-            return { correct: isCorrect, similarity: isCorrect ? 1 : 0 };
-        } else {
-            // Reading validation
+        if (card.prompt_variant === 'reading') {
             const expected = card.ku_type === 'kanji'
-                ? [...(card.readings.onyomi || []), ...(card.readings.kunyomi || [])]
-                : [card.reading];
+                ? [...((card as KanjiReviewCard).readings.onyomi || []), ...((card as KanjiReviewCard).readings.kunyomi || [])]
+                : [(card as VocabReviewCard).reading];
 
-            const isCorrect = expected.map(r => r.toLowerCase()).includes(normalized);
+            const isCorrect = expected.some(s => normalized === s.trim().toLowerCase());
             return { correct: isCorrect, similarity: isCorrect ? 1 : 0 };
         }
     }
@@ -312,7 +299,7 @@ export async function submitReviewAnswer(
     answer: ReviewAnswer
 ): Promise<{
     correct: boolean;
-    rating: 'again' | 'hard' | 'good' | 'easy';
+    rating: 'again' | 'good';
     nextReview: Date | null;
 }> {
     console.log(`${LOG_PREFIX} Submitting answer for ${card.ku_type} (${card.prompt_variant}):`, card.ku_id);
@@ -331,6 +318,7 @@ export async function submitReviewAnswer(
         .select('*')
         .eq('user_id', userId)
         .eq('ku_id', card.ku_id)
+        .eq('facet', card.prompt_variant)
         .maybeSingle();
 
     const isLearnMode = !currentState;
@@ -366,6 +354,7 @@ export async function submitReviewAnswer(
         .upsert({
             user_id: userId,
             ku_id: card.ku_id,
+            facet: card.prompt_variant,
             state: next_state.stage,
             stability: next_state.ease_factor,
             difficulty: 0,
@@ -374,7 +363,7 @@ export async function submitReviewAnswer(
             reps: next_state.streak,
             lapses: rating === 'again' ? (currentState?.lapses || 0) + 1 : (currentState?.lapses || 0)
         }, {
-            onConflict: 'user_id,ku_id'
+            onConflict: 'user_id,ku_id,facet'
         });
 
     if (error) {
@@ -383,7 +372,7 @@ export async function submitReviewAnswer(
 
     return {
         correct: isCorrect,
-        rating: rating as 'again' | 'hard' | 'good' | 'easy',
+        rating: rating as 'again' | 'good',
         nextReview: next_review
     };
 }

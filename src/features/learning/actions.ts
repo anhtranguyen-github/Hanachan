@@ -4,7 +4,7 @@ import {
     submitReview,
     fetchDueItems,
     fetchNewItems,
-    fetchDeckStats,
+    fetchLevelStats,
     fetchUserDashboardStats
 } from './service';
 import { revalidatePath } from 'next/cache';
@@ -14,8 +14,8 @@ export async function submitReviewAction(userId: string, kuId: string, rating: a
         const result = await submitReview(userId, kuId, rating, currentState);
         revalidatePath('/dashboard');
         revalidatePath('/review');
-        revalidatePath('/decks');
-        revalidatePath('/decks/[id]', 'page');
+        revalidatePath('/levels');
+        revalidatePath('/levels/[id]', 'page');
         return { success: true, data: result };
     } catch (e: any) {
         return { success: false, error: e.message };

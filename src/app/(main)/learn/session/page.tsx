@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2, ArrowLeft, BookOpen, ChevronRight, CheckCircle2, PlayCircle, Zap, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { fetchNewItems } from '@/features/learning/service';
+import { learningRepository } from '@/features/learning/db';
 import { ReviewSessionController, QuizItem } from '@/features/learning/ReviewSessionController';
 import { Rating } from '@/features/learning/domain/FSRSEngine';
 import { GlassCard } from '@/components/premium/GlassCard';
@@ -21,6 +22,7 @@ function SessionContent() {
     const [phase, setPhase] = useState<'init' | 'lesson-view' | 'quiz' | 'complete'>('init');
     const [stats, setStats] = useState({ mistakes: 0, totalItems: 0, completed: 0 });
     const [lessonIndex, setLessonIndex] = useState(0);
+    const [batchId, setBatchId] = useState<string | null>(null);
 
     const loadSession = async () => {
         if (!user) return;
@@ -40,6 +42,15 @@ function SessionContent() {
                 return;
             }
 
+            // Persist Lesson Batch
+            try {
+                const batch = await learningRepository.createLessonBatch(user.id, currentLevel);
+                setBatchId(batch.id);
+                await learningRepository.createLessonItems(batch.id, items.map((i: any) => i.ku_id));
+            } catch (e) {
+                console.error("[LearnSession] Failed to persist batch", e);
+            }
+
             setLessonQueue(items);
             setStats({ mistakes: 0, totalItems: items.length, completed: 0 });
             setPhase('lesson-view');
@@ -56,7 +67,13 @@ function SessionContent() {
         if (user) loadSession();
     }, [user]);
 
-    const handleLessonNext = () => {
+    const handleLessonNext = async () => {
+        const currentItem = lessonQueue[lessonIndex];
+        // Mark current lesson as viewed in DB
+        if (batchId && currentItem) {
+            await learningRepository.updateLessonItemStatus(batchId, currentItem.ku_id, 'viewed');
+        }
+
         if (lessonIndex + 1 < lessonQueue.length) {
             setLessonIndex(prev => prev + 1);
         } else {
@@ -68,14 +85,27 @@ function SessionContent() {
     const handleAnswer = async (rating: Rating, userInput: string) => {
         if (!controller) return;
 
+        const current = controller.getNextItem();
         const success = await controller.submitAnswer(rating);
-        if (!success) setStats(s => ({ ...s, mistakes: s.mistakes + 1 }));
+
+        if (!success) {
+            setStats(s => ({ ...s, mistakes: s.mistakes + 1 }));
+        } else {
+            // Mark as quiz_passed in batch tracking
+            if (batchId && current) {
+                await learningRepository.updateLessonItemStatus(batchId, current.ku_id, 'quiz_passed');
+            }
+        }
 
         const next = controller.getNextItem();
         if (next) {
             setCurrentCard(next);
             setStats(s => ({ ...s, completed: controller.getProgress().completed }));
         } else {
+            // Finish batch in DB
+            if (batchId) {
+                await learningRepository.completeLessonBatch(batchId);
+            }
             setPhase('complete');
         }
     };
@@ -129,7 +159,7 @@ function SessionContent() {
         return (
             <div
                 className="h-screen bg-[#FDF8F8] py-8 px-6 flex flex-col max-w-5xl mx-auto space-y-8"
-                data-testid="learning-session-root"
+                data-testid="lesson-view-phase"
             >
                 <header className="flex justify-between items-center px-4">
                     <div className="space-y-3">

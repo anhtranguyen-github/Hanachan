@@ -6,7 +6,7 @@ export const learningRepository = {
     async fetchDueItems(userId: string) {
         const { data, error } = await supabase
             .from('user_learning_states')
-            .select('*, knowledge_units(*, kanji_details(*), vocabulary_details(*), grammar_details(*))')
+            .select('*, facet, knowledge_units(*, kanji_details(*), vocabulary_details(*), grammar_details(*))')
             .eq('user_id', userId)
             .neq('state', 'burned')
             .lte('next_review', new Date().toISOString())
@@ -65,32 +65,44 @@ export const learningRepository = {
         }));
     },
 
-    async updateUserState(userId: string, kuId: string, updates: any, rating?: Rating) {
+    async updateUserState(userId: string, kuId: string, facet: string, updates: any, rating?: Rating) {
+        console.log(`[DB] updateUserState: ${userId}, ${kuId}, ${facet}`, updates);
+
         const { error } = await supabase
             .from('user_learning_states')
             .upsert({
                 user_id: userId,
                 ku_id: kuId,
+                facet: facet,
                 ...updates
             }, {
-                onConflict: 'user_id,ku_id'
+                onConflict: 'user_id,ku_id,facet'
             });
 
         if (error) {
-            console.error("Error updating user state:", error);
+            console.error("[DB] Error updating user state:", error);
             throw error;
         }
 
+        console.log(`[DB] State updated successfully for ${kuId}-${facet}`);
+
         // If a rating was provided, log it
         if (rating) {
-            await supabase.from('user_learning_logs').insert({
+            const { error: logError } = await supabase.from('user_learning_logs').insert({
                 user_id: userId,
                 ku_id: kuId,
+                facet: facet,
                 rating: rating,
                 stability: updates.stability || 0,
                 difficulty: updates.difficulty || 3.0,
                 interval: Math.round((updates.stability || 0) * 1440) // in minutes
             });
+
+            if (logError) {
+                console.error("[DB] Error inserting learning log:", logError);
+            } else {
+                console.log(`[DB] Learning log inserted for ${kuId}-${facet}`);
+            }
         }
     },
 
@@ -112,46 +124,129 @@ export const learningRepository = {
         }));
     },
 
-    async getUserSettings(userId: string) {
+    // --- Persistent Session Tracking ---
+
+    async createReviewSession(userId: string, totalItems: number) {
         const { data, error } = await supabase
-            .from('user_settings')
-            .select('*')
-            .eq('user_id', userId)
-            .maybeSingle();
+            .from('review_sessions')
+            .insert({
+                user_id: userId,
+                total_items: totalItems,
+                completed_items: 0,
+                status: 'active'
+            })
+            .select()
+            .single();
 
         if (error) {
-            console.error("Error fetching user settings:", error);
-            return { target_retention: 0.9 }; // Return fallback
+            console.error("[DB] Error creating review session:", error);
+            throw error;
         }
-
-        if (!data) {
-            // Check if user exists in users table first (required for FK constraint)
-            const { data: userExists } = await supabase
-                .from('users')
-                .select('id')
-                .eq('id', userId)
-                .maybeSingle();
-
-            if (!userExists) {
-                // User doesn't exist in users table yet, return fallback without creating
-                console.log("[getUserSettings] User not in users table yet, using defaults");
-                return { target_retention: 0.9 };
-            }
-
-            // User exists, try to create default settings
-            const { data: defaultSettings, error: createError } = await supabase
-                .from('user_settings')
-                .upsert({ user_id: userId, target_retention: 0.9 }, { onConflict: 'user_id' })
-                .select()
-                .single();
-            if (createError) {
-                console.error("Error creating default settings:", createError);
-                return { target_retention: 0.9 }; // Return fallback
-            }
-            return defaultSettings;
-        }
-
         return data;
+    },
+
+    async createReviewSessionItems(sessionId: string, items: { ku_id: string, facet: string }[]) {
+        const { error } = await supabase
+            .from('review_session_items')
+            .insert(items.map(i => ({
+                session_id: sessionId,
+                ku_id: i.ku_id,
+                facet: i.facet,
+                status: 'pending'
+            })));
+
+        if (error) {
+            console.error("[DB] Error creating review session items:", error);
+            throw error;
+        }
+    },
+
+    async updateReviewSessionItem(sessionId: string, kuId: string, facet: string, status: string, rating?: Rating) {
+        const { error } = await supabase
+            .from('review_session_items')
+            .update({
+                status: status,
+                first_rating: rating,
+                updated_at: new Date().toISOString()
+            })
+            .match({ session_id: sessionId, ku_id: kuId, facet: facet });
+
+        if (error) {
+            console.error("[DB] Error updating review session item:", error);
+        }
+    },
+
+    async completeReviewSession(sessionId: string, completedItems: number) {
+        const { error } = await supabase
+            .from('review_sessions')
+            .update({
+                status: 'finished',
+                completed_items: completedItems,
+                completed_at: new Date().toISOString()
+            })
+            .eq('id', sessionId);
+
+        if (error) {
+            console.error("[DB] Error completing review session:", error);
+        }
+    },
+
+    async createLessonBatch(userId: string, level: number) {
+        const { data, error } = await supabase
+            .from('lesson_batches')
+            .insert({
+                user_id: userId,
+                level: level,
+                status: 'in_progress'
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error("[DB] Error creating lesson batch:", error);
+            throw error;
+        }
+        return data;
+    },
+
+    async createLessonItems(batchId: string, kuIds: string[]) {
+        const { error } = await supabase
+            .from('lesson_items')
+            .insert(kuIds.map(id => ({
+                batch_id: batchId,
+                ku_id: id,
+                status: 'unseen'
+            })));
+
+        if (error) {
+            console.error("[DB] Error creating lesson items:", error);
+            throw error;
+        }
+    },
+
+    async updateLessonItemStatus(batchId: string, kuId: string, status: string) {
+        const { error } = await supabase
+            .from('lesson_items')
+            .update({ status: status })
+            .match({ batch_id: batchId, ku_id: kuId });
+
+        if (error) {
+            console.error("[DB] Error updating lesson item status:", error);
+        }
+    },
+
+    async completeLessonBatch(batchId: string) {
+        const { error } = await supabase
+            .from('lesson_batches')
+            .update({
+                status: 'completed',
+                completed_at: new Date().toISOString()
+            })
+            .eq('id', batchId);
+
+        if (error) {
+            console.error("[DB] Error completing lesson batch:", error);
+        }
     },
 
     async fetchStats(userId: string) {
@@ -166,21 +261,34 @@ export const learningRepository = {
             return null;
         }
 
+        // 2. Aggregate counts by KU
+        const kuGroups: Record<string, { total: number, mastered: number, burned: number, type: string }> = {};
+        learnedStates?.forEach(s => {
+            const ku = Array.isArray(s.knowledge_units) ? s.knowledge_units[0] : s.knowledge_units;
+            const type = (ku as any)?.type === 'vocab' ? 'vocabulary' : (ku as any)?.type;
+
+            if (!kuGroups[s.ku_id]) {
+                kuGroups[s.ku_id] = { total: 0, mastered: 0, burned: 0, type: type || 'unknown' };
+            }
+            kuGroups[s.ku_id].total++;
+            if (s.state === 'burned') kuGroups[s.ku_id].burned++;
+            if (s.state === 'review' || s.state === 'burned') kuGroups[s.ku_id].mastered++;
+        });
+
+        const uniqueKUs = Object.values(kuGroups);
         const stats = {
-            learned: learnedStates?.length || 0,
-            burned: learnedStates?.filter(s => s.state === 'burned').length || 0,
+            learned: uniqueKUs.length,
+            mastered: uniqueKUs.filter(g => g.mastered === g.total).length,
+            burned: uniqueKUs.filter(g => g.burned === g.total).length,
             typeMastery: { radical: 0, kanji: 0, vocabulary: 0, grammar: 0 },
             last7Days: [0, 0, 0, 0, 0, 0, 0],
             heatmap: {} as Record<string, number>,
             totalKUs: 0
         };
 
-        // 2. Calculate Type Mastery
-        learnedStates?.forEach(s => {
-            const ku = Array.isArray(s.knowledge_units) ? s.knowledge_units[0] : s.knowledge_units;
-            const type = (ku as any)?.type === 'vocab' ? 'vocabulary' : (ku as any)?.type;
-            if (type && stats.typeMastery[type as keyof typeof stats.typeMastery] !== undefined) {
-                stats.typeMastery[type as keyof typeof stats.typeMastery]++;
+        uniqueKUs.forEach(g => {
+            if (g.type && stats.typeMastery[g.type as keyof typeof stats.typeMastery] !== undefined) {
+                stats.typeMastery[g.type as keyof typeof stats.typeMastery]++;
             }
         });
 

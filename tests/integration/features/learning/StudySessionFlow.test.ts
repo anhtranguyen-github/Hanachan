@@ -2,14 +2,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { submitReview } from '@/features/learning/service';
 import { learningRepository } from '@/features/learning/db';
-import * as srsAlgorithm from '@/features/learning/domain/SRSAlgorithm';
 
 vi.mock('@/features/learning/db');
-// We don't want to mock the algorithm itself, we want to see it work with the service
 
 describe('Study Session Integration Flow', () => {
     const userId = '00000000-0000-4000-8000-000000000001';
     const kuId = 'ku-test-1';
+    const facet = 'meaning';
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -26,7 +25,7 @@ describe('Study Session Integration Flow', () => {
 
         const updateSpy = vi.spyOn(learningRepository, 'updateUserState').mockResolvedValue(undefined as any);
 
-        const result = await submitReview(userId, kuId, 'good', currentState);
+        const result = await submitReview(userId, kuId, facet, 'good', currentState);
 
         // Verify result from algorithm logic through the service
         expect(result.next_state.reps).toBe(2);
@@ -34,14 +33,14 @@ describe('Study Session Integration Flow', () => {
         expect(result.next_review).toBeInstanceOf(Date);
 
         // Verify repository interaction
-        expect(updateSpy).toHaveBeenCalledWith(userId, kuId, expect.objectContaining({
+        expect(updateSpy).toHaveBeenCalledWith(userId, kuId, facet, expect.objectContaining({
             state: 'learning',
             reps: 2,
             stability: 0.333
         }), 'good');
     });
 
-    it('should reset state on "again"', async () => {
+    it('should handle failure on "again"', async () => {
         const currentState = {
             stage: 'review' as any,
             stability: 10,
@@ -52,15 +51,16 @@ describe('Study Session Integration Flow', () => {
 
         const updateSpy = vi.spyOn(learningRepository, 'updateUserState').mockResolvedValue(undefined as any);
 
-        const result = await submitReview(userId, kuId, 'again', currentState);
+        const result = await submitReview(userId, kuId, facet, 'again', currentState);
 
-        expect(result.next_state.reps).toBe(0);
+        // (5 - 2) = 3 reps remaining according to smart reset
+        expect(result.next_state.reps).toBe(3);
         expect(result.next_state.stage).toBe('learning');
         expect(result.next_state.lapses).toBe(1);
 
-        expect(updateSpy).toHaveBeenCalledWith(userId, kuId, expect.objectContaining({
+        expect(updateSpy).toHaveBeenCalledWith(userId, kuId, facet, expect.objectContaining({
             state: 'learning',
-            reps: 0,
+            reps: 3,
             lapses: 1
         }), 'again');
     });

@@ -8,30 +8,62 @@ vi.mock('@/lib/supabase', () => ({
         from: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
+        neq: vi.fn().mockReturnThis(),
+        lte: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        single: vi.fn(),
+        upsert: vi.fn(),
+        insert: vi.fn(),
         maybeSingle: vi.fn(),
-        insert: vi.fn().mockReturnThis(),
-        single: vi.fn()
     }
 }));
 
 describe('learningRepository', () => {
-    it('should fetch user settings or create default if missing', async () => {
+    it('should fetch due items', async () => {
         const userId = 'user-1';
-        const mockSettings = { user_id: userId, target_retention: 0.9 };
+        const mockData = [{ id: 'state-1', ku_id: 'ku-1' }];
 
-        (supabase.from('user_settings').select as any).mockReturnValue({
-            eq: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValueOnce({ data: null, error: null })
-                .mockResolvedValueOnce({ data: mockSettings, error: null })
+        (supabase.from as any).mockImplementation((table: string) => {
+            if (table === 'user_learning_states') {
+                return {
+                    select: vi.fn().mockReturnThis(),
+                    eq: vi.fn().mockReturnThis(),
+                    neq: vi.fn().mockReturnThis(),
+                    lte: vi.fn().mockReturnThis(),
+                    order: vi.fn().mockResolvedValue({ data: mockData, error: null })
+                };
+            }
+            return {};
         });
 
-        (supabase.from('user_settings').insert as any).mockReturnValue({
-            select: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: mockSettings, error: null })
+        const result = await learningRepository.fetchDueItems(userId);
+        expect(result).toEqual(mockData);
+        expect(supabase.from).toHaveBeenCalledWith('user_learning_states');
+    });
+
+    it('should update user state with upsert', async () => {
+        const userId = 'user-1';
+        const kuId = 'ku-1';
+        const facet = 'meaning';
+        const updates = { stability: 1.0 };
+
+        (supabase.from as any).mockImplementation((table: string) => {
+            if (table === 'user_learning_states') {
+                return {
+                    upsert: vi.fn().mockResolvedValue({ error: null })
+                };
+            }
+            if (table === 'user_learning_logs') {
+                return {
+                    insert: vi.fn().mockResolvedValue({ error: null })
+                };
+            }
+            return {};
         });
 
-        const result = await learningRepository.getUserSettings(userId);
-        expect(result).toEqual(mockSettings);
-        expect(supabase.from('user_settings').insert).toHaveBeenCalled();
+        await learningRepository.updateUserState(userId, kuId, facet, updates, 'good' as any);
+        expect(supabase.from).toHaveBeenCalledWith('user_learning_states');
+        expect(supabase.from).toHaveBeenCalledWith('user_learning_logs');
     });
 });
