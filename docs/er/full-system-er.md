@@ -1,5 +1,7 @@
 # Master System ER Diagram - Hanachan v2
 
+This diagram provides a birds-eye view of the entire system, consolidating the User, Content, Session, and Assistant domains.
+
 ```plantuml
 @startuml
 skinparam packageStyle rectangle
@@ -10,7 +12,7 @@ hide circle
 ' 1. USER DOMAIN
 ' ==========================================
 class User <<Entity>> {
-  + id : UUID <<PK>> (Link to auth.users)
+  + id : UUID <<PK>>
   --
   display_name : String
   level : Integer (1-60)
@@ -25,39 +27,64 @@ class KnowledgeUnit <<Entity>> {
   + id : UUID <<PK>>
   --
   slug : String <<Unique>>
-  type : Enum (radical, kanji, vocabulary, grammar)
+  type : Enum (RADICAL, KANJI, VOCABULARY, GRAMMAR)
   level : Integer (1-60)
   jlpt : Integer (1-5)
   character : String
   meaning : String
-  created_at : Timestamp
+}
+
+class RadicalDetail <<Entity>> {
+  + ku_id : UUID <<PK, FK>>
+  --
+  meaning_mnemonic : Text
+  image_url : String
 }
 
 class KanjiDetail <<Entity>> {
-  + ku_id : UUID <<FK>>
+  + ku_id : UUID <<PK, FK>>
   --
   onyomi : Array<String>
   kunyomi : Array<String>
-  stroke_video : String (URL)
   meaning_mnemonic : Text
   reading_mnemonic : Text
+  stroke_order_svg : Text
 }
 
 class VocabularyDetail <<Entity>> {
-  + ku_id : UUID <<FK>>
+  + ku_id : UUID <<PK, FK>>
   --
-  reading : String (Hiragana)
-  audio_url : String (URL)
+  reading : String
+  audio_url : String
   parts_of_speech : Array<String>
-  kanji_list : Array<String>
+  pitch_accent : JSONB
 }
 
 class GrammarDetail <<Entity>> {
-  + ku_id : UUID <<FK>>
+  + ku_id : UUID <<PK, FK>>
   --
   structure : String
   explanation : Text
-  example_sentences : JSONB (List<{ja, en}>)
+  nuance : Text
+  cautions : Text
+  example_sentences : JSONB -- List<{ja, en, audio}>
+}
+
+' Bridge Tables (Cross-References)
+class KanjiRadical <<Entity>> {
+  + kanji_id : UUID <<PK, FK>>
+  + radical_id : UUID <<PK, FK>>
+}
+
+class VocabularyKanji <<Entity>> {
+  + vocab_id : UUID <<PK, FK>>
+  + kanji_id : UUID <<PK, FK>>
+}
+
+class GrammarRelation <<Entity>> {
+  + grammar_id : UUID <<PK, FK>>
+  + related_id : UUID <<PK, FK>>
+  + type : Enum
 }
 
 ' ==========================================
@@ -67,23 +94,51 @@ class Question <<Entity>> {
   + id : UUID <<PK>>
   --
   ku_id : UUID <<FK>>
+  facet : String (meaning, reading, cloze)
   type : Enum (fill_in, cloze)
   prompt : String
-  cloze_text_with_blanks : String
   correct_answers : Array<String>
-  hints : Array<String>
 }
 
 ' ==========================================
-' 4. SESSION DOMAIN
+' 4. PROGRESS & LOGGING
+' ==========================================
+class UserLearningState <<Entity>> {
+  + user_id : UUID <<PK, FK>>
+  + ku_id : UUID <<PK, FK>>
+  + facet : String <<PK>>
+  --
+  state : Enum (new, learning, review, burned)
+  stability : Double
+  difficulty : Double
+  last_review : Timestamp
+  next_review : Timestamp
+  reps : Integer
+  lapses : Integer
+}
+
+class UserLearningLog <<Entity>> {
+  + id : UUID <<PK>>
+  --
+  user_id : UUID <<FK>>
+  ku_id : UUID <<FK>>
+  facet : String
+  rating : Enum (again, good)
+  stability : Double
+  difficulty : Double
+  interval : Integer
+  created_at : Timestamp
+}
+
+' ==========================================
+' 5. SESSION DOMAIN
 ' ==========================================
 class LessonBatch <<Entity>> {
   + id : UUID <<PK>>
   --
   user_id : UUID <<FK>>
+  level : Integer
   status : Enum (in_progress, completed, abandoned)
-  started_at : Timestamp
-  completed_at : Timestamp
 }
 
 class LessonItem <<Entity>> {
@@ -91,10 +146,7 @@ class LessonItem <<Entity>> {
   --
   batch_id : UUID <<FK>>
   ku_id : UUID <<FK>>
-  question_id : UUID <<FK>>
-  user_answer : Array<String>
-  answer_state : Enum (unanswered, correct, incorrect)
-  is_corrected : Boolean
+  status : Enum (unseen, viewed, quiz_passed)
 }
 
 class ReviewSession <<Entity>> {
@@ -102,35 +154,15 @@ class ReviewSession <<Entity>> {
   --
   user_id : UUID <<FK>>
   status : Enum (active, finished)
-  started_at : Timestamp
 }
 
-class ReviewItem <<Entity>> {
+class ReviewSessionItem <<Entity>> {
   + id : UUID <<PK>>
   --
   session_id : UUID <<FK>>
   ku_id : UUID <<FK>>
-  question_id : UUID <<FK>>
-  user_answer : Array<String>
-  answer_state : Enum (unanswered, correct, incorrect)
-  rating : Enum (pass, fail)
-  is_passed : Boolean
-}
-
-' ==========================================
-' 5. PROGRESS (FSRS STATE)
-' ==========================================
-class UserLearningState <<Entity>> {
-  + user_id : UUID <<PK, FK>>
-  + ku_id : UUID <<PK, FK>>
-  --
-  state : Enum (new, learning, review, burned)
-  stability : Double (Success: x1.5, Fail: x0.4)
-  difficulty : Double
-  last_review : Timestamp
-  next_review : Timestamp
-  reps : Integer (Fail: max(1, reps-2))
-  lapses : Integer
+  facet : String
+  first_rating : Enum
 }
 
 ' ==========================================
@@ -140,7 +172,7 @@ class ChatSession <<Entity>> {
   + id : UUID <<PK>>
   --
   user_id : UUID <<FK>>
-  created_at : Timestamp
+  title : String
 }
 
 class ChatMessage <<Entity>> {
@@ -150,43 +182,57 @@ class ChatMessage <<Entity>> {
   role : Enum (system, user, assistant)
   content : Text
   referenced_ku_ids : Array<UUID>
-  created_at : Timestamp
 }
 
 ' ==========================================
-' RELATIONSHIPS
+' CONNECTIONS
 ' ==========================================
 
-' Content details
+' Content Hierarchies
+KnowledgeUnit ||--o| RadicalDetail
 KnowledgeUnit ||--o| KanjiDetail
 KnowledgeUnit ||--o| VocabularyDetail
 KnowledgeUnit ||--o| GrammarDetail
 KnowledgeUnit ||--o{ Question
 
-' Progress State
+' Relationship Bridges
+KanjiRadical }o--|| KnowledgeUnit
+KanjiRadical }o--|| KnowledgeUnit
+VocabularyKanji }o--|| KnowledgeUnit
+VocabularyKanji }o--|| KnowledgeUnit
+GrammarRelation }o--|| KnowledgeUnit
+
+' Progress tracking
 User ||--o{ UserLearningState
+User ||--o{ UserLearningLog
 KnowledgeUnit ||--o{ UserLearningState
 
 ' Sessions
 User ||--o{ LessonBatch
 User ||--o{ ReviewSession
 LessonBatch ||--o{ LessonItem
-ReviewSession ||--o{ ReviewItem
-
-' Session-Content-Question links
+ReviewSession ||--o{ ReviewSessionItem
 LessonItem }o--|| KnowledgeUnit
-LessonItem }o--|| Question
-ReviewItem }o--|| KnowledgeUnit
-ReviewItem }o--|| Question
+ReviewSessionItem }o--|| KnowledgeUnit
 
 ' Assistant
 User ||--o{ ChatSession
 ChatSession ||--o{ ChatMessage
-
-' Cross-domain data flow (Logical)
-ReviewItem ..> UserLearningState : "Updates"
-LessonItem ..> UserLearningState : "Initializes"
-ChatMessage ..> KnowledgeUnit : "References"
+ChatMessage }o..|| KnowledgeUnit : "references"
 
 @enduml
 ```
+
+## Key Architectural Decisions
+
+1. **Normalized Content Details**: To support diverse Knowledge Unit (KU) types while maintaining a unified interface, core metadata is stored in `KnowledgeUnit`, while type-specific data resides in extension tables (`KanjiDetail`, etc.). This ensures efficient filtering and browsing across all content types.
+
+2. **Transactional Lessons vs. Atomic Reviews**:
+   - **Lessons**: Structured as batches that require full completion. Progress is saved per-item for resumability.
+   - **Reviews**: Items are independent. FSRS updates happen immediately on the first attempt, making the review process "Atomic". The `ReviewSession` tables serve primarily for historical logging and session-end analytics.
+
+3. **FSRS Independence Law**: Progression is tracked per **facet** (e.g., you might know a word's meaning but not its reading). Each facet has its own record in `UserLearningState`, allowing for granular recall optimization.
+
+4. **Circular Knowledge Graph**: The system implements explicit cross-referencing (e.g., `VocabularyKanji`, `KanjiRadical`). This allows the UI and the AI Chatbot to traverse the knowledge graph, providing context like "What radicals make up this Kanji?" or "What vocabulary uses this character?".
+
+5. **Analytical Logging**: Every review event is logged in `UserLearningLog`. This provides the raw data necessary for generating heatmaps, retention curves, and precision statistics on the user's dashboard.

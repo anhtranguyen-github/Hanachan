@@ -1,0 +1,52 @@
+@startuml Review Sequence
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+
+actor "Người dùng" as User
+participant "Giao diện Ôn tập" as UI
+participant "ReviewSessionController" as Controller
+participant "LearningService" as Service
+participant "Kho dữ liệu (Repository)" as Repo
+
+User -> UI : Nhấn "Bắt đầu ôn tập"
+activate UI
+UI -> Service : fetchDueItems(userId)
+activate Service
+Service -> DB : Lấy danh sách đến hạn (FSRS)
+DB --> Service : Items
+Service --> UI : Items
+deactivate Service
+
+UI -> Controller : initSession(items)
+activate Controller
+Controller -> DB : Khởi tạo ReviewSession
+Controller --> UI : Sẵn sàng
+deactivate Controller
+
+loop Cho từng mục ôn tập
+    User -> UI : Nhập đáp án & Gửi
+    UI -> Controller : submitAnswer(rating)
+    activate Controller
+    
+    opt Lần đầu trả lời cho khía cạnh (facet) này
+        Controller -> Service : submitReview(userId, kuId, facet, rating)
+        Service -> Service : Tính toán FSRS
+        Service -> DB : Cập nhật trạng thái & Lưu Log
+        Controller -> DB : Ghi nhận kết quả vào Session
+    end
+
+    alt Trả lời Sai
+        Controller -> Controller : Đẩy xuống cuối hàng chờ
+        Controller --> UI : Hiển thị Sai
+    else Trả lời Đúng
+        Controller -> Controller : Loại bỏ khỏi hàng chờ
+        Controller --> UI : Hiển thị Đúng
+    end
+    deactivate Controller
+end
+
+UI -> User : Thông báo hoàn thành
+deactivate UI
+
+@enduml

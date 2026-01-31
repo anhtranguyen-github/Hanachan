@@ -191,7 +191,7 @@ Hỏi đáp kiến thức
 
 Giải thích nội dung học
 
-Xem nhận xét về tiến độ học tập
+Tra cứu thông tin liên quan (Kanji, Từ vựng)
 
 Dữ liệu phản hồi dựa trên thông tin trong hệ thống
 
@@ -207,7 +207,8 @@ Tiền điều kiện
 
 Người dùng đã đăng nhập
 
-Người dùng có dữ liệu học tập
+
+
 
 Hậu điều kiện
 

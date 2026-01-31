@@ -1,5 +1,7 @@
 # Assistant Domain ER Diagram
 
+This diagram outlines the structures supporting the Hanachan AI Chatbot, focusing on session management and persistent entity linking.
+
 ```plantuml
 @startuml
 skinparam packageStyle rectangle
@@ -20,7 +22,7 @@ class KnowledgeUnit <<Stub>> {
 ' CHAT SYSTEM
 ' ==========================================
 class ChatSession <<Entity>> {
-  + id : UUID
+  + id : UUID <<PK>>
   --
   user_id : UUID <<FK>>
   title : String
@@ -29,29 +31,29 @@ class ChatSession <<Entity>> {
 }
 
 class ChatMessage <<Entity>> {
-  + id : UUID
+  + id : UUID <<PK>>
   --
   session_id : UUID <<FK>>
-  role : Enum (SYSTEM, USER, ASSISTANT)
+  role : Enum (system, user, assistant)
   content : Text
   referenced_ku_ids : Array<UUID> -- Linked to KnowledgeUnit
   created_at : Timestamp
 }
-
-' (Bridge removed to match physical array column)
 
 ' ==========================================
 ' CONNECTIONS
 ' ==========================================
 User ||--o{ ChatSession
 ChatSession ||--o{ ChatMessage
-ChatMessage }o--|| KnowledgeUnit : "references"
+ChatMessage }o..|| KnowledgeUnit : "references"
 
 @enduml
 ```
 
 ## Key Architectural Decisions
 
-1. **Array-based Referencing**: For technical simplicity and performance (Supabase/PostgreSQL), referenced Knowledge Units are stored as a UUID array directly on the `ChatMessage`. This allows the AI to "tag" relevant topics in its response.
-2. **Session Persistence**: Storing chat in `ChatSession` allows a user to have multiple threads (e.g., "Grammar help", "Analysis of a news article") without mixing contexts.
-3. **Role-based Messages**: Standard `role` field ensures compatibility with common LLM message formats (OpenAI/Anthropic).
+1. **Array-based Entity Referencing**: For technical simplicity and performance (Supabase/PostgreSQL), referenced Knowledge Units are stored as a UUID array directly on the `ChatMessage`. This allows the AI to "tag" relevant topics in its response for interactive UI elements.
+
+2. **Threaded Session Management**: Storing chat in `ChatSession` allows users to maintain isolated conversation threads (e.g., specific grammar questions vs. general practice), keeping retrieval contexts clean.
+
+3. **Standard LLM Role Mapping**: The `role` enum (`system`, `user`, `assistant`) maps directly to common LLM provider requirements, simplifying the integration with LangChain and OpenAI.

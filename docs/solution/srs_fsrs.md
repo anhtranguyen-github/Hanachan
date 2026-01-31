@@ -9,7 +9,7 @@ Hệ thống Hanachan áp dụng phương pháp học lặp lại ngắt quãng 
 - **Difficulty (Độ khó)**: Phản ánh độ khó bản chất của một Knowledge Unit (KU).
 - **Retrievability (Khả năng triệu hồi)**: Xác suất người học nhớ được kiến thức tại thời điểm hiện tại.
 
-Mỗi flashcard được gắn với một trạng thái ghi nhớ duy nhất trong bảng `user_learning_states`, độc lập với deck học. Toàn bộ lịch ôn tập được quyết định dựa trên trạng thái SRS riêng biệt của từng flashcard.
+Mỗi flashcard được gắn với một trạng thái ghi nhớ duy nhất trong bảng `user_learning_states`, độc lập với Level hay bài học. Toàn bộ lịch ôn tập được quyết định dựa trên trạng thái SRS riêng biệt của từng flashcard. Việc cập nhật SRS được thực hiện **ngay lập tức** sau lần trả lời đầu tiên để đảm bảo tính sẵn sàng của dữ liệu.
 
 ## 2. Quy trình học tập và Hàng đợi (Queue)
 
@@ -26,7 +26,7 @@ Hệ thống tự động đánh giá mức độ ghi nhớ sau mỗi lần ôn 
 
 ## 3. Tính nhất quán của Trí nhớ (Memory Consistency)
 
-Một đặc điểm quan trọng trong triển khai SRS của Hanachan là trạng thái FSRS được gán trực tiếp cho từng Knowledge Unit cụ thể (Kanji, từ vựng, ngữ pháp). Việc ôn tập một KU ở bất kỳ đâu (trong bài học chính hay qua chatbot) sẽ tự động cập nhật trạng thái ghi nhớ trên toàn bộ hệ thống. Điều này giúp tránh trùng lặp ôn tập và duy trì tiến trình học bền vững.
+Một đặc điểm quan trọng trong triển khai SRS của Hanachan là trạng thái FSRS được gán trực tiếp cho từng Knowledge Unit cụ thể (Kanji, từ vựng, ngữ pháp). Việc ôn tập một KU ở bất kỳ đâu (trong bài học chính hay phiên ôn tập) sẽ tự động cập nhật trạng thái ghi nhớ trên toàn bộ hệ thống. Điều này giúp tránh trùng lặp ôn tập và duy trì tiến trình học bền vững.
 
 ---
 *Tài liệu này được đồng bộ với `FSRS_LOGIC.md` và `final_schema.sql`.*

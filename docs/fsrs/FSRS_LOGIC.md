@@ -17,10 +17,9 @@ The learning logic starts with how the user interacts with a card. Performance o
 - **Interaction**: 
     - **Meaning**: Text Input (English).
     - **Reading**: IME-style Input (Hiragana/Katakana).
-- **Toggle**: A single Kanji/Vocab item usually requires **two** successful clears (Meaning AND Reading) in a single session before the FSRS state is updated.
-- **Validation**: 
-    - Readings must match On'yomi/Kun'yomi for Kanji.
-    - Readings for Vocab must match the specific word reading.
+- **Independence Law**: Unlike previous versions, the SRS state is now tracked **per-facet**. Vocabulary and Kanji have two independent memory traces: `meaning` and `reading`.
+- **Immediate Update**: FSRS calculations occur immediately upon the first answer attempt for each facet in a session.
+- **Fail Rule**: Failing 'reading' does not affect the 'meaning' state, and vice versa. Each facet follows its own FSRS trajectory.
 
 ### C. Grammar Cards (Cloze/Fill-in-the-blank)
 - **Interaction**: **Exclusively** Fill-in-the-blank (Cloze) within a Japanese sentence. Grammar points are never tested in isolation (Meaning/Reading).
@@ -33,11 +32,9 @@ The learning logic starts with how the user interacts with a card. Performance o
 
 ---
 
-## 2. SRS Stages & Progression
-
 ## 2. SRS Stages & Progression Mapping
 
-The "Stage" of a Knowledge Unit (KU) tells the system how well you know it. The system uses 4 core states.
+The "Stage" of a Knowledge Unit (KU) facet determines its retention level.
 
 | Stage | Definition | Stability Threshold |
 | :--- | :--- | :--- |
@@ -48,18 +45,18 @@ The "Stage" of a Knowledge Unit (KU) tells the system how well you know it. The 
 
 ### When is the FSRS State Created?
 1.  **Discovery**: You see a `new` item in a `lesson_batches` session.
-2.  **Initial Clear**: Every `lesson_item` for that KU must have `is_corrected = True`.
-3.  **Activation**: The moment the batch status becomes `completed`, an entry is created in `user_learning_states` with:
+2.  **Facet Activation**: The moment you answer a facet for the first time, its state is initialized:
     - `state`: 'learning'
     - `stability`: 0.1 (Review in ~144 minutes / 2.4h)
     - `difficulty`: 3.0 (Baseline)
     - `reps`: 1
+3.  **Independence**: Each facet is initialized separately.
 
 ---
 
 ## 3. The FSRS Calculation Engine
 
-Khi bạn trả lời, hàm `calculateNextReview` (trong `FSRSEngine.ts`) sẽ chạy. Nó lấy **Trạng thái hiện tại** + **Kết quả (pass/fail)** và đưa ra **Trạng thái tiếp theo**.
+Khi bạn trả lời, hàm `calculateNextReview` (trong `FSRSEngine.ts`) sẽ chạy. Nó lấy **Trạng thái hiện tại** + **Kết quả (again/good)** và đưa ra **Trạng thái tiếp theo**.
 
 ### Quy luật đánh giá bài tập (Automated Quiz Impact)
 
@@ -83,19 +80,11 @@ Hệ thống **tự động** xác định độ khó và kết quả dựa trê
 
 ## 4. The Review Queue (How it "Pushes")
 
-The review queue is managed via Supabase queries.
-
-1.  **The Trigger**: Every time an answer is submitted and the session coordinator determines the KU is "Clear" (all facets passed), the `next_review` timestamp is updated in the `user_learning_states` table:
-    `SET next_review = NOW() + (Stability * 24 * 60) minutes`
-2.  **Queue Fetching**: When you open the Dashboard or start a Review session, the app calls `getDueReviewItems()` which queries the Progress Domain:
-    ```sql
-    SELECT * FROM user_learning_states
-    WHERE user_id = :current_user
-    AND next_review <= NOW()
-    AND state != 'burned'
-    ORDER BY next_review ASC;
-    ```
-3.  **Prioritization**: Items that are most "overdue" (earliest `next_review`) appear first in your stack.
+1.  **The Trigger**: FSRS updates are independent. `updateUserState(userId, kuId, facet, ...)` is called per facet.
+2.  **Scheduling Rule**: A Knowledge Unit is considered **Due** if its weakest facet is due:
+    `Due = (Now >= facet_1.next_review) OR (Now >= facet_2.next_review)`
+3.  **Queue Fetching**: The app fetch facets where `next_review <= NOW`. If multiple facets of the same KU are due, they are both added to the session queue.
+4.  **Sorting Law**: When both facets are due, **Meaning** is always prompted before **Reading** to maximize recall difficulty.
 
 ---
 

@@ -1,0 +1,61 @@
+@startuml Learn Sequence
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+
+actor "Người dùng" as User
+participant "Giao diện Học" as UI
+participant "LearningService" as Service
+participant "ReviewSessionController" as Controller
+participant "Kho dữ liệu (Repository)" as Repo
+
+User -> UI : Bắt đầu bài học mới
+activate UI
+
+UI -> Service : fetchNewItems(userId, level)
+activate Service
+Service -> Repo : Lấy dữ liệu Knowledge Units
+Repo --> Service : Items
+Service --> UI : Items
+deactivate Service
+
+' PERSISTENCE (UI calls Repository as per page.tsx)
+UI -> Repo : createLessonBatch(userId, level)
+activate Repo
+Repo --> UI : batchId
+deactivate Repo
+
+UI -> Repo : createLessonItems(batchId, kuIds)
+activate Repo
+Repo --> UI : OK
+deactivate Repo
+
+UI -> Controller : initSession(items)
+
+loop Xem bài giảng (Lesson Slides)
+    User -> UI : Xem nội dung
+    UI -> Repo : updateLessonItemStatus(batchId, kuId, 'viewed')
+end
+
+User -> UI : Làm bài Quiz (Mastery Quiz)
+
+loop Từng câu hỏi
+    User -> UI : Gửi câu trả lời
+    UI -> Controller : submitAnswer(rating)
+    activate Controller
+    
+    opt Lần đầu trả lời facet này
+        Controller -> Service : submitReview(userId, kuId, facet, rating, state)
+        Service -> Repo : Cập nhật FSRS & Lưu Log
+        UI -> Repo : updateLessonItemStatus(batchId, kuId, 'quiz_passed')
+    end
+    
+    Controller --> UI : Kết quả (Đúng/Sai)
+    deactivate Controller
+end
+
+UI -> Repo : updateLessonBatchStatus(batchId, 'completed')
+UI -> User : Hiển thị tổng kết
+deactivate UI
+
+@enduml

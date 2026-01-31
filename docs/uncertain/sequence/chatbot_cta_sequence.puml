@@ -1,0 +1,47 @@
+@startuml Chatbot Agentic Sequence
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam sequenceMessageAlign center
+
+actor "Người dùng" as User
+participant "ChatbotPage" as UI
+participant "HanachanChatService" as Agent
+participant "kuRepository" as DB
+participant "QuickViewModal" as Modal
+
+User -> UI : Gửi tin nhắn (e.g. "Học tiếng Nhật")
+activate UI
+UI -> Agent : POST {message, history, userId}
+activate Agent
+
+Agent -> Agent : Phân tích ngữ cảnh
+
+opt Yêu cầu tra cứu
+    Agent -> DB : search(keyword)
+    DB --> Agent : Dữ liệu tri thức (Kanji/Vocab)
+end
+
+Agent -> Agent : Nhận diện thực thể (Entity Detection)\nTìm các KU ID trong phản hồi
+
+Agent --> UI : {reply, toolsUsed, referencedKUs}
+deactivate Agent
+
+UI -> UI : Hiển thị tin nhắn + Nút CTA (cho từng KU)
+UI --> User : Giao diện đã cập nhật
+
+User -> UI : Nhấn nút CTA (e.g. 語 • vocabulary)
+UI -> DB : getLocalKU(type, slug)
+activate DB
+DB --> UI : Thông tin chi tiết KU
+deactivate DB
+
+UI -> Modal : Open Modal(data)
+activate Modal
+Modal --> User : Hiển thị nghĩa, cách đọc, bộ thủ, ví dụ
+User -> Modal : Đóng modal
+deactivate Modal
+
+deactivate UI
+
+@enduml
