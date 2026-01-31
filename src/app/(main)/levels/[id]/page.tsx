@@ -4,28 +4,28 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useUser } from '@/features/auth/AuthContext';
-import { getUserDecksAction } from '@/features/decks/actions';
+import { getUserLevelsAction } from '@/features/levels/actions';
 import Link from 'next/link';
 import { clsx } from 'clsx';
 
-export default function DeckDetailsPage() {
+export default function LevelDetailsPage() {
     const params = useParams();
-    const deckId = params.id as string;
+    const levelId = params.id as string;
     const router = useRouter();
     const { user } = useUser();
-    const [deck, setDeck] = useState<any>(null);
+    const [level, setLevel] = useState<any>(null);
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (user && deckId) {
+        if (user && levelId) {
             const loadData = async () => {
                 setLoading(true);
-                const result = await getUserDecksAction(user!.id);
+                const result = await getUserLevelsAction(user!.id);
                 if (result.success) {
-                    const currentDeck = result.data!.find(d => d.id === deckId);
-                    setDeck(currentDeck);
-                    setStats(currentDeck?.stats || {
+                    const currentLevel = result.data!.find(l => l.id === levelId);
+                    setLevel(currentLevel);
+                    setStats(currentLevel?.stats || {
                         coverage: 0,
                         composition: { vocab: 0, kanji: 0, radical: 0 },
                         flashcardTypes: {},
@@ -38,27 +38,27 @@ export default function DeckDetailsPage() {
             };
             loadData();
         }
-    }, [user, deckId]);
+    }, [user, levelId]);
 
     if (loading) return <div className="p-4">Loading...</div>;
-    if (!deck) return <div className="p-4">Deck not found.</div>;
+    if (!level) return <div className="p-4">Level not found.</div>;
 
     return (
         <div className="max-w-3xl mx-auto flex flex-col gap-8 py-4">
-            <Link href="/decks" className="text-sm underline">
-                &lsaquo; Back to Decks
+            <Link href="/levels" className="text-sm underline">
+                &lsaquo; Back to Levels
             </Link>
 
             <header className="border border-black p-8 flex flex-col items-center gap-4">
-                <h1 className="text-3xl font-bold uppercase">{deck.name}</h1>
-                <p className="text-center italic text-gray-500">{deck.description}</p>
+                <h1 className="text-3xl font-bold uppercase">{level.name}</h1>
+                <p className="text-center italic text-gray-500">{level.description}</p>
                 <div className="flex gap-4 mt-4">
                     <div className="border border-black p-4 text-center">
                         <div className="text-[10px] font-bold uppercase">Completion</div>
                         <div className="text-2xl font-bold">{stats.coverage}%</div>
                     </div>
                     <button
-                        onClick={() => router.push(`/decks/${deckId}/session`)}
+                        onClick={() => router.push(`/levels/${levelId}/session`)}
                         className="bg-black text-white px-8 py-4 font-bold uppercase hover:bg-gray-800"
                     >
                         Start Session

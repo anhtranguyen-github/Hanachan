@@ -28,10 +28,10 @@ interface QuickViewModalProps {
     isOpen: boolean;
     onClose: () => void;
     data: QuickViewData | null;
-    onAddToDeck?: (data: QuickViewData) => void;
+    onAddToLevel?: (data: QuickViewData) => void;
 }
 
-export const QuickViewModal: React.FC<QuickViewModalProps> = ({ isOpen, onClose, data, onAddToDeck }) => {
+export const QuickViewModal: React.FC<QuickViewModalProps> = ({ isOpen, onClose, data, onAddToLevel }) => {
     if (!isOpen || !data) return null;
 
     const isToken = data.type === 'TOKEN';
@@ -139,9 +139,9 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ isOpen, onClose,
                 </div>
 
                 <footer className="flex gap-3 pt-6 border-t border-border/60">
-                    {onAddToDeck && (
+                    {onAddToLevel && (
                         <button
-                            onClick={() => onAddToDeck(data)}
+                            onClick={() => onAddToLevel(data)}
                             className="flex-[2] mn-btn mn-btn-primary !py-4"
                         >
                             {isToken ? 'SAVE UNIT' : 'MARK FOCUS'}

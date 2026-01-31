@@ -47,11 +47,4 @@ export interface UserProfile {
     created_at?: string;
 }
 
-export interface UserSettings {
-    user_id: string;
-    target_retention: number;
-    fsrs_weights?: number[] | null;
-    preferred_voice?: string | null;
-    theme?: string | null;
-    updated_at?: string;
-}
+

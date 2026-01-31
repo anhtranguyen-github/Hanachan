@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 
-export default function DecksRedirect() {
+export default function LevelsRedirect() {
     redirect('/content');
 }

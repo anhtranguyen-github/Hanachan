@@ -41,10 +41,10 @@ export const NAV_CONFIG: NavSection[] = [
     {
         id: 'activity',
         label: 'Library',
-        href: '/decks',
+        href: '/levels',
         icon: Library,
         matchPaths: [
-            '/decks',
+            '/levels',
             '/session',
             '/result',
         ],

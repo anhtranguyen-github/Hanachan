@@ -29,19 +29,35 @@ export interface FullAnalysisResult extends AIAnalysisResult {
 
 export class SentenceService {
     async analyze(text: string): Promise<FullAnalysisResult> {
-        console.log(`Analyzing (Mock): ${text}`);
+        console.log(`Analyzing: ${text}`);
 
-        // Mock Result since Analysis feature was removed
+        // 1. Detect KUs from the text
+        // For efficiency in this basic version, we just search for single characters 
+        // that exist in the text in our KU database.
+        const potentialKUs = Array.from(new Set(text.split('').filter(c => /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/.test(c))));
+
+        const units: AnalyzedUnit[] = [];
+        for (const char of potentialKUs) {
+            const { data } = await kuRepository.search(char);
+            const exact = data?.find(k => k.character === char || k.slug.split(':')[1] === char);
+
+            units.push({
+                text: char,
+                is_in_ckb: !!exact,
+                ku_slug: exact?.slug
+            });
+        }
+
         return {
-            translation: "[Translation Unavailable - Analysis Module Removed]",
-            grammar_points: [],
-            cloze_suggestion: null,
-            units: [],
+            translation: "Analysis of: " + text,
+            grammar_points: [], // Still mock or can be improved later
+            cloze_suggestion: units.length > 0 ? units[0].text : null,
+            units: units,
             raw_text: text,
             coverage_stats: {
-                total_units: 0,
-                known_units: 0,
-                percentage: 0
+                total_units: text.length,
+                known_units: units.length,
+                percentage: (units.length / Math.max(text.length, 1)) * 100
             }
         };
     }

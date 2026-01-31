@@ -1,30 +1,29 @@
 /**
- * Deck-related TypeScript types
- * Aligned with the database schema for decks and deck_items tables
+ * Level-related TypeScript types
  * 
- * NOTE: All users now use fixed 60 system decks (Level 1-60).
- * Custom deck creation has been removed.
+ * Levels are virtual (level-1 to level-60) based on knowledge_units.level field.
+ * No separate database tables for levels - all levels are computed from KU data.
  */
 
-// Only system decks are supported
-export type DeckType = 'system';
+// Only system levels are supported
+export type LevelType = 'system';
 
-export interface Deck {
+export interface Level {
     id: string;
     name: string;
     description?: string | null;
-    deck_type: DeckType;
+    level_type: LevelType;
     level?: number | null;
     owner_id?: string | null;
     created_at?: string;
     updated_at?: string;
     // Virtual fields added by queries
-    stats?: DeckStats;
+    stats?: LevelStats;
 }
 
-export interface DeckItem {
+export interface LevelItem {
     id: string;
-    deck_id: string;
+    level_id: string;
     ku_id?: string | null;
     cloze_id?: string | null;
     position?: number;
@@ -34,15 +33,18 @@ export interface DeckItem {
     cloze_sentence_cards?: any;
 }
 
-export interface DeckStats {
+export interface LevelStats {
     total: number;
     due: number;
     new: number;
     learned: number;
     coverage?: number;
+    composition?: Record<string, number>;
+    learning?: number;
+    burned?: number;
 }
 
-export interface DeckInteraction {
+export interface LevelInteraction {
     user_id: string;
     ku_id: string;
     updates: Record<string, any>;

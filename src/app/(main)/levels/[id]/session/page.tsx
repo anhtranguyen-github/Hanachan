@@ -12,11 +12,11 @@ import { ReviewSession, ReviewCard } from '@/features/learning/types/review-card
 import { Loader2, CheckCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
-export default function DeckReviewSessionPage() {
+export default function LevelReviewSessionPage() {
     const { user } = useUser();
     const router = useRouter();
     const params = useParams();
-    const deckId = params.id as string;
+    const levelId = params.id as string;
 
     const [session, setSession] = useState<ReviewSession | null>(null);
     const [loading, setLoading] = useState(true);
@@ -34,17 +34,17 @@ export default function DeckReviewSessionPage() {
 
     // Start session on mount
     useEffect(() => {
-        if (user && deckId) {
+        if (user && levelId) {
             initSession();
         }
-    }, [user, deckId]);
+    }, [user, levelId]);
 
     async function initSession() {
         if (!user) return;
 
         try {
             const result = await startReviewSessionAction(user.id, {
-                deckId: deckId,
+                levelId: levelId,
                 maxCards: 20
             });
 
@@ -66,7 +66,7 @@ export default function DeckReviewSessionPage() {
 
     const currentCard = session?.cards[session.current_index];
 
-    const handleRate = async (rating: 'again' | 'hard' | 'good' | 'easy', userInput?: string) => {
+    const handleRate = async (rating: 'again' | 'good', userInput?: string) => {
         if (!user || !currentCard || submitting) return;
 
         setSubmitting(true);
@@ -110,7 +110,7 @@ export default function DeckReviewSessionPage() {
             <div className="min-h-screen bg-white flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 border-4 border-black border-t-transparent animate-spin"></div>
-                    <p className="text-xs font-bold uppercase tracking-widest">Loading Deck Core...</p>
+                    <p className="text-xs font-bold uppercase tracking-widest">Loading Level Core...</p>
                 </div>
             </div>
         );
@@ -120,10 +120,10 @@ export default function DeckReviewSessionPage() {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center p-4">
                 <div className="mn-card p-12 max-w-md w-full text-center border-2">
-                    <h2 className="text-xl font-bold uppercase mb-4">Deck Error</h2>
+                    <h2 className="text-xl font-bold uppercase mb-4">Level Error</h2>
                     <p className="text-gray-600 mb-8 italic">{error}</p>
                     <button
-                        onClick={() => router.push('/decks')}
+                        onClick={() => router.push('/levels')}
                         className="mn-btn mn-btn-primary w-full py-4 text-xl"
                     >
                         ABORT SESSION
@@ -139,7 +139,7 @@ export default function DeckReviewSessionPage() {
                 <div className="mn-card p-12 max-w-lg w-full text-center border-2">
                     <div className="text-6xl font-black border-4 border-black p-4 inline-block mb-8">OK</div>
 
-                    <h1 className="text-4xl font-bold uppercase tracking-tighter mb-2">Deck Optimized</h1>
+                    <h1 className="text-4xl font-bold uppercase tracking-tighter mb-2">Level Optimized</h1>
                     <p className="text-gray-500 font-bold uppercase text-[10px] tracking-widest mb-12">Session data successfully committed</p>
 
                     <div className="grid grid-cols-3 gap-1 mb-12 border border-black p-1">
@@ -180,12 +180,12 @@ export default function DeckReviewSessionPage() {
                 <div className="flex justify-between items-center mb-8">
                     <button
                         onClick={() => {
-                            router.push('/decks');
+                            router.push('/levels');
                             router.refresh();
                         }}
                         className="text-gray-400 font-bold hover:text-primary-dark transition"
                     >
-                        Exit Deck
+                        Exit Level
                     </button>
                     <div className="text-primary-dark font-black">
                         {session?.current_index! + 1} <span className="text-gray-300">/</span> {session?.cards.length}
