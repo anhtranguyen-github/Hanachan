@@ -2,21 +2,22 @@
 import { OpenAI } from "openai";
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
 import { ChatOpenAI } from "@langchain/openai";
-import { RunnableSequence } from "@langchain/core/runnables";
-import { JsonOutputParser } from "@langchain/core/output_parsers";
 import { chatRepo } from './chat-repo';
-import { ContextInjector, ProjectAwarenessInjector, PersonaInjector, SRSSimulatorInjector } from './injectors';
+import { ContextInjector, ProjectAwarenessInjector, PersonaInjector } from './injectors';
 import { classifyIntent } from './chat-router';
-import { sentenceService } from '../sentence/service';
-import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
-import { sentenceRepository } from '../sentence/db';
+import { HumanMessage, AIMessage } from "@langchain/core/messages";
+import { kuRepository } from '../knowledge/db';
+import { AgentResponse, ReferencedKU, ToolMetadata } from './types';
 
 
-export class AdvancedChatService {
+/**
+ * HanachanChatService - The core Agentic AI Assistant.
+ * Synchronized with docs/uncertain/class-diagram/chatbot.md
+ */
+export class HanachanChatService {
     private llm: ChatOpenAI;
     private personaInjector = new PersonaInjector();
     private projectInjector = new ProjectAwarenessInjector();
-    private srsInjector = new SRSSimulatorInjector();
 
     constructor() {
         this.llm = new ChatOpenAI({
@@ -26,9 +27,12 @@ export class AdvancedChatService {
     }
 
     /**
-     * Main entry point.
+     * Main entry point for processing user messages.
+     * @returns AgentResponse containing reply, tools used, and detected tri thức.
      */
-    async sendMessage(sessionId: string, userId: string, text: string): Promise<{ reply: string; actions: any[] }> {
+    async process(sessionId: string, userId: string, text: string): Promise<AgentResponse> {
+        const toolsUsed: ToolMetadata[] = [];
+
         // 1. Session Management
         let session = await chatRepo.getSession(sessionId);
         if (!session) {
@@ -36,19 +40,29 @@ export class AdvancedChatService {
         }
         const resolvedSessionId = session.id;
 
-        // 2. Intent Classification
+        // 2. Intent Classification (Heuristic-based)
         const intent = classifyIntent(text);
         console.log(`🧭 Intent: ${intent}`);
 
-        // 3. Routing & Logic
-        if (intent === 'ANALYZE') {
-            return await this.handleAnalysis(resolvedSessionId, userId, text);
+        // 3. Tool Calling (Knowledge Search)
+        let toolResults = "";
+        if (intent === 'SEARCH_KU') {
+            const keyword = text.replace(/search|find|lookup|for|là gì/gi, '').trim();
+            const { data: results } = await kuRepository.search(keyword, undefined, 3);
+            if (results && results.length > 0) {
+                toolResults = `Knowledge Base Search Results for "${keyword}":\n` +
+                    results.map(r => `- ${r.slug}: ${r.meaning}`).join('\n');
+                toolsUsed.push({ toolName: 'knowledge_base_search', resultSummary: `Found ${results.length} results for ${keyword}` });
+            }
         }
 
-        // 4. Construct System Prompt
+        // 4. Construct System Prompt & Inject Context
         let systemContext = await this.buildSystemContext(userId, intent);
+        if (toolResults) {
+            systemContext += `\n\nRelevant Knowledge from Database:\n${toolResults}`;
+        }
 
-        // 5. Build LangChain Chain
+        // 5. LLM Chain Execution
         const promptTemplate = ChatPromptTemplate.fromMessages([
             ["system", "{system_context}"],
             new MessagesPlaceholder("history"),
@@ -61,7 +75,7 @@ export class AdvancedChatService {
             m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content)
         );
 
-        // Async Add Message
+        // Save User Message
         await chatRepo.addMessage(resolvedSessionId, { role: 'user', content: text, timestamp: new Date().toISOString() });
 
         const response = await chain.invoke({
@@ -72,139 +86,62 @@ export class AdvancedChatService {
 
         const replyText = response.content as string;
 
-        // Context-aware Action Extraction
-        const actions = this.extractContextActions(replyText, intent);
+        // 6. Entity Detection (Identify Knowledge Units in Response)
+        const referencedKUs = await this.detectEntity(replyText);
 
+        // 7. Persist Assistant Message
         await chatRepo.addMessage(resolvedSessionId, {
             role: 'assistant',
             content: replyText,
             timestamp: new Date().toISOString(),
-            metadata: { actions }
+            metadata: { toolsUsed, referencedKUs }
         });
 
-        return { reply: replyText, actions };
+        return { reply: replyText, toolsUsed, referencedKUs };
     }
 
-    private extractContextActions(text: string, intent: string): any[] {
-        const actions = [];
+    /**
+     * Scans text for potential Knowledge Unit slugs or characters.
+     */
+    private async detectEntity(text: string): Promise<ReferencedKU[]> {
+        const refs: ReferencedKU[] = [];
+        // Match Kanji characters or Slug patterns (e.g. k:word)
+        const matches = text.match(/[A-Za-z0-9:-]+|[\u4e00-\u9faf]/g) || [];
+        const uniqueMatches = Array.from(new Set(matches));
 
-        // Simple regex-based extractions for now (can be LLM-driven)
-        if (text.includes("～") || text.includes("~")) {
-            // Likely a grammar mention
-            const grammarMatch = text.match(/([～~][^ ]+)/);
-            if (grammarMatch) {
-                actions.push({
-                    label: `Grammar: ${grammarMatch[0]}`,
-                    type: 'grammar',
-                    icon: 'BookOpen',
-                    data: { name: grammarMatch[0], meaning: 'Detected in chat' }
-                });
+        for (const m of uniqueMatches) {
+            if (m.length < 1) continue;
+            if (refs.length >= 3) break; // Limit CTAs
+
+            const { data } = await kuRepository.search(m, undefined, 1, 1);
+            if (data && data.length > 0) {
+                const k = data[0];
+                if (!refs.find(r => r.id === k.id)) {
+                    refs.push({
+                        id: k.id,
+                        slug: k.slug,
+                        character: k.character,
+                        type: k.type
+                    });
+                }
             }
         }
-
-        if (intent === 'STUDY_REQUEST' || intent === 'SRS_SESSION') {
-            actions.push({
-                label: "Quick Drill",
-                type: 'drill',
-                icon: 'Zap'
-            });
-        }
-
-        return actions;
+        return refs;
     }
 
     private async buildSystemContext(userId: string, intent: string): Promise<string> {
-        let context = "You are an advanced AI Tutor.";
+        let context = "You are Hanachan, an expert Japanese language tutor. ";
+        context += "Help the user learn Japanese through immersion and clear explanations. ";
+        context += "If you discuss a specific word or Kanji, use its exact slug or character from the database if provided.";
+
         context += await this.personaInjector.inject(userId);
 
         if (intent === 'PROJECT_QUERY') {
             context += await this.projectInjector.inject(userId);
-        } else if (intent === 'SRS_SESSION') {
-            const srsData = await this.srsInjector.inject(userId);
-            context += srsData;
-            context += `\n[INSTRUCTION]
-             - The user wants a QUIZ.
-             - Use the "Trouble Items" from the data above.
-             - Ask one question at a time.
-             - Wait for the user's answer before correcting.`;
-        } else if (intent === 'STUDY_REQUEST') {
-            const srsData = await this.srsInjector.inject(userId);
-            context += srsData;
-            context += `\n[INSTRUCTION]
-            - The user wants to study but is vague.
-            - PROPOSE a specific activity based on their Trouble Items.
-            - Example: "You seem to struggle with [Item]. Shall we practice it?"
-            - DO NOT start the quiz yet.`;
         }
 
         return context;
     }
-
-    private async handleAnalysis(sessionId: string, userId: string, text: string): Promise<{ reply: string; actions: any[] }> {
-        const cleanText = text.replace(/^(analyze|explain)( this)?[: ]*/i, "").trim();
-        try {
-            const result = await sentenceService.analyze(cleanText);
-
-            // NEW: Auto-save analyzed sentence (Async Fix)
-            const savedSentence = await sentenceRepository.create({
-                text_ja: cleanText,
-                text_en: result.translation,
-                origin: 'chat',
-                metadata: { sessionId },
-                created_by: userId
-            });
-
-            const reply = `**Analysis Result** 🇯🇵
-            
-**Original:** ${result.raw_text}
-**Meaning:** ${result.translation}
-
-**Grammar Points:**
-${result.grammar_points.length > 0 ? result.grammar_points.map(g => `- **${g.title}**: ${g.usage}`).join('\n') : "_No specific grammar points detected._"}
-
-**Vocabulary Found (Known in Database):**
-${result.units.length > 0 ? result.units.map((u: any) => `- [${u.text}]`).join('\n') : "_No known vocabulary references found._"}
-`;
-
-            const actions: any[] = [
-                {
-                    label: "View Breakdown",
-                    type: 'analysis',
-                    icon: 'Search',
-                    data: { text: cleanText }
-                },
-                {
-                    label: "Add to Deck",
-                    type: 'add_vocab',
-                    icon: 'Plus',
-                    data: { surface: cleanText, meaning: result.translation }
-                }
-            ];
-
-            // Add grammar actions
-            result.grammar_points.forEach(g => {
-                actions.push({
-                    label: `Grammar: ${g.title}`,
-                    type: 'grammar',
-                    icon: 'BookOpen',
-                    data: { name: g.title, meaning: g.usage, level: 'N5' }
-                });
-            });
-
-            // Async Add Message
-            await chatRepo.addMessage(sessionId, { role: 'user', content: text, timestamp: new Date().toISOString() });
-            await chatRepo.addMessage(sessionId, {
-                role: 'assistant',
-                content: reply,
-                timestamp: new Date().toISOString(),
-                metadata: { actions }
-            });
-
-            return { reply, actions };
-        } catch (e: any) {
-            return { reply: `Error: ${e.message}`, actions: [] };
-        }
-    }
 }
 
-export const advancedChatService = new AdvancedChatService();
+export const hanachan = new HanachanChatService();

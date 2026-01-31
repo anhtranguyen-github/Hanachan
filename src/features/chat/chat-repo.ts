@@ -46,8 +46,7 @@ export class ChatRepository {
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId);
 
         const insertData: any = {
-            user_id: userId,
-            mode: 'chat'
+            user_id: userId
         };
 
         if (isUuid) {
@@ -116,22 +115,13 @@ export class ChatRepository {
         }
     }
 
-    async getSRSStates(userId: string): Promise<any[]> {
-        const { data } = await supabase
-            .from('user_learning_states')
-            .select('*, knowledge_units(*)')
-            .eq('user_id', userId)
-            .lt('next_review', new Date().toISOString());
-
-        return data || [];
-    }
 
     async getUserSessions(userId: string): Promise<any[]> {
         const { data, error } = await supabase
             .from('chat_sessions')
             .select('*')
             .eq('user_id', userId)
-            .order('started_at', { ascending: false });
+            .order('created_at', { ascending: false });
 
         if (error) return [];
         return data;

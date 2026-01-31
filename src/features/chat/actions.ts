@@ -1,7 +1,7 @@
 
 'use server';
 
-import { advancedChatService } from './advanced-chatbot';
+import { hanachan } from './advanced-chatbot';
 import { chatRepo } from './chat-repo';
 import { z } from 'zod';
 
@@ -14,9 +14,8 @@ export async function sendMessageAction(sessionId: string, userId: string, conte
     z.string().min(1).parse(userId);
     z.string().min(1).parse(content);
 
-    // Always use mock replies or simple agent logic in this phase
     try {
-        const result = await advancedChatService.sendMessage(sessionId, userId, content);
+        const result = await hanachan.process(sessionId, userId, content);
         return { success: true, ...result };
     } catch (error: any) {
         console.error("Chat Action Error:", error);

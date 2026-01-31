@@ -10,7 +10,7 @@ test.describe('Chatbot Advanced Features', () => {
         await expect(page.getByTestId('dashboard-root')).toBeVisible({ timeout: 15000 });
     });
 
-    test('should report progress (PROGRESS intent)', async ({ page }) => {
+    test('should search for knowledge (SEARCH_KU intent)', async ({ page }) => {
         await page.goto('/immersion/chatbot');
         await page.waitForLoadState('networkidle');
 
@@ -18,14 +18,15 @@ test.describe('Chatbot Advanced Features', () => {
         await expect(page.getByTestId('chat-message').first()).toBeVisible({ timeout: 10000 });
 
         const input = page.getByTestId('chat-input');
-        await input.fill('What is my current progress?');
+        await input.fill('Find the word for water');
         await page.getByTestId('chat-send-button').click();
 
-        // Wait for AI response
+        // Wait for AI response that mentions search results
         const lastMessage = page.getByTestId('chat-message').last();
-        await expect(lastMessage).toContainText(/Level|Mastered|Due/i, { timeout: 20000 });
+        // Since we are using keywords, it should trigger search and the reply should mention results
+        await expect(lastMessage).toContainText(/matches|I found|water/i, { timeout: 20000 });
 
-        console.log('Chatbot successfully reported progress');
+        console.log('Chatbot successfully searched for knowledge');
     });
 
     test('should detect KUs and show CTA buttons', async ({ page }) => {

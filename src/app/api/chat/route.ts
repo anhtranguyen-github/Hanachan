@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { chatAgent } from '@/features/chat/simple-agent';
+import { hanachan } from '@/features/chat/advanced-chatbot';
 
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { message, history, userId } = body; // Prompt Pattern: Context History
+        const { message, history, userId, sessionId } = body;
 
-        // In a real LangGraph setup, we would pass the "thread_id" here
-        const response = await chatAgent.process(message, history, userId);
+        // HanachanChatService uses sessionId for state management
+        const response = await hanachan.process(sessionId || 'default-session', userId, message);
 
         return NextResponse.json({
             success: true,
