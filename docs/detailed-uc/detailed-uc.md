@@ -94,7 +94,7 @@ Mục trả lời sai:
 
 Được đưa lại vào hàng chờ.
 
-**Quy trình đồng bộ**: Với Kanji/Vocabulary, mục chỉ được tính là hoàn thành (`is_passed = True`) và cập nhật FSRS khi trả lời đúng cả 2 diện (Nghĩa và Cách đọc) trong cùng một phiên.
+**Quy trình độc lập (Independence Law)**: Với Kanji/Vocabulary, các khía cạnh (Nghĩa, Cách đọc) được cập nhật FSRS hoàn toàn độc lập. Fail một diện không ảnh hưởng đến diện kia. FSRS chỉ được cập nhật khi diện đó được trả lời đúng (Commit), ghi nhận tất cả lỗi sai trong phiên.
 
 Luồng sự kiện chính
 
@@ -106,11 +106,11 @@ Người dùng trả lời câu hỏi
 
 Hệ thống đánh giá kết quả
 
-Nếu trả lời đúng:
+Nếu trả lời đúng (Commit Phase):
 
-Cập nhật FSRS (Tăng Stability/Interval). Nếu Stability >= 3 ngày, chuyển sang phẩm cấp `review`.
+Cập nhật FSRS (Sử dụng FIF với `wrongCount`). Nếu Stability >= 3 ngày, chuyển sang phẩm cấp `review`.
 
-Loại mục khỏi hàng chờ
+Loại mục khỏi hàng chờ (Remove from Session)
 
 Nếu trả lời sai:
 
@@ -166,16 +166,31 @@ Hệ thống hiển thị chi tiết nội dung
 
 ## Use Case 5: Tự động mở khóa giáo trình (Curriculum Unlocking)
 
-**Mô tả**: Hệ thống tự động kiểm tra và mở khóa nội dung của Cấp độ (Level) tiếp theo dựa trên tiến độ thực tế.
+**Mô tả**: Hệ thống tự động kiểm tra và mở khóa nội dung của Cấp độ (Level) tiếp theo dựa trên tiến độ thực tế (Luật 90%).
 
-**Tiền điều kiện**: Người dùng đã hoàn thành phần lớn nội dung ở Level hiện tại.
+**Tiền điều kiện**: Người dùng đã đăng nhập.
 
 **Luồng sự kiện**:
-1. Hệ thống tính tỷ lệ Kiến thức trong Level hiện tại đã đạt phẩm cấp `review` (Stability >= 3 ngày).
+1. Hệ thống tính tỷ lệ Kiến thức trong Level hiện tại đã đạt phẩm cấp `review` hoặc `burned` (Stability >= 3 ngày).
 2. Nếu tỷ lệ này >= 90%:
-   - Hệ thống tự động cập nhật `max_unlocked_level` cho người dùng.
-   - Các bài học mới của Level kế tiếp sẽ tự động xuất hiện trong hàng chờ bài học (Lesson Queue).
+   - Hệ thống tự động cập nhật cấp độ hiện tại (`level`) trong hồ sơ người dùng.
+   - Các bài học mới của Level kế tiếp sẽ bắt đầu xuất hiện.
 3. Nếu < 90%: Giữ nguyên cấp độ hiện tại để đảm bảo tính vững chắc của kiến thức nền tảng.
+
+## Use Case 6: Giới hạn học tập hàng ngày (Daily Learning Limit)
+
+**Mô tả**: Hệ thống giới hạn số lượng kiến thức mới nạp vào mỗi ngày để bảo vệ sức khỏe học tập.
+
+**Điều kiện kích hoạt**: Người dùng bắt đầu một lô học mới (Lesson Batch).
+
+**Luồng sự kiện**:
+1. Hệ thống đếm số lượng `lesson_batches` người dùng đã thực hiện trong vòng 24 giờ qua (tính từ 00:00).
+2. Nếu số lượng < 10: Cho phép tiếp tục bài học.
+3. Nếu số lượng >= 10:
+   - Hệ thống chặn việc tạo bài học mới.
+   - Hiển thị thông báo giới hạn hàng ngày và khuyến khích người dùng quay lại vào ngày mai hoặc tập trung ôn tập thẻ cũ.
+
+---
 
 Use Case 4: Chat với trợ lý học tập
 
@@ -191,7 +206,7 @@ Hỏi đáp kiến thức
 
 Giải thích nội dung học
 
-Xem nhận xét về tiến độ học tập
+Tra cứu thông tin liên quan (Kanji, Từ vựng)
 
 Dữ liệu phản hồi dựa trên thông tin trong hệ thống
 
@@ -207,7 +222,8 @@ Tiền điều kiện
 
 Người dùng đã đăng nhập
 
-Người dùng có dữ liệu học tập
+
+
 
 Hậu điều kiện
 

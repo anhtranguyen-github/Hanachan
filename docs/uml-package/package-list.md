@@ -6,14 +6,16 @@ Hệ thống được phân chia thành 4 tầng (Layer) để đảm bảo tín
 - **`app_ui`**: Chứa các trang (Routes/Pages) và các thành phần giao diện người dùng (Components). Nhiệm vụ là tiếp nhận tương tác và hiển thị dữ liệu.
 
 ### 2. Features
-- **`learning_feature`**: Điều phối luồng học và ôn tập (Session Management). Kết nối giao diện với thuật toán ghi nhớ.
-- **`chat_feature`**: Quản lý hội thoại với Trợ lý AI và xử lý các tham chiếu nội dung học tập.
-- **`analytics_feature`**: Tổng hợp và tính toán các chỉ số học tập (Độ bao phủ, Độ chính xác).
+- **`learning_feature`**: Điều phối luồng học và ôn tập, quản lý Session.
+- **`knowledge_feature`**: Quản lý kho nội dung tri thức (Kanji, Vocab, Grammar).
+- **`chat_feature`**: Quản lý hội thoại với Trợ lý AI và RAG.
+- **`analytics_feature`**: Tổng hợp chỉ số học tập và biểu đồ.
+- **`sentence_feature`**: Phân tích câu và trích xuất ngữ pháp (Immersion).
 
-### 3. Domain
-- **`srs_domain`**: Chứa "trái tim" của hệ thống là thuật toán FSRS và các quy tắc logic về trạng thái bộ nhớ.
-- **`content_domain`**: Định nghĩa cấu trúc và quan hệ của các đơn vị tri thức (Knowledge Units).
+### 3. Domain Logic
+- **`fsrs_engine`**: Thuật toán FSRS nằm trong `learning/domain`.
+- **`schemas`**: Các định nghĩa dữ liệu và Zod validation.
 
 ### 4. Infrastructure
-- **`shared_lib`**: Chứa các Schema kiểm định (Validation), các hàm tiện ích dùng chung và cấu hình hệ thống.
-- **`db_service`**: Quản lý kết nối và các thao tác truy vấn trực tiếp với Supabase/PostgreSQL.
+- **`supabase_client`**: Kết nối backend trực tiếp.
+- **`shared_utils`**: Các hàm bổ trợ dùng chung.

@@ -1,5 +1,7 @@
 # Assistant Domain ER Diagram
 
+This diagram outlines the structures supporting the Hanachan AI Chatbot, focusing on session management, persistent entity linking, and action logging.
+
 ```plantuml
 @startuml
 skinparam packageStyle rectangle
@@ -15,12 +17,15 @@ class User <<Stub>> {
 class KnowledgeUnit <<Stub>> {
   + id : UUID
 }
+class Sentence <<Stub>> {
+  + id : UUID
+}
 
 ' ==========================================
 ' CHAT SYSTEM
 ' ==========================================
 class ChatSession <<Entity>> {
-  + id : UUID
+  + id : UUID <<PK>>
   --
   user_id : UUID <<FK>>
   title : String
@@ -29,29 +34,47 @@ class ChatSession <<Entity>> {
 }
 
 class ChatMessage <<Entity>> {
-  + id : UUID
+  + id : UUID <<PK>>
   --
   session_id : UUID <<FK>>
-  role : Enum (SYSTEM, USER, ASSISTANT)
+  role : Enum (system, user, assistant)
   content : Text
-  referenced_ku_ids : Array<UUID> -- Linked to KnowledgeUnit
+  referenced_unit_ids : Array<UUID> -- Linked to KnowledgeUnit
+  metadata : JSONB
   created_at : Timestamp
 }
 
-' (Bridge removed to match physical array column)
+class ChatMessageAction <<Entity>> {
+  + id : UUID <<PK>>
+  --
+  message_id : UUID <<FK>>
+  action_type : Enum (ANALYZE, SEARCH, MINE)
+  target_unit_id : UUID <<FK>>
+  target_sentence_id : UUID <<FK>>
+  created_at : Timestamp
+}
 
 ' ==========================================
 ' CONNECTIONS
 ' ==========================================
 User ||--o{ ChatSession
 ChatSession ||--o{ ChatMessage
-ChatMessage }o--|| KnowledgeUnit : "references"
+ChatMessage ||--o{ ChatMessageAction
+
+' External Links
+ChatMessageAction }o..|| KnowledgeUnit : "targets"
+ChatMessageAction }o..|| Sentence : "targets"
+ChatMessage }o..|| KnowledgeUnit : "references"
 
 @enduml
 ```
 
 ## Key Architectural Decisions
 
-1. **Array-based Referencing**: For technical simplicity and performance (Supabase/PostgreSQL), referenced Knowledge Units are stored as a UUID array directly on the `ChatMessage`. This allows the AI to "tag" relevant topics in its response.
-2. **Session Persistence**: Storing chat in `ChatSession` allows a user to have multiple threads (e.g., "Grammar help", "Analysis of a news article") without mixing contexts.
-3. **Role-based Messages**: Standard `role` field ensures compatibility with common LLM message formats (OpenAI/Anthropic).
+1. **Explicit Action Logging**: Interactions performed via AI tools (like sentence analysis or database searching) are explicitly logged in `ChatMessageAction`. This allows for tracking which specific entities (Units or Sentences) were the focus of an AI response.
+
+2. **Array-based Entity Referencing**: For technical simplicity and performance, referenced Knowledge Units are stored as a UUID array (`referenced_unit_ids`) directly on the `ChatMessage`. This allows the UI to quickly render interactive "CTA" buttons for units mentioned in the text.
+
+3. **Threaded Session Management**: Storing chat in `ChatSession` allows users to maintain isolated conversation threads, keeping retrieval contexts clean for the RAG (Retrieval-Augmented Generation) system.
+
+4. **Rich Metadata**: The `metadata` field on `ChatMessage` stores tool execution details, reasoning traces, or other non-visible data that might be useful for debugging or advanced UI features.

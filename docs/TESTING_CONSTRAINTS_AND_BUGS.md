@@ -61,6 +61,27 @@ Redirects are side-effects of API calls or state changes. You must wait for the 
     4.  **Only then** adjust the assertion.
 *   **Forbidden:** Increasing timeouts blindly, adding sleeps, or commenting out failing tests.
 
+### ✅ Advanced E2E Best Practices (Proper Fixes)
+1.  **Assert State, Not Celebration UI**: Instead of `expect(page.getByText('Success')).toBeVisible()`, prefer:
+    - `await expect(page).toHaveURL(/final-url-regex/)`
+    - `await expect(page.getByTestId('stable-component')).toBeVisible()`
+2.  **Explicit Flow Guarding**: Before expecting a success state, verify the previous state is gone:
+    - `await expect(page).not.toHaveURL(/previous-step/)`
+3.  **True "New User" Isolated State**:
+    - Use unique emails per test if possible.
+    - Explicitly clean DB state via Supabase admin before the test of interest.
+4.  **Wait for Backend Signal**: Best practice for async persistence:
+    - `await page.waitForResponse(res => res.url().includes('/api/endpoint') && res.ok())`
+5.  **Pedagogic Rule**: "Flows fail because business assumptions are optimistic, not because Playwright is flaky." Verify all 6+ conditions of success.
+
+### 🚫 Anti-Patterns to Avoid
+*   **Polling UI with `waitForTimeout`**:
+    - ❌ `while(!isDone) { await page.waitForTimeout(500); }`
+    - ✅ `await expect.poll(async () => ..., { timeout: 10000 }).toBe(true);`
+*   **Conditional Promises in Loops**:
+    - ❌ `if(cond) await promise;` (Risk of missing the event if it fired early).
+    - ✅ Attach listeners/promises *before* the action that triggers them.
+
 ---
 
 ## 2. Fixed Bug Register & Solutions
@@ -84,3 +105,13 @@ Redirects are side-effects of API calls or state changes. You must wait for the 
 *   **Symptoms:** `toBeVisible` failed on `debug-answer`.
 *   **Root Cause:** The element was too small/transparent for Playwright's "visible" definition.
 *   **✅ Fix:** Use `toBeAttached()` and check for `count() > 0`.
+
+### 🐛 Bug: FSRS Rating Validation Error
+*   **Symptoms:** `Invalid enum value. Expected 'pass' | 'fail', received 'again'`
+*   **Root Cause:** `RatingSchema` in `lib/validation.ts` only allowed `'pass' | 'fail'`, but UI sends `'again' | 'good'`.
+*   **✅ Fix:** Update schema to `z.enum(['again', 'good'])`.
+
+### 🐛 Bug: Facet-level FSRS State Not Tracked
+*   **Symptoms:** Schema mismatch between docs and database; tests failing to seed dual facets.
+*   **Root Cause:** `user_learning_states` PK was `(user_id, ku_id)`, not allowing separate FSRS states per facet.
+*   **✅ Fix:** Migration `20260129_add_facet_column.sql` added `facet` column and changed PK to `(user_id, ku_id, facet)`.

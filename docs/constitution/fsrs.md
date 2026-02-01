@@ -108,38 +108,38 @@ R(t) ≈ target_retention
 
 ---
 
-### 4.4 Relearning
+### 4.4 Relearning (FIF Logic)
 
 **Mô tả**
-- Thẻ đang ở trạng thái Review nhưng người học trả lời sai
+- Thẻ đã được học nhưng người dùng gặp khó khăn (trả lời sai).
 
-**FSRS**
-- Stability (S) bị giảm
-- Difficulty (D) được điều chỉnh tăng
-- Không reset hoàn toàn như SM-2
+**FSRS (FIF)**
+- **Failure Intensity (I)**: Tính bằng $log_2(\text{wrongCount} + 1)$.
+- **Stability Decay**: $S_{new} = S \times exp(-\beta \times I)$.
+- **Difficulty Spike**: $D_{new} = D + (\alpha \times I)$.
+- Cơ chế này đảm bảo Stability giảm một cách "công bằng" (logarit) thay vì giảm sốc cố định, giúp tránh hiện tượng "Ease Hell" khi người dùng sai nhiều lần trong một phiên ngắn.
 
 **Vai trò**
-- Khôi phục trí nhớ đã suy giảm
+- Điều chỉnh trí nhớ dựa trên cường độ thất bại thực tế trong phiên ôn tập.
 
 ---
 
 ### 4.5 Burned
 
 **Mô tả**
-- Thẻ được coi là đã ghi nhớ vững chắc
-- Không còn cần ôn tập định kỳ
+- Thẻ được coi là đã ghi nhớ vĩnh viễn (lên tới 4 tháng)
+- Không còn xuất hiện trong hàng chờ ôn tập hàng ngày
 
 **FSRS**
-- Ngừng lập lịch ôn
-- Giữ dữ liệu để phân tích hoặc thống kê
+- Ngừng lập lịch ôn tự động
+- Lọc bỏ khỏi câu lệnh truy vấn hàng chờ
 
-**Quy tắc đề xuất**
-- `S > 365 ngày`
-- `R(due) > 0.95`
-- Không có lỗi (lapses) trong N lần ôn gần nhất
+**Quy tắc hiện tại**
+- `S >= 120 ngày`
+- Trạng thái `state = 'burned'`
 
 **Vai trò**
-- Kết thúc vòng đời của thẻ
+- Hoàn thành mục tiêu ghi nhớ cho Knowledge Unit.
 
 ---
 

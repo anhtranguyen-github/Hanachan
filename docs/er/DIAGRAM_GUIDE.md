@@ -14,15 +14,15 @@ Tài liệu này giải thích ngắn gọn vai trò của từng sơ đồ tron
 *   **Mục tiêu**: Kho tri thức và Ngân hàng câu hỏi.
 *   **Cốt lõi**: Chứa dữ liệu chi tiết của Bộ thủ, Hán tự, Từ vựng, Ngữ pháp và các loại câu hỏi (Fill-in, Cloze). Đây là "nguyên liệu" cho mọi phiên học.
 
-### 4. [Session & Memory Domain](./session-er.md)
+### 4. [Discovery & Review Domain](./discovery-er.md) / [SRS Domain](./review-er.md)
 *   **Mục tiêu**: Luồng học tập thực tế và Trạng thái trí nhớ dài hạn.
 *   **Cốt lõi**: 
-    *   `LessonBatch`: Quản lý các lô học cố định (phải xong lô 1 mới sang lô 2).
-    *   `UserLearningState`: Trái tim của thuật toán **FSRS**, lưu trữ độ ổn định của trí nhớ (`stability`) để lên lịch ôn tập tự động.
+    *   `LessonBatch`: Quản lý các lô học cố định (discovery-er.md).
+    *   `UserLearningState`: Trạng thái FSRS và lịch ôn tập (review-er.md).
 
 ### 5. [Assistant Domain](./assistant-er.md)
 *   **Mục tiêu**: Trợ lý học tập thông minh.
-*   **Cốt lõi**: Kết nối giữa hội thoại AI và dữ liệu tri thức. Cho phép AI "nhắc tên" (`referenced_ku_ids`) các bài học cụ thể trong khi chat.
+*   **Cốt lõi**: Kết nối giữa hội thoại AI và dữ liệu tri thức. Cho phép AI "nhắc tên" (`referenced_unit_ids`) các bài học cụ thể trong khi chat.
 
 ---
 **Nguyên tắc thiết kế**: *Tối giản dữ liệu thừa (No UI settings, No gamification), tập trung 100% vào logic học thuật và tự động hóa FSRS.*

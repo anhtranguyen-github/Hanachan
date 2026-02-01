@@ -1,13 +1,19 @@
-# Thiết kế chi tiết các gói (Detailed Package Design)
-
-Biểu đồ dưới đây mô tả cấu trúc lớp bên trong các gói chính và mối quan hệ giữa chúng, tuân thủ các quy tắc thiết kế hướng đối tượng.
-
-```plantuml
 @startuml
+title Thiết kế chi tiết các gói (Detailed Package Design)
+top to bottom direction
 skinparam packageStyle rectangle
 skinparam shadowing false
 hide circle
 hide members
+
+' Tầng Features
+package "Features" {
+    class ReviewSessionController
+    class LearningController
+    class LearningService
+    class HanachanChatService
+    class QuizItem
+}
 
 ' Tầng Domain
 package "Domain" {
@@ -15,45 +21,37 @@ package "Domain" {
     class Kanji
     class Vocabulary
     class Question
-    
-    interface IAlgorithm
     class FSRSEngine
     class UserLearningState
+    class LessonBatch
+    class LessonItem
+    class UserProfileManager
+    class questionRepository
 }
 
-' Tầng Features
-package "Features" {
-    class ReviewSessionManager
-    class LessonBatchManager
-    class ReviewItem
-}
+' Force vertical alignment between packages
+Features -[hidden]down-> Domain
 
-' Quan hệ nội tại gói Domain
-Kanji --|> KnowledgeUnit : Inheritance (Kế thừa)
-Vocabulary --|> KnowledgeUnit : Inheritance
-KnowledgeUnit *-- "1..*" Question : Composition (Hợp thành)
-FSRSEngine ..|> IAlgorithm : Implementation (Thực thi)
-UserLearningState "1" -- "1" KnowledgeUnit : Association (Kết hợp)
+' Internal Domain Relations (Top-Down inside package)
+Kanji -up-|> KnowledgeUnit
+Vocabulary -up-|> KnowledgeUnit
+KnowledgeUnit *-- "1..*" Question
+UserLearningState "1" -- "1" KnowledgeUnit
 
-' Quan hệ nội tại gói Features
-ReviewSessionManager o-- "0..*" ReviewItem : Aggregation (Kết tập)
+' Internal Features Relations
+ReviewSessionController o-- "0..*" QuizItem
 
-' Quan hệ giữa các lớp xuyên Package
-ReviewSessionManager ..> FSRSEngine : Dependency (Phụ thuộc)
-LessonBatchManager ..> UserLearningState : Dependency
-ReviewSessionManager ..> UserLearningState : Dependency
+' Inter-Package Dependencies (Forcing Downward)
+ReviewSessionController -down..> FSRSEngine
+ReviewSessionController -down..> UserLearningState
+ReviewSessionController -down..> questionRepository
+LearningService -down..> UserLearningState
+LearningService -down..> UserProfileManager
+HanachanChatService -down..> KnowledgeUnit
+QuizItem -down..> KnowledgeUnit
+LearningController -down..> LessonBatch
+LearningController -down..> questionRepository
+LessonBatch *-- LessonItem
+LessonItem -down..> KnowledgeUnit
 
 @enduml
-```
-
-### Giải thích thiết kế:
-
-1.  **Kế thừa (Inheritance)**: `Kanji` và `Vocabulary` kế thừa từ `KnowledgeUnit`. Điều này giúp thống nhất cách quản lý mọi đơn vị tri thức trong hệ thống nhưng vẫn cho phép mở rộng thuộc tính riêng cho từng loại.
-   
-2.  **Hợp thành (Composition)**: `KnowledgeUnit` chứa các `Question`. Một câu hỏi không thể tồn tại độc lập nếu không có kiến thức gốc. Khi xóa một đơn vị tri thức, các câu hỏi liên quan sẽ bị hủy bỏ hoàn đầu.
-
-3.  **Kết tập (Aggregation)**: `ReviewSessionManager` kết tập các `ReviewItem`. Các mục ôn tập có thể tồn tại tạm thời trong một phiên, nhưng chúng không thuộc quyền sở hữu vĩnh viễn của Manager (có thể được chuyển hàng chờ hoặc lưu trữ lại).
-
-4.  **Thực thi (Implementation)**: `FSRSEngine` thực thi interface `IAlgorithm`. Thiết kế này cho phép hệ thống dễ dàng thay đổi thuật toán ôn tập (ví dụ từ FSRS sang Anki-style) trong tương lai mà không ảnh hưởng đến các lớp gọi nó.
-
-5.  **Phụ thuộc (Dependency)**: Các lớp quản lý ở tầng Features (`ReviewSessionManager`, `LessonBatchManager`) phụ thuộc vào các thực thể lõi ở tầng Domain để thực hiện nghiệp vụ. Điều này tuân thủ nguyên tắc tầng trên sử dụng dịch vụ của tầng dưới.
