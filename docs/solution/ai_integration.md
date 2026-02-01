@@ -13,7 +13,7 @@ Thay vì sử dụng bộ lọc ý định (intent) cứng nhắc, Hanachan ho�
 ## 2. Liên kết Tri thức tự động (Knowledge Mapping & RAG)
 
 Hệ thống sử dụng kỹ thuật **RAG (Retrieval-Augmented Generation)** để làm giàu bối cảnh phản hồi:
-- **Trích xuất thực thể**: AI tự động nhận diện các mã Knowledge Unit (KU ID) xuất hiện trong bối cảnh hoặc câu hỏi.
+- **Trích xuất thực thể**: AI tự động nhận diện các mã Knowledge Unit (Unit ID) xuất hiện trong bối cảnh hoặc câu hỏi.
 - **Truy vấn Database**: Dữ liệu chi tiết về Kanji/Vocab/Grammar được truy vấn từ Database và đưa vào Prompt làm "Grounding data".
 - Giúp chatbot hiểu được bối cảnh kiến thức liên quan để cung cấp giải thích chính xác.
 

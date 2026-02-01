@@ -40,42 +40,50 @@
 - Nếu người dùng F5/Quit giữa chừng: Các item đã trả lời đúng sẽ KHÔNG xuất hiện lại (vì đã được schedule lại rồi).
 - Khác với Lesson: Không cần "hoàn thành" hay "commit" gì cả.
 
-### Luồng xử lý:
-1. **Lấy dữ liệu:** Lấy các khía cạnh (Facets) có `next_review <= NOW`. 
-2. **Kiểm tra:**
-   - Người dùng trả lời các Facet tương tự Mastery Quiz.
-   - **No Reveal Rule:** Nếu trả lời sai, KHÔNG hiển thị đáp án. Re-queue Facet bị sai (trong phiên hiện tại).
-3. **Tính toán FSRS (Algorithm) - NGAY LẬP TỨC:**
-   - Cập nhật **ngay khi** người dùng trả lời lần đầu tiên trong phiên.
-   - **Ratings:** `again` (incorrect), `good` (correct).
-   - **Law of Independence:** Fail `reading` không ảnh hưởng đến `meaning`.
-   - **Good:** `stability = stability * 1.5 * (difficulty/3.0)`. `reps++`.
-   - **Again (Fail):** `stability = max(0.1, stability * 0.4)`. `reps = max(1, reps - 2)`. `lapses++`.
 4. **Transition Stage:**
    - `stability >= 120 days`: State = `burned`.
    - `stability >= 3 days`: State = `review`.
    - Ngược lại: State = `learning`.
 
+### Luồng xử lý (FIF Updated):
+1. **Lấy dữ liệu:** Lấy các khía cạnh (Facets) có `next_review <= NOW`.
+2. **Kiểm tra & Drill (Review Loop):**
+   - **Trả lời Sai (Again):**
+     - Increment `wrongCount` (Biến đếm lỗi trong phiên).
+     - **KHÔNG** cập nhật FSRS ngay.
+     - Re-queue (Đẩy xuống cuối hàng đợi) để học lại ngay (Drill).
+   - **Trả lời Đúng (Good):**
+     - Đứng ở bước "Commit".
+     - Tính toán `Failure Intensity = log2(wrongCount + 1)`.
+     - Gọi FSRS update **1 lần duy nhất** với hình phạt logarit.
+     - Loại bỏ khỏi hàng đợi.
+3. **Ý nghĩa:**
+   - Phân biệt rõ "Quên" (Fail) và "Đang học lại" (Drill).
+   - Tránh "Ease Hell" (giảm chỉ số quá mức do lặp lại nhiều lần trong 1 phiên).
+
 ---
 
-## 3. Immersion & Assistant Flow (Agentic Model)
-**Mục tiêu:** Trợ lý Hanachan đóng vai trò là một "Hành khách" đồng hành cùng người dùng, tự động hỗ trợ thông tin dựa trên nhu cầu hội thoại.
+## 3. Immersion & Assistant Flow (Agentic Tool Use)
+**Mục tiêu:** Trợ lý Hanachan đóng vai trò là một "Giáo viên hướng dẫn" thông minh, không chỉ phản ứng theo lệnh mà còn chủ động xác thực thông tin và kết nối người dùng với lộ trình học tập chuẩn.
 
-### Đặc điểm thiết kế Agentic:
-- **Heuristic Intent Routing**: Sử dụng bộ lọc từ khóa nhanh (Regex) để xác định ý định người dùng (Search/Progress) trước khi gửi tới LLM, giúp giảm latency và tiết kiệm token.
-- **Just-in-Time Tooling**: AI tự quyết định khi nào cần tra cứu dữ liệu (Search) dựa trên các bối cảnh RAG được cung cấp.
+### Đặc điểm thiết kế Agentic Tool Use:
+- **Proactive Reasoning (Tư duy chủ động)**: LLM thực hiện luồng ReAct (Reasoning + Acting). AI tự đặt câu hỏi: *"Để trả lời câu này chính xác, mình có cần dữ liệu từ giáo trình không?"* và tự thực hiện tra cứu ngay cả khi không có yêu cầu trực tiếp từ người dùng.
+- **Verification-First Policy**: AI được chỉ thị phải "xác thực sự thật trước khi nói". Nếu câu trả lời dự định có nhắc đến từ vựng/ngữ pháp tiếng Nhật, AI phải gọi công cụ tìm kiếm để đảm bảo thông tin khớp với giáo trình Hanachan.
+- **Curriculum-First Priority**: Ưu tiên dữ liệu từ Database hơn bộ nhớ của AI. Phản hồi luôn cố gắng dẫn dắt người dùng về các thực thể (KU) có sẵn trong hệ thống để tối ưu lộ trình học.
+- **Context-Aware Fallback**: Khi kiến thức nằm ngoài DB, AI vẫn hỗ trợ giải thích nhưng BẮT ĐẦU bằng cảnh báo: *"Lưu ý: Kiến thức này hiện nằm ngoài giáo trình chính thức của Hanachan."*
 
 ### Luồng xử lý:
-1. **Tiếp nhận & Suy luận (Reasoning):** AI nhận tin nhắn và xác định xem thông tin nào cần thiết để trả lời (ví dụ: cần truy cập Database để giải nghĩa từ, hoặc cần truy cập Analytics để báo cáo tiến độ).
-2. **Kích hoạt Công cụ (Tool Call):**
-   - **Entity Search Tool:** Bóc tách các cụm từ tiếng Nhật và tra cứu trong CKB.
-   - **Knowledge Base Access**: AI có quyền truy cập vào danh mục tri thức để trả lời câu hỏi.
-3. **Nhận diện thực thể phổ quát (Universal KU Detection):**
-   - Mọi tin nhắn (bất kể có gọi tool hay không) đều được quét tự động để tìm các Knowledge Units (Kanji/Vocab).
-   - Các KU này được đính kèm vào metadata phản hồi.
-4. **Hiển thị linh hoạt (Dynamic UI):**
-   - **Referenced KU:** Hiển thị dưới dạng các thẻ hoặc nút CTA bên dưới tin nhắn để người dùng xem chi tiết hoặc "Drill" (ôn luyện nhanh).
-   - **Tool Results:** UI render tương ứng (ví dụ: một biểu đồ nhỏ nếu AI trả về dữ liệu tiến độ).
+1. **Tiếp nhận & Suy luận (Inner Monologue):** AI nhận tin nhắn, phân tích từ khóa và quyết định các bước tra cứu cần thiết để cung cấp câu trả lời có kèm dẫn chứng (CTA).
+2. **Kích hoạt Công cụ Chủ động (Proactive Tool Call):**
+   - AI thực hiện một hoặc nhiều `tool_call` tới `search_curriculum`.
+   - Cơ chế xử lý từ khóa linh hoạt: Tự động lọc các từ ngữ thừa để tăng tỷ lệ "Hit" trong Database.
+3. **Tổng hợp & Đối soát (Synthesis):**
+   - AI nhận kết quả từ DB, đối soát với kiến thức bản thân.
+   - Viết lại câu trả lời để đồng bộ với định nghĩa, cách đọc và ví dụ trong giáo trình.
+4. **Đồng bộ hóa CTA & Entity Linking:**
+   - Dựa trên kết quả `hit` thực tế từ công cụ, hệ thống đính kèm danh sách `referencedKUs` chính xác 100%.
+   - UI hiển thị các nút CTA giúp người dùng mở ngay QuickView để học sâu hơn về thực thể đó.
+5. **Minh bạch phạm vi (Transparency):** Người dùng luôn biết rõ thông tin nào đến từ hệ thống chuẩn và thông tin nào là kiến thức bổ trợ của AI.
 
 ---
 

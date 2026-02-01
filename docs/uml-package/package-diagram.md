@@ -13,7 +13,8 @@ package "Tầng Giao diện" as L1 {
 }
 
 package "Tầng Chức năng" as L2 {
-    package "Chức năng Học tập" as learn
+    package "Chức năng Học Mới (Discovery)" as list_learn
+    package "Chức năng Ôn Tập (Review)" as list_review
     package "Chức năng Chat" as chat
     package "Chức năng Thống kê" as analytics
 }
@@ -31,12 +32,17 @@ package "Tầng Hạ tầng" as L4 {
 ' Mối quan hệ phụ thuộc (Dependency)
 ' Tuân thủ quy tắc: Tầng trên phụ thuộc tầng dưới, không nhảy tầng, không phụ thuộc ngang.
 
-ui ..> learn
+ui ..> list_learn
+ui ..> list_review
 ui ..> chat
 ui ..> analytics
 
-learn ..> srs
-learn ..> content
+list_learn ..> content
+list_learn ..> srs
+
+list_review ..> srs
+list_review ..> content
+
 chat ..> content
 analytics ..> srs
 

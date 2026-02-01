@@ -27,7 +27,7 @@ class KnowledgeUnit <<Entity>> {
   + id : UUID <<PK>>
   --
   slug : String <<Unique>>
-  type : Enum (RADICAL, KANJI, VOCABULARY, GRAMMAR)
+  type : Enum (radical, kanji, vocabulary, grammar)
   level : Integer (1-60)
   jlpt : Integer (1-5)
   character : String
@@ -35,14 +35,14 @@ class KnowledgeUnit <<Entity>> {
 }
 
 class RadicalDetail <<Entity>> {
-  + ku_id : UUID <<PK, FK>>
+  + unit_id : UUID <<PK, FK>>
   --
   meaning_mnemonic : Text
   image_url : String
 }
 
 class KanjiDetail <<Entity>> {
-  + ku_id : UUID <<PK, FK>>
+  + unit_id : UUID <<PK, FK>>
   --
   onyomi : Array<String>
   kunyomi : Array<String>
@@ -52,7 +52,7 @@ class KanjiDetail <<Entity>> {
 }
 
 class VocabularyDetail <<Entity>> {
-  + ku_id : UUID <<PK, FK>>
+  + unit_id : UUID <<PK, FK>>
   --
   reading : String
   audio_url : String
@@ -61,7 +61,7 @@ class VocabularyDetail <<Entity>> {
 }
 
 class GrammarDetail <<Entity>> {
-  + ku_id : UUID <<PK, FK>>
+  + unit_id : UUID <<PK, FK>>
   --
   structure : String
   explanation : Text
@@ -84,7 +84,7 @@ class VocabularyKanji <<Entity>> {
 class GrammarRelation <<Entity>> {
   + grammar_id : UUID <<PK, FK>>
   + related_id : UUID <<PK, FK>>
-  + type : Enum
+  + type : Enum (synonym, antonym, similar, contrast, prerequisite)
 }
 
 ' ==========================================
@@ -93,11 +93,13 @@ class GrammarRelation <<Entity>> {
 class Question <<Entity>> {
   + id : UUID <<PK>>
   --
-  ku_id : UUID <<FK>>
-  facet : String (meaning, reading, cloze)
+  unit_id : UUID <<FK>>
+  facet : Enum (meaning, reading, cloze)
   type : Enum (fill_in, cloze)
   prompt : String
+  cloze_text_with_blanks : String
   correct_answers : Array<String>
+  hints : Array<String>
 }
 
 ' ==========================================
@@ -105,8 +107,8 @@ class Question <<Entity>> {
 ' ==========================================
 class UserLearningState <<Entity>> {
   + user_id : UUID <<PK, FK>>
-  + ku_id : UUID <<PK, FK>>
-  + facet : String <<PK>>
+  + unit_id : UUID <<PK, FK>>
+  + facet : Enum (meaning, reading, cloze) <<PK>>
   --
   state : Enum (new, learning, review, burned)
   stability : Double
@@ -121,8 +123,8 @@ class UserLearningLog <<Entity>> {
   + id : UUID <<PK>>
   --
   user_id : UUID <<FK>>
-  ku_id : UUID <<FK>>
-  facet : String
+  unit_id : UUID <<FK>>
+  facet : Enum (meaning, reading, cloze)
   rating : Enum (again, good)
   stability : Double
   difficulty : Double
@@ -145,7 +147,7 @@ class LessonItem <<Entity>> {
   + id : UUID <<PK>>
   --
   batch_id : UUID <<FK>>
-  ku_id : UUID <<FK>>
+  unit_id : UUID <<FK>>
   status : Enum (unseen, viewed, quiz_passed)
 }
 
@@ -160,9 +162,11 @@ class ReviewSessionItem <<Entity>> {
   + id : UUID <<PK>>
   --
   session_id : UUID <<FK>>
-  ku_id : UUID <<FK>>
-  facet : String
-  first_rating : Enum
+  unit_id : UUID <<FK>>
+  facet : Enum (meaning, reading, cloze)
+  first_rating : Enum (again, good)
+  attempts : Integer
+  wrong_count : Integer
 }
 
 ' ==========================================
@@ -181,12 +185,38 @@ class ChatMessage <<Entity>> {
   session_id : UUID <<FK>>
   role : Enum (system, user, assistant)
   content : Text
-  referenced_ku_ids : Array<UUID>
+  referenced_unit_ids : Array<UUID>
+  metadata : JSONB
+}
+
+class ChatMessageAction <<Entity>> {
+  + id : UUID <<PK>>
+  --
+  message_id : UUID <<FK>>
+  action_type : Enum (ANALYZE, SEARCH, MINE)
+  target_unit_id : UUID <<FK>>
+  target_sentence_id : UUID <<FK>>
 }
 
 ' ==========================================
-' CONNECTIONS
+' 7. SENTENCE DOMAIN
 ' ==========================================
+class Sentence <<Entity>> {
+  + id : UUID <<PK>>
+  --
+  text_ja : String
+  text_en : String
+  origin : String
+  source_text : String
+  metadata : JSONB
+  created_by : UUID <<FK>>
+}
+
+class UnitSentence <<Entity>> {
+  + unit_id : UUID <<PK, FK>>
+  + sentence_id : UUID <<PK, FK>>
+  is_primary : Boolean
+}
 
 ' Content Hierarchies
 KnowledgeUnit ||--o| RadicalDetail
@@ -218,18 +248,26 @@ ReviewSessionItem }o--|| KnowledgeUnit
 ' Assistant
 User ||--o{ ChatSession
 ChatSession ||--o{ ChatMessage
+ChatMessage ||--o{ ChatMessageAction
+ChatMessageAction }o..|| KnowledgeUnit : "targets"
+ChatMessageAction }o..|| Sentence : "targets"
 ChatMessage }o..|| KnowledgeUnit : "references"
+
+' Sentences
+User ||--o{ Sentence
+Sentence ||--o{ UnitSentence
+UnitSentence }o--|| KnowledgeUnit
 
 @enduml
 ```
 
 ## Key Architectural Decisions
 
-1. **Normalized Content Details**: To support diverse Knowledge Unit (KU) types while maintaining a unified interface, core metadata is stored in `KnowledgeUnit`, while type-specific data resides in extension tables (`KanjiDetail`, etc.). This ensures efficient filtering and browsing across all content types.
+1. **Normalized Content Details**: To support diverse Knowledge Unit (Unit) types while maintaining a unified interface, core metadata is stored in `KnowledgeUnit`, while type-specific data resides in extension tables (`KanjiDetail`, etc.). This ensures efficient filtering and browsing across all content types.
 
-2. **Transactional Lessons vs. Atomic Reviews**:
-   - **Lessons**: Structured as batches that require full completion. Progress is saved per-item for resumability.
-   - **Reviews**: Items are independent. FSRS updates happen immediately on the first attempt, making the review process "Atomic". The `ReviewSession` tables serve primarily for historical logging and session-end analytics.
+2. **Transactional Lessons vs. Atomic Reviews (DB-Driven)**:
+   - **Lessons**: Structured as batches. All quiz phases use questions fetched from the `Question` table (No Gen Quiz policy).
+   - **Reviews**: Items are independent but use the **FIF (Failure Intensity Framework)**. Incorrect answers are tracked (Drill mode) and a correct answer triggers a single FSRS update with a weighted penalty. This ensures stability is only updated once per session per card, avoiding ease hell.
 
 3. **FSRS Independence Law**: Progression is tracked per **facet** (e.g., you might know a word's meaning but not its reading). Each facet has its own record in `UserLearningState`, allowing for granular recall optimization.
 

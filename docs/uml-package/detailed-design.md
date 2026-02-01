@@ -9,6 +9,7 @@ hide members
 ' Tầng Features
 package "Features" {
     class ReviewSessionController
+    class LearningController
     class LearningService
     class HanachanChatService
     class QuizItem
@@ -22,7 +23,10 @@ package "Domain" {
     class Question
     class FSRSEngine
     class UserLearningState
+    class LessonBatch
+    class LessonItem
     class UserProfileManager
+    class questionRepository
 }
 
 ' Force vertical alignment between packages
@@ -40,9 +44,14 @@ ReviewSessionController o-- "0..*" QuizItem
 ' Inter-Package Dependencies (Forcing Downward)
 ReviewSessionController -down..> FSRSEngine
 ReviewSessionController -down..> UserLearningState
+ReviewSessionController -down..> questionRepository
 LearningService -down..> UserLearningState
 LearningService -down..> UserProfileManager
 HanachanChatService -down..> KnowledgeUnit
 QuizItem -down..> KnowledgeUnit
+LearningController -down..> LessonBatch
+LearningController -down..> questionRepository
+LessonBatch *-- LessonItem
+LessonItem -down..> KnowledgeUnit
 
 @enduml

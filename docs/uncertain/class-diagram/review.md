@@ -9,22 +9,21 @@ skinparam classAttributeIconSize 0
 skinparam shadowing false
 hide circle
 
-' --- Core Services ---
 class ReviewSessionController <<Controller>> {
   - queue: List<QuizItem>
   - completedCount: Integer
-  - firstAttemptDone: Set<String>
+  - sessionState: Map<String, {attemptCount, wrongCount}>
   --
-  + initSession(items: List): Promise<List>
+  + initSession(items: any[]): Promise<List>
   + submitAnswer(rating: Rating): Promise<Boolean>
   + getNextItem(): QuizItem
-  + getProgress(): SessionProgress
+  + getProgress(): Object
 }
 
 class LearningService <<Service>> {
   --
   + fetchDueItems(userId): Promise<List>
-  + submitReview(userId, kuId, facet, rating, state): Promise<Data>
+  + submitReview(userId, unitId, facet, rating, currentState: SRSState, wrongCount: Integer): Promise<Data>
 }
 
 class FSRSEngine <<Static>> {
@@ -32,19 +31,21 @@ class FSRSEngine <<Static>> {
   + BURNED_THRESHOLD_DAYS: Integer = 120
   + REVIEW_THRESHOLD_DAYS: Integer = 3
   --
-  + calculateNextReview(current: SRSState, rating: Rating): NextReviewData
+  + calculateNextReview(current: SRSState, rating: Rating, wrongCount: Integer): NextReviewData
 }
 
-' --- Data Structures (DTOs) ---
 interface QuizItem <<DTO>> {
   + id: String
+  + unitId: String
+  + facet: Enum
+  + prompt: String
   + character: String
-  + facet: Enum (meaning, reading, cloze)
+  + type: String
   + currentState: SRSState
 }
 
 interface SRSState <<DTO>> {
-  + stage: Enum
+  + stage: Enum (new, learning, review, burned)
   + stability: Double
   + difficulty: Double
   + reps: Integer
@@ -56,44 +57,78 @@ interface NextReviewData <<DTO>> {
   + next_state: SRSState
 }
 
-' --- Persistance Domain ---
 class UserLearningState <<Entity>> {
   + user_id: UUID
-  + ku_id: UUID
+  + unit_id: UUID
   + facet: Enum
-  + state: Enum
+  --
+  + state: Enum (new, learning, review, burned)
   + stability: Double
+  + difficulty: Double
   + last_review: Timestamp
   + next_review: Timestamp
   + reps: Integer
   + lapses: Integer
 }
 
-' --- Relationships (The Glue) ---
+interface questionRepository <<Repository>> {
+  + fetchQuestionsForReview(userId, unitIds): Promise<List<Question>>
+}
 
-' Controller manages the flow of QuizItems
-ReviewSessionController "1" o-- "*" QuizItem : manages queue >
+' --- Content Domain ---
+class KnowledgeUnit <<Entity>> {
+  + id: UUID
+  + type: Enum
+  + character: String
+  + meaning: String
+}
 
-' Controller relies on LearningService for data persistence
-ReviewSessionController ..> LearningService : delegates storage >
+class Question <<Entity>> {
+  + id: UUID
+  + unitId: UUID
+  + facet: Enum
+  + prompt: String
+  + correct_answers: List<String>
+}
 
-' QuizItem carries the SRSState
-QuizItem "1" *-- "1" SRSState : contains current state >
+' --- Các mối quan hệ (Bộ khung kết nối) ---
 
-' LearningService is the orchestrator
-LearningService ..> FSRSEngine : uses for calculation >
-LearningService ..> UserLearningState : reads/writes >
+' Controller quản lý luồng Câu hỏi
+ReviewSessionController "1" o-- "*" QuizItem : quản lý hàng đợi >
 
-' FSRSEngine flows
-FSRSEngine ..> SRSState : inputs/outputs >
-FSRSEngine ..> NextReviewData : produces >
-NextReviewData "1" *-- "1" SRSState : embeds updated state >
+' Controller dựa vào Service và Repository
+ReviewSessionController ..> LearningService : ủy quyền lưu trữ >
+ReviewSessionController ..> questionRepository : lấy câu hỏi từ DB >
+
+' Content & Question Binding
+KnowledgeUnit "1" *-- "*" Question : định nghĩa trong DB >
+Question "1" ..> QuizItem : đóng gói thành >
+
+' Câu hỏi chứa trạng thái SRS
+QuizItem "1" *-- "1" SRSState : chứa trạng thái hiện tại >
+
+' LearningService là người điều phối
+LearningService ..> FSRSEngine : sử dụng để tính toán >
+LearningService ..> UserLearningState : cập nhật trạng thái >
+LearningService ..> srsRepository : lưu trữ dữ liệu >
+ReviewSessionController ..> srsRepository : quản lý phiên ôn tập >
+
+interface srsRepository <<Repository>> {
+  + createReviewSession(userId, total)
+  + updateReviewSessionProgress(sessionId, completed)
+  + updateUserState(userId, unitId, facet, updates)
+}
+
+' Luồng FSRSEngine
+FSRSEngine ..> SRSState : đầu vào/đầu ra >
+FSRSEngine ..> NextReviewData : sản sinh >
+NextReviewData "1" *-- "1" SRSState : nhúng trạng thái mới >
 
 @enduml
 ```
 
 ### Các quy tắc nghiệp vụ quan trọng:
-1. **Dòng dữ liệu (Data Flow)**: `ReviewSessionController` quản lý hàng chờ các `QuizItem`. Khi người dùng trả lời, nó gọi `LearningService` để xử lý. `LearningService` lấy `UserLearningState` hiện tại, đưa qua `FSRSEngine` để nhận `NextReviewData`, sau đó lưu lại vào DB.
-2. **Independence Law**: Mỗi `UserLearningState` được xác định duy nhất bởi bộ ba `(user_id, ku_id, facet)`.
-3. **Atomic Update**: Mọi thay đổi về trạng thái SRS được thực hiện ngay lập tức sau câu trả lời đầu tiên để đảm bảo tính toàn vẹn dữ liệu.
-4. **Zero-Reveal Rule**: Không hiển thị đáp án đúng khi trả lời sai (re-queue), đảm bảo trải nghiệm học tập tập trung vào việc thu hồi trí nhớ (active recall).
+1. **Dòng dữ liệu (Data Flow)**: `ReviewSessionController` quản lý hàng chờ các `QuizItem`. Khi người dùng trả lời, nó gọi `LearningService` để xử lý.
+2. **FIF Architecture**: Thay vì `firstAttemptDone`, controller theo dõi `wrongCount` cho từng item.
+3. **Commit on Success**: Chỉ khi trả lời đúng thì mới gọi `submitReview`. Lúc này `wrongCount` được gửi kèm để tính toán hình phạt (Intensity).
+4. **No Gen Quiz**: Hệ thống không tự sinh câu hỏi. Mọi khía cạnh (facet) cần ôn tập đều phải được định nghĩa sẵn là một bản ghi trong bảng `questions`. `ReviewSessionController` tải các câu hỏi này và gắn kèm trạng thái `UserLearningState` của người dùng để tạo thành `QuizItem`.

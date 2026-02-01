@@ -5,57 +5,66 @@ skinparam defaultFontName "Segoe UI"
 
 actor "Người dùng" as User
 participant "Giao diện Học" as UI
+participant "LearningController" as Controller
 participant "LearningService" as Service
-participant "ReviewSessionController" as Controller
-participant "Kho dữ liệu (Repository)" as Repo
+participant "lessonRepository" as LessonRepo
+participant "srsRepository" as SRSRepo
+participant "questionRepository" as QRepo
 
 User -> UI : Bắt đầu bài học mới
 activate UI
 
 UI -> Service : fetchNewItems(userId, level)
 activate Service
-Service -> Repo : Lấy dữ liệu Knowledge Units
-Repo --> Service : Items
+Service -> LessonRepo : Lấy dữ liệu Knowledge Units
+LessonRepo --> Service : Items
 Service --> UI : Items
 deactivate Service
 
-' PERSISTENCE (UI calls Repository as per page.tsx)
-UI -> Repo : createLessonBatch(userId, level)
-activate Repo
-Repo --> UI : batchId
-deactivate Repo
+' PERSISTENCE
+UI -> LessonRepo : createLessonBatch(userId, level)
+activate LessonRepo
+LessonRepo --> UI : batchId
+deactivate LessonRepo
 
-UI -> Repo : createLessonItems(batchId, kuIds)
-activate Repo
-Repo --> UI : OK
-deactivate Repo
+UI -> LessonRepo : createLessonItems(batchId, unitIds)
+activate LessonRepo
+LessonRepo --> UI : OK
+deactivate LessonRepo
 
-UI -> Controller : initSession(items)
+UI -> Controller : init(items, batchId)
+activate Controller
+Controller -> QRepo : fetchAllQuestionsForUnits(unitIds)
+QRepo --> Controller : Questions
+Controller --> UI : Ready
+deactivate Controller
 
 loop Xem bài giảng (Lesson Slides)
     User -> UI : Xem nội dung
-    UI -> Repo : updateLessonItemStatus(batchId, kuId, 'viewed')
+    UI -> Controller : nextLessonItem()
+    Controller -> LessonRepo : updateLessonItemStatus(batchId, unitId, 'viewed')
 end
 
-User -> UI : Làm bài Quiz (Mastery Quiz)
+User -> UI : Bắt đầu kiểm tra (Quiz phase)
+UI -> Controller : startQuiz()
 
-loop Từng câu hỏi
+loop Từng câu hỏi (Hàng đợi lặp lại cho đến khi đúng hết)
     User -> UI : Gửi câu trả lời
-    UI -> Controller : submitAnswer(rating)
+    UI -> Controller : submitQuizAnswer(rating)
     activate Controller
     
-    opt Lần đầu trả lời facet này
-        Controller -> Service : submitReview(userId, kuId, facet, rating, state)
-        Service -> Repo : Cập nhật FSRS & Lưu Log
-        UI -> Repo : updateLessonItemStatus(batchId, kuId, 'quiz_passed')
+    opt Nếu hoàn thành tất cả khía cạnh của Unit (Quiz Passed)
+        Controller -> LessonRepo : updateLessonItemStatus(batchId, unitId, 'quiz_passed')
+        Controller -> Service : initializeSRS(userId, unitId, facets)
+        Service -> SRSRepo : Tạo bản ghi UserLearningState (Stage: Learning, Stability: 4h)
     end
     
     Controller --> UI : Kết quả (Đúng/Sai)
     deactivate Controller
 end
 
-UI -> Repo : updateLessonBatchStatus(batchId, 'completed')
-UI -> User : Hiển thị tổng kết
+UI -> LessonRepo : completeLessonBatch(batchId)
+UI -> User : Hiển thị tổng kết (Tỉ lệ chính xác, các mục đã học)
 deactivate UI
 
 @enduml
