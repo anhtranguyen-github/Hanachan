@@ -1,34 +1,37 @@
 @startuml
-title Sơ đồ hoạt động - Cách Trợ lý Hanachan hỗ trợ bạn
+title Sơ đồ hoạt động - Luồng xử lý của Trợ lý Hanachan
+skinparam monochrome true
 skinparam shadowing false
-skinparam ArrowColor #FF69B4
-skinparam ActivityBackgroundColor #FFF0F5
-skinparam ActivityBorderColor #FF69B4
 skinparam DefaultFontName "Segoe UI"
 
 start
-:Người dùng gửi câu hỏi/yêu cầu;
+:Người dùng gửi câu hỏi hoặc yêu cầu;
 
-:Xem lại "Bản ghi nhớ" hiện tại\n(Các mục tiêu và quyết định đã chốt);
+:Xem lại "Bản ghi nhớ" (Trạng thái làm việc)\nđể nắm bắt các mục tiêu và quyết định đã chốt;
 
-:Kiểm tra vài câu chuyện gần nhất\nđể nắm bắt ngữ cảnh hội thoại;
+:Kiểm tra vài lượt hội thoại gần nhất\nđể hiểu rõ ngữ cảnh hiện tại;
 
-if (Yêu cầu cần thông tin tiếng Nhật chuẩn?) then (Có)
-  :Tự động tra cứu trong "Kho giáo trình"\n(Hán tự, Từ vựng, Ngữ pháp);
-  :Lấy dữ liệu chính xác kèm mẹo học tập;
-else (Không)
-  :Sử dụng kiến thức chung để giải đáp;
+if (Câu hỏi thuộc phạm vi tiếng Nhật?) then (Có)
+  :Tự động tra cứu trong "Kho giáo trình"\n(Hán tự, Từ vựng, Ngữ pháp của hệ thống);
+  
+  if (Tìm thấy dữ liệu trong giáo trình?) then (Có)
+    :Lấy thông tin chuẩn (nghĩa, ví dụ, mẹo nhớ)\nđể chuẩn bị phản hồi;
+  else (Không)
+    :Sử dụng kiến thức AI chung để giải đáp;
+    :Ghi chú thêm: "Thông tin này nằm ngoài\ngiáo trình chính thức của Hanachan";
+  endif
+  
+else (Không / Ngoài phạm vi)
+  :Sử dụng kiến thức AI chung để giải đáp;
+  :Ghi chú thêm: "Lưu ý: Nội dung này nằm ngoài\nphạm vi học tập định hướng của hệ thống";
 endif
 
-:Chuẩn bị câu trả lời thân thiện (🌸);
+:Chuẩn bị câu trả lời và đính kèm các "Nút học tập"\n(nếu có các từ vựng liên quan trong câu trả lời);
 
-if (Phát hiện thay đổi mục tiêu hoặc quyết định mới?) then (Có)
-  :Ngầm cập nhật lại "Bản ghi nhớ"\n(Tránh việc phải hỏi lại người dùng sau này);
-  :Cập nhật tiêu đề phiên trò chuyện phù hợp;
+if (Người dùng vừa chốt ý hoặc chuyển mục tiêu?) then (Có)
+  :Cập nhật lại "Bản ghi nhớ" và tiêu đề phiên chat\n(Để ghi nhớ cho các lượt hội thoại sau);
 endif
 
-:Gửi phản hồi kèm các "Nút học tập" (CTA);
-
-:Người dùng nhận câu trả lời và tiếp tục học;
+:Gửi câu trả lời hoàn chỉnh đến người dùng;
 stop
 @enduml
