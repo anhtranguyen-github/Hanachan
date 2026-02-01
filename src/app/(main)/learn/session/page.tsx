@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { Loader2, ArrowLeft, BookOpen, ChevronRight, CheckCircle2, PlayCircle, Zap, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { fetchNewItems } from '@/features/learning/service';
-import { learningRepository } from '@/features/learning/db';
-import { ReviewSessionController, QuizItem } from '@/features/learning/ReviewSessionController';
-import { Rating } from '@/features/learning/domain/FSRSEngine';
+import { lessonRepository } from '@/features/learning/lessonRepository';
+import { LearningController, QuizItem } from '@/features/learning/LearningController';
+import { Rating } from '@/features/learning/domain/SRSAlgorithm';
 import { GlassCard } from '@/components/premium/GlassCard';
 import { ReviewCardDisplay } from '@/features/learning/components/ReviewCardDisplay';
 import { useUser } from '@/features/auth/AuthContext';
@@ -16,7 +16,7 @@ import { supabase } from '@/lib/supabase';
 function SessionContent() {
     const { user } = useUser();
     const router = useRouter();
-    const [controller, setController] = useState<ReviewSessionController | null>(null);
+    const [controller, setController] = useState<LearningController | null>(null);
     const [currentCard, setCurrentCard] = useState<QuizItem | null>(null);
     const [lessonQueue, setLessonQueue] = useState<any[]>([]);
     const [phase, setPhase] = useState<'init' | 'lesson-view' | 'quiz' | 'complete'>('init');
@@ -42,21 +42,19 @@ function SessionContent() {
                 return;
             }
 
-            // Persist Lesson Batch
-            try {
-                const batch = await learningRepository.createLessonBatch(user.id, currentLevel);
-                setBatchId(batch.id);
-                await learningRepository.createLessonItems(batch.id, items.map((i: any) => i.ku_id));
-            } catch (e) {
-                console.error("[LearnSession] Failed to persist batch", e);
-            }
+            // 1. Persist Lesson Batch Header
+            const batch = await lessonRepository.createLessonBatch(user.id, currentLevel);
+            setBatchId(batch.id);
+            await lessonRepository.createLessonItems(batch.id, items.map((i: any) => i.ku_id));
 
-            setLessonQueue(items);
-            setStats({ mistakes: 0, totalItems: items.length, completed: 0 });
-            setPhase('lesson-view');
-            const newController = new ReviewSessionController(user.id);
-            await newController.initSession(items);
+            // 2. Initialize Controller
+            const newController = new LearningController(user.id, batch.id);
+            const initializedItems = await newController.init(items);
+
+            setLessonQueue(initializedItems);
             setController(newController);
+            setStats({ mistakes: 0, totalItems: initializedItems.length, completed: 0 });
+            setPhase('lesson-view');
         } catch (error) {
             console.error("[LearnSession] loadSession error:", error);
             router.push('/learn');
@@ -68,43 +66,36 @@ function SessionContent() {
     }, [user]);
 
     const handleLessonNext = async () => {
-        const currentItem = lessonQueue[lessonIndex];
-        // Mark current lesson as viewed in DB
-        if (batchId && currentItem) {
-            await learningRepository.updateLessonItemStatus(batchId, currentItem.ku_id, 'viewed');
-        }
+        if (!controller) return;
 
-        if (lessonIndex + 1 < lessonQueue.length) {
-            setLessonIndex(prev => prev + 1);
+        const hasNext = await controller.nextLessonItem();
+        if (hasNext) {
+            setLessonIndex(controller.getCurrentLessonIndex());
         } else {
+            // Start Quiz Phase
+            const quizItems = controller.startQuiz();
+            setCurrentCard(controller.getCurrentQuizItem());
             setPhase('quiz');
-            if (controller) setCurrentCard(controller.getNextItem());
         }
     };
 
     const handleAnswer = async (rating: Rating, userInput: string) => {
         if (!controller) return;
 
-        const current = controller.getNextItem();
-        const success = await controller.submitAnswer(rating);
+        const success = await controller.submitQuizAnswer(rating);
 
         if (!success) {
             setStats(s => ({ ...s, mistakes: s.mistakes + 1 }));
-        } else {
-            // Mark as quiz_passed in batch tracking
-            if (batchId && current) {
-                await learningRepository.updateLessonItemStatus(batchId, current.ku_id, 'quiz_passed');
-            }
         }
 
-        const next = controller.getNextItem();
+        const next = controller.getCurrentQuizItem();
         if (next) {
             setCurrentCard(next);
             setStats(s => ({ ...s, completed: controller.getProgress().completed }));
         } else {
-            // Finish batch in DB
+            // Batch Complete
             if (batchId) {
-                await learningRepository.completeLessonBatch(batchId);
+                await lessonRepository.completeLessonBatch(batchId);
             }
             setPhase('complete');
         }
@@ -318,6 +309,7 @@ function LessonSlide({ item, onNext, isLastLesson }: { item: any, onNext: () => 
                 </div>
                 <button
                     onClick={onNext}
+                    data-testid="lesson-next-button"
                     className="px-16 py-5 bg-primary text-white font-black rounded-[28px] shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all text-xl"
                 >
                     {isLastLesson ? 'Mastery Quiz →' : 'Mastered →'}
@@ -326,6 +318,7 @@ function LessonSlide({ item, onNext, isLastLesson }: { item: any, onNext: () => 
         </div>
     );
 }
+
 export default function LearnSessionPage() {
     return (
         <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary" size={48} /></div>}>

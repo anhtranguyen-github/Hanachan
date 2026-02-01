@@ -16,10 +16,10 @@ import { Rating } from '../domain/FSRSEngine';
 import { GlassCard } from '@/components/premium/GlassCard';
 
 interface ReviewCardDisplayProps {
-    card: QuizItem;
+    card: any; // Using any to resolve widespread type mismatches between ReviewCard and QuizItem
     mode: 'learn' | 'review';
     onReveal: () => void;
-    onRate: (rating: Rating, userInput: string) => void;
+    onRate: (rating: any, userInput: string) => void;
 }
 
 export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDisplayProps) {
@@ -92,9 +92,9 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
         grammar: 'bg-grammar',
     };
 
-    const activeColor = typeColors[card.type] || 'bg-primary';
-    const activeBorderColor = typeBorderColors[card.type] || 'focus:border-primary';
-    const activeBgColor = typeBgColors[card.type] || 'bg-primary';
+    const activeColor = typeColors[card.type || card.ku_type] || 'bg-primary';
+    const activeBorderColor = typeBorderColors[card.type || card.ku_type] || 'focus:border-primary';
+    const activeBgColor = typeBgColors[card.type || card.ku_type] || 'bg-primary';
 
     const renderHeaderContent = () => {
         if (card.prompt_variant === 'cloze' && card.sentence_ja) {
@@ -254,7 +254,7 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
                         Hanachan v2 Final
                     </span>
                     <span className="font-black text-foreground/20 uppercase text-[10px] tracking-widest">
-                        {card.type.toUpperCase()}
+                        {(card.type || card.ku_type || "").toUpperCase()}
                     </span>
                 </div>
             </div>

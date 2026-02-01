@@ -48,8 +48,8 @@ interface KnowledgeUnit {
  * - Vocabulary: 50/50 meaning or reading
  * - Grammar: ALWAYS cloze
  */
-function selectPromptVariant(kuType: string): PromptVariant {
-    switch (kuType) {
+function selectPromptVariant(unitType: string): PromptVariant {
+    switch (unitType) {
         case 'radical':
             return 'meaning';
         case 'kanji':
@@ -166,12 +166,12 @@ export async function generateReviewCard(
  * Generate review cards for a batch of (KU_ID, Facet) pairs
  */
 export async function generateReviewCards(
-    items: { kuId: string; facet: string }[],
+    items: { unitId: string; facet: string }[],
     userId?: string
 ): Promise<ReviewCard[]> {
     console.log(`${LOG_PREFIX} Generating ${items.length} review cards from stored questions`);
 
-    const kuIds = items.map(i => i.kuId);
+    const unitIds = items.map(i => i.unitId);
 
     // Fetch all KUs with their data
     const { data: kus, error } = await supabase
@@ -183,7 +183,7 @@ export async function generateReviewCards(
             ku_vocabulary(*),
             ku_grammar(*)
         `)
-        .in('id', kuIds);
+        .in('id', unitIds);
 
     if (error || !kus) {
         console.error(`${LOG_PREFIX} Error fetching KUs:`, error);
@@ -193,7 +193,7 @@ export async function generateReviewCards(
     // Generate cards for each item
     const cards: ReviewCard[] = [];
     for (const item of items) {
-        const ku = kus.find(k => k.id === item.kuId);
+        const ku = kus.find(k => k.id === item.unitId);
         if (!ku) continue;
 
         const card = await generateReviewCard(

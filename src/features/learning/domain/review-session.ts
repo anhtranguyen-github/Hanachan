@@ -6,11 +6,11 @@
  */
 
 import { supabase } from '@/lib/supabase';
-import { ReviewCard, ReviewAnswer, ReviewSession } from '../types/review-cards';
+import { ReviewCard, ReviewAnswer, ReviewSession, KanjiReviewCard, VocabReviewCard } from '../types/review-cards';
 import { generateReviewCards } from './review-card-generator';
 import { calculateNextReview, Rating, SRSState } from './SRSAlgorithm';
 import { validateClozeAnswer } from './grammar-cloze';
-import { learningRepository } from '../db';
+import { srsRepository } from '../srsRepository';
 
 const LOG_PREFIX = '[ReviewSession]';
 
@@ -36,7 +36,7 @@ export async function getDueReviewItems(
     userId: string,
     options?: {
         limit?: number;
-        kuType?: 'radical' | 'kanji' | 'vocabulary' | 'grammar';
+        unitType?: 'radical' | 'kanji' | 'vocabulary' | 'grammar';
         levelId?: string;
         level?: number;
     }
@@ -57,8 +57,8 @@ export async function getDueReviewItems(
         .order('next_review', { ascending: true });
 
     // Filter by KU type if specified
-    if (options?.kuType) {
-        query = query.eq('knowledge_units.type', options.kuType);
+    if (options?.unitType) {
+        query = query.eq('knowledge_units.type', options.unitType);
     }
 
     // Filter by level (direct or via virtual levelId)
@@ -103,7 +103,7 @@ export async function getNewItems(
     userId: string,
     options?: {
         limit?: number;
-        kuType?: 'radical' | 'kanji' | 'vocabulary' | 'grammar';
+        unitType?: 'radical' | 'kanji' | 'vocabulary' | 'grammar';
         levelId?: string;
         level?: number;
     }
@@ -129,8 +129,8 @@ export async function getNewItems(
         query = query.not('id', 'in', `(${excludeIds.join(',')})`);
     }
 
-    if (options?.kuType) {
-        query = query.eq('type', options.kuType);
+    if (options?.unitType) {
+        query = query.eq('type', options.unitType);
     }
 
     // Filter by level (direct or via virtual levelId)
@@ -178,7 +178,7 @@ export async function startReviewSession(
     options?: {
         type?: 'learn' | 'review'; // Explicit session type
         levelId?: string;
-        kuType?: 'radical' | 'kanji' | 'vocabulary' | 'grammar';
+        unitType?: 'radical' | 'kanji' | 'vocabulary' | 'grammar';
         level?: number;
         maxCards?: number;
     }
@@ -193,7 +193,7 @@ export async function startReviewSession(
         // LEARN: Fetch strictly NEW items (FSRS state == NULL)
         const newItems = await getNewItems(userId, {
             limit: maxCards,
-            kuType: options?.kuType,
+            unitType: options?.unitType,
             level: options?.level,
             levelId: options?.levelId
         });
@@ -203,11 +203,11 @@ export async function startReviewSession(
         const itemsToGenerate = newItems.flatMap(n => {
             if (n.type === 'kanji' || n.type === 'vocabulary') {
                 return [
-                    { kuId: n.id, facet: 'meaning' },
-                    { kuId: n.id, facet: 'reading' }
+                    { unitId: n.id, facet: 'meaning' },
+                    { unitId: n.id, facet: 'reading' }
                 ];
             }
-            return [{ kuId: n.id, facet: n.type === 'grammar' ? 'cloze' : 'meaning' }];
+            return [{ unitId: n.id, facet: n.type === 'grammar' ? 'cloze' : 'meaning' }];
         });
 
         cards = await generateReviewCards(itemsToGenerate, userId);
@@ -215,11 +215,11 @@ export async function startReviewSession(
         // REVIEW: Fetch strictly DUE items
         const dueItems = await getDueReviewItems(userId, {
             limit: maxCards,
-            kuType: options?.kuType,
+            unitType: options?.unitType,
             level: options?.level,
             levelId: options?.levelId
         });
-        cards = await generateReviewCards(dueItems.map(d => ({ kuId: d.ku_id, facet: d.facet })), userId);
+        cards = await generateReviewCards(dueItems.map(d => ({ unitId: d.ku_id, facet: d.facet })), userId);
     }
 
     // Create session
@@ -235,7 +235,7 @@ export async function startReviewSession(
 
     // Persistence Hook (Relational Session Tracking)
     try {
-        const dbSession = await learningRepository.createReviewSession(userId, cards.length);
+        const dbSession = await srsRepository.createReviewSession(userId, cards.length);
         // Overwrite random ID with DB ID for persistence
         session.id = dbSession.id;
 
@@ -243,7 +243,7 @@ export async function startReviewSession(
             ku_id: c.ku_id,
             facet: c.prompt_variant
         }));
-        await learningRepository.createReviewSessionItems(session.id, sessionItems);
+        await srsRepository.createReviewSessionItems(session.id, sessionItems);
     } catch (e) {
         console.error(`${LOG_PREFIX} Failed to persist session header`, e);
     }
@@ -335,14 +335,16 @@ export async function submitReviewAnswer(
     // Calculate new state using SRS
     const srsState: SRSState = currentState ? {
         stage: currentState.state,
-        interval: currentState.stability || 0,
-        ease_factor: currentState.stability || 2.5,
-        streak: currentState.reps || 0
+        stability: currentState.stability || 0,
+        difficulty: currentState.difficulty || 3.0,
+        reps: currentState.reps || 0,
+        lapses: currentState.lapses || 0
     } : {
         stage: 'new',
-        interval: 0,
-        ease_factor: 2.5,
-        streak: 0
+        stability: 0,
+        difficulty: 3.0,
+        reps: 0,
+        lapses: 0
     };
 
     const { next_review, next_state } = calculateNextReview(srsState, rating as Rating);
@@ -356,12 +358,12 @@ export async function submitReviewAnswer(
             ku_id: card.ku_id,
             facet: card.prompt_variant,
             state: next_state.stage,
-            stability: next_state.ease_factor,
-            difficulty: 0,
+            stability: next_state.stability,
+            difficulty: next_state.difficulty,
             last_review: new Date().toISOString(),
             next_review: next_review.toISOString(),
-            reps: next_state.streak,
-            lapses: rating === 'again' ? (currentState?.lapses || 0) + 1 : (currentState?.lapses || 0)
+            reps: next_state.reps,
+            lapses: next_state.lapses
         }, {
             onConflict: 'user_id,ku_id,facet'
         });

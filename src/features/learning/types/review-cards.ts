@@ -99,8 +99,8 @@ export interface GrammarReviewCard extends BaseReviewCard {
     sentence_en?: string;          // Translation
     cloze_display: string;         // "雨が降っ___、行きます。"
     cloze_answer: string;          // "ても"
-    cloze_start_index: number;     // Position of blank in original
-    cloze_end_index: number;
+    cloze_start_index?: number;     // Position of blank in original
+    cloze_end_index?: number;
     // Source info
     sentence_id: string;
     sentence_source: 'official' | 'user_mined';
