@@ -4,40 +4,31 @@ skinparam shadowing false
 skinparam ArrowColor #FF69B4
 skinparam ActivityBackgroundColor #FFF0F5
 skinparam ActivityBorderColor #FF69B4
+skinparam DefaultFontName "Segoe UI"
 
-|Người dùng|
 start
-:Gửi câu hỏi hoặc yêu cầu
-(Ví dụ: "Giải thích chữ Ái" hoặc "Tôi học đến đâu rồi?");
+:Người dùng gửi câu hỏi/yêu cầu;
 
-|Trợ lý Hanachan|
-:Xem lại "Bản ghi nhớ" hiện tại
-(Mục tiêu đang làm, các ý đã chốt);
+:Xem lại "Bản ghi nhớ" hiện tại\n(Các mục tiêu và quyết định đã chốt);
 
-:Kiểm tra 3-5 câu chuyện gần nhất
-để nắm bắt ngữ cảnh;
+:Kiểm tra vài câu chuyện gần nhất\nđể nắm bắt ngữ cảnh hội thoại;
 
-if (Yêu cầu có liên quan đến kiến thức tiếng Nhật?) then (Có)
-  :Tự động tra cứu trong "Kho giáo trình"
-  (Hán tự, Từ vựng, Ngữ pháp chuẩn);
-  :Lấy thông tin chính xác
-  (Nghĩa, cách đọc, mẹo nhớ);
+if (Yêu cầu cần thông tin tiếng Nhật chuẩn?) then (Có)
+  :Tự động tra cứu trong "Kho giáo trình"\n(Hán tự, Từ vựng, Ngữ pháp);
+  :Lấy dữ liệu chính xác kèm mẹo học tập;
 else (Không)
-  :Dùng kiến thức chung để trả lời;
+  :Sử dụng kiến thức chung để giải đáp;
 endif
 
-:Chuẩn bị câu trả lời thân thiện;
+:Chuẩn bị câu trả lời thân thiện (🌸);
 
-if (Người dùng vừa chốt ý hoặc đổi chủ đề?) then (Có)
-  :Cập nhật lại "Bản ghi nhớ" làm việc
-  (Để lượt sau không cần hỏi lại);
-  :Đặt lại tên phiên trò chuyện cho phù hợp;
+if (Phát hiện thay đổi mục tiêu hoặc quyết định mới?) then (Có)
+  :Ngầm cập nhật lại "Bản ghi nhớ"\n(Tránh việc phải hỏi lại người dùng sau này);
+  :Cập nhật tiêu đề phiên trò chuyện phù hợp;
 endif
 
-:Gửi câu trả lời kèm các
-"Nút học tập" (nhấn vào là xem chi tiết);
+:Gửi phản hồi kèm các "Nút học tập" (CTA);
 
-|Người dùng|
-:Nhận phản hồi từ Trợ lý;
+:Người dùng nhận câu trả lời và tiếp tục học;
 stop
 @enduml
