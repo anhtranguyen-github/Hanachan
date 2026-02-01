@@ -4,8 +4,8 @@ import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Book, Filter, Search, Loader2, Lock, Zap, Clock, Flame, Check } from 'lucide-react';
 import { clsx } from 'clsx';
-import { kuRepository } from '@/features/knowledge/db';
-import { learningRepository } from '@/features/learning/db';
+import { curriculumRepository } from '@/features/knowledge/db';
+import { lessonRepository } from '@/features/learning/lessonRepository';
 import { supabase } from '@/lib/supabase';
 import { GlassCard } from '@/components/premium/GlassCard';
 import { useUser } from '@/features/auth/AuthContext';
@@ -34,7 +34,7 @@ function ContentDatabase() {
             // 1. Fetch Items based on level/type
             let queryItems: any[] = [];
             if (selectedLevel !== 'all') {
-                queryItems = await learningRepository.fetchLevelContent(selectedLevel, userId);
+                queryItems = await lessonRepository.fetchLevelContent(selectedLevel, userId);
             } else {
                 // Fetch first 200 items for library overview if no level selected
                 const { data } = await supabase

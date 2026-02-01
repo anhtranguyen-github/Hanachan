@@ -51,7 +51,7 @@ test.describe('Discovery Flow', () => {
         await cleanupUser(TEST_EMAIL);
     });
 
-    test('Discovery: Fail triggers FSRS penalty and re-queue', async ({ page }) => {
+    test('Discovery: Fail does not trigger SRS until KU passed', async ({ page }) => {
         await page.goto('/learn');
 
         // Wait for stats to load
@@ -70,17 +70,13 @@ test.describe('Discovery Flow', () => {
                 break;
             }
 
-            const masteredBtn = page.getByRole('button', { name: /Mastered|Quiz/ });
+            const masteredBtn = page.getByTestId('lesson-next-button');
             await expect(masteredBtn).toBeVisible();
-
-            // Wait for potential network updates before clicking
             await masteredBtn.click();
-
-            // Wait for state transition (either next lesson or quiz)
             await page.waitForResponse(res => res.status() === 200, { timeout: 2000 }).catch(() => { });
         }
 
-        // Should now be in quiz phase (Confirmed by loop exit)
+        // Should now be in quiz phase
         await expect(page.getByTestId('quiz-phase')).toBeVisible();
 
         const input = page.getByRole('textbox');
@@ -88,33 +84,48 @@ test.describe('Discovery Flow', () => {
 
         await expect(debug).toBeAttached();
         const kuId = await debug.getAttribute('data-ku-id');
+        const facet = await debug.getAttribute('data-facet');
 
-        // Fail the first item
-        console.log(`[TEST] Failing item: ${kuId}`);
+        // 1. Fail the first item - Should NOT create DB record
+        console.log(`[TEST] Failing item in Discovery: ${kuId}-${facet}`);
         await input.fill('wronganswer');
         await input.press('Enter');
 
-        // Wait for result and click continue
         const continueBtn = page.getByRole('button', { name: /Got it, Continue/i });
         await expect(continueBtn).toBeVisible({ timeout: 10000 });
-
-        // The FSRS update happens ON SUBMIT, so no need to wait for continue click to check DB
-        const updateResponse = page.waitForResponse(res => res.url().includes('user_learning_states') && res.status() < 400);
         await continueBtn.click();
-        await updateResponse.catch(() => { });
 
-        // Verify state was created in DB
+        // Verify NO state was created in DB after fail
+        const { data: earlyStates } = await supabase.from('user_learning_states')
+            .select('*').eq('user_id', testUserId).eq('ku_id', kuId);
+        expect(earlyStates?.length || 0).toBe(0);
+
+        // 2. Now answer correctly until passed
+        console.log(`[TEST] Answering correctly to pass KU: ${kuId}`);
+        let attempts = 0;
+        while (attempts < 5) { // Safe limit
+            const currentDebug = page.getByTestId('debug-answer');
+            if (await currentDebug.count() === 0) break; // Phase changed
+
+            const currentKuId = await currentDebug.getAttribute('data-ku-id');
+            const currentFacet = await currentDebug.getAttribute('data-facet');
+            const answer = await currentDebug.getAttribute('data-answer');
+
+            if (currentKuId === kuId) {
+                await input.fill(answer || '');
+                await input.press('Enter');
+                attempts++;
+            } else {
+                // Different KU, maybe this one is already passed
+                break;
+            }
+        }
+
+        // Verify state WAS created in DB after success
         await expect.poll(async () => {
             const { data: states } = await supabase.from('user_learning_states')
                 .select('*').eq('user_id', testUserId).eq('ku_id', kuId);
             return states?.length || 0;
         }, { timeout: 10000 }).toBeGreaterThan(0);
-
-        const { data: states } = await supabase.from('user_learning_states')
-            .select('*').eq('user_id', testUserId).eq('ku_id', kuId);
-
-        const state = states?.[0];
-        console.log(`[TEST] State after fail:`, state);
-        expect(state?.lapses).toBeGreaterThan(0);
     });
 });

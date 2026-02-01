@@ -122,8 +122,16 @@ export default function QuizTypesPage() {
                         </div>
                         <div className="p-8">
                             <ReviewCardDisplay
-                                card={kanjiCard}
-                                onRate={handleRate}
+                                card={{
+                                    ...kanjiCard,
+                                    type: kanjiCard.ku_type,
+                                    reading: kanjiCard.readings.primary,
+                                    currentState: { stage: 'learning', stability: 1, difficulty: 5, reps: 0, lapses: 0 },
+                                    originalDoc: {}
+                                } as any}
+                                mode="review"
+                                onReveal={() => { }}
+                                onRate={(r) => handleRate(r === 'good' ? 'pass' : 'fail')}
                             />
                         </div>
                     </div>
@@ -184,8 +192,16 @@ export default function QuizTypesPage() {
                         </div>
                         <div className="p-8">
                             <ReviewCardDisplay
-                                card={grammarCard}
-                                onRate={handleRate}
+                                card={{
+                                    ...grammarCard,
+                                    type: grammarCard.ku_type,
+                                    character: grammarCard.cloze_answer, // Fallback
+                                    currentState: { stage: 'learning', stability: 1, difficulty: 5, reps: 0, lapses: 0 },
+                                    originalDoc: {}
+                                } as any}
+                                mode="review"
+                                onReveal={() => { }}
+                                onRate={(r) => handleRate(r === 'good' ? 'pass' : 'fail')}
                             />
                         </div>
                     </div>
