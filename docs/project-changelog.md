@@ -13,3 +13,12 @@
 - **Path**: `src/app/(main)/learn/session/page.tsx`
 - **Change**: Updated to pass `mode: 'learn'` and trigger SRS initialization upon KU completion in quiz.
 - **Reasoning**: Satisfies the business requirement that only "Mastered" items (those passing the quiz) enter the spaced repetition loop.
+
+## [2026-02-01]
+### Logic & UI
+- **Path**: `src/features/chat/advanced-chatbot.ts`, `src/features/chat/chat-repo.ts`
+- **Change**: Implemented automated chat title summarization using LLM (GPT-4o).
+- **Reasoning**: Enhances UX by providing meaningful context in the sidebar for past conversations, replacing generic titles.
+- **Path**: `src/lib/validation.ts`
+- **Change**: Added `title` field to `ChatSessionSchema`.
+- **Reasoning**: Enables persistence and systematic validation of chat metadata.

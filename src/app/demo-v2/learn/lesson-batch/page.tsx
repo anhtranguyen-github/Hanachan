@@ -1,86 +1,64 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
+import { ChevronRight, Bookmark } from 'lucide-react';
 
 export default function LearnBatch() {
     return (
-        <div className="h-full flex flex-col max-w-4xl mx-auto space-y-8 py-10">
-            {/* Batch Progress - session-er.md logic */}
-            <header className="flex justify-between items-center px-6">
-                <div className="space-y-2">
-                    <div className="flex gap-2.5">
-                        {[
-                            { state: 'completed' },
-                            { state: 'current' },
-                            { state: 'pending' },
-                            { state: 'pending' },
-                            { state: 'pending' }
-                        ].map((item, i) => (
-                            <div
-                                key={i}
-                                className={`h-2.5 rounded-full transition-all duration-700 ${item.state === 'completed' ? 'w-12 bg-primary' :
-                                        item.state === 'current' ? 'w-16 bg-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.4)]' :
-                                            'w-8 bg-gray-100'
-                                    }`}
-                            ></div>
-                        ))}
-                    </div>
-                    <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">Batch Discovery: 2 / 5 Items Learned</p>
-                </div>
-                <Link href="/demo-v2/learn/quit" className="group flex items-center gap-2 text-gray-400 hover:text-red-500 transition-colors">
-                    <span className="text-[10px] font-black uppercase tracking-widest">Abort Batch</span>
-                    <span className="text-xl group-hover:rotate-90 transition-transform">✕</span>
-                </Link>
-            </header>
+        <div className="h-full flex flex-col space-y-4 bg-[#FFFDFD] rounded-[40px] p-4 lg:p-6 overflow-auto custom-scrollbar">
+            {/* Lesson Progress Header */}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-[#F0E0E0] rounded-lg w-fit shadow-sm shrink-0">
+                <Bookmark size={12} className="text-[#FFB5B5]" />
+                <span className="text-[8px] font-black text-[#A0AEC0] uppercase tracking-[0.2em]">Lesson 1 of 5</span>
+            </div>
 
-            <div className="flex-1 bg-white border-2 border-gray-300 rounded-[64px] shadow-sm overflow-hidden flex flex-col relative">
-                {/* Visual Cue for 'Learning' state */}
-                <div className="absolute top-8 right-10">
-                    <span className="px-4 py-2 bg-primary/10 text-primary rounded-2xl text-[10px] font-black uppercase tracking-widest border border-primary/20">
-                        New Discovery
-                    </span>
-                </div>
+            <div className="flex-1 flex flex-col items-center justify-start pt-4 space-y-6 min-h-0">
+                {/* Main Lesson Card - Expanded to fill more space */}
+                <div className="w-full max-w-5xl bg-white border-2 border-[#F0E0E0] rounded-[40px] shadow-sm overflow-hidden flex flex-col p-8 md:p-12 transition-all">
+                    <div className="flex flex-col md:flex-row gap-10 md:gap-20 items-center">
+                        {/* Visual Item Display */}
+                        <div className="flex items-center justify-center shrink-0">
+                            <span className="text-8xl md:text-9xl font-black text-[#87CEEB] leading-none select-none">氵</span>
+                        </div>
 
-                {/* Discovery Content (Radical Example) */}
-                <div className="bg-radical p-20 text-center text-white relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
-                    <h2 className="text-[140px] font-black mb-4 relative z-10 drop-shadow-2xl italic">一</h2>
-                    <p className="text-2xl font-black opacity-90 relative z-10 tracking-[0.3em] uppercase">Ground</p>
-                </div>
+                        {/* Information Side */}
+                        <div className="flex-1 flex flex-col justify-center space-y-4 text-center md:text-left">
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-black text-[#A0AEC0] uppercase tracking-[0.2em] leading-none">Radical</p>
+                                <h2 className="text-5xl font-black text-[#3E4A61] tracking-tight uppercase">Water</h2>
+                            </div>
 
-                {/* Detailed Information (Content Domain) */}
-                <div className="flex-1 p-16 space-y-12 overflow-auto">
-                    <div className="space-y-6">
-                        <h3 className="text-xs font-black uppercase tracking-[0.3em] text-gray-300 border-b-2 border-gray-50 pb-2">Mnemonic Strategy</h3>
-                        <p className="text-2xl text-gray-700 leading-relaxed font-bold italic">
-                            This radical is just a straight line. It looks like the <span className="text-radical underline decoration-4 underline-offset-8">ground</span>.
-                            Imagine standing on a perfectly flat surface, stretching out to the horizon.
-                        </p>
+                            <div className="h-px w-full bg-[#F0E0E0]"></div>
+
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-black text-[#A0AEC0] uppercase tracking-[0.2em] leading-none">Reading</p>
+                                <p className="text-3xl font-black text-[#3E4A61]">sanzui</p>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="bg-gray-50 p-10 rounded-[40px] border-2 border-gray-200">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6">Kanji utilizing this radical</h4>
-                        <div className="flex flex-wrap gap-4">
-                            {['二', '三', '工', '不', '且'].map(k => (
-                                <div key={k} className="w-14 h-14 bg-white border-2 border-gray-200 rounded-2xl flex items-center justify-center text-2xl font-black text-gray-800 shadow-sm hover:border-kanji/30 transition-all cursor-help">
-                                    {k}
-                                </div>
-                            ))}
+                    {/* Mnemonic Section */}
+                    <div className="mt-10 space-y-4">
+                        <div className="py-2 px-4 border border-[#F0E0E0] rounded-lg w-fit bg-[#F7FAFC]">
+                            <span className="text-[10px] font-black text-[#3E4A61] uppercase tracking-widest">Mnemonic</span>
+                        </div>
+                        <div className="bg-[#FFFDFD] border border-[#F0E0E0] rounded-[32px] p-8 md:p-10 shadow-inner">
+                            <p className="text-base md:text-lg font-medium text-[#3E4A61]/80 leading-relaxed text-center md:text-left">
+                                These are three drops of <span className="text-[#87CEEB] font-black">water</span> splashing on the left side of a kanji. This radical always appears on the left and indicates a connection to liquids or water.
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Footer Interaction - batch commits only when all corrected */}
-                <footer className="p-10 border-t border-gray-50 flex justify-between items-center bg-gray-50/30">
-                    <div className="text-xs font-bold text-gray-400">
-                        * All 5 items must be acknowledged to complete this batch.
-                    </div>
-                    <Link
-                        href="/demo-v2/learn/lesson-batch/next"
-                        className="px-16 py-5 bg-primary text-white font-black rounded-[28px] shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all text-xl"
-                    >
-                        Mastered →
-                    </Link>
-                </footer>
+                {/* Action Button */}
+                <Link
+                    href="/demo-v2/learn/lesson-batch/next"
+                    className="group px-12 py-4 bg-[#FFB5B5] hover:bg-[#FFA5A5] text-white rounded-2xl font-black text-base tracking-[0.2em] flex items-center justify-center gap-3 shadow-lg shadow-[#FFB5B5]/20 transition-all active:scale-95 shrink-0 uppercase"
+                >
+                    Start Quiz
+                    <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                </Link>
             </div>
         </div>
     );

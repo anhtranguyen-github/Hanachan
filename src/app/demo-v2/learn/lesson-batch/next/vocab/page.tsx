@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ChevronLeft, Brain, ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export default function ReviewItem() {
+export default function LearnVocabQuiz() {
     const router = useRouter();
     const [answer, setAnswer] = React.useState('');
     const [status, setStatus] = React.useState<'idle' | 'correct' | 'wrong'>('idle');
@@ -13,12 +13,12 @@ export default function ReviewItem() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (status !== 'idle') {
-            router.push('/demo-v2/review/vocab');
+            router.push('/demo-v2/learn/lesson-batch/next/grammar');
             return;
         }
 
-        // Mock verification: "umi" or "うみ" is correct
-        if (answer.toLowerCase() === 'umi' || answer === 'うみ') {
+        // Mock verification: "swim" or "bơi"
+        if (answer.toLowerCase() === 'swim' || answer === 'bơi') {
             setStatus('correct');
         } else {
             setStatus('wrong');
@@ -28,19 +28,19 @@ export default function ReviewItem() {
     return (
         <div className="fixed inset-0 bg-white flex flex-col font-sans text-[#3E4A61] overflow-hidden">
             <header className="h-16 flex items-center justify-between px-8 shrink-0">
-                <Link href="/demo-v2/review" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] hover:text-[#FFB5B5] transition-colors">
+                <Link href="/demo-v2/learn/lesson-batch" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] hover:text-[#FFB5B5] transition-colors">
                     <ChevronLeft size={16} />
-                    Exit Quiz
+                    Exit Lesson
                 </Link>
             </header>
 
             <div className="px-12 py-4 space-y-2 shrink-0 max-w-5xl mx-auto w-full">
                 <div className="flex justify-between items-end">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#3E4A61]">Progress</span>
-                    <span className="text-[10px] font-black text-[#3E4A61]">17 / 42</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#3E4A61]">Batch Quiz Progress</span>
+                    <span className="text-[10px] font-black text-[#3E4A61]">4 / 5</span>
                 </div>
                 <div className="h-1.5 bg-[#FFF9F9] rounded-full overflow-hidden">
-                    <div className="h-full w-[38%] bg-[#FFB5B5] rounded-full"></div>
+                    <div className="h-full w-[80%] bg-[#FFB5B5] rounded-full"></div>
                 </div>
             </div>
 
@@ -48,17 +48,17 @@ export default function ReviewItem() {
                 <div className="w-full max-w-2xl bg-white border border-[#F0E0E0] rounded-[48px] shadow-2xl shadow-[#FFB5B5]/5 flex flex-col overflow-hidden">
                     <div className="py-6 border-b border-[#F7FAFC] flex items-center justify-center gap-3 bg-[#F7FAFC]/30">
                         <Brain size={20} className="text-[#3E4A61]" />
-                        <p className="text-sm font-bold text-[#3E4A61]">What is the reading of this kanji?</p>
+                        <p className="text-sm font-bold text-[#3E4A61]">What is the meaning of this vocabulary?</p>
                     </div>
 
                     <div className="flex-1 p-10 md:p-14 flex flex-col items-center space-y-12">
                         <div className="relative">
-                            <div className="w-40 h-40 bg-white border border-[#F0E0E0] rounded-[40px] shadow-xl flex items-center justify-center text-8xl font-black text-[#FFB5B5] relative z-10 transition-transform">
-                                海
+                            <div className="w-64 h-32 md:h-40 bg-white border border-[#F0E0E0] rounded-[40px] shadow-xl flex items-center justify-center text-5xl md:text-6xl font-black text-[#FFB5B5] relative z-10 transition-transform">
+                                泳ぐ
                             </div>
                         </div>
 
-                        <h2 className="text-4xl font-black text-[#4E5A71] tracking-tight uppercase pt-6">What is the Reading?</h2>
+                        <h2 className="text-4xl font-black text-[#4E5A71] tracking-tight uppercase pt-6">What is the Meaning?</h2>
 
                         <form onSubmit={handleSubmit} className="w-full relative group flex flex-col items-center gap-8">
                             <input
@@ -68,8 +68,8 @@ export default function ReviewItem() {
                                 onChange={(e) => setAnswer(e.target.value)}
                                 disabled={status !== 'idle'}
                                 className={`w-full py-6 md:py-8 bg-white border rounded-[40px] text-center text-4xl font-black outline-none transition-all placeholder:text-[#CBD5E0]/60 shadow-sm ${status === 'idle' ? 'border-[#F0E0E0] focus:border-[#FFB5B5] text-[#3E4A61]' :
-                                    status === 'correct' ? 'border-[#48BB78] text-[#48BB78] bg-[#F0FFF4]' :
-                                        'border-[#F56565] text-[#F56565] bg-[#FFF5F5]'
+                                        status === 'correct' ? 'border-[#48BB78] text-[#48BB78] bg-[#F0FFF4]' :
+                                            'border-[#F56565] text-[#F56565] bg-[#FFF5F5]'
                                     }`}
                                 autoFocus
                             />
@@ -77,8 +77,8 @@ export default function ReviewItem() {
                             <button
                                 type="submit"
                                 className={`group w-full max-w-sm py-5 rounded-[24px] font-black text-xs tracking-widest flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 uppercase ${status === 'idle' ? 'bg-[#3E4A61] text-white' :
-                                    status === 'correct' ? 'bg-[#48BB78] text-white' :
-                                        'bg-[#F56565] text-white'
+                                        status === 'correct' ? 'bg-[#48BB78] text-white' :
+                                            'bg-[#F56565] text-white'
                                     }`}
                             >
                                 {status === 'idle' ? 'Submit Answer' : 'Continue'}
@@ -87,7 +87,7 @@ export default function ReviewItem() {
                         </form>
                     </div>
                 </div>
-                <p className="mt-10 text-[10px] font-black text-[#A0AEC0] uppercase tracking-[0.2em]">Type in hiragana and press Enter to submit</p>
+                <p className="mt-10 text-[10px] font-black text-[#A0AEC0] uppercase tracking-[0.2em]">Press Enter to check your answer</p>
             </main>
 
             {/* Feedback Tray */}
@@ -107,15 +107,15 @@ export default function ReviewItem() {
                                 </h3>
                                 <p className={`text-sm font-bold ${status === 'correct' ? 'text-[#48BB78]' : 'text-[#F56565]'
                                     }`}>
-                                    {status === 'correct' ? 'Nicely done, you got it right.' : 'Please try to recall better next time.'}
+                                    {status === 'correct' ? 'Wonderful! Your vocabulary knowledge is solid.' : 'Review this item again. You will get it.'}
                                 </p>
                             </div>
                         </div>
                         <button
-                            onClick={() => router.push('/demo-v2/review/vocab')}
+                            onClick={() => router.push('/demo-v2/learn/lesson-batch/next/grammar')}
                             className="px-10 py-5 bg-[#3E4A61] text-white rounded-[24px] font-black text-xs tracking-[0.2em] shadow-xl hover:scale-105 transition-all uppercase"
                         >
-                            Next Item
+                            Next Quiz
                         </button>
                     </div>
                 </div>

@@ -8,8 +8,9 @@ import { chatRepo } from './chat-repo';
 import { ContextInjector, ProjectAwarenessInjector, PersonaInjector, SRSSimulatorInjector } from './injectors';
 import { classifyIntent } from './chat-router';
 import { sentenceService } from '../sentence/service';
-import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
 import { sentenceRepository } from '../sentence/db';
+import { kuRepository } from '@/features/knowledge/db';
+import { ReferencedKU } from './simple-agent';
 
 
 export class AdvancedChatService {
@@ -28,7 +29,7 @@ export class AdvancedChatService {
     /**
      * Main entry point.
      */
-    async sendMessage(sessionId: string, userId: string, text: string): Promise<{ reply: string; actions: any[] }> {
+    async sendMessage(sessionId: string, userId: string, text: string): Promise<{ reply: string; actions: any[]; referencedKUs?: ReferencedKU[] }> {
         // 1. Session Management
         let session = await chatRepo.getSession(sessionId);
         if (!session) {
@@ -45,8 +46,9 @@ export class AdvancedChatService {
             return await this.handleAnalysis(resolvedSessionId, userId, text);
         }
 
-        // 4. Construct System Prompt
-        let systemContext = await this.buildSystemContext(userId, intent);
+        // 4. Construct System Prompt (including Session Summary)
+        const summary = session.summary || "No summary yet.";
+        let systemContext = await this.buildSystemContext(userId, intent, summary);
 
         // 5. Build LangChain Chain
         const promptTemplate = ChatPromptTemplate.fromMessages([
@@ -57,7 +59,9 @@ export class AdvancedChatService {
 
         const chain = promptTemplate.pipe(this.llm);
 
-        const history = session.messages.map((m: any) =>
+        // Principle 2: Only use 5-7 recent turns (let's use 6 messages = 3 turns for brevity, or 12 messages = 6 turns)
+        const historyLimit = 12;
+        const history = session.messages.slice(-historyLimit).map((m: any) =>
             m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content)
         );
 
@@ -70,19 +74,60 @@ export class AdvancedChatService {
             input: text
         });
 
-        const replyText = response.content as string;
+        let replyText = response.content as string;
+
+        // --- Implicit Summary Update Handling ---
+        // Extract updated summary if the LLM provided one in <session_summary> tags
+        const summaryMatch = replyText.match(/<session_summary>([\s\S]*?)<\/session_summary>/);
+        if (summaryMatch) {
+            const newSummary = summaryMatch[1].trim();
+            await chatRepo.updateSessionSummary(resolvedSessionId, newSummary);
+            // Remove the summary from the reply sent to the user (NGẦM cập nhật)
+            replyText = replyText.replace(/<session_summary>[\s\S]*?<\/session_summary>/, "").trim();
+        }
 
         // Context-aware Action Extraction
         const actions = this.extractContextActions(replyText, intent);
+
+        // --- AUTO LINK KU (CTA detection) ---
+        const referencedKUs = await this.detectKUs(replyText);
+        const referenced_ku_ids = referencedKUs.map(k => k.id);
 
         await chatRepo.addMessage(resolvedSessionId, {
             role: 'assistant',
             content: replyText,
             timestamp: new Date().toISOString(),
-            metadata: { actions }
+            metadata: { actions, referencedKUs },
         });
 
-        return { reply: replyText, actions };
+        // 6. Generate Title if this is the first exchange OR focus shifted
+        if (session.messages.length <= 1 || summaryMatch) {
+            const contextForTitle = summaryMatch ? summaryMatch[1] : text;
+            this.generateAndStoreTitle(resolvedSessionId, contextForTitle).catch(err =>
+                console.error("Delayed title gen failed:", err)
+            );
+        }
+
+        return { reply: replyText, actions, referencedKUs };
+    }
+
+    private async generateAndStoreTitle(sessionId: string, context: string) {
+        try {
+            const prompt = `Based on this summary/request, create a very short, catchy title (max 5 words, no quotes) that reflects the CURRENT FOCUS.
+            Context: "${context}"
+            Title:`;
+
+            const response = await this.llm.invoke([
+                new SystemMessage("You are a helpful assistant that summarizes chat titles."),
+                new HumanMessage(prompt)
+            ]);
+
+            const title = (response.content as string).trim();
+            await chatRepo.updateSessionTitle(sessionId, title);
+            console.log(`📝 Generated Title: ${title}`);
+        } catch (error) {
+            console.error("Failed to generate title:", error);
+        }
     }
 
     private extractContextActions(text: string, intent: string): any[] {
@@ -113,8 +158,61 @@ export class AdvancedChatService {
         return actions;
     }
 
-    private async buildSystemContext(userId: string, intent: string): Promise<string> {
-        let context = "You are an advanced AI Tutor.";
+    // Extraction logic from SimpleAgent, integrated here
+    private async detectKUs(text: string): Promise<ReferencedKU[]> {
+        const refs: ReferencedKU[] = [];
+        const matches = text.match(/[A-Za-z0-9-]+|[\u4e00-\u9faf]/g) || [];
+        const uniqueMatches = Array.from(new Set(matches));
+
+        for (const m of uniqueMatches) {
+            if (m.length < 1 || refs.length >= 3) break;
+
+            const { data } = await kuRepository.search(m, undefined, 1, 1);
+            if (data && data.length > 0) {
+                const k = data[0];
+                if (!refs.find(r => r.id === k.id)) {
+                    refs.push({
+                        id: k.id,
+                        slug: k.slug,
+                        character: k.character,
+                        type: k.type
+                    });
+                }
+            }
+        }
+        return refs;
+    }
+
+    private async buildSystemContext(userId: string, intent: string, summary: string): Promise<string> {
+        let context = `You are Hanachan, an expert Japanese language tutor. 
+        
+### CONTEXT MANAGEMENT PRINCIPLES:
+1. DO NOT rely on the entire conversation history. Use the provided Session Summary and recent turns.
+2. The Session Summary is the "working state", not just a summary. 
+3. Always stick to the goals and decisions locked in the Session Summary.
+4. Do not repeat explanations already locked in the summary unless asked.
+5. Do not change architecture or assumptions without user approval.
+
+### CURRENT SESSION SUMMARY:
+${summary}
+
+### UPDATE TRIGGER:
+If the user:
+- Locks a tech decision
+- Rejects an approach
+- Shifts focus to a new problem
+Then:
+1. Respond briefly.
+2. Implicitly update the Session Summary by including it at the end of your response wrapped in <session_summary> tags.
+3. The summary MUST follow this structure:
+   - Mục tiêu hiện tại
+   - Các quyết định đã chốt
+   - Ràng buộc / nguyên tắc
+   - Câu hỏi còn mở (nếu có)
+
+If information is missing from the summary or recent turns, ASK the user instead of guessing.
+Prioritize simple solutions and avoid over-engineering.
+`;
         context += await this.personaInjector.inject(userId);
 
         if (intent === 'PROJECT_QUERY') {

@@ -1,105 +1,150 @@
+'use client';
+
 import React from 'react';
+import Link from 'next/link';
+import {
+    ChevronLeft,
+    Target,
+    Brain,
+    Layers,
+    Info,
+    Volume2,
+    Combine,
+    Eye
+} from 'lucide-react';
 
-export default function KanjiDetail() {
+export default function KanjiDetail({ params }: { params: { id: string } }) {
+    // Kanji data with the same clean architecture
+    const kanjiData = {
+        character: "工",
+        level: 1,
+        onyomi: "こう",
+        meaning: "CONSTRUCTION",
+        meaning_alternatives: ["Industry"],
+        meaning_strategy: "The construction radical and the construction kanji are the same! This kanji also means industry, which is what construction is.",
+        reading_strategy: "Every time a kanji uses the こう reading, we'll use the character こういち (Koichi). Stand next to the construction site.",
+        radicals: [
+            { character: "工", name: "CONSTRUCTION" }
+        ],
+        visually_similar: ["土", "干", "王"],
+        amalgamations: [
+            { character: "人工", meaning: "Artificial", reading: "じんこう" },
+            { character: "工場", meaning: "Factory", reading: "こうじょう" }
+        ]
+    };
+
     return (
-        <div className="max-w-4xl mx-auto space-y-16 pb-20">
-            {/* Header: Identity & Stroke Order Animation */}
-            <header className="grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
-                <div className="md:col-span-5 text-center">
-                    <div className="w-56 h-56 bg-kanji text-white rounded-[60px] flex items-center justify-center text-[120px] font-black shadow-2xl mx-auto transform hover:rotate-3 transition-transform cursor-help">
-                        日
-                    </div>
-                </div>
-                <div className="md:col-span-7 space-y-4">
-                    <div className="flex items-center gap-3">
-                        <span className="px-4 py-1.5 bg-kanji/10 text-kanji rounded-full text-xs font-black uppercase tracking-widest">Level 1 Kanji</span>
-                        <span className="px-4 py-1.5 bg-gray-100 text-gray-500 rounded-full text-xs font-black uppercase tracking-widest">JLPT N5</span>
-                    </div>
-                    <h1 className="text-6xl font-black text-gray-900 leading-tight">Sun, Day</h1>
-                    <div className="flex gap-4">
-                        <button className="flex-1 py-3 bg-white border-2 border-gray-300 rounded-2xl font-black text-sm text-gray-400 hover:text-gray-900 hover:border-gray-900 transition-all">Download SVG</button>
-                        <button className="flex-1 py-3 bg-gray-900 text-white rounded-2xl font-black text-sm shadow-xl hover:bg-black transition-all">Watch Stroke Video</button>
-                    </div>
-                </div>
-            </header>
+        <div className="max-w-6xl mx-auto space-y-10 pb-20 font-sans text-[#3E4A61]">
+            {/* Tiny Back Button */}
+            <Link href="/demo-v2/content/kanji" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#A0AEC0] hover:text-[#FFB5B5] transition-colors w-fit pt-4">
+                <ChevronLeft size={16} />
+                Back to Kanji Library
+            </Link>
 
-            {/* Readings & Composition Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-white border-2 border-gray-300 p-10 rounded-[48px] shadow-sm space-y-8">
-                    <div className="space-y-8">
-                        <div className="space-y-2">
-                            <p className="text-[10px] font-black text-kanji uppercase tracking-[0.3em] flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-kanji"></span> Onyomi
-                            </p>
-                            <p className="text-5xl font-black text-gray-900">ニチ, ジツ</p>
-                        </div>
-                        <div className="space-y-2">
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-gray-200"></span> Kunyomi
-                            </p>
-                            <p className="text-4xl font-black text-gray-700">ひ, -び, -か</p>
-                        </div>
-                    </div>
+            {/* Hero Card */}
+            <section className="bg-white border border-[#F0E0E0] rounded-[48px] p-10 md:p-16 shadow-xl shadow-[#3E4A61]/5 relative overflow-hidden flex flex-col items-center justify-center text-center">
+                <div className="absolute top-8 left-8">
+                    <span className="px-4 py-1.5 bg-[#3E4A61] text-white text-[10px] font-black uppercase rounded-lg shadow-lg tracking-widest">Level {kanjiData.level}</span>
                 </div>
 
-                <div className="bg-white border-2 border-gray-300 p-10 rounded-[48px] shadow-sm space-y-6">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 border-b-2 border-gray-50 pb-2">Composition (Radicals)</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="p-6 bg-gray-50 rounded-3xl border-2 border-gray-200 text-center hover:bg-radical/5 hover:border-radical/20 transition-all cursor-pointer group">
-                            <span className="block text-4xl font-black text-gray-800 group-hover:text-radical transition-colors">日</span>
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1 group-hover:text-radical/60 uppercase">Sun</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Mnemonics - The Heart of Learning */}
-            <div className="space-y-12">
-                <section className="space-y-6">
-                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-gray-400 border-b-2 border-gray-100 pb-2">Meaning Mnemonic</h3>
-                    <div className="bg-white border-2 border-gray-300 p-10 rounded-[48px] shadow-sm shadow-kanji/5">
-                        <p className="text-2xl text-gray-800 leading-relaxed font-bold">
-                            The sun is a circle with a line through it. However, because it's hard to draw circles with calligraphy brushes, it became a <span className="text-kanji underline decoration-4 underline-offset-8 italic">square sun</span> with a line in the middle.
-                        </p>
-                    </div>
-                </section>
-
-                <section className="space-y-6">
-                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-gray-400 border-b-2 border-gray-100 pb-2">Reading Mnemonic</h3>
-                    <div className="bg-white border-2 border-gray-300 p-10 rounded-[48px] shadow-sm shadow-gray-100">
-                        <p className="text-2xl text-gray-800 leading-relaxed font-bold">
-                            When the <span className="text-kanji">Sun</span> (日) comes up, it's <span className="text-kanji underline decoration-4 underline-offset-8">Nee-chi</span> (Nichi). Imagine a tiny <span className="bg-gray-100 px-2 rounded">Knee</span> that is <span className="bg-gray-100 px-2 rounded">Itchy</span>. Nichi!
-                        </p>
-                    </div>
-                </section>
-            </div>
-
-            {/* Related Vocabulary */}
-            <section className="space-y-8">
-                <div className="flex justify-between items-center">
-                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-gray-400">Related Vocabulary</h3>
-                    <button className="text-xs font-black text-kanji uppercase tracking-widest hover:underline">View All 42 Items</button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {[
-                        { word: "日本", reading: "にほん", meaning: "Japan", type: "Noun" },
-                        { word: "今日", reading: "きょう", meaning: "Today", type: "Adverb" },
-                        { word: "毎日", reading: "まいにch", meaning: "Every day", type: "Adverb" },
-                        { word: "休日", reading: "きゅうじつ", meaning: "Holiday", type: "Noun" }
-                    ].map((v, i) => (
-                        <div key={i} className="bg-white border-2 border-gray-300 p-8 rounded-[40px] shadow-sm flex items-center justify-between hover:border-vocab/30 transition-all group cursor-pointer relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-16 h-16 bg-vocab/5 rounded-bl-[40px] flex items-center justify-center">
-                                <span className="text-[10px] font-black text-vocab/40 uppercase rotate-45">{v.type}</span>
+                <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12 w-full max-w-5xl">
+                    <div className="relative group shrink-0">
+                        {/* Stroke Order Animation Placeholder */}
+                        <div className="w-[160px] h-[160px] md:w-[200px] md:h-[200px] bg-[#F7FAFC] border-2 border-[#F0E0E0] rounded-[40px] flex items-center justify-center relative overflow-hidden shadow-inner">
+                            {/* Grid lines to make it look technical */}
+                            <div className="absolute inset-0 grid grid-cols-2 grid-rows-2">
+                                <div className="border border-[#EDF2F7] border-dashed"></div>
+                                <div className="border border-[#EDF2F7] border-dashed"></div>
+                                <div className="border border-[#EDF2F7] border-dashed"></div>
+                                <div className="border border-[#EDF2F7] border-dashed"></div>
                             </div>
-                            <div className="space-y-2">
-                                <p className="text-3xl font-black text-gray-900 group-hover:text-vocab transition-colors">{v.word}</p>
-                                <p className="text-sm text-gray-400 font-bold uppercase tracking-tight">{v.reading}</p>
-                            </div>
-                            <p className="text-xl font-black text-gray-600">{v.meaning}</p>
+                            <span className="text-[100px] md:text-[130px] font-black text-[#3E4A61] relative z-10 animate-pulse">
+                                {kanjiData.character}
+                            </span>
                         </div>
-                    ))}
+                    </div>
+                    <div className="flex flex-col items-center md:items-start text-center md:text-left min-w-0 flex-1">
+                        <p className="text-xl md:text-2xl font-bold text-[#FFB5B5] leading-none mb-3">{kanjiData.onyomi}</p>
+                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-[#3E4A61] leading-tight tracking-tight uppercase break-words w-full">
+                            {kanjiData.meaning}
+                        </h1>
+                    </div>
                 </div>
             </section>
+
+            {/* Strategy Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-white border border-[#F0E0E0] rounded-[32px] p-8 md:p-10 shadow-sm space-y-4">
+                    <div className="flex items-center gap-3">
+                        <Target size={18} className="text-[#FFB5B5]" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#A0AEC0]">Meaning Strategy</span>
+                    </div>
+                    <p className="text-lg md:text-xl font-bold leading-relaxed">
+                        The <span className="text-[#FFB5B5] underline underline-offset-4">construction radical</span> and the <span className="text-[#FFB5B5] underline underline-offset-4">construction kanji</span> are the same! This kanji also means <span className="text-[#FFB5B5] font-black">industry</span>, which is what construction is.
+                    </p>
+                </div>
+
+                <div className="bg-white border border-[#F0E0E0] rounded-[32px] p-8 md:p-10 shadow-sm space-y-4">
+                    <div className="flex items-center gap-3">
+                        <Brain size={18} className="text-[#FFB5B5]" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#A0AEC0]">Reading Strategy</span>
+                    </div>
+                    <p className="text-lg md:text-xl font-bold leading-relaxed">
+                        Every time a kanji uses the <span className="text-[#FFB5B5] font-black">こう</span> reading, we'll use the character <span className="text-[#3E4A61] underline decoration-[#FFB5B5]">こういち</span> (Koichi). Stand next to the <span className="text-[#FFB5B5] font-black uppercase">construction site</span>.
+                    </p>
+                </div>
+            </div>
+
+            {/* Composition & Similarity */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <section className="lg:col-span-12 bg-white border border-[#F0E0E0] rounded-[40px] p-10 shadow-sm space-y-8">
+                    <div className="flex items-center gap-3">
+                        <Layers size={18} className="text-[#FFB5B5]" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#A0AEC0]">Structural Components</span>
+                    </div>
+                    <div className="flex flex-wrap gap-6">
+                        {kanjiData.radicals.map((rad, i) => (
+                            <div key={i} className="w-32 h-36 bg-white border border-[#F0E0E0] rounded-3xl flex flex-col items-center justify-center gap-3 hover:border-[#FFB5B5] transition-all shadow-sm cursor-pointer">
+                                <span className="text-5xl font-black text-[#3E4A61]">{rad.character}</span>
+                                <span className="text-[10px] font-black text-[#A0AEC0] uppercase tracking-widest">{rad.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* Similar & Amalgamations Row */}
+                <section className="lg:col-span-5 bg-white border border-[#F0E0E0] rounded-[40px] p-10 shadow-sm space-y-6">
+                    <div className="flex items-center gap-3">
+                        <Eye size={18} className="text-[#FFB5B5]" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#A0AEC0]">Visually Similar</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                        {kanjiData.visually_similar.map((char, i) => (
+                            <div key={i} className="aspect-square bg-[#F7FAFC] border border-[#EDF2F7] rounded-3xl flex items-center justify-center text-3xl font-black text-[#3E4A61] hover:bg-white hover:border-[#FFB5B5] transition-all cursor-pointer">
+                                {char}
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                <section className="lg:col-span-7 space-y-6">
+                    <div className="flex items-center gap-3 px-4">
+                        <Combine size={18} className="text-[#FFB5B5]" />
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#A0AEC0]">Common Amalgamations</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {kanjiData.amalgamations.map((v, i) => (
+                            <div key={i} className="bg-white border border-[#F0E0E0] rounded-[32px] p-6 shadow-sm hover:border-[#FFB5B5] transition-all group flex items-center justify-between cursor-pointer">
+                                <div className="space-y-1">
+                                    <p className="text-2xl font-black text-[#3E4A61] group-hover:text-[#FFB5B5] transition-colors">{v.character}</p>
+                                    <p className="text-[9px] text-[#A0AEC0] font-black uppercase tracking-widest">{v.reading}</p>
+                                </div>
+                                <p className="text-base font-bold text-[#A0AEC0]">{v.meaning}</p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            </div>
         </div>
     );
 }

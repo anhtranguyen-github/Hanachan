@@ -1,112 +1,124 @@
+'use client';
+
 import React from 'react';
+import Link from 'next/link';
+import {
+    CheckCircle2,
+    ChevronRight,
+    GraduationCap,
+    BookOpen,
+    Target,
+    TrendingUp
+} from 'lucide-react';
 
 export default function Dashboard() {
     return (
-        <div className="space-y-8 pb-10">
-            <header className="flex justify-between items-end">
-                <div className="space-y-1">
-                    <h1 className="text-4xl font-black text-gray-900 tracking-tight">Konnichiwa, Hana!</h1>
-                    <div className="flex items-center gap-4">
-                        <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">Mastery Level 12</span>
-                        <div className="flex gap-1">
-                            {[1, 2, 3].map(i => <div key={i} className="w-1.5 h-1.5 rounded-full bg-primary/30"></div>)}
-                        </div>
-                    </div>
+        <div className="max-w-5xl mx-auto space-y-8 py-4 font-sans text-[#3E4A61]">
+            <div className="relative flex items-center justify-center py-2">
+                <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-[#F0E0E0]"></div>
                 </div>
-                <div className="flex gap-4">
-                    {/* Streak Counter - from User Domain */}
-                    <div className="bg-orange-50 px-6 py-3 rounded-2xl border-2 border-orange-100 flex items-center gap-3">
-                        <span className="text-2xl animate-pulse">🔥</span>
-                        <div>
-                            <span className="block text-xl font-black text-orange-600 leading-none">15</span>
-                            <span className="text-[10px] font-black text-orange-300 uppercase tracking-widest">Day Streak</span>
-                        </div>
-                    </div>
+                <div className="relative bg-[#FFFDFD] px-4">
+                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[#3E4A61]">Suggested Actions</span>
                 </div>
-            </header>
+            </div>
 
-            <div className="grid grid-cols-12 gap-6">
-                {/* SRS Summary - High Level Stats */}
-                <div className="col-span-12 lg:col-span-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-primary text-white p-8 rounded-[40px] shadow-xl shadow-primary/20 relative overflow-hidden group cursor-pointer">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-bl-[60px] transform group-hover:scale-110 transition-transform"></div>
-                        <span className="block text-5xl font-black mb-1">42</span>
-                        <span className="text-xs font-black uppercase tracking-widest opacity-60">Lessons Available</span>
-                        <div className="mt-6 flex items-center gap-2 text-xs font-bold">
-                            <span>Start Learning</span>
-                            <span>→</span>
-                        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Link
+                    href="/demo-v2/review"
+                    className="bg-white border-2 border-[#F0E0E0] rounded-[40px] p-10 flex flex-col items-center justify-center text-center space-y-4 shadow-sm hover:border-[#FFB5B5] transition-all group min-h-[280px]"
+                >
+                    <div className="w-14 h-14 rounded-full bg-[#FFF5F5] flex items-center justify-center text-[#FFB5B5] shadow-inner">
+                        <TrendingUp size={28} />
+                    </div>
+                    <div className="space-y-1">
+                        <h3 className="text-xl font-black uppercase tracking-tight text-[#3E4A61]">24 Reviews Due</h3>
+                        <p className="text-xs text-[#A0AEC0] font-bold italic tracking-tight group-hover:text-[#FFB5B5] transition-colors">Time to practice your knowledge!</p>
+                    </div>
+                </Link>
+
+                <div className="bg-white border-2 border-[#F0E0E0] rounded-[40px] p-8 shadow-xl shadow-[#3E4A61]/5 flex flex-col justify-between relative overflow-hidden group min-h-[280px]">
+                    <div className="absolute -right-6 -top-6 text-[#F7FAFC] transition-transform duration-700 group-hover:scale-110 group-hover:rotate-6">
+                        <GraduationCap size={160} strokeWidth={1} />
                     </div>
 
-                    <div className="bg-kanji text-white p-8 rounded-[40px] shadow-xl shadow-kanji/20 relative overflow-hidden group cursor-pointer">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-bl-[60px] transform group-hover:scale-110 transition-transform"></div>
-                        <span className="block text-5xl font-black mb-1">115</span>
-                        <span className="text-xs font-black uppercase tracking-widest opacity-60">Reviews Due</span>
-                        <div className="mt-6 flex items-center gap-2 text-xs font-bold">
-                            <span>Ready to Review</span>
-                            <span>→</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-white border-2 border-gray-300 p-8 rounded-[40px] flex flex-col justify-between">
+                    <div className="relative z-10 space-y-4">
                         <div className="space-y-1">
-                            <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Daily Precision</span>
-                            <span className="block text-4xl font-black text-gray-900">94.2%</span>
+                            <div className="flex items-center gap-2">
+                                <BookOpen size={14} className="text-[#3E4A61]" />
+                                <span className="text-[9px] font-black uppercase tracking-widest text-[#3E4A61]">New Content</span>
+                            </div>
+                            <h3 className="text-3xl font-black text-[#3E4A61]">Level 2</h3>
+                            <p className="text-sm font-black text-[#FFB5B5] tracking-tight">Batch 1</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div className="w-[94%] h-full bg-green-500"></div>
+
+                        <div className="bg-[#F2E8E8] rounded-2xl p-4 flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#3E4A61]">8 New Lessons</span>
+                            <div className="flex -space-x-2.5">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="w-6 h-6 rounded-full bg-white border-2 border-[#F2E8E8] flex items-center justify-center text-[8px] text-[#A0AEC0]">?</div>
+                                ))}
+                                <div className="w-6 h-6 rounded-full bg-[#FFB5B5] border-2 border-[#F2E8E8] flex items-center justify-center text-[8px] text-white font-bold">+</div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Accuracy Breakdown - from LearningLog (Progress Domain) */}
-                <div className="col-span-12 lg:col-span-4 bg-gray-900 text-white p-8 rounded-[40px] shadow-2xl space-y-6">
-                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-500">Today's Activity</h3>
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm font-bold text-gray-400">Correct Answers</span>
-                            <span className="text-xl font-black text-green-400">128</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm font-bold text-gray-400">Incorrect Retries</span>
-                            <span className="text-xl font-black text-red-400">8</span>
-                        </div>
-                        <div className="pt-4 border-t border-gray-800">
-                            <div className="flex justify-between items-end">
-                                <div>
-                                    <span className="block text-xs font-bold text-gray-500">Daily Goal</span>
-                                    <span className="text-lg font-black italic">136 / 200 items</span>
-                                </div>
-                                <span className="text-xs font-bold text-primary">68%</span>
-                            </div>
-                            <div className="h-6 mt-2 bg-gray-800 rounded-2xl p-1">
-                                <div className="w-[68%] h-full bg-primary rounded-xl shadow-[0_0_20px_rgba(var(--primary-rgb),0.5)]"></div>
-                            </div>
-                        </div>
-                    </div>
+                    <Link
+                        href="/demo-v2/learn/lesson-batch"
+                        className="relative z-10 mt-6 w-full py-4 px-8 border-2 border-[#F0E0E0] rounded-2xl flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-[#3E4A61] hover:bg-[#3E4A61] hover:text-white hover:border-[#3E4A61] transition-all group/btn shadow-sm"
+                    >
+                        Unlock Batch
+                        <ChevronRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                    </Link>
                 </div>
+            </div>
 
-                {/* Level progression detail */}
-                <div className="col-span-12 bg-white border-2 border-gray-300 p-10 rounded-[48px] space-y-8">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="space-y-1">
-                            <h3 className="text-2xl font-black text-gray-900">Level 12 Progression</h3>
-                            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">Passing Kanji is required to level up</p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 bg-white border-2 border-[#F0E0E0] rounded-[40px] p-8 shadow-sm space-y-6 flex flex-col justify-center">
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 border-2 border-[#F7FAFC] rounded-xl flex items-center justify-center text-xl font-black text-[#FFB5B5] shadow-sm">
+                                2
+                            </div>
+                            <div className="space-y-0.5">
+                                <h4 className="text-sm font-black text-[#3E4A61] uppercase tracking-tight">Level Progress</h4>
+                                <p className="text-[8px] font-black text-[#A0AEC0] uppercase tracking-widest">Walkthrough: 0 / 2 Items</p>
+                            </div>
                         </div>
                         <div className="text-right">
-                            <span className="text-4xl font-black text-kanji">24</span>
-                            <span className="text-xl font-black text-gray-300"> / 30</span>
+                            <span className="text-2xl font-black text-[#FFB5B5]">15%</span>
                         </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                        {Array.from({ length: 30 }).map((_, i) => (
-                            <div
-                                key={i}
-                                className={`w-10 h-3 rounded-full transition-all duration-500 ${i < 24 ? 'bg-kanji shadow-[0_0_10px_rgba(var(--kanji-rgb),0.3)]' : 'bg-gray-100'}`}
-                            ></div>
+
+                    <div className="h-2.5 bg-[#FFF5F5] rounded-full overflow-hidden">
+                        <div className="h-full bg-[#FFB5B5] rounded-full shadow-[0_0_8px_rgba(255,181,181,0.5)]" style={{ width: '15%' }}></div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                        {[
+                            { label: 'Batches Done', icon: <div className="w-3 h-3 rounded-full border-2 border-[#F0E0E0]" /> },
+                            { label: 'Reviews < 60', icon: <div className="w-3 h-3 rounded-full border-2 border-[#FFB5B5] bg-[#FFF5F5] flex items-center justify-center"><CheckCircle2 size={8} className="text-[#FFB5B5]" /></div> },
+                            { label: '90% Stable', icon: <div className="w-3 h-3 rounded-full border-2 border-[#F0E0E0]" /> }
+                        ].map((status, i) => (
+                            <div key={i} className="bg-[#F7FAFC] border border-[#EDF2F7] rounded-2xl p-4 flex flex-col items-center justify-center gap-2 text-center">
+                                {status.icon}
+                                <span className="text-[7px] font-black uppercase tracking-widest text-[#A0AEC0] leading-tight">{status.label}</span>
+                            </div>
                         ))}
+                    </div>
+                </div>
+
+                <div className="bg-white border-2 border-[#F0E0E0] rounded-[40px] p-8 shadow-sm space-y-6 flex flex-col justify-center">
+                    <div className="flex items-center gap-2.5">
+                        <Target size={14} className="text-[#A0AEC0]" />
+                        <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-[#3E4A61]">Batch Overview</h4>
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="p-4 bg-white border-2 border-[#F0E0E0] rounded-2xl flex items-center gap-3 group cursor-pointer hover:border-[#FFB5B5] transition-all">
+                            <div className="w-2 h-2 rounded-full bg-[#87CEEB]" />
+                            <span className="text-[9px] font-black uppercase tracking-widest text-[#3E4A61]">Batch 1</span>
+                        </div>
                     </div>
                 </div>
             </div>

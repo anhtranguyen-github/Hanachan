@@ -65,7 +65,31 @@ export class ChatRepository {
             throw error;
         }
 
-        return { ...data, messages: [] } as unknown as ChatSession;
+        return { ...data, messages: [], title: data?.title, summary: data?.summary } as unknown as ChatSession;
+    }
+
+    async updateSessionTitle(sessionId: string, title: string) {
+        const { error } = await supabase
+            .from('chat_sessions')
+            .update({ title })
+            .eq('id', sessionId);
+
+        if (error) {
+            console.error("Error updating chat session title:", error);
+            throw error;
+        }
+    }
+
+    async updateSessionSummary(sessionId: string, summary: string) {
+        const { error } = await supabase
+            .from('chat_sessions')
+            .update({ summary, updated_at: new Date().toISOString() })
+            .eq('id', sessionId);
+
+        if (error) {
+            console.error("Error updating chat session summary:", error);
+            throw error;
+        }
     }
 
     async addMessage(sessionId: string, message: ChatMessage) {

@@ -9,53 +9,51 @@ skinparam classAttributeIconSize 0
 skinparam shadowing false
 hide circle
 
-class HanachanChatService <<Agent>> {
+class AdvancedChatService <<Service>> {
   - llm : ChatOpenAI
-  - tools : List<BaseTool>
+  - personaInjector : PersonaInjector
+  - projectInjector : ProjectAwarenessInjector
+  - srsInjector : SRSSimulatorInjector
   --
-  + process(sessionId, userId, text): Promise<AgentResponse>
-  - handleToolCall(toolName, args): Promise<ToolResult>
-  - formatFinalResponse(aiText, searchHits): AgentResponse
+  + sendMessage(sessionId, userId, text): Promise<{reply, actions}>
+  - buildSystemContext(userId, intent, summary): Promise<string>
+  - extractContextActions(text, intent): any[]
+  - handleAnalysis(sessionId, userId, text): Promise<any>
 }
 
-interface AgentResponse <<DTO>> {
-  + reply : String
-  + isCurriculumBased : Boolean
-  + toolsUsed : List<ToolMetadata>
-  + referencedUnits : List<ReferencedUnit>
+class ChatRepository <<Repository>> {
+  + getSession(sessionId): Promise<ChatSession | null>
+  + createSession(sessionId, userId): Promise<ChatSession>
+  + addMessage(sessionId, message): Promise<void>
+  + updateSessionSummary(sessionId, summary): Promise<void>
+  + updateSessionTitle(sessionId, title): Promise<void>
 }
 
-interface ToolMetadata <<DTO>> {
-  + toolName : String
-  + status : String (hit | miss)
-  + resultSummary : String
+interface ChatSession <<Entity>> {
+  + id : String
+  + userId : UUID
+  + title : String
+  + summary : String
+  + messages : List<ChatMessage>
 }
 
-interface ReferencedUnit <<DTO>> {
-  + id : UUID
-  + slug : String
-  + character : String
-  + type : String
-}
-
-class curriculumRepository <<Repository>> {
-  + getBySlug(slug, type): Promise<KnowledgeUnit | null>
-  + search(query, type, page, limit): Promise<SearchResult>
-}
-
-HanachanChatService ..> curriculumRepository : gọi qua Tool (tra cứu search_curriculum)
-HanachanChatService --> AgentResponse : tạo ra
-AgentResponse "1" *-- "*" ToolMetadata : chứa thông tin tool
-AgentResponse "1" *-- "*" ReferencedUnit : chứa Knowledge Unit tham chiếu
+AdvancedChatService ..> ChatRepository : quản lý dữ liệu hội thoại & summary
+AdvancedChatService --> ChatSession : sử dụng ngữ cảnh
 @enduml
 ```
 
-### Đặc điểm thiết kế Agentic mới:
-1.  **Reasoning-First Tool Calling**: Hanachan không còn sử dụng bộ lọc Regex cứng nhắc. AI được cung cấp công cụ `search_curriculum` và tự suy luận (Inner Monologue) xem câu hỏi của người dùng có thực sự cần tra cứu cơ sở dữ liệu học tập hay không.
-2.  **Proactive Search (Tra cứu chủ động)**: AI thực hiện luồng ReAct (Reasoning + Acting). Ngay cả khi người dùng không yêu cầu trực tiếp, nếu AI nhận thấy việc tra cứu giúp câu trả lời chính xác hoặc đồng bộ với giáo trình hơn, AI sẽ **tự thực hiện tra cứu** trước khi trả lời.
-3.  **Curriculum Awareness (Ý thức giáo trình)**: 
-    - Nếu AI tra cứu thành công: Phản hồi dựa trên dữ liệu chuẩn của hệ thống (Mnemonic, Example).
-    - Nếu AI không tra cứu được hoặc không thấy trong DB: AI vẫn trả lời dựa trên kiến thức chung nhưng **bắt buộc** kèm theo thông báo: *"Thông tin này nằm ngoài giáo trình chính thức của Hanachan"*.
-4.  **Precise CTA Generation**: Các nút học bài (CTA) được tạo ra trực tiếp từ ID của các đơn vị tri thức tìm thấy trong Tool Call, đảm bảo tính chính xác tuyệt đối và dữ liệu không bao giờ bị sai lệch.
-5.  **Transparent Execution (Minh bạch)**: Trạng thái tra cứu (`hit` hoặc `miss`) được trả về UI để người dùng phân biệt được đâu là kiến thức chuẩn hóa, đâu là kiến thức bổ trợ từ AI.
+### Nguyên tắc Quản lý Ngữ cảnh (Mới):
+1.  **Session Summary (Trạng thái làm việc)**: Không chỉ là tóm tắt văn xuôi, Summary đóng vai trò là "Working State". Mọi quyết định kỹ thuật, mục tiêu hiện tại và các ràng buộc được chốt trong Summary để AI bám sát mà không cần đọc lại toàn bộ lịch sử.
+2.  **Rolling Context Window (5-7 lượt gần nhất)**: Hệ thống chỉ gửi tối đa 12 tin nhắn gần nhất (khoảng 6 lượt hội thoại) kết hợp với **Session Summary** lên LLM. Điều này giúp giảm nhiễu, tiết kiệm token và tránh tình trạng AI bị lạc đề bởi các thảo luận cũ.
+3.  **Implicit Update (Cập nhật ngầm)**:
+    - AI tự động nhận diện các thời điểm quan trọng (chốt quyết định, đổi chủ đề, bác bỏ ý tưởng).
+    - AI gửi kèm nội dung Summary mới trong thẻ ẩn `<session_summary>`.
+    - Hệ thống xử lý hậu kỳ để lưu Summary vào DB và ẩn thẻ này khỏi người dùng (NGẦM cập nhật).
+4.  **No Redundancy (Không lặp lại)**: AI không lặp lại các giải thích về kiến trúc hoặc giả định đã được chốt trong Summary trừ khi người dùng hỏi lại.
+5.  **Strict Compliance (Bám sát quyết định)**: AI không tự ý thay đổi các kiến trúc hoặc giả định đã được lưu trong Summary. Nếu thông tin không có trong Summary hoặc 6 lượt chat gần nhất, AI sẽ hỏi lại người dùng thay vì tự đoán.
+
+### Đặc điểm thiết kế Agentic:
+1.  **Reasoning-First Tool Calling**: Hanachan sử dụng khả năng suy luận của LLM để tự quyết định việc sử dụng công cụ (Tool Use).
+2.  **Proactive Search (Tra cứu chủ động)**: AI thực hiện luồng ReAct (Reasoning + Acting) để tìm kiếm Knowledge Units phù hợp.
+3.  **Automated Title Generation**: Tự động tạo tiêu đề phiên chat sau tin nhắn đầu tiên (chạy Async).
 
