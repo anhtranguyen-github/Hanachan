@@ -1,28 +1,28 @@
 'use server';
 
-import { kuRepository } from './db';
+import { curriculumRepository } from './db';
 
 // --- Server Actions ---
 
-export async function getLocalRelations(type: string, identity: string) {
+export async function getUnitRelations(type: string, identity: string) {
     // Identity is usually the slug - for now only grammar relations are supported
     if (type === 'grammar') {
-        return await kuRepository.getGrammarRelations(identity);
+        return await curriculumRepository.getGrammarRelations(identity);
     }
     return [];
 }
 
 
-export async function getLocalLevelData(level: number, type: string) {
+export async function getLevelData(level: number, type: string) {
     try {
         const typeFilter = type === 'vocab' ? 'vocabulary' : type;
-        const items = await kuRepository.listByType(typeFilter as any, level);
+        const items = await curriculumRepository.listByType(typeFilter as any, level);
 
         return items.map((item: any) => {
             // Map structure to what frontend expects for explorer lists
             let reading = '';
-            if (item.type === 'kanji') reading = item.ku_kanji?.reading_data?.on?.[0] || '';
-            else if (item.type === 'vocabulary') reading = item.ku_vocabulary?.reading_primary || '';
+            if (item.type === 'kanji') reading = item.kanji_details?.reading_data?.on?.[0] || '';
+            else if (item.type === 'vocabulary') reading = item.vocabulary_details?.reading_primary || '';
 
             return {
                 ...item,
@@ -30,14 +30,14 @@ export async function getLocalLevelData(level: number, type: string) {
             };
         });
     } catch (e) {
-        console.error("Error in getLocalLevelData:", e);
+        console.error("Error in getLevelData:", e);
         return [];
     }
 }
 
-export async function getLocalKU(type: string, slug: string) {
+export async function getKnowledgeUnit(type: string, slug: string) {
     try {
-        let item: any = await kuRepository.getBySlug(slug, type as any);
+        let item: any = await curriculumRepository.getBySlug(slug, type as any);
 
         if (!item) return null;
 
@@ -45,9 +45,9 @@ export async function getLocalKU(type: string, slug: string) {
         let meanings: string[] = [];
         let readings: string[] = [];
 
-        if (type === 'kanji' && item.ku_kanji) {
-            const mData = item.ku_kanji.meaning_data;
-            const rData = item.ku_kanji.reading_data;
+        if (type === 'kanji' && item.kanji_details) {
+            const mData = item.kanji_details.meaning_data;
+            const rData = item.kanji_details.reading_data;
 
             if (mData?.meanings) {
                 meanings = mData.meanings.map((m: any) => typeof m === 'string' ? m : (m.meaning || ""));
@@ -58,11 +58,11 @@ export async function getLocalKU(type: string, slug: string) {
             }
 
             const onReadings = (rData?.onyomi || rData?.on || []).map((r: any) => typeof r === 'string' ? r : (r.reading || ""));
-            const kunReadings = (rData?.kunyomi || rData?.kun || []).map((r: any) => typeof r === 'string' ? r : (r.reading || ""));
-            readings = [...onReadings, ...kunReadings];
+            const unitnReadings = (rData?.unitnyomi || rData?.unitn || []).map((r: any) => typeof r === 'string' ? r : (r.reading || ""));
+            readings = [...onReadings, ...unitnReadings];
 
             item.onReadings = onReadings;
-            item.kunReadings = kunReadings;
+            item.unitnReadings = unitnReadings;
 
             // Ensure explanation is available for contextual nuance
             const mExplanation = mData?.explanation;
@@ -84,8 +84,8 @@ export async function getLocalKU(type: string, slug: string) {
                 };
             }
 
-        } else if (type === 'vocabulary' && item.ku_vocabulary) {
-            const mData = item.ku_vocabulary.meaning_data;
+        } else if (type === 'vocabulary' && item.vocabulary_details) {
+            const mData = item.vocabulary_details.meaning_data;
             if (mData?.meanings) {
                 meanings = mData.meanings.map((m: any) => typeof m === 'string' ? m : (m.meaning || ""));
             } else if (mData?.primary || mData?.alternatives) {
@@ -93,7 +93,7 @@ export async function getLocalKU(type: string, slug: string) {
             } else {
                 meanings = [item.meaning];
             }
-            readings = [item.ku_vocabulary.reading_primary];
+            readings = [item.vocabulary_details.reading_primary];
 
             // Extract context sentences from meaning_data if they exist
             if (mData?.context_sentences && Array.isArray(mData.context_sentences)) {
@@ -120,17 +120,17 @@ export async function getLocalKU(type: string, slug: string) {
             }
 
             // Extract reading mnemonic if available
-            const rExplanation = item.ku_vocabulary.reading_data?.explanation;
+            const rExplanation = item.vocabulary_details.reading_data?.explanation;
             if (!item.mnemonics?.reading && rExplanation) {
                 item.mnemonics = {
                     ...item.mnemonics,
                     reading: rExplanation
                 };
             }
-        } else if (type === 'radical' && item.ku_radicals) {
-            meanings = [item.ku_radicals.name || item.meaning];
-        } else if (type === 'grammar' && item.ku_grammar) {
-            meanings = [item.ku_grammar.meaning_summary || item.meaning];
+        } else if (type === 'radical' && item.radical_details) {
+            meanings = [item.radical_details.name || item.meaning];
+        } else if (type === 'grammar' && item.grammar_details) {
+            meanings = [item.grammar_details.meaning_summary || item.meaning];
         } else {
             meanings = [item.meaning];
         }
@@ -144,7 +144,7 @@ export async function getLocalKU(type: string, slug: string) {
         };
 
     } catch (e) {
-        console.error("Error in getLocalKU:", e);
+        console.error("Error in getKnowledgeUnit:", e);
         return null;
     }
 }

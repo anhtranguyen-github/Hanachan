@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { KnowledgeUnitSchema, KUTypeSchema } from '@/lib/validation';
+import { KnowledgeUnitSchema, KnowledgeUnitTypeSchema } from '@/lib/validation';
 
-export type KUType = z.infer<typeof KUTypeSchema>;
+export type KnowledgeUnitType = z.infer<typeof KnowledgeUnitTypeSchema>;
 export interface KnowledgeUnit extends z.infer<typeof KnowledgeUnitSchema> {
     radicals?: any[];
     kanji?: any[];

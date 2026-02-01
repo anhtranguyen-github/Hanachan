@@ -2,9 +2,9 @@
 import { KnowledgeUnit } from "./types";
 import { QuickViewData } from "@/components/shared/QuickViewModal";
 
-export function mapKUToQuickView(ku: KnowledgeUnit): QuickViewData {
-    const isGrammar = ku.type === 'grammar';
-    const details = (ku as any).details || {};
+export function mapUnitToQuickView(unit: KnowledgeUnit): QuickViewData {
+    const isGrammar = unit.type === 'grammar';
+    const details = (unit as any).details || {};
 
     // Extract mnemonics
     const meaningMnemonic = details.meaning_mnemonic || details.meaning_story || "";
@@ -21,14 +21,14 @@ export function mapKUToQuickView(ku: KnowledgeUnit): QuickViewData {
 
     // Extract components (radicals for kanji, kanji for vocab)
     let components: { character: string; meaning: string; slug: string }[] = [];
-    if (ku.type === 'kanji' && ku.radicals) {
-        components = ku.radicals.map(r => ({
+    if (unit.type === 'kanji' && unit.radicals) {
+        components = unit.radicals.map(r => ({
             character: r.character || r.slug,
             meaning: r.meaning || r.name || "",
             slug: r.slug
         }));
-    } else if (ku.type === 'vocabulary' && ku.kanji) {
-        components = ku.kanji.map(k => ({
+    } else if (unit.type === 'vocabulary' && unit.kanji) {
+        components = unit.kanji.map(k => ({
             character: k.character || k.slug,
             meaning: k.meaning || "",
             slug: k.slug
@@ -37,15 +37,15 @@ export function mapKUToQuickView(ku: KnowledgeUnit): QuickViewData {
 
     return {
         type: isGrammar ? 'GRAMMAR' : 'TOKEN',
-        title: ku.character || ku.slug.split(':')[1] || ku.slug,
-        meaning: ku.meaning,
+        title: unit.character || unit.slug.split(':')[1] || unit.slug,
+        meaning: unit.meaning,
         reading: isGrammar ? "" : (details.reading || (Array.isArray(details.onyomi) ? details.onyomi[0] : "")),
         explanation: meaningMnemonic,
         reading_mnemonic: readingMnemonic,
         examples: examples,
-        level: ku.level?.toString(),
-        ku_type: ku.type,
+        level: unit.level?.toString(),
+        unit_type: unit.type,
         components: components,
-        raw: ku
+        raw: unit
     };
 }

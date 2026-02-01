@@ -33,7 +33,7 @@ export async function startReviewSessionAction(
     options?: {
         type?: 'learn' | 'review';
         levelId?: string;
-        kuType?: 'radical' | 'kanji' | 'vocabulary' | 'grammar';
+        unitType?: 'radical' | 'kanji' | 'vocabulary' | 'grammar';
         level?: number;
         maxCards?: number;
     }
@@ -54,12 +54,12 @@ export async function startReviewSessionAction(
  */
 export async function getNextReviewCardAction(
     userId: string,
-    kuIds: string[]
+    unitIds: string[]
 ): Promise<ActionResult<ReviewCard[]>> {
-    console.log(`${LOG_PREFIX} getNextReviewCardAction:`, { userId, count: kuIds.length });
+    console.log(`${LOG_PREFIX} getNextReviewCardAction:`, { userId, count: unitIds.length });
 
     try {
-        const cards = await generateReviewCards(kuIds, userId);
+        const cards = await generateReviewCards(unitIds.map(id => ({ unitId: id, facet: 'meaning' })), userId);
         return { success: true, data: cards };
     } catch (e: any) {
         console.error(`${LOG_PREFIX} Error getting cards:`, e);
@@ -75,7 +75,7 @@ export async function submitReviewAnswerAction(
     card: ReviewCard,
     answer: ReviewAnswer
 ): Promise<ActionResult<{ correct: boolean; rating: 'again' | 'good'; nextReview: string }>> {
-    console.log(`${LOG_PREFIX} submitReviewAnswerAction:`, { userId, kuId: card.ku_id, rating: answer.rating });
+    console.log(`${LOG_PREFIX} submitReviewAnswerAction:`, { userId, unitId: card.ku_id, rating: answer.rating });
 
     try {
         const result = await submitReviewAnswer(userId, card, answer);
@@ -170,7 +170,7 @@ export async function getGrammarClozeCardAction(
     console.log(`${LOG_PREFIX} getGrammarClozeCardAction:`, { userId, grammarId });
 
     try {
-        const cards = await generateReviewCards([grammarId], userId);
+        const cards = await generateReviewCards([{ unitId: grammarId, facet: 'cloze' }], userId);
 
         if (cards.length === 0) {
             return { success: false, error: 'No card generated' };

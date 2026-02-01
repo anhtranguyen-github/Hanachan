@@ -1,17 +1,17 @@
 
-import { KnowledgeUnit, KUType } from "./types";
+import { KnowledgeUnit, KnowledgeUnitType } from "./types";
 
-export function getDetailsTableName(type: KUType): string {
+export function getDetailsTableName(type: KnowledgeUnitType): string {
     switch (type) {
         case 'radical': return 'radical_details';
         case 'kanji': return 'kanji_details';
         case 'vocabulary': return 'vocabulary_details';
         case 'grammar': return 'grammar_details';
-        default: throw new Error(`Unknown KU type: ${type}`);
+        default: throw new Error(`Unknown unit type: ${type}`);
     }
 }
 
-export function mapToKU(base: any, details: any, type: KUType): KnowledgeUnit {
+export function mapToKnowledgeUnit(base: any, details: any, type: KnowledgeUnitType): KnowledgeUnit {
     // In the new schema, basic info like 'meaning' and 'character' are already in the base table
     const result: any = {
         ...base,

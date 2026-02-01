@@ -1,30 +1,30 @@
-import { kuRepository } from "./db";
-import { KnowledgeUnit, KUType } from "./types";
+import { curriculumRepository } from "./db";
+import { KnowledgeUnit, KnowledgeUnitType } from "./types";
 import { uuidSchema } from "@/lib/validation";
 
 export class KnowledgeService {
-    async getById(id: string, type: KUType): Promise<KnowledgeUnit | null> {
+    async getById(id: string, type: KnowledgeUnitType): Promise<KnowledgeUnit | null> {
         // Only validate if it looks like a UUID, otherwise it's likely a slug
         if (id.includes('-')) uuidSchema.parse(id);
-        return await kuRepository.getById(id, type);
+        return await curriculumRepository.getById(id, type);
     }
 
-    async getBySlug(slug: string, type: KUType): Promise<KnowledgeUnit | null> {
-        return await kuRepository.getBySlug(slug, type);
+    async getBySlug(slug: string, type: KnowledgeUnitType): Promise<KnowledgeUnit | null> {
+        return await curriculumRepository.getBySlug(slug, type);
     }
 
-    async getByLevel(level: number, type: KUType): Promise<KnowledgeUnit[]> {
-        return await kuRepository.listByType(type, level);
+    async getByLevel(level: number, type: KnowledgeUnitType): Promise<KnowledgeUnit[]> {
+        return await curriculumRepository.listByType(type, level);
     }
 
-    async getAllByType(type: KUType): Promise<KnowledgeUnit[]> {
-        const result = await kuRepository.getAllByType(type);
+    async getAllByType(type: KnowledgeUnitType): Promise<KnowledgeUnit[]> {
+        const result = await curriculumRepository.getAllByType(type);
         return result.data;
     }
 
-    async getSentencesByKU(kuId: string): Promise<any[]> {
-        uuidSchema.parse(kuId);
-        return await kuRepository.getSentencesByKU(kuId);
+    async getSentencesByKU(unitId: string): Promise<any[]> {
+        uuidSchema.parse(unitId);
+        return await curriculumRepository.getSentencesByKU(unitId);
     }
 
     async getLinkedKanjiByRadical(radicalSlug: string): Promise<any[]> {
@@ -37,8 +37,8 @@ export class KnowledgeService {
         return [];
     }
 
-    async search(query: string, type?: KUType): Promise<KnowledgeUnit[]> {
-        const result = await kuRepository.search(query, type);
+    async search(query: string, type?: KnowledgeUnitType): Promise<KnowledgeUnit[]> {
+        const result = await curriculumRepository.search(query, type);
         return result.data || [];
     }
 }

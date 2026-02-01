@@ -12,4 +12,4 @@ export * from './domain/review-session';
 export * from './domain/SRSAlgorithm';
 
 // Components
-export { default as ReviewCardDisplay } from './components/ReviewCardDisplay';
+export { ReviewCardDisplay } from './components/ReviewCardDisplay';

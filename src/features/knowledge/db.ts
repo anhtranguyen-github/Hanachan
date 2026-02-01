@@ -1,9 +1,9 @@
 import { supabase } from "@/lib/supabase";
-import { KUType, KnowledgeUnit } from "./types";
-import { getDetailsTableName, mapToKU } from "./mapper";
+import { KnowledgeUnitType, KnowledgeUnit } from "./types";
+import { getDetailsTableName, mapToKnowledgeUnit } from "./mapper";
 
-export const kuRepository = {
-    async getById(id: string, type: KUType) {
+export const curriculumRepository = {
+    async getById(id: string, type: KnowledgeUnitType) {
         // Safety: Prevent 22P02 error by validation UUID format
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
         if (!isUuid) return null;
@@ -19,10 +19,10 @@ export const kuRepository = {
         // Fix for potentially returning array from Supabase join
         const anyData = data as any;
         const details = Array.isArray(anyData.details) ? anyData.details[0] : anyData.details;
-        return mapToKU(anyData, details, type);
+        return mapToKnowledgeUnit(anyData, details, type);
     },
 
-    async getBySlug(slug: string, type: KUType): Promise<KnowledgeUnit | null> {
+    async getBySlug(slug: string, type: KnowledgeUnitType): Promise<KnowledgeUnit | null> {
         try {
             const tableName = getDetailsTableName(type);
             const cleanSlug = decodeURIComponent(slug).trim();
@@ -47,7 +47,7 @@ export const kuRepository = {
 
             const anyData = data as any;
             const details = Array.isArray(anyData.details) ? anyData.details[0] : anyData.details;
-            const mapped = mapToKU(anyData, details, type);
+            const mapped = mapToKnowledgeUnit(anyData, details, type);
 
             // Fetch Relations based on type
             if (type === 'kanji') {
@@ -91,7 +91,7 @@ export const kuRepository = {
         }
     },
 
-    async getAllByType(type: KUType, page: number = 1, limit: number = 30) {
+    async getAllByType(type: KnowledgeUnitType, page: number = 1, limit: number = 30) {
         const tableName = getDetailsTableName(type);
         const from = (page - 1) * limit;
         const to = from + limit - 1;
@@ -105,19 +105,19 @@ export const kuRepository = {
             .order('slug', { ascending: true });
 
         if (error) {
-            console.error("Error fetching all KUs by type:", error);
+            console.error("Error fetching all units by type:", error);
             return { data: [], count: 0 };
         }
 
         const mapped = (data as any[]).map(item => {
             const details = Array.isArray(item.details) ? item.details[0] : item.details;
-            return mapToKU(item, details, type);
+            return mapToKnowledgeUnit(item, details, type);
         });
 
         return { data: mapped, count: count || 0 };
     },
 
-    async listByType(type: KUType, level: number) {
+    async listByType(type: KnowledgeUnitType, level: number) {
         const tableName = getDetailsTableName(type);
         const { data, error } = await supabase
             .from('knowledge_units')
@@ -126,17 +126,17 @@ export const kuRepository = {
             .eq('type', type);
 
         if (error) {
-            console.error(`Error fetching KUs by level ${level}:`, error);
+            console.error(`Error fetching units by level ${level}:`, error);
             return [];
         }
 
         return (data as any[]).map(item => {
             const details = Array.isArray(item.details) ? item.details[0] : item.details;
-            return mapToKU(item, details, type);
+            return mapToKnowledgeUnit(item, details, type);
         });
     },
 
-    async search(query: string, type?: KUType, page: number = 1, limit: number = 30) {
+    async search(query: string, type?: KnowledgeUnitType, page: number = 1, limit: number = 30) {
         const from = (page - 1) * limit;
         const to = from + limit - 1;
 
@@ -164,7 +164,7 @@ export const kuRepository = {
         return { data: data as any, count: count || 0 };
     },
 
-    async getSentencesByKU(kuId: string) {
+    async getSentencesByUnit(unitId: string) {
         // In the new schema, grammar example sentences are in grammar_details
         // Vocabulary example sentences are not in a separate table yet, but we can extend this later.
         // For now, let's just return empty as most data is JSONB in details
@@ -185,31 +185,31 @@ export const kuRepository = {
         return data;
     },
 
-    async createKU(ku: { slug: string, type: KUType, character: string, meaning: string, level: number, details?: any }) {
+    async createKnowledgeUnit(unit: { slug: string, type: KnowledgeUnitType, character: string, meaning: string, level: number, details?: any }) {
         const { data, error } = await supabase
             .from('knowledge_units')
             .insert({
-                slug: ku.slug,
-                type: ku.type,
-                character: ku.character,
-                meaning: ku.meaning,
-                level: ku.level
+                slug: unit.slug,
+                type: unit.type,
+                character: unit.character,
+                meaning: unit.meaning,
+                level: unit.level
             })
             .select()
             .single();
 
         if (error) {
-            console.error("Error creating KU:", error);
+            console.error("Error creating unit:", error);
             throw error;
         }
 
-        if (ku.details) {
-            const tableName = getDetailsTableName(ku.type);
+        if (unit.details) {
+            const tableName = getDetailsTableName(unit.type);
             await supabase
                 .from(tableName)
                 .insert({
                     ku_id: data.id,
-                    ...ku.details
+                    ...unit.details
                 });
         }
 

@@ -41,18 +41,18 @@ export const sentenceRepository = {
         return data;
     },
 
-    async linkKUToSentence(kuId: string, sentenceId: string, isPrimary: boolean = false) {
+    async linkKUToSentence(unitId: string, sentenceId: string, isPrimary: boolean = false) {
         // Safety: Prevent 22P02 error by validating UUID format
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(kuId) || !uuidRegex.test(sentenceId)) {
-            console.warn("[SentenceDB] Skipping link due to invalid UUID:", { kuId, sentenceId });
+        if (!uuidRegex.test(unitId) || !uuidRegex.test(sentenceId)) {
+            console.warn("[SentenceDB] Skipping link due to invalid UUID:", { unitId, sentenceId });
             return;
         }
 
         const { error } = await supabase
             .from('ku_to_sentence')
             .upsert({
-                ku_id: kuId,
+                ku_id: unitId,
                 sentence_id: sentenceId,
                 is_primary: isPrimary
             });

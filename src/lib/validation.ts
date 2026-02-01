@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
+export const uuidSchema = z.string().uuid();
+
 // --- SHARED ENUMS ---
-export const KUTypeSchema = z.enum(['radical', 'kanji', 'vocabulary', 'grammar']);
+export const KnowledgeUnitTypeSchema = z.enum(['radical', 'kanji', 'vocabulary', 'grammar']);
 export const SRSStageSchema = z.enum(['new', 'learning', 'review', 'burned']);
 export const RatingSchema = z.enum(['again', 'good']);
 export const SourceTypeSchema = z.enum(['youtube', 'chat', 'manual', 'analyze']);
@@ -15,7 +17,7 @@ export const AnswerStateSchema = z.enum(['unanswered', 'correct', 'incorrect']);
 export const KnowledgeUnitSchema = z.object({
     id: z.string().uuid().optional(),
     slug: z.string().min(1),
-    type: KUTypeSchema,
+    type: KnowledgeUnitTypeSchema,
     character: z.string().min(1),
     level: z.number().int().min(1).max(60),
     meaning: z.string().min(1),
@@ -83,9 +85,19 @@ export const ChatSessionSchema = z.object({
 // --- ANALYTICS ---
 export const DashboardStatsSchema = z.object({
     reviewsDue: z.number().int().min(0),
+    dueBreakdown: z.object({
+        learning: z.number().int(),
+        review: z.number().int(),
+    }).optional(),
     totalLearned: z.number().int().min(0),
+    totalMastered: z.number().int().min(0).optional(),
+    totalBurned: z.number().int().min(0).optional(),
     unlockedLevel: z.number().int().min(1).max(60),
     recentLevels: z.array(z.number().int()),
+    retention: z.number().min(0).max(100).optional(),
+    minutesSpent: z.number().min(0).optional(),
+    streak: z.number().int().min(0).optional(),
+    totalKUCoverage: z.number().optional(),
 });
 
 // --- YOUTUBE ---
@@ -98,7 +110,7 @@ export const YouTubeMetadataSchema = z.object({
 });
 
 // Helper Types for inference
-export type KUType = z.infer<typeof KUTypeSchema>;
+export type KnowledgeUnitType = z.infer<typeof KnowledgeUnitTypeSchema>;
 export type KnowledgeUnit = z.infer<typeof KnowledgeUnitSchema>;
 export type SRSState = z.infer<typeof SRSStateSchema>;
 export type Rating = z.infer<typeof RatingSchema>;

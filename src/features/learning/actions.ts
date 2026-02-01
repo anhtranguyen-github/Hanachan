@@ -5,13 +5,27 @@ import {
     fetchDueItems,
     fetchNewItems,
     fetchLevelStats,
-    fetchUserDashboardStats
+    fetchUserDashboardStats,
+    initializeSRS
 } from './service';
 import { revalidatePath } from 'next/cache';
 
-export async function submitReviewAction(userId: string, kuId: string, rating: any, currentState: any) {
+export async function initializeSRSAction(userId: string, unitId: string, facets: string[]) {
     try {
-        const result = await submitReview(userId, kuId, rating, currentState);
+        await initializeSRS(userId, unitId, facets);
+        revalidatePath('/dashboard');
+        revalidatePath('/learn');
+        revalidatePath('/levels');
+        return { success: true };
+    } catch (e: any) {
+        console.error("[LearningActions] Failed to initialize SRS", e);
+        return { success: false, error: e.message };
+    }
+}
+
+export async function submitReviewAction(userId: string, unitId: string, facet: string, rating: any, currentState: any) {
+    try {
+        const result = await submitReview(userId, unitId, facet, rating, currentState);
         revalidatePath('/dashboard');
         revalidatePath('/review');
         revalidatePath('/levels');

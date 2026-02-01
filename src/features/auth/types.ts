@@ -47,4 +47,8 @@ export interface UserProfile {
     created_at?: string;
 }
 
-
+export interface UserSettings {
+    theme?: 'light' | 'dark' | 'system';
+    review_batch_size?: number;
+    daily_goal?: number;
+}

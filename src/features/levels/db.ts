@@ -100,13 +100,13 @@ export async function getLevelMasteryStats(userId: string, levelId: string): Pro
     const items = await getLevelItems(levelId);
     if (items.length === 0) return getEmptyStats();
 
-    const kuIds = items.map(i => i.ku_id).filter(Boolean) as string[];
+    const unitIds = items.map(i => i.ku_id).filter(Boolean) as string[];
 
     const { data: states } = await supabase
         .from('user_learning_states')
         .select('*')
         .eq('user_id', userId)
-        .in('ku_id', kuIds);
+        .in('ku_id', unitIds);
 
     const statesMap = new Map();
     states?.forEach(s => {

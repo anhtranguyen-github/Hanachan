@@ -1,7 +1,7 @@
 // import { aiSentenceAnalyzer, AIAnalysisResult } from "../analysis/ai-analyzer";
 // import { tokenize } from "../analysis/tokenizer";
 // import { processTokens, extractPotentialKUSlugs, AnalyzedUnit } from "../analysis/token-processor";
-import { kuRepository } from "../knowledge/db";
+import { curriculumRepository } from "../knowledge/db";
 import { sentenceRepository } from "./db";
 
 // Placeholder types to replace deleted analysis modules
@@ -38,7 +38,7 @@ export class SentenceService {
 
         const units: AnalyzedUnit[] = [];
         for (const char of potentialKUs) {
-            const { data } = await kuRepository.search(char);
+            const { data } = await curriculumRepository.search(char);
             const exact = data?.find(k => k.character === char || k.slug.split(':')[1] === char);
 
             units.push({
