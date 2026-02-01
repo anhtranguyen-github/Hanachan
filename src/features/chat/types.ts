@@ -2,7 +2,15 @@ import { z } from 'zod';
 import { ChatMessageSchema, ChatSessionSchema } from '@/lib/validation';
 
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
-export type ChatSession = z.infer<typeof ChatSessionSchema>;
+export interface ChatSession {
+    id: string;
+    userId: string;
+    messages: ChatMessage[];
+    title?: string | null;
+    summary?: string | null;
+    mode?: string | null;
+    updatedAt: string;
+}
 
 export interface ReferencedUnit {
     id: string;

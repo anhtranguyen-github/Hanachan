@@ -1,42 +1,54 @@
-@startuml Chatbot Agentic Sequence
+@startuml Biểu đồ trình tự - Trợ lý Agentic
 skinparam monochrome true
 skinparam shadowing false
 skinparam defaultFontName "Segoe UI"
 skinparam sequenceMessageAlign center
 
 actor "Người dùng" as User
-participant "ChatbotPage" as UI
-participant "HanachanChatService" as Agent
-participant "curriculumRepository" as CurriculumRepo
-participant "QuickViewModal" as Modal
+participant "Trang Chat (UI)" as UI
+participant "Dịch vụ Hanachan (Agent)" as Agent
+participant "Kho Session (ChatRepo)" as ChatRepo
+participant "Kho Giáo trình (CurriculumRepo)" as CurriculumRepo
+participant "Thẻ xem nhanh (Modal)" as Modal
 
-User -> UI : Gửi tin nhắn (e.g. "Học tiếng Nhật")
+User -> UI : Gửi tin nhắn (Ví dụ: "Giải thích ngữ pháp N3")
 activate UI
-UI -> Agent : POST {message, history, userId}
+UI -> Agent : process(sessionId, userId, text)
 activate Agent
 
-Agent -> Agent : Inner Monologue:\n"Do I need facts from the curriculum?"
+Agent -> ChatRepo : getSession(sessionId)
+ChatRepo --> Agent : Phiên chat {tóm tắt, tin nhắn, ...}
+
+Agent -> Agent : Cắt lịch sử (6 tin nhắn gần nhất)\nĐưa Tóm tắt phiên vào Prompt System
+
+Agent -> Agent : Suy luận nội tâm:\n"Tôi có cần dữ liệu từ giáo trình không?"
 
 loop Cho từng thực thể tiềm năng
     Agent -> CurriculumRepo : search_curriculum(keyword)
-    CurriculumRepo --> Agent : Dữ liệu tri thức (Kanji/Vocab)
+    CurriculumRepo --> Agent : Dữ liệu tri thức (Kanji/Từ vựng/Ngữ pháp)
 end
 
-Agent -> Agent : Tổng hợp phản hồi & Gắn kết thực thể (Entity Linking)
+Agent -> Agent : Tổng hợp phản hồi & Liên kết thực thể\nKiểm tra cập nhật Metadata ngầm (Super-Dev-Pro)
+
+alt Có thay đổi mục tiêu/quyết định quan trọng
+    Agent -> ChatRepo : updateSession(sessionId, {title, summary})
+end
+
+Agent -> ChatRepo : addMessage(userMsg), addMessage(assistantMsg)
 
 Agent --> UI : {reply, toolsUsed, referencedUnits}
 deactivate Agent
 
-UI -> UI : Hiển thị tin nhắn + Nút CTA (cho các Unit)
-UI --> User : Giao diện đã cập nhật
+UI -> UI : Hiển thị tin nhắn + Nút học tập (CTA)
+UI --> User : Cập nhật giao diện hội thoại
 
-User -> UI : Nhấn nút CTA (e.g. 語 • vocabulary)
+User -> UI : Nhấn nút học tập (Ví dụ: 語 • vocabulary)
 UI -> CurriculumRepo : getUnit(type, slug)
 activate CurriculumRepo
-CurriculumRepo --> UI : Thông tin chi tiết Unit
+CurriculumRepo --> UI : Dữ liệu chi tiết đơn vị kiến thức
 deactivate CurriculumRepo
 
-UI -> Modal : Open Modal(data)
+UI -> Modal : Mở Modal(data)
 activate Modal
 Modal --> User : Hiển thị nghĩa, cách đọc, bộ thủ, ví dụ
 User -> Modal : Đóng modal

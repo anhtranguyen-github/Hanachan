@@ -76,8 +76,11 @@ export const ChatMessageSchema = z.object({
 });
 
 export const ChatSessionSchema = z.object({
-    id: z.string().min(1), // Session ID might be UUID or custom string
+    id: z.string().min(1),
     userId: z.string().uuid(),
+    title: z.string().optional().nullable(),
+    summary: z.string().optional().nullable(),
+    mode: z.string().optional().nullable(),
     messages: z.array(ChatMessageSchema),
     updatedAt: z.string().datetime(),
 });

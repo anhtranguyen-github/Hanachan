@@ -30,5 +30,12 @@ Hệ thống tập trung vào việc bóc tách và giải thích kiến thức 
 - Cung cấp dữ liệu gốc từ DB để đảm bảo tính chính xác của thông tin.
 - Tạo ra trải nghiệm học tập tập trung vào việc hiểu sâu nội dung tri thức, hỗ trợ người dùng xây dựng nền tảng tiếng Nhật vững chắc.
 
+## 5. Quản lý ngữ cảnh thông minh (Smart Context Management)
+
+Để nâng cao khả năng hỗ trợ dài hạn, hệ thống triển khai cơ chế quản lý ngữ cảnh tiên tiến:
+- **Session Summary (Working State)**: AI duy trì một bản tóm tắt động về mục tiêu và các quyết định đã chốt trong phiên chat. Điều này ngăn chặn việc giải thích lặp lại và đảm bảo tính nhất quán trong tư vấn.
+- **Implicit Updates**: Hệ thống tự động nhận diện các "điểm chốt" trong hội thoại để cập nhật tiêu đề và trạng thái làm việc mà không cần sự can thiệp của người dùng.
+- **Context Filtering**: Chỉ sử dụng lịch sử hội thoại gần nhất kết hợp với Summary để tối ưu hóa context window và duy trì sự nhạy bén của AI trước các thay đổi chủ đề.
+
 ---
 *Tài liệu này được đồng bộ với `src/features/chat` và các tài liệu thiết kế Use Case.*

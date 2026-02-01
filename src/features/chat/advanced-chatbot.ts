@@ -4,7 +4,7 @@ import { chatRepo } from './chat-repo';
 import { ProjectAwarenessInjector, PersonaInjector } from './injectors';
 import { HumanMessage, AIMessage, SystemMessage, ToolMessage } from "@langchain/core/messages";
 import { curriculumRepository } from '../knowledge/db';
-import { AgentResponse, ReferencedUnit, ToolMetadata } from './types';
+import { AgentResponse, ReferencedUnit, ToolMetadata, ChatSession } from './types';
 import { z } from "zod";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 
@@ -75,14 +75,16 @@ export class HanachanChatService {
         if (!session) session = await chatRepo.createSession(sessionId, userId);
         const resolvedSessionId = session.id;
 
-        const history = session.messages.map((m: any) =>
+        // ONLY use 6 recent messages (3 turns) + current message as requested (5-7 total turns recommended, we use 6 + 1 = 7 messages)
+        const recentMessages = session.messages.slice(-6);
+        const history = recentMessages.map((m: any) =>
             m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content)
         );
 
         // 2. Build System Context
-        const systemContext = await this.buildSystemContext(userId, text);
+        const systemContext = await this.buildSystemContext(userId, session, text);
 
-        // 3. Execution Loop (Simple 1-step tool loop for speed)
+        // 3. Execution Loop
         const messages = [
             new SystemMessage(systemContext),
             ...history,
@@ -91,75 +93,116 @@ export class HanachanChatService {
 
         // First pass: AI decides to use tool or talk
         const firstResponse = await llmWithTools.invoke(messages);
-        console.log(`🤖 AI Initial Thought: ${firstResponse.content || "[Calling Tool]"}`);
 
         let finalResponseText = "";
 
         if (firstResponse.tool_calls && firstResponse.tool_calls.length > 0) {
-            console.log(`🛠️ Tool Calls: ${JSON.stringify(firstResponse.tool_calls)}`);
-            // Execution of tool calls
             messages.push(firstResponse);
             for (const call of firstResponse.tool_calls) {
                 const tool = tools.find((t) => t.name === call.name);
                 if (tool) {
                     const result = await tool.invoke(call.args);
-                    console.log(`📥 Tool Output for ${call.name}: ${result.substring(0, 100)}...`);
                     messages.push(new ToolMessage({ tool_call_id: call.id, content: result }));
 
-                    // Parse results to CTAs and Metadata
                     if (call.name === "search_curriculum" && result !== "No results found in official curriculum.") {
                         const hits = JSON.parse(result);
                         isCurriculumBased = true;
                         toolsUsed.push({
                             toolName: 'search_curriculum',
                             status: 'hit',
-                            resultSummary: `Found ${hits.length} items in curriculum.`
+                            resultSummary: `Found ${hits.length} items.`
                         });
                         hits.forEach((h: any) => {
                             if (!referencedUnits.find(r => r.id === h.id)) {
                                 referencedUnits.push({ id: h.id, slug: h.slug, character: h.character, type: h.type });
                             }
                         });
-                    } else {
-                        toolsUsed.push({ toolName: call.name, status: 'miss', resultSummary: "Reference not found in curriculum." });
                     }
                 }
             }
-            // Second pass: AI synthesizes final answer
             const secondResponse = await this.llm.invoke(messages);
             finalResponseText = secondResponse.content as string;
         } else {
-            // AI didn't feel like searching
             finalResponseText = firstResponse.content as string;
         }
 
-        // 4. Persistence
-        await chatRepo.addMessage(resolvedSessionId, { role: 'user', content: text, timestamp: new Date().toISOString() });
+        // 4. Extract and Handle Metadata Updates (Summary/Title)
+        let cleanReply = finalResponseText;
+        const summaryMatch = finalResponseText.match(/\[\[SUMMARY_UPDATE\]\]([\s\S]*?)(\[\[|$)/);
+        const titleMatch = finalResponseText.match(/\[\[TITLE_UPDATE\]\]([\s\S]*?)(\[\[|$)/);
+
+        if (summaryMatch || titleMatch) {
+            const updates: any = {};
+            if (summaryMatch) updates.summary = summaryMatch[1].trim();
+            if (titleMatch) updates.title = titleMatch[1].trim();
+
+            await chatRepo.updateSession(resolvedSessionId, updates);
+
+            // Clean up the reply for the user
+            cleanReply = finalResponseText
+                .replace(/\[\[SUMMARY_UPDATE\]\][\s\S]*?(\[\[TITLE_UPDATE\]\]|$)/, '')
+                .replace(/\[\[TITLE_UPDATE\]\][\s\S]*?$/, '')
+                .trim();
+        }
+
+        // 5. Persistence
+        await chatRepo.addMessage(resolvedSessionId, {
+            role: 'user',
+            content: text,
+            timestamp: new Date().toISOString()
+        });
         await chatRepo.addMessage(resolvedSessionId, {
             role: 'assistant',
-            content: finalResponseText,
+            content: cleanReply,
             timestamp: new Date().toISOString(),
             metadata: { toolsUsed, referencedUnits, isCurriculumBased }
         });
 
-        return { reply: finalResponseText, toolsUsed, referencedUnits, isCurriculumBased };
+        return { reply: cleanReply, toolsUsed, referencedUnits, isCurriculumBased };
     }
 
-    private async buildSystemContext(userId: string, text: string): Promise<string> {
-        let context = `You are Hanachan, an expert Japanese tutor. 
-        MANDATORY POLICY:
-        1. YOU MUST ALWAYS CALL 'search_curriculum' if you need ANY specific information about Japanese words, kanji, or grammar to answer accurately.
-        2. PROACTIVE SEARCH: Even if the user doesn't explicitly ask, if your intended answer mentions a Japanese term, you MUST search for it first.
-        3. Prioritize 'search_curriculum' results over your general memory.
-        4. If 'search_curriculum' returns "No results found", start with: "Lưu ý: Kiến thức này hiện nằm ngoài giáo trình chính thức của Hanachan."
-        5. Your goal: Be an agent that verifies facts before speaking.`;
+    private async buildSystemContext(userId: string, session: ChatSession, text: string): Promise<string> {
+        let context = `You are Hanachan, an expert Japanese tutor...
+MANDATORY POLICY:
+1. ALWAYS call 'search_curriculum' for Japanese terms to be accurate.
+2. Even if not asked, search for terms you intend to mention.
+3. If search returns nothing, note: "Lưu ý: Kiến thức này hiện nằm ngoài giáo trình chính thức của Hanachan."
+`;
 
         context += await this.personaInjector.inject(userId);
 
-        // Heuristic fallback for project awareness injection (efficient)
         if (text.toLowerCase().includes("project") || text.toLowerCase().includes("stack")) {
             context += await this.projectInjector.inject(userId);
         }
+
+        // CONTEXT MANAGEMENT (SUPER-DEV-PRO)
+        context += `
+[SESSION CONTEXT MANAGEMENT]
+Current "Working State" (Session Summary):
+${session.summary || "Mục tiêu: Bắt đầu hỗ trợ người dùng khám phá Hanachan."}
+
+Rules:
+1. Stick to the goals and decisions in the Session Summary.
+2. Do NOT repeat explanations already settled in the Summary unless asked.
+3. Do NOT change architecture or assumptions already decided.
+4. If information is missing from Summary or history, ASK the user instead of guessing.
+
+Implicit Update trigger:
+If the user:
+- Fixes/confirms a technical decision.
+- Rejects an approach.
+- Shifts focus to another topic.
+Then provided a CONCISE response and append exactly:
+[[SUMMARY_UPDATE]]
+Mục tiêu hiện tại: ...
+Các quyết định đã chốt: ...
+Ràng buộc / nguyên tắc: ...
+Câu hỏi còn mở (nếu có): ...
+[[TITLE_UPDATE]]
+(A short, descriptive title for the session)
+
+Otherwise, do NOT include these tags.
+`;
 
         return context;
     }

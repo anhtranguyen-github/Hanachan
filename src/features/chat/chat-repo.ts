@@ -116,6 +116,21 @@ export class ChatRepository {
     }
 
 
+    async updateSession(sessionId: string, updates: { title?: string, summary?: string, mode?: string }) {
+        const { error } = await supabase
+            .from('chat_sessions')
+            .update({
+                ...updates,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', sessionId);
+
+        if (error) {
+            console.error("Error updating chat session:", error);
+            throw error;
+        }
+    }
+
     async getUserSessions(userId: string): Promise<any[]> {
         const { data, error } = await supabase
             .from('chat_sessions')
