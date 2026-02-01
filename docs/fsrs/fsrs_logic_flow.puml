@@ -1,0 +1,49 @@
+@startuml
+title Luồng xử lý thuật toán FSRS + FIF (Hanachan V2)
+skinparam monochrome true
+skinparam shadowing false
+skinparam DefaultFontName "Segoe UI"
+
+start
+:Nhận thông tin trạng thái hiện tại\n(Stability, Difficulty, Reps, Stage)\nvà kết quả bài tập (Wrong Count);
+
+:Tính toán **Cường độ lỗi sai (Intensity)**\nIntensity = min(log2(wrongCount + 1), 3.0);
+
+if (Trả lời đúng hoàn hảo? (Wrong Count = 0)) then (Đúng)
+  :Tăng số lần nhớ thành công (Reps + 1);
+  :Giảm nhẹ Độ khó (Difficulty - 0.1);
+  
+  if (Đang ở giai đoạn khởi đầu? (Reps 1-4)) then (Có)
+    :Áp dụng mốc S cứng (0.16 -> 0.33 -> 1.0 -> 3.0 ngày);
+  else (Không)
+    :Tính **S mới = S cũ * 1.5 * (3.0 / Difficulty)**;
+  endif
+  
+  :Cập nhật trạng thái Stability;
+
+else (Có lỗi sai / Trả lời lại)
+  :Tăng Độ khó dựa trên cường độ lỗi\nDifficulty = Difficulty + (0.2 * Intensity);
+  
+  :Tính toán độ suy giảm (Decay)\nDecay = exp(-0.3 * Intensity);
+  :Cập nhật **S mới = S cũ * Decay**;
+  
+  if (Cường độ lỗi đáng kể? (Intensity > 0.5)) then (Có)
+    :Tăng số lần quên (Lapses + 1);
+    :Lùi số lần nhớ (Reps - 1);
+    :Chuyển trạng thái về **Learning**;
+  endif
+endif
+
+:Xác định Giai đoạn kiến thức mới;
+if (Stability >= 120 ngày?) then (Có)
+  :Giai đoạn **Burned**;
+elseif (Stability >= 3 ngày?) then (Có)
+  :Giai đoạn **Review**;
+else (Không)
+  :Giai đoạn **Learning**;
+endif
+
+:Tính ngày ôn tập tiếp theo\n(Next Review = Hiện tại + Stability);
+
+stop
+@enduml
