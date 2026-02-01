@@ -1,0 +1,43 @@
+@startuml
+title Sơ đồ hoạt động - Cách Trợ lý Hanachan hỗ trợ bạn
+skinparam shadowing false
+skinparam ArrowColor #FF69B4
+skinparam ActivityBackgroundColor #FFF0F5
+skinparam ActivityBorderColor #FF69B4
+
+|Người dùng|
+start
+:Gửi câu hỏi hoặc yêu cầu
+(Ví dụ: "Giải thích chữ Ái" hoặc "Tôi học đến đâu rồi?");
+
+|Trợ lý Hanachan|
+:Xem lại "Bản ghi nhớ" hiện tại
+(Mục tiêu đang làm, các ý đã chốt);
+
+:Kiểm tra 3-5 câu chuyện gần nhất
+để nắm bắt ngữ cảnh;
+
+if (Yêu cầu có liên quan đến kiến thức tiếng Nhật?) then (Có)
+  :Tự động tra cứu trong "Kho giáo trình"
+  (Hán tự, Từ vựng, Ngữ pháp chuẩn);
+  :Lấy thông tin chính xác
+  (Nghĩa, cách đọc, mẹo nhớ);
+else (Không)
+  :Dùng kiến thức chung để trả lời;
+endif
+
+:Chuẩn bị câu trả lời thân thiện;
+
+if (Người dùng vừa chốt ý hoặc đổi chủ đề?) then (Có)
+  :Cập nhật lại "Bản ghi nhớ" làm việc
+  (Để lượt sau không cần hỏi lại);
+  :Đặt lại tên phiên trò chuyện cho phù hợp;
+endif
+
+:Gửi câu trả lời kèm các
+"Nút học tập" (nhấn vào là xem chi tiết);
+
+|Người dùng|
+:Nhận phản hồi từ Trợ lý;
+stop
+@enduml
