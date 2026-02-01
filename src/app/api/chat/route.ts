@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
             success: true,
             reply: response.reply,
             toolsUsed: response.toolsUsed,
-            referencedKUs: response.referencedKUs
+            referencedUnits: response.referencedUnits
         });
 
     } catch (e: any) {

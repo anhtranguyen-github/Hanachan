@@ -5,8 +5,8 @@ import { clsx } from 'clsx';
 import { GlassCard } from '@/components/premium/GlassCard';
 import { useUser } from '@/features/auth/AuthContext';
 import { QuickViewModal, QuickViewData } from '@/components/shared/QuickViewModal';
-import { mapKUToQuickView } from '@/features/knowledge/ui-mapper';
-import { getLocalKU } from '@/features/knowledge/actions';
+import { mapUnitToQuickView } from '@/features/knowledge/ui-mapper';
+import { getKnowledgeUnit } from '@/features/knowledge/actions';
 
 type Message = {
     id: string;
@@ -14,7 +14,7 @@ type Message = {
     content: string;
     timestamp: string;
     toolsUsed?: string[];
-    referencedKUs?: { id: string; slug: string; character: string; type: string }[];
+    referencedUnits?: { id: string; slug: string; character: string; type: string }[];
 };
 
 export default function ChatbotPage() {
@@ -30,7 +30,7 @@ export default function ChatbotPage() {
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalData, setModalData] = useState<QuickViewData | null>(null);
-    const [isLoadingKU, setIsLoadingKU] = useState(false);
+    const [isLoadingUnit, setIsLoadingUnit] = useState(false);
 
     const setDefaultWelcome = () => {
         setMessages([
@@ -88,8 +88,9 @@ export default function ChatbotPage() {
                     content: data.reply,
                     timestamp: new Date().toISOString(),
                     toolsUsed: data.toolsUsed,
-                    referencedKUs: data.referencedKUs
+                    referencedUnits: data.referencedUnits
                 };
+                console.log("[ChatbotPage] Received bot message:", { tools: data.toolsUsed?.length, units: data.referencedUnits?.length });
                 setMessages(prev => [...prev, botMsg]);
             } else {
                 throw new Error(data.error || 'Failed to get response');
@@ -107,18 +108,18 @@ export default function ChatbotPage() {
         }
     };
 
-    const handleViewKU = async (ku: { id: string; slug: string; type: string }) => {
-        setIsLoadingKU(true);
+    const handleViewUnit = async (unit: { id: string; slug: string; type: string }) => {
+        setIsLoadingUnit(true);
         try {
-            const fullKU = await getLocalKU(ku.type, ku.slug);
-            if (fullKU) {
-                setModalData(mapKUToQuickView(fullKU as any));
+            const fullUnit = await getKnowledgeUnit(unit.type, unit.slug);
+            if (fullUnit) {
+                setModalData(mapUnitToQuickView(fullUnit as any));
                 setIsModalOpen(true);
             }
         } catch (err) {
-            console.error("Failed to load KU details:", err);
+            console.error("Failed to load unit details:", err);
         } finally {
-            setIsLoadingKU(false);
+            setIsLoadingUnit(false);
         }
     };
 
@@ -211,16 +212,16 @@ export default function ChatbotPage() {
                             )}>
                                 {m.content}
 
-                                {m.referencedKUs && m.referencedKUs.length > 0 && (
+                                {m.referencedUnits && m.referencedUnits.length > 0 && (
                                     <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-border/10">
-                                        {m.referencedKUs.map(ku => (
+                                        {m.referencedUnits.map(unit => (
                                             <button
-                                                key={ku.id}
-                                                onClick={() => handleViewKU(ku)}
-                                                data-testid="ku-cta-button"
+                                                key={unit.id}
+                                                onClick={() => handleViewUnit(unit)}
+                                                data-testid="unit-cta-button"
                                                 className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
                                             >
-                                                {ku.character} • {ku.type} <ExternalLink size={10} />
+                                                {unit.character} • {unit.type} <ExternalLink size={10} />
                                             </button>
                                         ))}
                                     </div>
@@ -294,7 +295,7 @@ export default function ChatbotPage() {
                 data={modalData}
             />
 
-            {isLoadingKU && (
+            {isLoadingUnit && (
                 <div className="fixed inset-0 z-[110] bg-black/20 flex items-center justify-center backdrop-blur-sm">
                     <Loader2 className="animate-spin text-primary" size={48} />
                 </div>

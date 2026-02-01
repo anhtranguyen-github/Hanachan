@@ -4,7 +4,7 @@ import { ChatMessageSchema, ChatSessionSchema } from '@/lib/validation';
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 export type ChatSession = z.infer<typeof ChatSessionSchema>;
 
-export interface ReferencedKU {
+export interface ReferencedUnit {
     id: string;
     slug: string;
     character: string;
@@ -14,10 +14,12 @@ export interface ReferencedKU {
 export interface ToolMetadata {
     toolName: string;
     resultSummary: string;
+    status?: 'hit' | 'miss';
 }
 
 export interface AgentResponse {
     reply: string;
+    isCurriculumBased: boolean;
     toolsUsed: ToolMetadata[];
-    referencedKUs: ReferencedKU[];
+    referencedUnits: ReferencedUnit[];
 }

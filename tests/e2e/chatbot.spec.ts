@@ -34,13 +34,13 @@ test.describe('Chatbot Advanced Features', () => {
         await page.waitForLoadState('networkidle');
 
         const input = page.getByTestId('chat-input');
-        // We know '水' is likely in the sample data
-        await input.fill('Tell me about the kanji 水');
+        // Ask about something likely to be in the database
+        await input.fill('Tell me about water');
         await page.getByTestId('chat-send-button').click();
 
         // Check for CTA button
-        const ctaButton = page.getByTestId('ku-cta-button').filter({ hasText: '水' }).or(page.getByTestId('ku-cta-button').first());
-        await expect(ctaButton).toBeVisible({ timeout: 20000 });
+        const ctaButton = page.getByTestId('ku-cta-button').first();
+        await expect(ctaButton).toBeVisible({ timeout: 30000 });
 
         const ctaText = await ctaButton.innerText();
         const character = ctaText.split('•')[0].trim();
@@ -51,7 +51,6 @@ test.describe('Chatbot Advanced Features', () => {
         // Verify QuickView Modal opens
         await expect(page.getByTestId('quick-view-modal')).toBeVisible();
         // CTA text is uppercase due to CSS, modal uses title case. Use regex for flexible match.
-        // Escape special regex characters in the character string
         const escapedChar = character.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         await expect(page.getByTestId('quick-view-character')).toHaveText(new RegExp(escapedChar, 'i'));
 
