@@ -70,6 +70,25 @@ export async function fetchDueItems(userId: string) {
     return srsRepository.fetchDueItems(userId);
 }
 
+export async function startLessonSession(userId: string, level: number) {
+    const DAILY_LIMIT = 10;
+    const todayCount = await lessonRepository.countTodayBatches(userId);
+
+    if (todayCount >= DAILY_LIMIT) {
+        throw new Error(`Daily limit reached! You have already finished ${DAILY_LIMIT} batches today. Take a rest for better retention.`);
+    }
+
+    const items = await lessonRepository.fetchNewItems(userId, 5, level);
+    if (items.length === 0) {
+        return { items: [], batch: null };
+    }
+
+    const batch = await lessonRepository.createLessonBatch(userId, level);
+    await lessonRepository.createLessonItems(batch.id, items.map((i: any) => i.ku_id));
+
+    return { items, batch };
+}
+
 export async function fetchNewItems(userId: string, levelId: string, limit: number = 5) {
     let level: number | undefined;
     if (levelId?.startsWith('level-')) {
@@ -169,8 +188,9 @@ export async function fetchUserDashboardStats(userId: string) {
         const dueItems = await srsRepository.fetchDueItems(userId);
         const repoStats = await srsRepository.fetchStats(userId);
         const dailyStats = await analyticsService.getDashboardStats(userId);
+        const todayBatchCount = await lessonRepository.countTodayBatches(userId);
 
-        console.log('[LearningService] Live Data:', { due: dueItems?.length, learned: repoStats?.learned, today: dailyStats?.daily });
+        console.log('[LearningService] Live Data:', { due: dueItems?.length, learned: repoStats?.learned, today: dailyStats?.daily, todayBatches: todayBatchCount });
 
         // Calculate Type Mastery Percentages
         const typePercentages = {
@@ -202,7 +222,8 @@ export async function fetchUserDashboardStats(userId: string) {
             heatmap: repoStats?.heatmap || {},
             typeMastery: typePercentages,
             totalKUCoverage: repoStats ? (repoStats.learned / repoStats.totalKUs) * 100 : 0,
-            streak: 0 // Adding missing field to satisfy UI
+            streak: 0, // Adding missing field to satisfy UI
+            todayBatchCount
         };
 
         return stats;
@@ -219,7 +240,8 @@ export async function fetchUserDashboardStats(userId: string) {
             totalKUCoverage: 0,
             streak: 0,
             minutesSpent: 0,
-            dueBreakdown: { learning: 0, review: 0 }
+            dueBreakdown: { learning: 0, review: 0 },
+            todayBatchCount: 0
         };
     }
 }

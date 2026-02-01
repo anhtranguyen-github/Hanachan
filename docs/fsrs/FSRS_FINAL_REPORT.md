@@ -87,5 +87,22 @@ Người dùng đang trong phiên học mới (Lesson Quiz), sai 15 lần cho 1 
 
 ---
 
-## 4. Kết luận
-Kiến trúc FSRS-FIF trên Hanachan v2 là sự hài hòa giữa **toán học chính xác** và **tâm lý học thực hành**. Nó ngăn chặn sự nản lòng của người học bằng cách bảo vệ thành quả cũ, đồng thời vẫn đủ nghiêm khắc để đảm bảo kiến thức khó được lặp lại đủ nhiều.
+## 5. Cơ chế Bảo vệ và Giới hạn Học tập (Learning Safeguards)
+
+Để ngăn chặn hiện tượng "kiệt sức trí nhớ" (burnout) và đảm bảo tính hiệu quả của Spaced Repetition, Hanachan v2 áp dụng 2 lớp bảo vệ:
+
+### 5.1. Giới hạn 10 Batch mỗi ngày (Daily Batch Limit)
+- **Quy tắc**: Mỗi ngày người dùng chỉ được phép bắt đầu tối đa **10 đợt học (batches)** từ mới (tương đương ~50 mục kiến thức).
+- **Lý do**: Việc nạp quá 50 mục kiến thức mới mỗi ngày sẽ tạo ra một "núi nợ" ôn tập khổng lồ vào các ngày hôm sau, dễ dẫn đến nản lòng và bỏ cuộc.
+- **Phản hồi hệ thống**: Khi đạt giới hạn, Dashboard sẽ hiển thị thông điệp khuyến khích người dùng nghỉ ngơi hoặc tập trung ôn tập thẻ cũ.
+
+### 5.2. Chốt chặn trình độ 90% (90% Mastery Rule)
+- **Quy tắc**: Người dùng không thể chuyển sang Level tiếp theo nếu chưa có ít nhất **90%** số thẻ ở Level hiện tại đạt trạng thái **Mastered** (đã qua giai đoạn học bù sơ cấp).
+- **Lý do**: Đảm bảo nền tảng kiến thức vững chắc trước khi tiếp cận nội dung khó hơn.
+
+
+
+---
+
+## 6. Kết luận
+Kiến trúc FSRS-FIF kết hợp cùng các giới hạn bảo vệ trên Hanachan v2 là sự hài hòa giữa **toán học chính xác** và **tâm lý học thực hành**. Nó không chỉ tối ưu hóa lộ trình ghi nhớ mà còn chủ động bảo vệ người dùng khỏi sự quá tải, duy trì cảm hứng học tập bền vững.

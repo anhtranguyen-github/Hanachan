@@ -114,9 +114,11 @@ LearningService ..> srsRepository : lưu trữ dữ liệu >
 ReviewSessionController ..> srsRepository : quản lý phiên ôn tập >
 
 interface srsRepository <<Repository>> {
-  + createReviewSession(userId, total)
-  + updateReviewSessionProgress(sessionId, completed)
-  + updateUserState(userId, unitId, facet, updates)
+  + createReviewSession(userId, total): Promise<Session>
+  + updateReviewSessionItem(sessionId, unitId, facet, status, rating, wrongCount, attempts): Promise<void>
+  + incrementSessionProgress(sessionId): Promise<void>
+  + finishReviewSession(sessionId): Promise<void>
+  + updateUserState(userId, unitId, facet, updates): Promise<void>
 }
 
 ' Luồng FSRSEngine
@@ -130,5 +132,7 @@ NextReviewData "1" *-- "1" SRSState : nhúng trạng thái mới >
 ### Các quy tắc nghiệp vụ quan trọng:
 1. **Dòng dữ liệu (Data Flow)**: `ReviewSessionController` quản lý hàng chờ các `QuizItem`. Khi người dùng trả lời, nó gọi `LearningService` để xử lý.
 2. **FIF Architecture**: Thay vì `firstAttemptDone`, controller theo dõi `wrongCount` cho từng item.
-3. **Commit on Success**: Chỉ khi trả lời đúng thì mới gọi `submitReview`. Lúc này `wrongCount` được gửi kèm để tính toán hình phạt (Intensity).
-4. **No Gen Quiz**: Hệ thống không tự sinh câu hỏi. Mọi khía cạnh (facet) cần ôn tập đều phải được định nghĩa sẵn là một bản ghi trong bảng `questions`. `ReviewSessionController` tải các câu hỏi này và gắn kèm trạng thái `UserLearningState` của người dùng để tạo thành `QuizItem`.
+3. **Commit on Success**: Chỉ khi trả lời đúng thì mới gọi `submitReview`. Lúc mình `wrongCount` được gửi kèm để tính toán hình phạt (Intensity).
+4. **No Gen Quiz**: Hệ thống không tự sinh câu hỏi. Mọi khía cạnh (facet) cần ôn tập đều phải được định nghĩa sẵn là một bản ghi trong bảng `questions`.
+5. **Stability Guard**: Đảm bảo $S_{new} \ge S_{prev}$ khi người dùng trả lời đúng, bất kể cường độ lỗi sai là bao nhiêu (không làm người dùng bị "văng ngược" quá xa).
+6. **Min Stability Floor**: Luôn giữ sàn 0.1 ngày (~2.4h) cho các thẻ sai, đảm bảo người dùng ôn lại ngay trong phiên sau của cùng một ngày.

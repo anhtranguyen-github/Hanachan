@@ -31,8 +31,11 @@ export class FSRSEngine {
         let { stage, stability, difficulty, reps, lapses } = current;
 
         // FIF: Failure Intensity Framework
-        // Instead of binary "Again", we use the wrongCount to determine the impact
-        const failureIntensity = Math.min(Math.log2(wrongCount + 1), 3.0); // Cap at 3.0
+        // Instead of binary "Again", we use the wrongCount to determine the impact.
+        // If rating is 'again' but wrongCount is 0 (direct API call), treat it as intensity 1.0.
+        const failureIntensity = (rating === 'again' && wrongCount === 0)
+            ? 1.0
+            : Math.min(Math.log2(wrongCount + 1), 3.0);
 
         console.log(`[FSRS-FIF] Rating=${rating}, Wrong=${wrongCount}, Intensity=${failureIntensity.toFixed(2)}`);
 
@@ -116,5 +119,5 @@ export class FSRSEngine {
 }
 
 // For backward compatibility if needed, but we should migrate to the Class
-export const calculateNextReview = (current: SRSState, rating: Rating) =>
-    FSRSEngine.calculateNextReview(current, rating);
+export const calculateNextReview = (current: SRSState, rating: Rating, wrongCount: number = 0) =>
+    FSRSEngine.calculateNextReview(current, rating, wrongCount);

@@ -98,14 +98,19 @@ export const srsRepository = {
         }
     },
 
-    async updateReviewSessionItem(sessionId: string, unitId: string, facet: string, status: string, rating?: Rating) {
+    async updateReviewSessionItem(sessionId: string, unitId: string, facet: string, status: string, rating?: Rating, wrongCount?: number, attempts?: number) {
+        const updates: any = {
+            status: status,
+            updated_at: new Date().toISOString()
+        };
+
+        if (rating) updates.first_rating = rating;
+        if (wrongCount !== undefined) updates.wrong_count = wrongCount;
+        if (attempts !== undefined) updates.attempts = attempts;
+
         const { error } = await supabase
             .from('review_session_items')
-            .update({
-                status: status,
-                first_rating: rating,
-                updated_at: new Date().toISOString()
-            })
+            .update(updates)
             .match({ session_id: sessionId, ku_id: unitId, facet: facet });
 
         if (error) {

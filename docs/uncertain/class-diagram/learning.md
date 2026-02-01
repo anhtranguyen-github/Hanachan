@@ -26,6 +26,7 @@ class LearningController <<Controller>> {
 class LearningService <<Service>> {
   --
   + fetchNewItems(userId, levelId, limit): Promise<List>
+  + startLessonSession(userId, level): Promise<BatchData>
   + initializeSRS(userId, unitId, facets): Promise<void>
   + checkAndUnlockNextLevel(userId, currentLevel): Promise<void>
 }
@@ -107,6 +108,7 @@ class UserLearningState <<Entity>> {
 interface lessonRepository <<Repository>> {
   + createLessonBatch(userId, level): Promise<Batch>
   + createLessonItems(batchId, unitIds): Promise<void>
+  + countTodayBatches(userId): Promise<Integer>
   + updateLessonItemStatus(batchId, unitId, status): Promise<void>
   + completeLessonBatch(batchId): Promise<void>
   + fetchLevelContent(level, userId): Promise<List>
@@ -133,8 +135,10 @@ LearningService ..> UserLearningState : tạo bản ghi mới >
 LearningService ..> lessonRepository : đọc/ghi dữ liệu >
 
 ' Ràng buộc Logic SRS
-FSRSEngine ..> SRSState : sản sinh trạng thái đầu >
+FSRSEngine ..> SRSState : sử dụng làm đầu vào >
+FSRSEngine ..> NextReviewData : sản sinh đầu ra >
 UserLearningState "1" *-- "1" SRSState : lưu trữ trạng thái hiện tại >
+NextReviewData "1" *-- "1" SRSState : nhúng trạng thái mới >
 
 ' Ràng buộc Nội dung
 KnowledgeUnit "1" *-- "*" Question : định nghĩa trong DB >
@@ -153,8 +157,10 @@ LearningController "1" o-- "*" QuizItem : quản lý hàng đợi >
 3. **Strict DB-Driven Questions**: Không còn việc tự sinh câu hỏi (no gen quiz). Mọi câu hỏi (như hỏi Nghĩa, hỏi Cách đọc) đều phải có bản ghi tương ứng trong bảng `questions`. `LearningController` sẽ tải toàn bộ câu hỏi liên quan từ `questionRepository`.
 4. **90% Knowledge Rule**: `LearningService` kiểm tra điều kiện thăng cấp sau khi mỗi Batch hoàn thành (Complete).
 5. **No FIF in Learning**: Quy trình Discovery không áp dụng kiến trúc FIF. Việc người dùng sai bao nhiêu lần trong bài kiểm tra (Quiz) không ảnh hưởng đến trạng thái khởi tạo của SRS. Mọi Knowledge Unit sau khi Pass đều bắt đầu với cùng một chỉ số Stability nền tảng (măc định ~4h).
+6. **Daily Batch Limit**: Hệ thống giới hạn tối đa **10 đợt học (Batches)** mỗi ngày (tương đương ~50 từ mới) để ngăn chặn việc học nhồi quá mức và bảo vệ tỷ lệ nhớ dài hạn.
 
 ### Các thành phần chính:
-1. **LearningService**: "Bộ não" của tầng chức năng, điều phối việc lấy dữ liệu và kiểm tra quy tắc mở khóa Level mới (90% Knowledge Rule).
+1. **LearningService**: "Bộ não" của tầng chức năng, điều phối việc lấy dữ liệu và kiểm tra quy tắc mở khóa Level mới (90% Knowledge Rule) cũng như giới hạn học tập hàng ngày.
 2. **90% Knowledge Rule**: Quy tắc nghiệp vụ kiểm tra nếu 90% nội dung Level hiện tại đạt trạng thái 'Review' trở lên thì tự động thăng cấp cho User.
-3. **LessonBatch/Item**: Đảm bảo tính **Bền vững (Persistence)**. Người dùng có thể dừng học giữa chừng và quay lại đúng vị trí đang học nhờ vào việc lưu trạng thái từng item vào DB. Trạng thái `abandoned` được dùng khi người dùng hủy bỏ lô học.
+3. **Daily Batch Limit**: Chốt chặn bảo vệ sức khỏe học tập, ngăn chặn việc nạp quá nhiều thông tin mới trong một ngày (Cognitive Overload).
+4. **LessonBatch/Item**: Đảm bảo tính **Bền vững (Persistence)**. Người dùng có thể dừng học giữa chừng và quay lại đúng vị trí đang học nhờ vào việc lưu trạng thái từng item vào DB. Trạng thái `abandoned` được dùng khi người dùng hủy bỏ lô học.

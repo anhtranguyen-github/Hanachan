@@ -1,12 +1,8 @@
 'use server';
 
-import {
-    submitReview,
-    fetchDueItems,
-    fetchNewItems,
-    fetchLevelStats,
-    fetchUserDashboardStats,
-    initializeSRS
+fetchUserDashboardStats,
+    initializeSRS,
+    startLessonSession
 } from './service';
 import { revalidatePath } from 'next/cache';
 
@@ -52,6 +48,16 @@ export async function fetchDueItemsAction(userId: string) {
         const items = await fetchDueItems(userId);
         return { success: true, data: items };
     } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function startLessonSessionAction(userId: string, level: number) {
+    try {
+        const result = await startLessonSession(userId, level);
+        return { success: true, data: result };
+    } catch (e: any) {
+        console.error("[LearningActions] startLessonSession error:", e);
         return { success: false, error: e.message };
     }
 }

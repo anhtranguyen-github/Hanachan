@@ -83,5 +83,14 @@ Nhờ FIF, giá trị $S$ không bị phá hủy, giúp khoảng thời gian $t$
 | **Xử lý Sai nhiều lần** | Phạt lũy thừa (Exponential) | Phạt giảm dần (Logarithmic) |
 | **Tính nhất quán** | Dễ bị Zombie Card nếu crash | An toàn nhờ Atomic Commit |
 
-## 5. Kết luận
-Việc kết hợp **FSRS** và **FIF** biến hệ thống Spaced Repetition của Hanachan từ một công cụ cứng nhắc thành một trí tuệ nhân tạo hiểu được nỗ lực của con người. Nó không chỉ hỏi "Bạn nhớ hay quên?", mà còn hỏi "Bạn đã vất vả như thế nào để nhớ lại?", từ đó đưa ra lịch ôn tập cá nhân hóa và công bằng nhất.
+## 6. Giai đoạn 4: Hàng rào Bảo vệ Sức khỏe (Healthy Learning Boundary)
+
+Sự tiến hóa cuối cùng không nằm ở công thức toán học, mà ở **Kỷ luật Học tập**.
+
+### Giới hạn 10 Batch mỗi ngày:
+Để ngăn chặn việc user học quá nhiều trong một lúc (gây ra hiện tượng nghẽn cổ chai ôn tập vào các ngày sau), hệ thống áp dụng:
+*   **Quota**: Tối đa 10 đợt học (50 từ mới) / 24 giờ.
+*   **Mục đích**: Bảo vệ bộ não khỏi sự quá tải (Cognitive Overload) và duy trì tỷ lệ nhớ (Retention) trên 90%.
+
+## 7. Kết luận
+Việc kết hợp **FSRS**, **FIF** và **Daily Limits** biến hệ thống Spaced Repetition của Hanachan từ một công cụ cứng nhắc thành một trí tuệ nhân tạo hiểu được nỗ lực của con người. Nó không chỉ hỏi "Bạn nhớ hay quên?", mà còn hỏi "Bạn đã vất vả như thế nào để nhớ lại?" và "Bạn đã học đủ cho hôm nay chưa?", từ đó đưa ra lộ trình bền vững nhất.

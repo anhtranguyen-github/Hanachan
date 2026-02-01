@@ -55,14 +55,22 @@ Bạn gặp một Kanji khó và **trả lời SAI** một hoặc nhiều lần 
 - **Điều chỉnh độ khó**: Hệ thống tự tăng độ khó của từ đó (`difficulty` tăng), khiến những lần đúng tiếp theo Stability sẽ tăng chậm hơn bình thường (do D nằm ở mẫu số trong công thức tăng trưởng).
 
 ### Kịch bản C: "Tính độc lập" (Independence Law)
-Bạn học từ **日本語 (Nihongo)**. 
+Bạn học từ **日本語 (Nihongo)**.
 - Bạn nhớ nghĩa là "Tiếng Nhật" (**Trả lời ĐÚNG** nghĩa).
 - Nhưng bạn quên cách đọc là "Nihongo" (**Trả lời SAI** cách đọc).
 - **Kết quả**: Nghĩa của từ vẫn được đẩy đi xa (ví dụ 3 ngày sau mới hỏi lại), nhưng cách đọc sẽ bị bắt gặp lại sau 2 tiếng. Não bạn chỉ tập trung sửa lỗi chỗ nào thực sự yếu.
 
 ---
 
-## 4. Quy tắc 90% Mastery (Checkpoints)
+## 4. Giới hạn học tập hàng ngày (Daily Limits)
+
+Để bảo vệ não bộ khỏi sự quá tải (Cognitive Overload), Hanachan v2 áp dụng giới hạn học mới:
+- **Tối đa 10 Batch mỗi ngày**: Bạn chỉ có thể nạp thêm khoảng 50 từ mới mỗi ngày.
+- **Mục đích**: Tập trung vào chất lượng hơn số lượng. Khi đạt giới hạn, hãy dành thời gian để ôn tập các thẻ cũ hoặc nghỉ ngơi để não bộ củng cố thông tin.
+
+---
+
+## 5. Quy tắc 90% Mastery (Checkpoints)
 
 Hệ thống không chỉ nhìn vào từng từ đơn lẻ mà còn nhìn vào toàn bộ Level:
 - Khi **90%** số từ trong Level hiện tại của bạn đạt trạng thái **Review** hoặc **Burned**, Hanachan sẽ thông báo: *"Bạn đã làm chủ Level này!"* và tự động mở khóa Level tiếp theo.
@@ -70,7 +78,7 @@ Hệ thống không chỉ nhìn vào từng từ đơn lẻ mà còn nhìn vào 
 
 ---
 
-## 5. Tổng kết thông số kỹ thuật
+## 6. Tổng kết thông số kỹ thuật
 
 - **Sàn Stability**: 0.1 ngày (2.4 giờ).
 - **Trần Stability**: Không giới hạn (nhưng > 120 ngày là Burned).

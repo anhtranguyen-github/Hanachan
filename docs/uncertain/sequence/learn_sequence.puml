@@ -14,23 +14,22 @@ participant "questionRepository" as QRepo
 User -> UI : Bắt đầu bài học mới
 activate UI
 
-UI -> Service : fetchNewItems(userId, level)
+UI -> Service : startLessonSession(userId, level)
 activate Service
-Service -> LessonRepo : Lấy dữ liệu Knowledge Units
-LessonRepo --> Service : Items
-Service --> UI : Items
+Service -> LessonRepo : countTodayBatches(userId)
+LessonRepo --> Service : Count
+alt Nếu Count >= 10 (Daily Limit)
+    Service --> UI : Error: Daily Limit Reached
+    UI -> User : Hiển thị màn hình giới hạn học (Zap/Rest)
+else Nếu Count < 10
+    Service -> LessonRepo : fetchNewItems(userId, limit, level)
+    LessonRepo --> Service : Items
+    Service -> LessonRepo : createLessonBatch(userId, level)
+    LessonRepo --> Service : Batch ID
+    Service -> LessonRepo : createLessonItems(batchId, unitIds)
+    Service --> UI : {Items, Batch}
+end
 deactivate Service
-
-' PERSISTENCE
-UI -> LessonRepo : createLessonBatch(userId, level)
-activate LessonRepo
-LessonRepo --> UI : batchId
-deactivate LessonRepo
-
-UI -> LessonRepo : createLessonItems(batchId, unitIds)
-activate LessonRepo
-LessonRepo --> UI : OK
-deactivate LessonRepo
 
 UI -> Controller : init(items, batchId)
 activate Controller

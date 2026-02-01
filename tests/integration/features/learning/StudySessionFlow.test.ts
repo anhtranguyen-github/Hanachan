@@ -1,9 +1,8 @@
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { submitReview } from '@/features/learning/service';
-import { learningRepository } from '@/features/learning/db';
+import { srsRepository } from '@/features/learning/srsRepository';
 
-vi.mock('@/features/learning/db');
+vi.mock('@/features/learning/srsRepository');
 
 describe('Study Session Integration Flow', () => {
     const userId = '00000000-0000-4000-8000-000000000001';
@@ -23,7 +22,7 @@ describe('Study Session Integration Flow', () => {
             lapses: 0
         };
 
-        const updateSpy = vi.spyOn(learningRepository, 'updateUserState').mockResolvedValue(undefined as any);
+        const updateSpy = vi.spyOn(srsRepository, 'updateUserState').mockResolvedValue(undefined as any);
 
         const result = await submitReview(userId, kuId, facet, 'good', currentState);
 
@@ -49,18 +48,18 @@ describe('Study Session Integration Flow', () => {
             lapses: 0
         };
 
-        const updateSpy = vi.spyOn(learningRepository, 'updateUserState').mockResolvedValue(undefined as any);
+        const updateSpy = vi.spyOn(srsRepository, 'updateUserState').mockResolvedValue(undefined as any);
 
         const result = await submitReview(userId, kuId, facet, 'again', currentState);
 
-        // (5 - 2) = 3 reps remaining according to smart reset
-        expect(result.next_state.reps).toBe(3);
+        // (5 - 1) = 4 reps remaining according to smart reset
+        expect(result.next_state.reps).toBe(4);
         expect(result.next_state.stage).toBe('learning');
         expect(result.next_state.lapses).toBe(1);
 
         expect(updateSpy).toHaveBeenCalledWith(userId, kuId, facet, expect.objectContaining({
             state: 'learning',
-            reps: 3,
+            reps: 4,
             lapses: 1
         }), 'again');
     });

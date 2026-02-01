@@ -4,25 +4,25 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, ArrowLeft, BookOpen, ChevronRight, CheckCircle2, PlayCircle, Zap, X } from 'lucide-react';
 import { clsx } from 'clsx';
-import { fetchNewItems } from '@/features/learning/service';
-import { lessonRepository } from '@/features/learning/lessonRepository';
-import { LearningController, QuizItem } from '@/features/learning/LearningController';
-import { Rating } from '@/features/learning/domain/SRSAlgorithm';
-import { GlassCard } from '@/components/premium/GlassCard';
-import { ReviewCardDisplay } from '@/features/learning/components/ReviewCardDisplay';
+import { startLessonSessionAction } from '@/features/learning/actions';
 import { useUser } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { QuizItem } from '@/features/learning/LearningController';
+import { Rating } from '@/features/learning/domain/SRSAlgorithm';
+import { ReviewCardDisplay } from '@/features/learning/components/ReviewCardDisplay';
+import { GlassCard } from '@/components/premium/GlassCard';
 
 function SessionContent() {
     const { user } = useUser();
     const router = useRouter();
-    const [controller, setController] = useState<LearningController | null>(null);
+    const [controller, setController] = useState<any>(null);
     const [currentCard, setCurrentCard] = useState<QuizItem | null>(null);
     const [lessonQueue, setLessonQueue] = useState<any[]>([]);
     const [phase, setPhase] = useState<'init' | 'lesson-view' | 'quiz' | 'complete'>('init');
     const [stats, setStats] = useState({ mistakes: 0, totalItems: 0, completed: 0 });
     const [lessonIndex, setLessonIndex] = useState(0);
     const [batchId, setBatchId] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     const loadSession = async () => {
         if (!user) return;
@@ -35,19 +35,28 @@ function SessionContent() {
                 .single();
 
             const currentLevel = profile?.level || 1;
-            const items = await fetchNewItems(user.id, `level-${currentLevel}`, 5);
 
-            if (items.length === 0) {
+            // Refactored to use Server Action that enforces limits
+            const result = await startLessonSessionAction(user.id, currentLevel);
+
+            if (!result.success) {
+                setError(result.error || "Failed to start session");
+                setPhase('complete'); // Use complete as a terminal state with error message
+                return;
+            }
+
+            const { items, batch } = result.data;
+
+            if (!items || items.length === 0) {
                 router.push('/learn');
                 return;
             }
 
-            // 1. Persist Lesson Batch Header
-            const batch = await lessonRepository.createLessonBatch(user.id, currentLevel);
             setBatchId(batch.id);
-            await lessonRepository.createLessonItems(batch.id, items.map((i: any) => i.ku_id));
 
             // 2. Initialize Controller
+            // Need to import Controller if not already done correctly
+            const { LearningController } = await import('@/features/learning/LearningController');
             const newController = new LearningController(user.id, batch.id);
             const initializedItems = await newController.init(items);
 
@@ -55,9 +64,10 @@ function SessionContent() {
             setController(newController);
             setStats({ mistakes: 0, totalItems: initializedItems.length, completed: 0 });
             setPhase('lesson-view');
-        } catch (error) {
+        } catch (error: any) {
             console.error("[LearnSession] loadSession error:", error);
-            router.push('/learn');
+            setError(error.message);
+            setPhase('complete');
         }
     };
 
@@ -112,6 +122,29 @@ function SessionContent() {
 
     if (phase === 'complete') {
         const accuracy = stats.totalItems > 0 ? Math.round(((stats.totalItems - stats.mistakes) / stats.totalItems) * 100) : 100;
+
+        if (error) {
+            return (
+                <div className="min-h-screen bg-[#FDF8F8] flex flex-col items-center justify-center p-8 max-w-2xl mx-auto space-y-12 animate-in fade-in duration-700">
+                    <div className="w-32 h-32 bg-rose-100 rounded-[48px] flex items-center justify-center text-rose-500 mb-4 animate-bounce">
+                        <Zap size={64} fill="currentColor" />
+                    </div>
+                    <div className="space-y-6 text-center">
+                        <h1 className="text-5xl font-black text-gray-900 tracking-tighter">Daily Limit Reached</h1>
+                        <p className="text-gray-500 text-xl font-medium leading-relaxed">
+                            {error}
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => router.push('/dashboard')}
+                        className="w-full py-6 bg-gray-900 text-white text-2xl font-black rounded-[32px] shadow-2xl hover:scale-105 transition-all"
+                    >
+                        Back to Dashboard
+                    </button>
+                    <p className="text-[10px] font-black uppercase text-gray-300 tracking-[0.4em]">Rest is part of the training</p>
+                </div>
+            );
+        }
 
         return (
             <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 max-w-2xl mx-auto space-y-16 animate-in fade-in duration-1000">

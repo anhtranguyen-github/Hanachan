@@ -128,8 +128,10 @@ export class ReviewSessionController {
                     this.sessionId,
                     current.ku_id,
                     current.prompt_variant,
-                    'incorrect', // Just mark as recently failed
-                    'again'
+                    'incorrect',
+                    'again',
+                    state.wrongCount,
+                    state.attemptCount
                 );
             }
 
@@ -167,7 +169,9 @@ export class ReviewSessionController {
                     current.ku_id,
                     current.prompt_variant,
                     'correct',
-                    rating
+                    rating,
+                    state.wrongCount,
+                    state.attemptCount
                 );
                 srsRepository.incrementSessionProgress(this.sessionId);
             }
