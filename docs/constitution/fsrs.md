@@ -108,18 +108,19 @@ R(t) ≈ target_retention
 
 ---
 
-### 4.4 Relearning
+### 4.4 Relearning (FIF Logic)
 
 **Mô tả**
-- Thẻ đang ở trạng thái Review nhưng người học trả lời sai
+- Thẻ đã được học nhưng người dùng gặp khó khăn (trả lời sai).
 
-**FSRS**
-- Stability (S) bị giảm 60% ($S \times 0.4$)
-- Reps bị giảm 2 đơn vị ($max(1, reps - 2)$), không reset về 0 hoàn toàn để giữ đà (momentum).
-- Không quay về mốc 4h của newbie nếu đã có stability nền tảng (Stability Guard).
+**FSRS (FIF)**
+- **Failure Intensity (I)**: Tính bằng $log_2(\text{wrongCount} + 1)$.
+- **Stability Decay**: $S_{new} = S \times exp(-\beta \times I)$.
+- **Difficulty Spike**: $D_{new} = D + (\alpha \times I)$.
+- Cơ chế này đảm bảo Stability giảm một cách "công bằng" (logarit) thay vì giảm sốc cố định, giúp tránh hiện tượng "Ease Hell" khi người dùng sai nhiều lần trong một phiên ngắn.
 
 **Vai trò**
-- Khôi phục trí nhớ đã suy giảm mà không xóa bỏ hoàn toàn thành quả học tập.
+- Điều chỉnh trí nhớ dựa trên cường độ thất bại thực tế trong phiên ôn tập.
 
 ---
 

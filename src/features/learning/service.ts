@@ -1,20 +1,43 @@
+import { addHours } from 'date-fns';
 import { calculateNextReview, Rating, SRSState } from './domain/SRSAlgorithm';
 import { RatingSchema } from '@/lib/validation';
-import { learningRepository } from './db';
-import { kuRepository } from '../knowledge/db';
+import { srsRepository } from './srsRepository';
+import { lessonRepository } from './lessonRepository';
+import { curriculumRepository } from '../knowledge/db';
 import { analyticsService } from '../analytics/service';
 import { getUserProfile, updateUserProfile } from '../auth/db';
 
-export async function submitReview(userId: string, kuId: string, facet: string, rating: Rating, currentState: SRSState) {
+export async function initializeSRS(userId: string, unitId: string, facets: string[]) {
+    const initialStability = 0.166; // Approx 4 hours
+    const initialDifficulty = 3.0;
+    const nextReview = addHours(new Date(), 4);
+
+    console.log(`[LearningService] Initializing SRS for ${unitId} with facets: ${facets.join(', ')}`);
+
+    for (const facet of facets) {
+        await srsRepository.updateUserState(userId, unitId, facet, {
+            state: 'learning',
+            next_review: nextReview.toISOString(),
+            reps: 1,
+            lapses: 0,
+            last_review: new Date().toISOString(),
+            stability: initialStability,
+            difficulty: initialDifficulty
+        });
+    }
+}
+
+export async function submitReview(userId: string, unitId: string, facet: string, rating: Rating, currentState: SRSState, wrongCount: number = 0) {
     // 0. Validation
     RatingSchema.parse(rating);
 
     // 1. Calculate New State
-    const { next_review, next_state } = calculateNextReview(currentState, rating);
+    // FIF Logic: Pass wrongCount to the FSRSEngine
+    const { next_review, next_state } = calculateNextReview(currentState, rating, wrongCount);
 
-    console.log(`[LearningService] Submitting review for ${kuId} (${facet}): ${rating}. OLD S:${currentState.stability}, NEW S:${next_state.stability}`);
+    console.log(`[LearningService] Submitting review for ${unitId} (${facet}): ${rating}. OLD S:${currentState.stability}, NEW S:${next_state.stability}, WRONG:${wrongCount}`);
 
-    await learningRepository.updateUserState(userId, kuId, facet, {
+    await srsRepository.updateUserState(userId, unitId, facet, {
         state: next_state.stage,
         next_review: next_review.toISOString(),
         reps: next_state.reps,
@@ -26,14 +49,14 @@ export async function submitReview(userId: string, kuId: string, facet: string, 
 
     // 2. Track Analytics
     const isNew = currentState.stage === 'new';
-    const isCorrect = rating !== 'fail' && rating !== 'again';
+    const isCorrect = rating !== 'again';
     await analyticsService.logReview(isNew, isCorrect, userId);
 
     // 3. Level Progression (Law of 90%)
     const justMastered = currentState.stage === 'learning' && (next_state.stage === 'review' || next_state.stage === 'burned');
     if (justMastered) {
-        // Find level of this KU
-        const ku = await kuRepository.getById(kuId, 'kanji' as any); // Type doesn't strictly matter for level
+        // Find level of this Unit
+        const ku = await curriculumRepository.getById(unitId, 'kanji' as any); // Type doesn't strictly matter for level
         if (ku && ku.level) {
             // Trigger check as background task (don't await to keep UI fast)
             checkAndUnlockNextLevel(userId, ku.level);
@@ -44,7 +67,7 @@ export async function submitReview(userId: string, kuId: string, facet: string, 
 }
 
 export async function fetchDueItems(userId: string) {
-    return learningRepository.fetchDueItems(userId);
+    return srsRepository.fetchDueItems(userId);
 }
 
 export async function fetchNewItems(userId: string, levelId: string, limit: number = 5) {
@@ -52,7 +75,7 @@ export async function fetchNewItems(userId: string, levelId: string, limit: numb
     if (levelId?.startsWith('level-')) {
         level = parseInt(levelId.split('-')[1]);
     }
-    return learningRepository.fetchNewItems(userId, limit, level);
+    return lessonRepository.fetchNewItems(userId, limit, level);
 }
 
 
@@ -66,8 +89,8 @@ export async function checkAndUnlockNextLevel(userId: string, currentLevel: numb
     const totalInLevel = stats[currentLevel] || 0;
     if (totalInLevel === 0) return;
 
-    const levelItems = await learningRepository.fetchLevelContent(currentLevel, userId);
-    // Mastered = all facets of a KU reached stage 'review' or 'burned'
+    const levelItems = await lessonRepository.fetchLevelContent(currentLevel, userId);
+    // Mastered = all facets of a Unit reached stage 'review' or 'burned'
     const mastered = levelItems.filter(i => {
         const states = i.user_learning_states;
         if (!states || states.length === 0) return false;
@@ -107,7 +130,7 @@ export async function fetchLevelStats(userId: string, levelId: string) {
         const counts = await fetchCurriculumStats();
         const total = counts[level] || 0;
 
-        const levelItems = await learningRepository.fetchLevelContent(level, userId);
+        const levelItems = await lessonRepository.fetchLevelContent(level, userId);
         const learned = levelItems.filter(i => i.user_learning_states?.length > 0).length;
         const mastered = levelItems.filter(i => {
             const states = i.user_learning_states;
@@ -132,19 +155,19 @@ export async function fetchLevelStats(userId: string, levelId: string) {
 }
 
 export async function fetchLevelContent(level: number, userId: string) {
-    return learningRepository.fetchLevelContent(level, userId);
+    return lessonRepository.fetchLevelContent(level, userId);
 }
 
 export async function fetchCurriculumStats() {
-    return learningRepository.fetchCurriculumStats();
+    return lessonRepository.fetchCurriculumStats();
 }
 
 export async function fetchUserDashboardStats(userId: string) {
     console.log('[LearningService] fetchUserDashboardStats called for userId:', userId);
 
     try {
-        const dueItems = await learningRepository.fetchDueItems(userId);
-        const repoStats = await learningRepository.fetchStats(userId);
+        const dueItems = await srsRepository.fetchDueItems(userId);
+        const repoStats = await srsRepository.fetchStats(userId);
         const dailyStats = await analyticsService.getDashboardStats(userId);
 
         console.log('[LearningService] Live Data:', { due: dueItems?.length, learned: repoStats?.learned, today: dailyStats?.daily });
@@ -178,7 +201,8 @@ export async function fetchUserDashboardStats(userId: string) {
             })),
             heatmap: repoStats?.heatmap || {},
             typeMastery: typePercentages,
-            totalKUCoverage: repoStats ? (repoStats.learned / repoStats.totalKUs) * 100 : 0
+            totalKUCoverage: repoStats ? (repoStats.learned / repoStats.totalKUs) * 100 : 0,
+            streak: 0 // Adding missing field to satisfy UI
         };
 
         return stats;
@@ -192,13 +216,16 @@ export async function fetchUserDashboardStats(userId: string) {
             forecast: Array.from({ length: 7 }, (_, i) => ({ day: `D${i}`, count: 0 })),
             heatmap: Array.from({ length: 365 }, () => 0),
             typeMastery: { radical: 0, kanji: 0, vocabulary: 0, grammar: 0 },
-            totalKUCoverage: 0
+            totalKUCoverage: 0,
+            streak: 0,
+            minutesSpent: 0,
+            dueBreakdown: { learning: 0, review: 0 }
         };
     }
 }
 
 export async function fetchItemDetails(type: string, slug: string) {
-    return kuRepository.getBySlug(slug, type as any);
+    return curriculumRepository.getBySlug(slug, type as any);
 }
 
 

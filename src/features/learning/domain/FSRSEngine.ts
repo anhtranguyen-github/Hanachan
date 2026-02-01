@@ -27,65 +27,73 @@ export class FSRSEngine {
     static BURNED_THRESHOLD_DAYS = 120;
     static REVIEW_THRESHOLD_DAYS = 3;
 
-    static calculateNextReview(current: SRSState, rating: Rating): NextReviewData {
+    static calculateNextReview(current: SRSState, rating: Rating, wrongCount: number = 0): NextReviewData {
         let { stage, stability, difficulty, reps, lapses } = current;
-        console.log(`[FSRS] Calc: Rating=${rating}, S=${stability}, R=${reps}, Stage=${stage}`);
+
+        // FIF: Failure Intensity Framework
+        // Instead of binary "Again", we use the wrongCount to determine the impact
+        const failureIntensity = Math.min(Math.log2(wrongCount + 1), 3.0); // Cap at 3.0
+
+        console.log(`[FSRS-FIF] Rating=${rating}, Wrong=${wrongCount}, Intensity=${failureIntensity.toFixed(2)}`);
 
         // Initialize defaults if missing
         if (!difficulty) difficulty = this.DEFAULT_DIFFICULTY;
-        if (stability === undefined || stability === 0) stability = 0.1; // ~144 minutes (2.4h)
+        if (stability === undefined || stability === 0) stability = 0.1;
         if (reps === undefined) reps = 0;
         if (lapses === undefined) lapses = 0;
 
-        // Handle Failure
-        if (rating === 'fail' || rating === 'again') {
-            // Smart Reset: Instead of 0, keep some momentum if it was advanced
-            reps = Math.max(1, reps - 2);
-            lapses++;
+        // --- Logic Branching ---
 
-            // Penalty: Stability reduces significantly but stays above a minimum
-            // Business Rule: Review fail uses relearning logic (0.3 - 0.5 * S)
-            stability = Math.max(0.1, stability * 0.4);
-
-            // Move back to learning/relearning stage
-            stage = SRS_STAGES.LEARNING;
-        }
-        // Handle Success
-        else {
+        // Case 1: Pure Success (Zero Wrongs) - "Perfect Review"
+        if (rating === 'good' && wrongCount === 0) {
             const previousStability = stability;
             reps++;
 
-            // Map binary pass to the 'Good' growth factor (1.5x)
+            // Difficulty adjustment: Higher D = Higher Hardness = Smaller growth
+            // Adjustment factor is 1.0 when D=3.0.
+            const difficultyAdjustment = (3.0 / difficulty);
             const factor = 1.5;
-            const difficultyAdjustment = (difficulty / 3.0);
 
-            // Foundation Building (Fixed early intervals)
-            // Only apply if we are actually at the very beginning (reps 2-5)
-            // and NOT relearning from a high stability item
-            if (reps === 1 && stability < 0.166) {
-                stability = 0.166; // ~4 hours
-            } else if (reps === 2 && stability < 0.333) {
-                stability = 0.333; // ~8 hours
-            } else if (reps === 3 && stability < 1.0) {
-                stability = 1.0;   // 1 day
-            } else if (reps === 4 && stability < 3.0) {
-                stability = 3.0;   // 3 days
-            } else {
-                // Dynamic growth for higher intervals
-                stability = stability * factor * difficultyAdjustment;
-            }
+            // On success, card becomes slightly easier
+            difficulty = Math.max(1.3, difficulty - 0.1);
 
-            // Stability Guard: Never schedule a SUCCESS for sooner than the 
-            // current stability state (prevents huge jumps backwards in time)
+            // Foundation Early Stages
+            if (reps === 1 && stability < 0.166) stability = 0.166;
+            else if (reps === 2 && stability < 0.333) stability = 0.333;
+            else if (reps === 3 && stability < 1.0) stability = 1.0;
+            else if (reps === 4 && stability < 3.0) stability = 3.0;
+            else stability = stability * factor * difficultyAdjustment;
+
             stability = Math.max(stability, previousStability);
 
-            // Determine Stage based on Stability Thresholds
-            if (stability >= this.BURNED_THRESHOLD_DAYS) {
-                stage = SRS_STAGES.BURNED;
-            } else if (stability >= this.REVIEW_THRESHOLD_DAYS) {
-                stage = SRS_STAGES.REVIEW;
-            } else {
+            // Advance Stage
+            if (stability >= this.BURNED_THRESHOLD_DAYS) stage = SRS_STAGES.BURNED;
+            else if (stability >= this.REVIEW_THRESHOLD_DAYS) stage = SRS_STAGES.REVIEW;
+            else stage = SRS_STAGES.LEARNING;
+        }
+
+        // Case 2: Struggle (Has Wrongs) - "Drill Integration"
+        // This is called when user FINALLY gets it right, but had wrongs before
+        else {
+            // 1. Penalty on Difficulty (Increase hardness)
+            const alpha = 0.2; // Sensitivity
+            difficulty = Math.min(5.0, difficulty + (alpha * failureIntensity));
+
+            // 2. Penalty on Stability (Decay)
+            // Instead of hard reset (S * 0.4), we decay based on intensity
+            const beta = 0.3; // Decay factor
+            const decay = Math.exp(-beta * failureIntensity);
+
+            stability = Math.max(0.1, stability * decay);
+
+            // 3. Reset Reps Logic (Smart Reset)
+            // If intensity is high (> 0.5), we treat it as a Lapse
+            if (failureIntensity > 0.5) {
+                reps = Math.max(1, reps - 1); // Gentler reset than FSRS standard
+                lapses++;
                 stage = SRS_STAGES.LEARNING;
+            } else {
+                // Minor stumble, keep reps but just decay Stability
             }
         }
 

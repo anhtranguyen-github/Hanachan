@@ -94,7 +94,7 @@ Mục trả lời sai:
 
 Được đưa lại vào hàng chờ.
 
-**Quy trình đồng bộ**: Với Kanji/Vocabulary, mục chỉ được tính là hoàn thành (`is_passed = True`) và cập nhật FSRS khi trả lời đúng cả 2 diện (Nghĩa và Cách đọc) trong cùng một phiên.
+**Quy trình độc lập (Independence Law)**: Với Kanji/Vocabulary, các khía cạnh (Nghĩa, Cách đọc) được cập nhật FSRS hoàn toàn độc lập. Fail một diện không ảnh hưởng đến diện kia. FSRS chỉ được cập nhật khi diện đó được trả lời đúng (Commit), ghi nhận tất cả lỗi sai trong phiên.
 
 Luồng sự kiện chính
 
@@ -106,11 +106,11 @@ Người dùng trả lời câu hỏi
 
 Hệ thống đánh giá kết quả
 
-Nếu trả lời đúng:
+Nếu trả lời đúng (Commit Phase):
 
-Cập nhật FSRS (Tăng Stability/Interval). Nếu Stability >= 3 ngày, chuyển sang phẩm cấp `review`.
+Cập nhật FSRS (Sử dụng FIF với `wrongCount`). Nếu Stability >= 3 ngày, chuyển sang phẩm cấp `review`.
 
-Loại mục khỏi hàng chờ
+Loại mục khỏi hàng chờ (Remove from Session)
 
 Nếu trả lời sai:
 

@@ -9,7 +9,7 @@ Hệ thống Hanachan áp dụng phương pháp học lặp lại ngắt quãng 
 - **Difficulty (Độ khó)**: Phản ánh độ khó bản chất của một Knowledge Unit (KU).
 - **Retrievability (Khả năng triệu hồi)**: Xác suất người học nhớ được kiến thức tại thời điểm hiện tại.
 
-Mỗi flashcard được gắn với một trạng thái ghi nhớ duy nhất trong bảng `user_learning_states`, độc lập với Level hay bài học. Toàn bộ lịch ôn tập được quyết định dựa trên trạng thái SRS riêng biệt của từng flashcard. Việc cập nhật SRS được thực hiện **ngay lập tức** sau lần trả lời đầu tiên để đảm bảo tính sẵn sàng của dữ liệu.
+Mỗi flashcard được gắn với một trạng thái ghi nhớ duy nhất trong bảng `user_learning_states`, độc lập với Level hay bài học. Toàn bộ lịch ôn tập được quyết định dựa trên trạng thái SRS riêng biệt của từng flashcard. Việc cập nhật SRS được thực hiện **ngay sau khi trả lời đúng**, tích hợp toàn bộ số lỗi sai (`wrongCount`) trong phiên đó để tính toán hình phạt (FIF Architecture).
 
 ## 2. Quy trình học tập và Hàng đợi (Queue)
 
@@ -19,9 +19,8 @@ Trong quá trình học, hệ thống xây dựng hàng đợi học tập dựa
 - **Review**: Các mục đã ổn định và cần ôn tập dựa trên lịch của FSRS.
 - **Relearning**: Các mục đã thuộc nhưng bị quên và cần học lại.
 
-Hệ thống tự động đánh giá mức độ ghi nhớ sau mỗi lần ôn thông qua tính chính xác của câu trả lời (Đúng/Sai). Kết quả này được ánh xạ trực tiếp vào thuật toán FSRS:
-- **Phạt khi sai**: Áp dụng cơ chế *Relearning* (Stability giảm còn 40% giá trị cũ), giảm 2 Reps (giữ tối thiểu 1) thay vì xóa trắng tiến độ.
-- **Trình bảo vệ (Guard)**: Đảm bảo khoảng cách ôn tập mới khi trả lời đúng không bao giờ ngắn hơn khoảng cách hiện tại sau khi bị phạt.
+- **FIF (Failure Intensity Framework)**: Áp dụng cơ chế phạt logarit dựa trên số lần sai (`wrongCount`). $Stability_{new} = Stability \times exp(-0.3 \times log_2(wrongCount + 1))$.
+- **Tính trễ (Deferred Update)**: Chỉ cập nhật FSRS khi người dùng đã vượt qua (Correct). Việc sai nhiều lần chỉ làm tăng "Cường độ thất bại" cho lần cập nhật duy nhất đó.
 - Kết quả cuối cùng được cập nhật vào thời điểm `next_review` chính xác nhất.
 
 ## 3. Tính nhất quán của Trí nhớ (Memory Consistency)
