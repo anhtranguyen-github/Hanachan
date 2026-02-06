@@ -37,7 +37,7 @@ export class FSRSEngine {
         if (lapses === undefined) lapses = 0;
 
         // Handle Failure
-        if (rating === 'fail') {
+        if (rating === 'again') {
             reps = 0;
             lapses++;
             // Penalty: Stability reduces significantly
@@ -48,7 +48,7 @@ export class FSRSEngine {
         else {
             reps++;
 
-            // Map binary pass to the 'Good' growth factor (1.5x)
+            // Mapping 'pass' to the standard growth factor (1.5x)
             const factor = 1.5;
 
             // Apply growth based on difficulty baseline (3.0)

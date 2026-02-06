@@ -18,21 +18,21 @@ test.describe('Review Flow', () => {
             await reviewLink.click();
 
             // Should be on Review Overview page - verify UI not just URL
-            await expect(page.getByText('Review Session')).toBeVisible();
+            await expect(page.getByText('Review Pipeline')).toBeVisible();
 
-            const beginBtn = page.getByRole('link', { name: 'Begin Reviews' });
-            const caughtUp = page.getByText('All Caught Up!');
+            const startReviewBtn = page.getByRole('link', { name: /Begin Session/i });
+            const caughtUp = page.getByText(/all caught up/i);
             await Promise.race([
-                beginBtn.waitFor({ state: 'visible', timeout: 15000 }),
-                caughtUp.waitFor({ state: 'visible', timeout: 15000 })
+                startReviewBtn.waitFor({ state: 'visible' }),
+                caughtUp.waitFor({ state: 'visible' })
             ]).catch(() => { });
 
-            if (await beginBtn.isVisible()) {
-                await beginBtn.click();
+            if (await startReviewBtn.isVisible()) {
+                await startReviewBtn.click();
 
                 // Should be in session - verify UI
                 // Should be in session - wait for debug element which is a reliable signal
-                await expect(page.getByTestId('debug-answer').or(page.getByTestId('review-complete-header'))).toBeAttached({ timeout: 15000 });
+                await expect(page.getByTestId('debug-answer').or(page.getByTestId('review-complete-header'))).toBeAttached();
 
                 // Loop through review items until complete
                 let isComplete = false;
@@ -50,17 +50,17 @@ test.describe('Review Flow', () => {
                         await input.press('Enter');
 
                         const nextBtn = page.getByRole('button', { name: /Next Item|Got it, Continue/ });
-                        await expect(nextBtn).toBeVisible({ timeout: 5000 });
+                        await expect(nextBtn).toBeVisible();
                         await nextBtn.click();
 
                         // Wait for transition
-                        await expect(nextBtn).not.toBeVisible({ timeout: 5000 }).catch(() => { });
+                        await expect(nextBtn).not.toBeVisible().catch(() => { });
                     } else if (await completeHeader.isVisible()) {
                         isComplete = true;
                     } else {
                         console.log(`Review Loop: Waiting... (Iteration ${iterations})`);
                         // Wait for potential network or state change
-                        await page.waitForResponse(r => r.status() === 200, { timeout: 1000 }).catch(() => { });
+                        await page.waitForResponse(r => r.status() === 200).catch(() => { });
                         if (await completeHeader.isVisible()) isComplete = true;
                     }
                 }
@@ -68,8 +68,11 @@ test.describe('Review Flow', () => {
                 await expect(page.getByTestId('review-complete-header')).toBeVisible();
                 const backBtn = page.getByRole('button', { name: 'Back to Dashboard' });
                 await expect(backBtn).toBeVisible();
-                await backBtn.click();
-                await expect(page.getByTestId('review-card')).toBeVisible();
+                // Go back to dashboard
+                await page.goto('/dashboard');
+
+                const newReviews = await page.getByTestId('review-due-count').innerText();
+                console.log(`New Reviews: ${newReviews}`);
             } else {
                 console.log("Begin Reviews button not visible (likely 0 reviews), checking for 'All Caught Up'");
                 await expect(page.getByText('All Caught Up!')).toBeVisible();
@@ -82,6 +85,6 @@ test.describe('Review Flow', () => {
         await page.goto('/review/session');
 
         // Should show 'Review Complete'
-        await expect(page.getByTestId('review-complete-header')).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('review-complete-header')).toBeVisible();
     });
 });

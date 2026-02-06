@@ -129,7 +129,7 @@ export interface ReviewSession {
 // Answer submission
 export interface ReviewAnswer {
     ku_id: string;
-    rating: 'pass' | 'fail';
+    rating: 'pass' | 'again';
     response_time_ms?: number;
     user_input: string;    // Required for all interactions now
 }

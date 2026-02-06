@@ -18,7 +18,7 @@ test.describe('Authentication Flow', () => {
         await expect(page).toHaveURL(/.*dashboard/);
 
         // Should show welcome message
-        await expect(page.locator('main h1')).toContainText('Konnichiwa');
+        await expect(page.locator('main')).toContainText('Suggested Actions');
     });
 
     test('should show error with invalid credentials', async ({ page }) => {

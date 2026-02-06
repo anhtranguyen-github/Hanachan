@@ -312,7 +312,7 @@ export async function submitReviewAnswer(
     answer: ReviewAnswer
 ): Promise<{
     correct: boolean;
-    rating: 'again' | 'hard' | 'good' | 'easy';
+    rating: 'again' | 'pass';
     nextReview: Date | null;
 }> {
     console.log(`${LOG_PREFIX} Submitting answer for ${card.ku_type} (${card.prompt_variant}):`, card.ku_id);
@@ -322,8 +322,8 @@ export async function submitReviewAnswer(
 
     // Map validation to FSRS rating if not provided
     // If wrong, rating is ALWAYS 'again'
-    // If correct, default to 'good' unless it was very fast (easy) or slow (hard)
-    let rating = isCorrect ? (answer.rating || 'good') : 'again';
+    // If correct, default to 'pass'
+    let rating = isCorrect ? (answer.rating || 'pass') : 'again';
 
     // Get current learning state
     const { data: currentState } = await supabase
@@ -383,7 +383,7 @@ export async function submitReviewAnswer(
 
     return {
         correct: isCorrect,
-        rating: rating as 'again' | 'hard' | 'good' | 'easy',
+        rating: rating as 'again' | 'pass',
         nextReview: next_review
     };
 }

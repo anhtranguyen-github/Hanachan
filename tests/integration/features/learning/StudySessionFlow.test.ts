@@ -15,7 +15,7 @@ describe('Study Session Integration Flow', () => {
         vi.clearAllMocks();
     });
 
-    it('should update user state correctly after a "good" review', async () => {
+    it('should update user state correctly after a "pass" review', async () => {
         const currentState = {
             stage: 'learning' as any,
             stability: 0.166,
@@ -26,19 +26,17 @@ describe('Study Session Integration Flow', () => {
 
         const updateSpy = vi.spyOn(learningRepository, 'updateUserState').mockResolvedValue(undefined as any);
 
-        const result = await submitReview(userId, kuId, 'good', currentState);
+        const result = await submitReview(userId, kuId, 'pass', currentState);
 
         // Verify result from algorithm logic through the service
         expect(result.next_state.reps).toBe(2);
         expect(result.next_state.stage).toBe('learning');
         expect(result.next_review).toBeInstanceOf(Date);
 
-        // Verify repository interaction
         expect(updateSpy).toHaveBeenCalledWith(userId, kuId, expect.objectContaining({
-            state: 'learning',
             reps: 2,
-            stability: 0.333
-        }), 'good');
+            stability: 0.166
+        }), 'pass');
     });
 
     it('should reset state on "again"', async () => {

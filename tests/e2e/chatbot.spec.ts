@@ -7,7 +7,7 @@ test.describe('Chatbot Advanced Features', () => {
         await page.fill('input[name="email"]', 'test_worker_1@hanachan.test');
         await page.fill('input[name="password"]', 'Password123!');
         await page.click('button[type="submit"]');
-        await expect(page.getByTestId('dashboard-root')).toBeVisible({ timeout: 15000 });
+        await expect(page).toHaveURL(/.*dashboard/);
     });
 
     test('should report progress (PROGRESS intent)', async ({ page }) => {
@@ -15,7 +15,7 @@ test.describe('Chatbot Advanced Features', () => {
         await page.waitForLoadState('networkidle');
 
         // Wait for welcome
-        await expect(page.getByTestId('chat-message').first()).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('chat-message').first()).toBeVisible();
 
         const input = page.getByTestId('chat-input');
         await input.fill('What is my current progress?');
@@ -23,7 +23,7 @@ test.describe('Chatbot Advanced Features', () => {
 
         // Wait for AI response
         const lastMessage = page.getByTestId('chat-message').last();
-        await expect(lastMessage).toContainText(/Level|Mastered|Due/i, { timeout: 20000 });
+        await expect(lastMessage).toContainText(/Level|Mastered|Due/i);
 
         console.log('Chatbot successfully reported progress');
     });
@@ -39,7 +39,7 @@ test.describe('Chatbot Advanced Features', () => {
 
         // Check for CTA button
         const ctaButton = page.getByTestId('ku-cta-button').filter({ hasText: '水' }).or(page.getByTestId('ku-cta-button').first());
-        await expect(ctaButton).toBeVisible({ timeout: 20000 });
+        await expect(ctaButton).toBeVisible();
 
         const ctaText = await ctaButton.innerText();
         const character = ctaText.split('•')[0].trim();

@@ -13,7 +13,9 @@ vi.mock('@/lib/supabase', () => ({
         limit: vi.fn().mockReturnThis(),
         range: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
-        insert: vi.fn().mockReturnThis()
+        insert: vi.fn().mockReturnThis(),
+        upsert: vi.fn().mockReturnThis(),
+        update: vi.fn().mockReturnThis()
     }
 }));
 

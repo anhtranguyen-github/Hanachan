@@ -15,7 +15,7 @@ test.describe('Content Library Flow', () => {
         await page.waitForLoadState('networkidle');
 
         // Wait for library to load
-        await expect(page.locator('main h1')).toContainText('Content Library', { timeout: 15000 });
+        await expect(page.locator('main h1')).toContainText('CONTENT LIBRARY');
 
         console.log('Content library page loaded successfully');
     });
@@ -25,17 +25,17 @@ test.describe('Content Library Flow', () => {
         await page.waitForLoadState('networkidle');
 
         // Wait for page to be ready
-        await expect(page.locator('main h1')).toContainText('Content Library', { timeout: 15000 });
+        await expect(page.locator('main h1')).toContainText('CONTENT LIBRARY');
 
         // Test type filters - check they are clickable
-        const radicalsBtn = page.locator('button:has-text("Radicals")');
+        const radicalsBtn = page.locator('button:has-text("RADICAL")');
         await expect(radicalsBtn).toBeVisible();
         await radicalsBtn.click();
 
         // Give time for filter to apply
         await page.waitForTimeout(500);
 
-        const kanjiBtn = page.locator('button:has-text("Kanji")');
+        const kanjiBtn = page.locator('button:has-text("KANJI")');
         await expect(kanjiBtn).toBeVisible();
         await kanjiBtn.click();
 
@@ -47,7 +47,7 @@ test.describe('Content Library Flow', () => {
         await page.waitForLoadState('networkidle');
 
         // Wait for page to be ready
-        await expect(page.locator('main h1')).toContainText('Content Library', { timeout: 15000 });
+        await expect(page.locator('main h1')).toContainText('CONTENT LIBRARY');
 
         // Test search input
         const searchInput = page.locator('input[placeholder="Search meanings or characters..."]');

@@ -66,7 +66,7 @@ export default function DeckReviewSessionPage() {
 
     const currentCard = session?.cards[session.current_index];
 
-    const handleRate = async (rating: 'again' | 'hard' | 'good' | 'easy', userInput?: string) => {
+    const handleRate = async (rating: 'again' | 'pass', userInput?: string) => {
         if (!user || !currentCard || submitting) return;
 
         setSubmitting(true);

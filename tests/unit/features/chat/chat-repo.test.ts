@@ -8,10 +8,13 @@ vi.mock('@/lib/supabase', () => ({
         from: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
         insert: vi.fn().mockReturnThis(),
+        upsert: vi.fn().mockReturnThis(),
+        update: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
         in: vi.fn().mockReturnThis(),
-        single: vi.fn()
+        single: vi.fn(),
+        maybeSingle: vi.fn()
     }
 }));
 

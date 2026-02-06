@@ -12,8 +12,14 @@ test.describe('Dashboard Integration Flow', () => {
 
     test('should update dashboard counts after learn and review', async ({ page }) => {
         // 1. Record initial counts
-        const initialLessons = await page.locator('text=Lessons Available').locator('xpath=preceding-sibling::span').innerText();
-        const initialReviews = await page.locator('text=Reviews Due').locator('xpath=preceding-sibling::span').innerText();
+        const lessonsCount = page.getByTestId('learn-new-count');
+        const reviewsCount = page.getByTestId('review-due-count');
+
+        await expect(lessonsCount).toBeVisible();
+        await expect(reviewsCount).toBeVisible();
+
+        const initialLessons = await lessonsCount.innerText();
+        const initialReviews = await reviewsCount.innerText();
 
         console.log(`Initial: Lessons=${initialLessons}, Reviews=${initialReviews}`);
 
@@ -49,7 +55,7 @@ test.describe('Dashboard Integration Flow', () => {
                 // Go back to dashboard
                 await page.goto('/dashboard');
 
-                const newReviews = await page.locator('text=Reviews Due').locator('xpath=preceding-sibling::span').innerText();
+                const newReviews = await page.getByTestId('review-due-count').innerText();
                 console.log(`New Reviews: ${newReviews}`);
 
                 // If we reviewed one sub-task and it was correct, it might still have higher level tasks,
@@ -78,7 +84,7 @@ test.describe('Dashboard Integration Flow', () => {
             await page.click('text=Again');
 
             await page.goto('/dashboard');
-            const accuracy = await page.locator('text=Daily Precision').locator('xpath=following-sibling::span').innerText();
+            const accuracy = await page.getByTestId('accuracy-value').innerText();
             console.log(`Accuracy after fail: ${accuracy}`);
             // Should be < 100%
         }

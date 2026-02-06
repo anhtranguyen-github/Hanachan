@@ -58,7 +58,7 @@ function ContentDatabase() {
             setItems(queryItems);
             setStates(stateMap);
 
-            // Fetch user level - default to 1 if not found
+            // Fetch user level
             try {
                 const { data: userData } = await supabase
                     .from('users')
@@ -97,62 +97,71 @@ function ContentDatabase() {
         });
     }, [items, states, filterType, filterStatus, searchQuery, userLevel]);
 
+    const tabs = ['all', 'radical', 'kanji', 'vocabulary', 'grammar'];
+
     return (
-        <div className="max-w-7xl mx-auto py-12 px-6 space-y-12">
-            <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-4 border-b-2 border-gray-100">
-                <div className="space-y-2">
-                    <h1 className="text-4xl font-black text-gray-900 tracking-tight">Content Library</h1>
-                    <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Browse {items.length} learning artifacts</p>
+        <div className="max-w-[1400px] mx-auto px-8 py-8 space-y-8 font-sans text-[#3E4A61] animate-in fade-in duration-700">
+            {/* Header: Study Hub / LIBRARY */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-[#FFB5B5]">
+                        <Book size={14} fill="currentColor" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">STUDY HUB</span>
+                    </div>
+                    <h1 className="text-7xl font-black tracking-tighter text-[#3E4A61]">CONTENT LIBRARY</h1>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                    <div className="bg-white border-2 border-gray-200 p-2 rounded-[24px] flex items-center shadow-sm">
-                        <FilterButton active={filterType === 'all'} onClick={() => setFilterType('all')} label="All" />
-                        <FilterButton active={filterType === 'radical'} onClick={() => setFilterType('radical')} label="Radicals" />
-                        <FilterButton active={filterType === 'kanji'} onClick={() => setFilterType('kanji')} label="Kanji" />
-                        <FilterButton active={filterType === 'vocabulary'} onClick={() => setFilterType('vocabulary')} label="Vocab" />
-                        <FilterButton active={filterType === 'grammar'} onClick={() => setFilterType('grammar')} label="Grammar" />
-                    </div>
+                {/* Tabs */}
+                <div className="flex bg-white border border-[#F0E0E0] p-1 rounded-2xl shadow-sm">
+                    {tabs.map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => setFilterType(tab)}
+                            className={`px-6 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all uppercase ${filterType === tab
+                                ? 'bg-[#FFB5B5] text-white shadow-md'
+                                : 'text-[#A0AEC0] hover:text-[#3E4A61]'
+                                }`}
+                        >
+                            {tab === 'vocabulary' ? 'VOCAB' : tab}
+                        </button>
+                    ))}
                 </div>
             </header>
 
-            {/* Advanced Filters Bar */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
-                <div className="col-span-2 relative group">
-                    <div className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-primary transition-colors">
-                        <Search size={22} strokeWidth={3} />
-                    </div>
+            {/* Filters Bar */}
+            <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1 relative">
+                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-[#CBD5E0]" size={18} />
                     <input
                         type="text"
                         placeholder="Search meanings or characters..."
-                        className="w-full pl-16 pr-6 py-5 bg-white border-2 border-gray-200 rounded-[32px] text-gray-900 focus:border-primary focus:outline-none placeholder:text-gray-300 font-bold tracking-tight text-xl transition-all shadow-sm focus:shadow-lg focus:shadow-primary/10"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full py-4 pl-14 pr-6 bg-white border border-[#F0E0E0] rounded-2xl text-[13px] font-medium outline-none focus:border-[#FFB5B5] transition-all placeholder:text-[#CBD5E0] shadow-sm"
                     />
                 </div>
-
-                <div className="flex gap-4 col-span-2">
+                <div className="flex gap-4">
                     <select
-                        className="flex-1 bg-white text-gray-500 px-6 py-4 border-2 border-gray-200 rounded-[24px] text-xs font-black uppercase tracking-widest outline-none focus:border-primary transition-all cursor-pointer appearance-none hover:border-gray-300 shadow-sm"
+                        className="appearance-none bg-white border border-[#F0E0E0] rounded-2xl px-6 py-4 w-full md:w-64 text-[10px] font-black uppercase tracking-widest text-[#3E4A61] outline-none focus:border-[#FFB5B5] cursor-pointer shadow-sm"
                         value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value as any)}
+                        onChange={(e) => setFilterStatus(e.target.value)}
                     >
-                        <option value="all">Any Status</option>
-                        <option value="new">New / Untouched</option>
-                        <option value="learning">Current Integration</option>
-                        <option value="review">Active Reinforcement</option>
-                        <option value="burned">Terminal Mastery</option>
-                        <option value="locked">Access Restricted</option>
+                        <option value="all">ANY STATUS</option>
+                        <option value="new">UNTACKLED</option>
+                        <option value="learning">INTEGRATING</option>
+                        <option value="review">REINFORCING</option>
+                        <option value="burned">MASTERED</option>
+                        <option value="locked">RESTRICTED</option>
                     </select>
 
                     <select
-                        className="w-48 bg-white text-gray-500 px-6 py-4 border-2 border-gray-200 rounded-[24px] text-xs font-black uppercase tracking-widest outline-none focus:border-primary transition-all cursor-pointer appearance-none hover:border-gray-300 shadow-sm"
+                        className="appearance-none bg-white border border-[#F0E0E0] rounded-2xl px-6 py-4 w-full md:w-48 text-[10px] font-black uppercase tracking-widest text-[#3E4A61] outline-none focus:border-[#FFB5B5] cursor-pointer shadow-sm"
                         value={selectedLevel}
                         onChange={(e) => setSelectedLevel(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
                     >
-                        <option value="all">All Sectors</option>
+                        <option value="all">LEVELS: 1-60</option>
                         {Array.from({ length: 60 }, (_, i) => i + 1).map(l => (
-                            <option key={l} value={l}>Sector {l}</option>
+                            <option key={l} value={l}>LEVEL {l}</option>
                         ))}
                     </select>
                 </div>
@@ -160,59 +169,53 @@ function ContentDatabase() {
 
             {loading ? (
                 <div className="py-40 flex flex-col items-center gap-6">
-                    <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                    <p className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-300">Querying central database...</p>
+                    <Loader2 className="w-12 h-12 text-[#FFB5B5] animate-spin" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.5em] text-[#CBD5E0]">Querying database...</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
                     {filteredItems.map((unit) => {
                         const state = states[unit.id];
                         const status = unit.level > userLevel ? 'locked' : (!state ? 'new' : state.state);
 
-                        const typeColor =
-                            unit.type === 'radical' ? 'text-radical' :
-                                unit.type === 'kanji' ? 'text-kanji' :
-                                    unit.type === 'vocabulary' ? 'text-vocab' : 'text-grammar';
-
-                        const typeBg =
-                            unit.type === 'radical' ? 'hover:bg-radical' :
-                                unit.type === 'kanji' ? 'hover:bg-kanji' :
-                                    unit.type === 'vocabulary' ? 'hover:bg-vocab' : 'hover:bg-grammar';
-
-                        const typeBorder =
-                            unit.type === 'radical' ? 'hover:border-radical' :
-                                unit.type === 'kanji' ? 'hover:border-kanji' :
-                                    unit.type === 'vocabulary' ? 'hover:border-vocab' : 'hover:border-grammar';
-
                         return (
-                            <Link href={`/content/${unit.type === 'vocabulary' ? 'vocabulary' : unit.type === 'radical' ? 'radicals' : unit.type}/${unit.slug}`} key={unit.id} className={clsx(
-                                "aspect-square bg-white border-2 border-gray-200 rounded-[32px] flex flex-col items-center justify-center p-4 transition-all duration-300 shadow-sm group relative overflow-hidden",
-                                status === 'locked' ? "opacity-40 grayscale pointer-events-none bg-gray-50" : `${typeBg} ${typeBorder} hover:text-white hover:-translate-y-1 hover:shadow-xl`
-                            )}>
-                                <div className="absolute top-4 right-4 opacity-100 transition-opacity group-hover:text-white">
-                                    <StatusIcon status={status} />
-                                </div>
-
-                                <span className={clsx(
-                                    "text-5xl font-black mb-2 transition-colors duration-300",
-                                    status === 'locked' ? "text-gray-300" : typeColor,
-                                    "group-hover:text-white"
-                                )}>
-                                    {unit.character || '—'}
-                                </span>
-
-                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-300 group-hover:text-white/80 transition-colors text-center w-full truncate px-2">
-                                    {unit.meaning}
-                                </span>
-
+                            <Link
+                                href={`/content/${unit.type === 'vocabulary' ? 'vocabulary' : unit.type === 'radical' ? 'radicals' : unit.type}/${unit.slug}`}
+                                key={unit.id}
+                                className={clsx(
+                                    "group bg-white border border-[#F0E0E0] rounded-3xl p-6 flex flex-col items-center justify-between min-h-[220px] transition-all hover:border-[#FFB5B5] hover:shadow-xl hover:shadow-[#FFB5B5]/5 cursor-pointer relative overflow-hidden",
+                                    status === 'locked' && "opacity-40 grayscale pointer-events-none"
+                                )}
+                            >
+                                {/* Progress Bar */}
                                 {state && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gray-100 group-hover:bg-white/20">
+                                    <div className="absolute top-0 left-0 w-full h-1 bg-[#F0E0E0]">
                                         <div
-                                            className="h-full bg-green-400 group-hover:bg-white transition-all"
+                                            className="h-full bg-[#FFB5B5]/50 transition-all duration-1000"
                                             style={{ width: `${Math.min(100, (state.reps / 10) * 100)}%` }}
                                         />
                                     </div>
                                 )}
+
+                                {/* Top Info */}
+                                <div className="w-full flex justify-between items-start">
+                                    <span className="text-[9px] font-black text-[#A0AEC0] uppercase tracking-tighter">LEV {unit.level}</span>
+                                    <StatusIcon status={status} />
+                                </div>
+
+                                {/* Character */}
+                                <div className={clsx(
+                                    "text-6xl font-medium my-4 transition-colors",
+                                    unit.type === 'kanji' ? "text-[#FFB5B5]" : "text-[#3E4A61]"
+                                )}>
+                                    {unit.character || '—'}
+                                </div>
+
+                                {/* Footer Info */}
+                                <div className="w-full space-y-1 text-center">
+                                    <p className="text-[8px] font-black text-[#A0AEC0] uppercase tracking-widest">{unit.type}</p>
+                                    <p className="text-[11px] font-black text-[#3E4A61] uppercase tracking-tight leading-tight line-clamp-2">{unit.meaning}</p>
+                                </div>
                             </Link>
                         );
                     })}
@@ -220,43 +223,29 @@ function ContentDatabase() {
             )}
 
             {!loading && filteredItems.length === 0 && (
-                <div className="text-center py-40 border-4 border-dashed border-gray-100 rounded-[56px] bg-gray-50/50">
-                    <h3 className="text-3xl font-black text-gray-300 mb-2 uppercase tracking-tight">No results found</h3>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.3em]">Try adjusting your filters or search terms</p>
+                <div className="text-center py-40 border-2 border-dashed border-[#F0E0E0] rounded-[40px] bg-white">
+                    <h3 className="text-2xl font-black text-[#A0AEC0] mb-2 uppercase tracking-tight">No Results</h3>
+                    <p className="text-[10px] font-black text-[#CBD5E0] uppercase tracking-[0.3em]">Refine your search parameters</p>
                 </div>
             )}
         </div>
     );
 }
 
-function FilterButton({ active, onClick, label }: any) {
-    return (
-        <button
-            onClick={onClick}
-            className={clsx(
-                "px-6 py-2.5 rounded-[18px] text-[10px] font-black uppercase tracking-[0.2em] transition-all",
-                active ? "bg-gray-900 text-white shadow-lg" : "text-gray-400 hover:text-gray-900 hover:bg-gray-100"
-            )}
-        >
-            {label}
-        </button>
-    );
-}
-
 function StatusIcon({ status }: { status: string }) {
     switch (status) {
-        case 'locked': return <Lock size={12} className="text-gray-300" />;
-        case 'new': return <Zap size={12} className="text-yellow-400" />;
-        case 'learning': return <Clock size={12} className="text-blue-400 group-hover:text-white" />;
-        case 'review': return <Flame size={12} className="text-orange-400 group-hover:text-white" />;
-        case 'burned': return <Check size={12} className="text-green-400 group-hover:text-white" strokeWidth={4} />;
+        case 'locked': return <Lock size={12} className="text-[#CBD5E0]" />;
+        case 'new': return <Zap size={12} className="text-[#FFD700]" strokeWidth={1} fill="currentColor" />;
+        case 'learning': return <Clock size={12} className="text-[#A2D2FF]" />;
+        case 'review': return <Flame size={12} className="text-[#FFB5B5]/60" />;
+        case 'burned': return <Zap size={12} className="text-[#FFB5B5]" fill="currentColor" />;
         default: return null;
     }
 }
 
 export default function UnifiedContentPage() {
     return (
-        <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" size={48} /></div>}>
+        <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-[#FFB5B5]" size={48} /></div>}>
             <ContentDatabase />
         </Suspense>
     );

@@ -11,103 +11,118 @@ import {
     Flame,
     LogOut,
     ChevronRight,
-    Search
+    Search,
+    TrendingUp,
+    Swords
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useUser } from '@/features/auth/AuthContext';
 
 const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Training', href: '/review', icon: Flame },
-    {
-        name: 'Library',
-        icon: BookOpen,
-        children: [
-            { name: 'All Content', href: '/content' },
-            { name: 'Radicals', href: '/content?type=radical' },
-            { name: 'Kanji', href: '/content?type=kanji' },
-            { name: 'Vocabulary', href: '/content?type=vocabulary' },
-            { name: 'Grammar', href: '/content?type=grammar' },
-        ]
-    },
-    {
-        name: 'Immersion',
-        icon: Languages,
-        children: [
-            { name: 'Chatbot', href: '/immersion/chatbot', icon: MessageSquare },
-        ]
-    },
+    { name: 'Training', href: '/learn', icon: BookOpen },
+    { name: 'Review', href: '/review', icon: Swords },
+    { name: 'Chatbot', href: '/immersion/chatbot', icon: MessageSquare },
+    { name: 'Curriculum', href: '/content', icon: BookOpen }, // Reusing BookOpen as placeholder for Library
+    { name: 'Progress', href: '/progress', icon: TrendingUp },
 ];
 
 export function Sidebar() {
     const pathname = usePathname();
     const { signOut } = useUser();
+    const [isCollapsed, setIsCollapsed] = React.useState(false);
+
+    // Auto-collapse on mobile or specific routes if needed
+    // For now, let's keep it manual or based on route
+    React.useEffect(() => {
+        const isChat = pathname.includes('/chatbot');
+        if (isChat) setIsCollapsed(true);
+    }, [pathname]);
 
     return (
-        <aside className="w-[280px] h-screen bg-surface border-r border-border flex flex-col p-6 sticky top-0 overflow-y-auto">
+        <aside
+            className={clsx(
+                "border-r border-[#F0E0E0] flex flex-col overflow-hidden bg-white shrink-0 transition-all duration-500 ease-in-out relative z-40",
+                isCollapsed ? "w-20" : "w-64"
+            )}
+        >
             {/* Branding */}
-            <div className="flex items-center gap-3 px-2 mb-12">
-                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center rotate-3 border-b-2 border-primary-dark">
-                    <span className="text-foreground font-black text-xl italic uppercase">花</span>
+            <div className={clsx(
+                "p-6 h-20 flex items-center shrink-0",
+                isCollapsed ? "justify-center" : "gap-3"
+            )}>
+                <div className="w-10 h-10 bg-[#FFB5B5] rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-xl shadow-[#FFB5B5]/20 shrink-0">
+                    花
                 </div>
-                <div>
-                    <h1 className="text-xl font-black tracking-tight text-foreground">HANACHAN</h1>
-                    <p className="text-[9px] font-bold uppercase text-primary-dark tracking-widest">Master Japanese</p>
-                </div>
+                {!isCollapsed && (
+                    <div className="animate-in fade-in slide-in-from-left-4 duration-500">
+                        <h1 className="text-[13px] font-black tracking-widest text-[#3E4A61] leading-none uppercase">
+                            HANACHAN
+                        </h1>
+                        <p className="text-[9px] text-[#A0AEC0] font-black uppercase tracking-tighter">
+                            Master Japanese
+                        </p>
+                    </div>
+                )}
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 space-y-8">
-                {navItems.map((item) => (
-                    <div key={item.name} className="space-y-2">
-                        {item.href ? (
-                            <Link
-                                href={item.href}
-                                className={clsx(
-                                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all group border border-transparent",
-                                    pathname === item.href
-                                        ? "bg-primary/20 text-foreground border-primary/10"
-                                        : "text-foreground/60 hover:text-foreground hover:bg-surface-muted"
-                                )}
-                            >
-                                <item.icon size={20} className={clsx(pathname === item.href ? "text-primary-dark" : "text-foreground/40 group-hover:text-foreground/60")} />
-                                <span className="font-bold text-sm tracking-tight">{item.name}</span>
-                                {pathname === item.href && <ChevronRight size={14} className="ml-auto text-primary-dark opacity-60" />}
-                            </Link>
-                        ) : (
-                            <div className="space-y-1 pt-2">
-                                <div className="px-4 text-[10px] font-bold uppercase text-foreground/30 tracking-widest mb-2">{item.name}</div>
-                                {item.children?.map((child) => (
-                                    <Link
-                                        key={child.href}
-                                        href={child.href}
-                                        className={clsx(
-                                            "flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm group border border-transparent",
-                                            pathname === child.href
-                                                ? "text-foreground bg-primary/10 border-primary/5 font-bold"
-                                                : "text-foreground/60 hover:text-foreground hover:bg-surface-muted"
-                                        )}
-                                    >
-                                        <div className={clsx("w-1.5 h-1.5 rounded-full transition-all", pathname === child.href ? "bg-primary-dark" : "bg-border")} />
-                                        <span className="font-medium">{child.name}</span>
-                                    </Link>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                ))}
+            <nav className="flex-1 px-4 space-y-2 overflow-y-auto custom-scrollbar pt-4">
+                {navItems.map((item) => {
+                    const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            title={isCollapsed ? item.name : ''}
+                            className={clsx(
+                                "flex items-center gap-4 px-4 py-3.5 text-[13px] font-black transition-all rounded-[20px] relative group",
+                                isActive
+                                    ? "bg-[#FFF5F5] text-[#FFB5B5]"
+                                    : "text-[#A0AEC0] hover:text-[#3E4A61] hover:bg-[#F7FAFC]"
+                            )}
+                        >
+                            <span className={clsx(
+                                "shrink-0 transition-colors",
+                                isActive ? "text-[#FFB5B5]" : "text-[#A0AEC0] group-hover:text-[#3E4A61]"
+                            )}>
+                                <item.icon size={20} />
+                            </span>
+                            {!isCollapsed && (
+                                <span className="animate-in fade-in duration-500 truncate">
+                                    {item.name}
+                                </span>
+                            )}
+                            {isActive && !isCollapsed && (
+                                <div className="absolute right-4 w-1.5 h-1.5 bg-[#FFB5B5] rounded-full shadow-[0_0_8px_rgba(255,181,181,0.8)]" />
+                            )}
+                        </Link>
+                    );
+                })}
             </nav>
 
             {/* Footer */}
-            <div className="pt-6 border-t border-border">
+            <div className="p-4 border-t border-[#F7FAFC]">
                 <button
                     onClick={() => signOut()}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/40 hover:text-primary-dark hover:bg-primary/5 transition-all group"
+                    className={clsx(
+                        "w-full flex items-center gap-4 px-4 py-4 text-[11px] font-black text-[#A0AEC0] hover:text-[#FF6B6B] transition-colors rounded-2xl uppercase tracking-widest",
+                        isCollapsed ? "justify-center" : ""
+                    )}
                 >
-                    <LogOut size={18} className="text-foreground/20 group-hover:text-primary-dark" />
-                    <span className="font-bold text-xs uppercase tracking-widest">Sign Out</span>
+                    <LogOut size={20} />
+                    {!isCollapsed && <span>Sign Out</span>}
                 </button>
             </div>
+
+            {/* Collapse Toggle */}
+            <button
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="absolute shadow-sm -right-3 top-24 w-6 h-6 bg-white border border-[#F0E0E0] rounded-full flex items-center justify-center text-[#A0AEC0] hover:text-[#FFB5B5] transition-all z-50 lg:flex hidden"
+            >
+                <ChevronRight size={14} className={clsx("transition-transform duration-300", isCollapsed ? "" : "rotate-180")} />
+            </button>
         </aside>
     );
 }
+

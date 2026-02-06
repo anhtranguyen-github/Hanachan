@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Loader2 } from 'lucide-react';
+import { Loader2, BookOpen, ChevronRight, Target } from 'lucide-react';
 import { fetchNewItems, fetchDeckStats } from '@/features/learning/service';
 import { useUser } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -62,7 +62,7 @@ export default function LearnOverviewPage() {
     if (!mounted || !state) {
         return (
             <div className="h-screen flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                <Loader2 className="w-8 h-8 text-[#FFB5B5] animate-spin" />
             </div>
         );
     }
@@ -70,78 +70,123 @@ export default function LearnOverviewPage() {
     const hasActiveBatch = state.batch !== null;
 
     return (
-        <div className="max-w-2xl mx-auto space-y-8 py-10" data-testid="learning-overview-root">
-            <div className="text-center space-y-4">
-                <h1 className="text-3xl font-black text-gray-900">Start Learning</h1>
-                <p className="text-gray-500">You have {state.totalNew} items ready to learn today.</p>
+        <div data-testid="learning-overview-root" className="max-w-5xl mx-auto space-y-8 py-4 font-sans text-[#3E4A61] animate-in fade-in duration-1000">
+            {/* Suggested Actions Divider */}
+            <div className="relative flex items-center justify-center py-2">
+                <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-[#F0E0E0]"></div>
+                </div>
+                <div className="relative bg-[#FFFDFD] px-4">
+                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[#3E4A61]">Suggested Actions</span>
+                </div>
             </div>
 
-            <div className="bg-white border-2 border-gray-300 p-10 rounded-[40px] shadow-xl text-center space-y-8">
-                {hasActiveBatch ? (
-                    <>
-                        <div className="flex justify-center gap-4">
-                            {state.batch.items.slice(0, 5).map((item: any, i: number) => (
-                                <div
-                                    key={i}
-                                    className="w-16 h-16 border-2 border-primary/10 bg-primary/5 rounded-2xl flex items-center justify-center text-primary font-black text-xl shadow-sm"
-                                >
-                                    {item.knowledge_units?.character || '?'}
-                                </div>
-                            ))}
-                        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white border-2 border-[#F0E0E0] rounded-[40px] p-8 shadow-xl shadow-[#3E4A61]/5 flex flex-col justify-between relative overflow-hidden group min-h-[300px]">
+                    <div className="absolute -right-6 -top-6 text-[#F7FAFC] transition-transform duration-700 group-hover:scale-110 group-hover:rotate-6">
+                        <Loader2 size={160} strokeWidth={1} className="opacity-10" />
+                    </div>
 
+                    <div className="relative z-10 space-y-6">
                         <div className="space-y-1">
-                            <h2 className="text-3xl font-black tracking-tighter">New Batch: {state.batch.items.length} Items</h2>
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Approx. time: {state.batch.items.length * 2} minutes</p>
+                            <div className="flex items-center gap-2">
+                                <BookOpen size={14} className="text-[#3E4A61]" />
+                                <span className="text-[9px] font-black uppercase tracking-widest text-[#3E4A61]">Active Batch</span>
+                            </div>
+                            <h3 className="text-3xl font-black text-[#3E4A61]">Level {userLevel}</h3>
+                            <p className="text-sm font-black text-[#FFB5B5] tracking-tight">
+                                {hasActiveBatch ? `Batch ${state.batch.id}` : 'No Batches Available'}
+                            </p>
                         </div>
 
+                        {hasActiveBatch ? (
+                            <div className="bg-[#F2E8E8] rounded-2xl p-4 flex items-center justify-between">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-[#3E4A61]">
+                                    {state.batch.items.length} Items Selected
+                                </span>
+                                <div className="flex -space-x-2.5">
+                                    {state.batch.items.slice(0, 3).map((item: any, i: number) => (
+                                        <div key={i} className="w-8 h-8 rounded-full bg-white border-2 border-[#F2E8E8] flex items-center justify-center text-[10px] font-black text-[#FFB5B5]">
+                                            {item.knowledge_units?.character?.[0] || '?'}
+                                        </div>
+                                    ))}
+                                    {state.batch.items.length > 3 && (
+                                        <div className="w-8 h-8 rounded-full bg-[#FFB5B5] border-2 border-[#F2E8E8] flex items-center justify-center text-[10px] text-white font-bold">
+                                            +{state.batch.items.length - 3}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-sm italic text-[#A0AEC0]">You've completed all current items!</p>
+                        )}
+                    </div>
+
+                    {hasActiveBatch && (
                         <Link
                             href="/learn/session"
                             data-testid="begin-session-link"
-                            className="block w-full py-5 bg-primary text-white text-xl font-black rounded-3xl shadow-lg hover:translate-y-[-2px] transition-all"
+                            className="relative z-10 mt-8 w-full py-4 px-8 border-2 border-[#F0E0E0] rounded-2xl flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-[#3E4A61] hover:bg-[#3E4A61] hover:text-white hover:border-[#3E4A61] transition-all group/btn shadow-sm"
                         >
-                            Begin Session
+                            Start Discovery
+                            <ChevronRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
                         </Link>
-                    </>
-                ) : (
-                    <div className="py-10 space-y-4">
-                        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto text-gray-300">
-                            <span className="text-4xl">✓</span>
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-400">All Clear!</h3>
-                        <p className="text-gray-400 text-sm">No new items to learn at this level.</p>
-                        <Link
-                            href="/dashboard"
-                            className="inline-block px-8 py-3 border-2 border-gray-200 text-gray-500 font-bold rounded-2xl hover:bg-gray-50 transition-colors"
-                        >
-                            Back to Dashboard
-                        </Link>
+                    )}
+                </div>
+
+                <div className="bg-white border-2 border-[#F0E0E0] rounded-[40px] p-8 shadow-sm space-y-6 flex flex-col justify-center">
+                    <div className="flex items-center gap-2.5">
+                        <Target size={14} className="text-[#A0AEC0]" />
+                        <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-[#3E4A61]">Batch Overview</h4>
                     </div>
-                )}
+
+                    <div className="space-y-3 overflow-y-auto max-h-[180px] custom-scrollbar pr-2">
+                        {state.batches.length > 0 ? (
+                            state.batches.map((batch: any) => (
+                                <div
+                                    key={batch.id}
+                                    className={`p-4 border-2 rounded-2xl flex items-center gap-3 transition-all ${batch.status === 'available'
+                                        ? 'bg-white border-[#F0E0E0] hover:border-[#FFB5B5] cursor-pointer'
+                                        : 'bg-[#F7FAFC] border-transparent opacity-60'
+                                        }`}
+                                >
+                                    <div className={`w-2 h-2 rounded-full ${batch.status === 'available' ? 'bg-[#FFB5B5]' : 'bg-[#CBD5E0]'}`} />
+                                    <div className="flex-1">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-[#3E4A61]">Batch {batch.id}</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-[#A0AEC0]">{batch.items.length} Items</span>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center py-8">
+                                <p className="text-xs font-bold text-[#A0AEC0] uppercase tracking-widest">No batches found</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
-            {state.batches.length > 1 && (
-                <div className="grid grid-cols-3 gap-4">
-                    {state.batches.map((b: any) => (
-                        <div
-                            key={b.id}
-                            className={`p-4 rounded-2xl border text-center ${b.status === 'available'
-                                ? 'border-primary/40 bg-primary/5'
-                                : 'border-gray-200 bg-gray-50 opacity-50'
-                                }`}
-                        >
-                            <span className="block text-xl font-black text-gray-600">{b.items.length}</span>
-                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Batch {b.id}</span>
-                        </div>
-                    ))}
+            {/* Quick Progress Banner */}
+            <div className="bg-white border-2 border-[#F0E0E0] rounded-[40px] p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+                <div className="flex items-center gap-4 text-center md:text-left">
+                    <div className="w-12 h-12 bg-[#FFF5F5] rounded-xl flex items-center justify-center">
+                        <BookOpen size={24} className="text-[#FFB5B5]" />
+                    </div>
+                    <div className="space-y-0.5">
+                        <h4 className="text-sm font-black text-[#3E4A61] uppercase tracking-tight">Ready to Learn</h4>
+                        <p className="text-[10px] font-black text-[#A0AEC0] uppercase tracking-widest">
+                            {state.totalNew} New items waiting in level {userLevel}
+                        </p>
+                    </div>
                 </div>
-            )}
-
-            <div className="text-center">
-                <Link href="/dashboard" className="text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors">
+                <Link
+                    href="/dashboard"
+                    className="px-8 py-3 bg-[#F7FAFC] border border-[#EDF2F7] rounded-xl text-[10px] font-black uppercase tracking-widest text-[#A0AEC0] hover:text-[#3E4A61] hover:bg-white hover:border-[#FFB5B5] transition-all"
+                >
                     Back to Dashboard
                 </Link>
             </div>
         </div>
     );
 }
+

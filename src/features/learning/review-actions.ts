@@ -74,7 +74,7 @@ export async function submitReviewAnswerAction(
     userId: string,
     card: ReviewCard,
     answer: ReviewAnswer
-): Promise<ActionResult<{ correct: boolean; rating: 'again' | 'hard' | 'good' | 'easy'; nextReview: string }>> {
+): Promise<ActionResult<{ correct: boolean; rating: 'again' | 'pass'; nextReview: string }>> {
     console.log(`${LOG_PREFIX} submitReviewAnswerAction:`, { userId, kuId: card.ku_id, rating: answer.rating });
 
     try {

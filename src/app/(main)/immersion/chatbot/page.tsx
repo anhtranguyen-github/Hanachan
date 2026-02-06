@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User, Plus, MessageSquare, Menu, Sparkles, Loader2, ExternalLink } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Send, Bot, User, Plus, MessageSquare, Menu, Sparkles, Loader2, ExternalLink, ChevronLeft, Eye } from 'lucide-react';
 import { clsx } from 'clsx';
 import { GlassCard } from '@/components/premium/GlassCard';
 import { useUser } from '@/features/auth/AuthContext';
@@ -19,6 +20,7 @@ type Message = {
 
 export default function ChatbotPage() {
     const { user } = useUser();
+    const pathname = usePathname();
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -125,102 +127,106 @@ export default function ChatbotPage() {
     if (!mounted) return null;
 
     return (
-        <div className="flex h-[calc(100vh-64px)] bg-background text-foreground overflow-hidden">
-            {/* History Sidebar */}
+        <div className="flex h-full bg-[#FFFDFD] overflow-hidden rounded-[32px] border border-[#F0E0E0] shadow-sm relative">
+            {/* Sub-sidebar for History/Context */}
             <aside className={clsx(
-                "bg-surface-muted border-r border-border transition-all duration-300 flex flex-col backdrop-blur-3xl",
-                sidebarOpen ? "w-80" : "w-0 overflow-hidden"
+                "border-r border-[#F0E0E0] flex flex-col shrink-0 bg-white/50 backdrop-blur-sm transition-all duration-500 ease-in-out",
+                sidebarOpen ? "w-80" : "w-0 opacity-0 overflow-hidden"
             )}>
-                <div className="p-6 border-b border-border">
+                <div className="p-6">
+                    <button
+                        onClick={() => setSidebarOpen(false)}
+                        className="w-full py-4 mb-6 border-2 border-[#F0E0E0] text-[#A0AEC0] hover:text-[#3E4A61] hover:border-[#3E4A61]/20 rounded-[20px] font-black text-[10px] tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 bg-white"
+                    >
+                        <ChevronLeft size={16} />
+                        COLLAPSE SIDEBAR
+                    </button>
+
                     <button
                         onClick={() => setMessages([])}
-                        className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-primary hover:bg-primary-dark text-foreground rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-lg"
+                        className="w-full py-4 bg-[#FFB5B5] hover:bg-[#FFC5C5] text-white rounded-[20px] font-black text-xs tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-[#FFB5B5]/30 transition-all active:scale-95"
                     >
-                        <Plus size={16} />
-                        New Chat
+                        <Plus size={18} />
+                        NEW SESSION
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                    <div className="text-[9px] font-black text-foreground/20 uppercase tracking-[0.4em] px-3 py-2">
-                        Recent Chats
-                    </div>
+                <div className="px-5 flex-1 overflow-y-auto custom-scrollbar">
+                    <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-[#CBD5E0] mb-5 px-3">Integration History</h3>
                     <div className="text-center py-20 opacity-20">
-                        <MessageSquare size={48} className="mx-auto mb-4" />
-                        <p className="text-[10px] font-black uppercase tracking-widest">No previous sessions</p>
+                        <MessageSquare size={48} className="mx-auto mb-4 text-[#A0AEC0]" />
+                        <p className="text-[10px] font-black uppercase tracking-widest text-[#A0AEC0]">No previous logs</p>
                     </div>
                 </div>
             </aside>
 
-            {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col max-w-5xl mx-auto relative px-6 md:px-12">
-                {/* Header */}
-                <header className="flex items-center justify-between py-10 border-b border-border">
-                    <div className="flex items-center gap-6">
-                        <button
-                            onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="p-3 hover:bg-surface-muted rounded-2xl transition-colors border border-border"
-                        >
-                            <Menu size={20} className="text-foreground/40" />
-                        </button>
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-3 text-primary font-black text-[10px] uppercase tracking-[0.4em]">
-                                <Bot size={16} />
-                                AI Tutor
-                            </div>
-                            <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase leading-none">Hanachan AI</h1>
+            {/* Chat Interface */}
+            <main className="flex-1 flex flex-col relative bg-white">
+                <header className="h-16 border-b border-[#F0E0E0] flex items-center justify-between px-8 shrink-0">
+                    <div className="flex items-center gap-3">
+                        {!sidebarOpen && (
+                            <button
+                                onClick={() => setSidebarOpen(true)}
+                                className="p-2 hover:bg-surface-muted rounded-xl transition-colors border border-border"
+                            >
+                                <Menu size={16} className="text-foreground/40" />
+                            </button>
+                        )}
+                        <div className="w-1.5 h-1.5 bg-[#FFB5B5] rounded-full animate-pulse" />
+                        <div>
+                            <h2 className="text-xl font-black text-[#3E4A61] tracking-tighter uppercase">HANACHAN ASSISTANT</h2>
                         </div>
                     </div>
-                    <div className="hidden md:flex items-center gap-4 bg-surface-muted border border-border px-6 py-3 rounded-2xl">
-                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(244,172,183,1)]" />
-                        <span className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.3em] font-mono">Sync_OK // Level {userLevel}</span>
+                    <div className="hidden md:flex items-center gap-4 bg-[#F7FAFC] border border-[#F0E0E0] px-4 py-2 rounded-xl">
+                        <span className="text-[9px] font-black text-[#A0AEC0] uppercase tracking-[0.3em] font-mono">Sync_OK // Level {user?.level || 1}</span>
                     </div>
                 </header>
 
-                {/* Chat Messages */}
-                <div className="flex-1 overflow-y-auto pt-10 pb-48 space-y-10 scrollbar-hide">
+                {/* Messages Area */}
+                <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar pb-40">
                     {messages.map((m) => (
                         <div
                             key={m.id}
                             data-testid="chat-message"
                             className={clsx(
-                                "flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500",
-                                m.role === 'user' ? "items-end" : "items-start"
+                                "flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500",
+                                m.role === 'user' ? "items-end ml-auto max-w-[80%]" : "items-start max-w-[80%]"
                             )}
                         >
                             <div className={clsx(
-                                "flex items-center gap-4",
+                                "flex items-center gap-3",
                                 m.role === 'user' ? "flex-row-reverse" : "flex-row"
                             )}>
                                 <div className={clsx(
-                                    "w-8 h-8 rounded-xl flex items-center justify-center border transition-all duration-300 shadow-lg",
-                                    m.role === 'user' ? "bg-surface-muted border-border text-foreground/40" : "bg-primary text-foreground border-primary"
+                                    "w-7 h-7 rounded-xl flex items-center justify-center border transition-all duration-300",
+                                    m.role === 'user' ? "bg-[#F7FAFC] border-[#F0E0E0] text-[#A0AEC0]" : "bg-[#FFF5F5] border-[#FFDADA] text-[#FFB5B5]"
                                 )}>
-                                    {m.role === 'user' ? <User size={16} /> : <Bot size={16} />}
+                                    {m.role === 'user' ? <User size={14} /> : <Bot size={14} />}
                                 </div>
-                                <span className="text-[9px] font-black uppercase text-foreground/20 tracking-[0.2em] pt-0.5 font-mono">
-                                    {m.role === 'user' ? "OPERATOR" : "HANACHAN"} • {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                <span className="text-[9px] font-black uppercase text-[#CBD5E0] tracking-[0.2em] pt-0.5">
+                                    {m.role === 'user' ? "LEARNER" : "ASSISTANT"} • {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                             </div>
 
                             <div className={clsx(
-                                "p-6 rounded-3xl text-sm font-medium tracking-tight leading-relaxed max-w-[85%] shadow-2xl space-y-4",
+                                "p-6 rounded-[32px] text-[14px] font-medium leading-relaxed shadow-sm space-y-4",
                                 m.role === 'user'
-                                    ? "bg-white/10 text-foreground rounded-tr-none border border-border"
-                                    : "bg-surface-muted text-foreground/80 border border-border rounded-tl-none backdrop-blur-xl whitespace-pre-wrap"
+                                    ? "bg-[#3E4A61] text-white rounded-tr-none"
+                                    : "bg-[#F7FAFC] text-[#3E4A61] border border-[#F0E0E0] rounded-tl-none"
                             )}>
-                                {m.content}
+                                <div className="whitespace-pre-wrap">{m.content}</div>
 
                                 {m.referencedKUs && m.referencedKUs.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-border/10">
+                                    <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[#EDF2F7]">
+                                        <h4 className="w-full text-[8px] font-black text-[#A0AEC0] uppercase tracking-widest mb-1 flex items-center gap-2">Referenced Content</h4>
                                         {m.referencedKUs.map(ku => (
                                             <button
                                                 key={ku.id}
                                                 onClick={() => handleViewKU(ku)}
                                                 data-testid="ku-cta-button"
-                                                className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                                                className="flex items-center gap-2 px-4 py-2 bg-white border border-[#F0E0E0] hover:border-[#FFB5B5] rounded-xl text-[10px] font-black uppercase text-[#FF6B6B] tracking-wider transition-all shadow-sm active:scale-95"
                                             >
-                                                {ku.character} • {ku.type} <ExternalLink size={10} />
+                                                <Eye size={12} /> {ku.character} • {ku.type.slice(0, 5)}
                                             </button>
                                         ))}
                                     </div>
@@ -230,7 +236,7 @@ export default function ChatbotPage() {
                             {m.toolsUsed && m.toolsUsed.length > 0 && (
                                 <div className="flex gap-2">
                                     {m.toolsUsed.map(t => (
-                                        <div key={t} className="px-3 py-1 bg-surface-muted border border-border rounded-full text-[8px] font-black uppercase tracking-widest text-foreground/20">
+                                        <div key={t} className="px-3 py-1 bg-[#F7FAFC] border border-[#F0E0E0] rounded-full text-[8px] font-black uppercase tracking-widest text-[#CBD5E0]">
                                             {t.toUpperCase()}
                                         </div>
                                     ))}
@@ -241,16 +247,16 @@ export default function ChatbotPage() {
 
                     {isTyping && (
                         <div className="flex flex-col gap-4 items-start animate-in fade-in duration-300">
-                            <div className="flex items-center gap-4">
-                                <div className="w-8 h-8 rounded-xl bg-primary text-foreground flex items-center justify-center shadow-lg">
-                                    <Bot size={16} />
+                            <div className="flex items-center gap-3">
+                                <div className="w-7 h-7 rounded-lg bg-[#FFF5F5] border border-[#FFDADA] text-[#FFB5B5] flex items-center justify-center">
+                                    <Bot size={14} />
                                 </div>
-                                <span className="text-[9px] font-black uppercase text-foreground/20 tracking-[0.2em] font-mono">Synthesizing response...</span>
+                                <span className="text-[9px] font-black uppercase text-[#CBD5E0] tracking-[0.2em]">Thinking...</span>
                             </div>
-                            <div className="px-6 py-5 rounded-3xl bg-surface-muted border border-border flex gap-2 shadow-2xl backdrop-blur-xl">
-                                <div className="w-2 h-2 bg-primary/40 rounded-full animate-bounce" />
-                                <div className="w-2 h-2 bg-primary/40 rounded-full animate-bounce [animation-delay:0.2s]" />
-                                <div className="w-2 h-2 bg-primary/40 rounded-full animate-bounce [animation-delay:0.4s]" />
+                            <div className="px-6 py-4 rounded-3xl bg-[#F7FAFC] border border-[#F0E0E0] flex gap-2">
+                                <div className="w-1.5 h-1.5 bg-[#FFB5B5]/40 rounded-full animate-bounce" />
+                                <div className="w-1.5 h-1.5 bg-[#FFB5B5]/40 rounded-full animate-bounce [animation-delay:0.2s]" />
+                                <div className="w-1.5 h-1.5 bg-[#FFB5B5]/40 rounded-full animate-bounce [animation-delay:0.4s]" />
                             </div>
                         </div>
                     )}
@@ -258,34 +264,29 @@ export default function ChatbotPage() {
                 </div>
 
                 {/* Input Area */}
-                <div className="absolute bottom-10 left-0 right-0">
-                    <GlassCard className="p-3 border-border shadow-2xl rounded-[2.5rem] bg-white/[0.03]">
-                        <div className="relative flex items-center p-2">
-                            <div className="w-12 h-12 flex items-center justify-center text-foreground/20 bg-surface-muted rounded-full border border-border ml-2">
-                                <Sparkles size={20} className="animate-pulse text-primary" />
-                            </div>
-                            <input
-                                type="text"
-                                data-testid="chat-input"
-                                className="flex-1 bg-transparent border-none text-foreground focus:ring-0 placeholder:text-foreground/10 font-bold tracking-tight py-4 px-6 text-lg"
-                                placeholder="Type a command or ask a question..."
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                                disabled={isTyping}
-                            />
-                            <button
-                                onClick={handleSend}
-                                data-testid="chat-send-button"
-                                disabled={!input.trim() || isTyping}
-                                className="bg-primary hover:bg-primary-dark disabled:opacity-20 text-foreground w-14 h-14 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-[0_0_20px_rgba(244,172,183,0.3)] mr-2 group"
-                            >
-                                <Send size={24} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                            </button>
-                        </div>
-                    </GlassCard>
+                <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-white via-white to-transparent pointer-events-none">
+                    <div className="max-w-2xl mx-auto relative group pointer-events-auto">
+                        <input
+                            type="text"
+                            data-testid="chat-input"
+                            placeholder="Ask about Japanese language, rules, or culture..."
+                            className="w-full py-5 pl-8 pr-20 bg-[#F7FAFC] border-2 border-[#EDF2F7] rounded-[2.5rem] outline-none focus:border-[#FFB5B5] focus:bg-white transition-all text-sm font-medium shadow-xl shadow-[#3E4A61]/5"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                            disabled={isTyping}
+                        />
+                        <button
+                            onClick={handleSend}
+                            data-testid="chat-send-button"
+                            disabled={!input.trim() || isTyping}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#3E4A61] disabled:bg-[#CBD5E0] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all"
+                        >
+                            <Send size={20} />
+                        </button>
+                    </div>
                 </div>
-            </div>
+            </main>
 
             {/* Entity Quick View Modal */}
             <QuickViewModal
@@ -295,8 +296,8 @@ export default function ChatbotPage() {
             />
 
             {isLoadingKU && (
-                <div className="fixed inset-0 z-[110] bg-black/20 flex items-center justify-center backdrop-blur-sm">
-                    <Loader2 className="animate-spin text-primary" size={48} />
+                <div className="fixed inset-0 z-[110] bg-black/5 flex items-center justify-center backdrop-blur-sm">
+                    <Loader2 className="animate-spin text-[#FFB5B5]" size={48} />
                 </div>
             )}
         </div>

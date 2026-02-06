@@ -62,7 +62,7 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
     const handleKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
             if (submitted) {
-                onRate(isCorrect ? 'good' : 'again', userInput);
+                onRate(isCorrect ? 'pass' : 'again', userInput);
             } else {
                 handleVerify();
             }
@@ -220,7 +220,7 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
 
                                 <div className="flex flex-col items-center gap-4 w-full max-w-sm">
                                     <button
-                                        onClick={() => onRate(isCorrect ? 'good' : 'again', userInput)}
+                                        onClick={() => onRate(isCorrect ? 'pass' : 'again', userInput)}
                                         className={clsx(
                                             "group flex items-center justify-center gap-4 px-16 py-6 rounded-[32px] text-2xl font-black transition-all hover:scale-105 active:scale-95 shadow-xl w-full",
                                             isCorrect ? "bg-gray-900 text-white" : "bg-rose-500 text-white"
