@@ -5,7 +5,7 @@ Hanachan is an advanced Japanese learning platform built with **Next.js 14**, **
 ## 🌸 Core Features
 
 ### Learning System
-*   **Binary SRS Rating**: Simplified `pass`/`fail` rating system with 1.5x stability growth for successful recalls.
+*   **Binary SRS Rating**: Simplified `pass`/`again` rating system with 1.5x stability growth for successful recalls.
 *   **FSRS Algorithm**: Full implementation of the Free Spaced Repetition Scheduler v4 for optimal review scheduling.
 *   **Immediate Persistence**: FSRS updates are committed **immediately** upon the user's first answer attempt to ensure data integrity.
 *   **Atomic Life-cycle**: Once an item is answered correctly in Review, it is instantly rescheduled and removed from the active queue, even if the session is interrupted.

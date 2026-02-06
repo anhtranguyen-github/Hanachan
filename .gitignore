@@ -68,9 +68,22 @@ data_flattened/
 data_v7/
 data_v6/
 
-data/bin/
+# Plans and agent data
+plans/
 
-tra@example.com
+# Documentation and bulk data (per user request)
+docs/
+data/
 
-password
-data/grammar.json
+# Large files and databases
+*.db
+*.sqlite
+*.sqlite3
+*.zip
+*.tar.gz
+*.mp4
+*.mov
+*.pdf
+ *.log
+*.tmp
+temp/
