@@ -1,12 +1,5 @@
 """
 Session / Working Memory — in-memory conversation buffer per thread.
-
-Each thread (session) stores:
-  - messages  (working memory / conversation history)
-  - title     (auto-generated after the first assistant reply)
-  - summary   (rolling summary, updated on every assistant reply)
-
-For multi-process deployments swap the dict for Redis.
 """
 from __future__ import annotations
 
@@ -18,8 +11,8 @@ from typing import Any, Dict, List, Optional
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
-from config import settings
-from models import SessionInfo, SessionMessage, SessionSummary
+from ...core.config import settings
+from ...schemas.session import SessionInfo, SessionMessage, SessionSummary
 
 # ---------------------------------------------------------------------------
 # Store
@@ -198,22 +191,19 @@ def add_message(session_id: str, role: str, content: str) -> bool:
             recent = [m for m in s["messages"] if m["role"] != "system"][-MAX_SESSION_MESSAGES:]
             s["messages"] = system_msgs + recent
 
-    # Title + summary updates happen outside the lock (LLM call)
+    # Title + summary updates
     if role == "assistant":
         s = _sessions.get(session_id)
         if s:
-            # Find the last user message
             user_msgs = [m for m in s["messages"] if m["role"] == "user"]
             last_user = user_msgs[-1]["content"] if user_msgs else ""
 
-            # Title: generate once, on the first assistant reply
             if not s.get("title") and last_user:
                 title = _generate_title(last_user, content)
                 with _lock:
                     if session_id in _sessions:
                         _sessions[session_id]["title"] = title
 
-            # Rolling summary
             updated_summary = _update_summary(
                 s.get("summary") or "",
                 last_user,

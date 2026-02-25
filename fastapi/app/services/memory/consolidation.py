@@ -1,31 +1,18 @@
 """
 Memory Consolidation Module.
-
-Periodically merges multiple episodic memories into richer, more compressed
-summaries to prevent memory bloat and improve recall quality over time.
-
-Algorithm:
-  1. Fetch all episodic memories for the user from Qdrant.
-  2. If count > threshold, batch them (N at a time).
-  3. For each batch, call the LLM to produce a single consolidated summary.
-  4. Delete the source memories from Qdrant.
-  5. Insert the new consolidated summary.
-
-The function is idempotent — safe to call repeatedly.
 """
 from __future__ import annotations
 
-import uuid
-from typing import List, Tuple
+from typing import List
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 
-import episodic_memory as ep_mem
-from config import settings
-from models import ConsolidationResult, EpisodicMemory
+from . import episodic_memory as ep_mem
+from ...core.config import settings
+from ...schemas.memory import ConsolidationResult, EpisodicMemory
 
 CONSOLIDATION_THRESHOLD = 10   # consolidate when user has > N memories
 BATCH_SIZE = 5                  # merge N memories at a time
@@ -122,7 +109,7 @@ def consolidate_memories(user_id: str) -> ConsolidationResult:
     for i in range(0, len(sorted_memories), BATCH_SIZE):
         batch = sorted_memories[i : i + BATCH_SIZE]
         if len(batch) < 2:
-            break  # Don't compress a single memory
+            break
         try:
             summary = _consolidate_batch(user_id, batch, client)
             consolidated_summaries.append(summary)

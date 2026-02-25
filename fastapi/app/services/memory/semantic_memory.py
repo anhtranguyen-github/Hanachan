@@ -1,9 +1,5 @@
 """
 Semantic Memory Module — backed by Neo4j (cloud).
-
-Extracted facts (entities + relationships) are stored as nodes and edges in
-Neo4j.  Multi-user isolation is achieved by storing `user_id` as a property
-on every node so that all queries are scoped to a single user.
 """
 from __future__ import annotations
 
@@ -11,8 +7,8 @@ from typing import Any, Dict, List
 
 from neo4j import GraphDatabase, Driver
 
-from config import settings
-from models import KnowledgeGraph, Node, Relationship
+from ...core.config import settings
+from ...schemas.memory import KnowledgeGraph, Node, Relationship
 
 
 # ---------------------------------------------------------------------------
@@ -84,9 +80,6 @@ def _merge_relationship(session, rel: Relationship, user_id: str) -> None:
     """MERGE source → target with the given relationship type."""
     _merge_node(session, rel.source, user_id)
     _merge_node(session, rel.target, user_id)
-    # Cypher requires relationship type to be a literal; use APOC or string
-    # interpolation via a parameterised approach is not possible for REL TYPE —
-    # we use a safe allowlist check then format.
     rel_type = "".join(ch for ch in rel.type.upper() if ch.isalnum() or ch == "_")
     query = f"""
         MATCH (s:Entity {{id: $source_id, user_id: $user_id}})
@@ -168,7 +161,6 @@ def search_semantic_memory(user_id: str, keywords: List[str]) -> List[Dict[str, 
                         }
                     )
             except Exception:
-                # Index may not be populated yet
                 pass
 
     # Deduplicate

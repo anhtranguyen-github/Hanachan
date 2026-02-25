@@ -1,13 +1,13 @@
 """
-Configuration — loads from notebook/.env (one level up from this file).
+Configuration — loads from .env in the project root.
 """
 import os
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-# Resolve path to the .env that lives next to the notebooks
-_ENV_FILE = Path(__file__).parent.parent / ".env"
+# Resolve path to the .env that lives in the fastapi root
+_ENV_FILE = Path(__file__).parent.parent.parent / ".env"
 
 
 class Settings(BaseSettings):

@@ -1,10 +1,5 @@
 """
 Episodic Memory Module — backed by Qdrant (cloud).
-
-Each memory is a short text summary (e.g. of a conversation turn) that is
-embedded with OpenAI text-embedding-3-small and stored in a Qdrant collection
-named `episodic_memory`.  Multi-user isolation is achieved by storing
-`user_id` as a payload field and filtering all queries.
 """
 from __future__ import annotations
 
@@ -16,8 +11,8 @@ from langchain_openai import OpenAIEmbeddings
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 
-from config import settings
-from models import EpisodicMemory
+from ...core.config import settings
+from ...schemas.memory import EpisodicMemory
 
 
 # ---------------------------------------------------------------------------
@@ -118,9 +113,10 @@ def search_episodic_memory(user_id: str, query: str, k: int = 3) -> List[Episodi
     embedder = _get_embedder()
 
     vector = embedder.embed_query(query)
-    results = client.search(
+    # Using query_points as search is deprecated/missing in some qdrant-client versions
+    response = client.query_points(
         collection_name=settings.qdrant_collection,
-        query_vector=vector,
+        query=vector,
         limit=k,
         query_filter=qmodels.Filter(
             must=[
@@ -132,6 +128,7 @@ def search_episodic_memory(user_id: str, query: str, k: int = 3) -> List[Episodi
         ),
         with_payload=True,
     )
+    results = response.points
     return [
         EpisodicMemory(
             id=str(hit.id),
@@ -175,7 +172,7 @@ def list_episodic_memories(user_id: str, limit: int = 50) -> List[EpisodicMemory
 def clear_episodic_memory(user_id: str) -> int:
     """Delete all points for *user_id*; returns number of deleted points."""
     client = _get_client()
-    result = client.delete(
+    client.delete(
         collection_name=settings.qdrant_collection,
         points_selector=qmodels.FilterSelector(
             filter=qmodels.Filter(
@@ -188,5 +185,4 @@ def clear_episodic_memory(user_id: str) -> int:
             )
         ),
     )
-    # Qdrant returns operation_id on success; count isn't directly exposed
     return 0  # Qdrant cloud doesn't return deleted count

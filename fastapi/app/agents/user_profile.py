@@ -1,24 +1,17 @@
 """
 User Profile Module.
-
-Derives a structured user profile from the semantic (Neo4j) memory.
-The profile is a high-level summary of what the agent knows about a user:
-  - name, preferences, goals, interests, relationships
-
-The profile is generated on-demand by querying the graph and feeding the
-results to the LLM for summarisation. It is NOT cached — call it when needed
-and pass the result into the system prompt.
 """
 from __future__ import annotations
 
+import json
 from typing import Any, Dict, List, Optional
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
-import semantic_memory as sem_mem
-from config import settings
-from models import UserProfile
+from ..services.memory import semantic_memory as sem_mem
+from ..core.config import settings
+from ..schemas.memory import UserProfile
 
 # ---------------------------------------------------------------------------
 # LLM lazy init
@@ -87,7 +80,6 @@ _PROFILE_PROMPT = ChatPromptTemplate.from_messages([
 def build_user_profile(user_id: str) -> UserProfile:
     """
     Query the semantic graph and synthesise a UserProfile.
-    Falls back to an empty profile if the graph is empty or LLM fails.
     """
     facts = _get_raw_facts(user_id)
     facts_text = _facts_to_text(facts)
@@ -104,10 +96,8 @@ def build_user_profile(user_id: str) -> UserProfile:
         )
 
     try:
-        import json
         chain = _PROFILE_PROMPT | _get_llm()
         result = chain.invoke({"user_id": user_id, "facts_text": facts_text})
-        # Strip markdown fences if any
         text = result.content.strip().lstrip("```json").rstrip("```").strip()
         data = json.loads(text)
         return UserProfile(
@@ -121,7 +111,6 @@ def build_user_profile(user_id: str) -> UserProfile:
         )
     except Exception as exc:
         print(f"[user_profile] LLM parse error: {exc}")
-        # Return a minimal profile from raw triples
         return UserProfile(
             user_id=user_id,
             name=None,

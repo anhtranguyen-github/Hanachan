@@ -1,12 +1,5 @@
 """
 LangGraph Memory-Augmented Agent.
-
-Workflow: retrieve_memory → generate_response → update_memory → END
-
-Retrieval pulls from THREE layers:
-  1. Thread context  — recent messages from the active session (working memory)
-  2. Episodic memory — Qdrant similarity search over past turn summaries
-  3. Semantic memory — Neo4j graph query for structured facts about the user
 """
 from __future__ import annotations
 
@@ -17,11 +10,12 @@ from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import StateGraph, END
 from typing_extensions import TypedDict
 
-import episodic_memory as ep_mem
-import semantic_memory as sem_mem
-import session_memory as sess_mem
-from config import settings
-from models import KnowledgeGraph
+from ..services.memory import episodic_memory as ep_mem
+from ..services.memory import semantic_memory as sem_mem
+from ..services.memory import session_memory as sess_mem
+from ..core.config import settings
+from ..schemas.memory import KnowledgeGraph
+
 
 # ---------------------------------------------------------------------------
 # LLM instances
@@ -57,10 +51,10 @@ class AgentState(TypedDict):
     user_id: str
     session_id: Optional[str]
     user_input: str
-    thread_context: str          # recent messages from active session
-    retrieved_episodic: str      # similar past conversations
-    retrieved_semantic: str      # known facts from graph
-    retrieved_memories: str      # combined context string for the prompt
+    thread_context: str
+    retrieved_episodic: str
+    retrieved_semantic: str
+    retrieved_memories: str
     generation: str
 
 
@@ -73,24 +67,20 @@ def retrieve_memory(state: AgentState) -> Dict[str, Any]:
     session_id = state.get("session_id")
     query = state["user_input"]
 
-    # --- 1. Thread context (same session, recent messages) ---
     if session_id:
         thread_text = sess_mem.get_thread_context_text(session_id, last_n=10)
-        # Include session summary if it exists
         session_data = sess_mem.get_session(session_id)
         if session_data and session_data.get("summary"):
             thread_text = f"[Thread summary]: {session_data['summary']}\n\n[Recent messages]:\n{thread_text}"
     else:
         thread_text = "(no active session)"
 
-    # --- 2. Episodic memory (Qdrant similarity) ---
     ep_results = ep_mem.search_episodic_memory(user_id, query, k=3)
     episodic_text = (
         "\n".join(f"- {m.text}" for m in ep_results)
         or "(no episodic memories)"
     )
 
-    # --- 3. Semantic memory (Neo4j graph) ---
     keywords = [w for w in query.split() if len(w) > 3][:8]
     sem_results = sem_mem.search_semantic_memory(user_id, keywords)
     semantic_text = (
@@ -189,13 +179,10 @@ def update_memory(state: AgentState) -> Dict[str, Any]:
     user_input = state["user_input"]
     assistant_output = state["generation"]
 
-    # Persist user + assistant messages into the session (working memory)
     if session_id:
         sess_mem.add_message(session_id, "user", user_input)
-        # assistant message triggers title + summary update inside add_message
         sess_mem.add_message(session_id, "assistant", assistant_output)
 
-    # Episodic: summarise the turn → Qdrant
     try:
         chain = _SUMMARY_PROMPT | _get_llm()
         summary = chain.invoke(
@@ -205,7 +192,6 @@ def update_memory(state: AgentState) -> Dict[str, Any]:
     except Exception as exc:
         print(f"[update_memory] episodic error: {exc}")
 
-    # Semantic: extract KG → Neo4j
     try:
         chain = _EXTRACTION_PROMPT | _get_extraction_llm()
         kg_data: KnowledgeGraph = chain.invoke(
