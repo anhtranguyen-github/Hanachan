@@ -68,35 +68,15 @@ Use these pre-configured accounts to explore the platform immediately.
 | `test_worker_2@hanachan.test` | `Password123!` | 5     | Mid-level content unlocked |
 | `test_worker_3@hanachan.test` | `Password123!` | 10    | Advanced content unlocked |
 
-> **Note:** If these users do not exist, run the initialization script:
-> ```bash
-> pnpm exec tsx tests/setup-e2e-user.ts
-> ```
+> **Note:** If these users do not exist, they should be created in the Supabase dashboard or via a migration script.
 
 ## 🧪 Running Tests
 
-We use **Playwright** for End-to-End (E2E) testing.
+We use **Vitest** for unit and integration testing.
 
-### Run All E2E Tests
+### Run All Tests
 ```bash
-npm run test:e2e
-# or
-npx playwright test
-```
-
-### Run Specific Test Suites
-```bash
-# Chatbot AI tests (Progress intent, Entity Linking)
-npx playwright test tests/e2e/chatbot.spec.ts
-
-# Learning session flow
-npx playwright test tests/e2e/learning.spec.ts
-
-# Review session flow
-npx playwright test tests/e2e/review.spec.ts
-
-# Full session logic with sub-tasks
-npx playwright test tests/e2e/session_logic.spec.ts
+npm test
 ```
 
 ## 📂 Project Structure
@@ -118,7 +98,6 @@ src/
 └── lib/                    # Utilities (Supabase client, validation)
 
 tests/
-├── e2e/                    # Playwright E2E tests
 ├── unit/                   # Unit tests
 └── integration/            # Integration tests
 
@@ -138,7 +117,6 @@ docs/
 | `docs/businessflow/bussinessflow.md` | Study session business rules |
 | `docs/class/classes.md` | Class design and responsibilities |
 | `docs/er/full-system-er.md` | Complete Entity-Relationship diagram |
-| `docs/TESTING_CONSTRAINTS_AND_BUGS.md` | E2E testing guidelines |
 
 ## 🛠 Database Management
 
