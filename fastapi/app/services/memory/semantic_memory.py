@@ -65,14 +65,11 @@ def _merge_node(session, node: Node, user_id: str) -> None:
     session.run(
         """
         MERGE (n:Entity {id: $id, user_id: $user_id})
-        SET n.type = $type,
-            n.user_id = $user_id
-        SET n += $props
+        SET n.type = $type
         """,
         id=node.id,
         user_id=user_id,
         type=node.type,
-        props=node.properties,
     )
 
 
@@ -85,14 +82,12 @@ def _merge_relationship(session, rel: Relationship, user_id: str) -> None:
         MATCH (s:Entity {{id: $source_id, user_id: $user_id}})
         MATCH (t:Entity {{id: $target_id, user_id: $user_id}})
         MERGE (s)-[r:{rel_type}]->(t)
-        SET r += $props
     """
     session.run(
         query,
         source_id=rel.source.id,
         target_id=rel.target.id,
         user_id=user_id,
-        props=rel.properties,
     )
 
 

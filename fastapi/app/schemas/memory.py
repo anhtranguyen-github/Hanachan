@@ -8,14 +8,12 @@ from pydantic import BaseModel, Field
 class Node(BaseModel):
     id: str = Field(description="Unique identifier — a person's name, company ticker, or concept.")
     type: str = Field(description="Node type, e.g. 'User', 'Company', 'InvestmentPhilosophy'.")
-    properties: Dict[str, Any] = Field(default_factory=dict, description="Extra properties.")
 
 
 class Relationship(BaseModel):
     source: Node = Field(description="Source node.")
     target: Node = Field(description="Target node.")
     type: str = Field(description="Relationship type, e.g. 'INTERESTED_IN', 'HAS_GOAL'.")
-    properties: Dict[str, Any] = Field(default_factory=dict, description="Extra properties.")
 
 
 class KnowledgeGraph(BaseModel):

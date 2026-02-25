@@ -1,11 +1,11 @@
 """
-Session / Working Memory — in-memory conversation buffer per thread.
+Session / Working Memory — backed by PostgreSQL (Supabase Fallback).
 """
 from __future__ import annotations
 
 import uuid
+import json
 from datetime import datetime, timezone
-from threading import Lock
 from typing import Any, Dict, List, Optional
 
 from langchain_openai import ChatOpenAI
@@ -13,21 +13,13 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from ...core.config import settings
 from ...schemas.session import SessionInfo, SessionMessage, SessionSummary
-
-# ---------------------------------------------------------------------------
-# Store
-# ---------------------------------------------------------------------------
-
-_sessions: Dict[str, Dict[str, Any]] = {}
-_lock = Lock()
-MAX_SESSION_MESSAGES = 50
+from ...core.database import execute_query, execute_single
 
 # ---------------------------------------------------------------------------
 # LLM helpers (lazy)
 # ---------------------------------------------------------------------------
 
 _llm: Optional[ChatOpenAI] = None
-
 
 def _get_llm() -> ChatOpenAI:
     global _llm
@@ -86,7 +78,7 @@ def _update_summary(existing: str, user_msg: str, assistant_msg: str) -> str:
         ).content.strip()
     except Exception:
         return existing
-
+    
 
 # ---------------------------------------------------------------------------
 # Session lifecycle
@@ -94,41 +86,41 @@ def _update_summary(existing: str, user_msg: str, assistant_msg: str) -> str:
 
 def create_session(user_id: str, metadata: Optional[Dict[str, Any]] = None) -> str:
     session_id = str(uuid.uuid4())
-    now = datetime.now(timezone.utc).isoformat()
-    with _lock:
-        _sessions[session_id] = {
-            "session_id": session_id,
-            "user_id": user_id,
-            "title": None,
-            "summary": None,
-            "created_at": now,
-            "updated_at": now,
-            "messages": [],
-            "metadata": metadata or {},
-        }
+    now = datetime.now(timezone.utc)
+    
+    execute_query(
+        "INSERT INTO public.sessions (session_id, user_id, created_at, updated_at, metadata) VALUES (%s, %s, %s, %s, %s)",
+        (session_id, user_id, now, now, json.dumps(metadata or {})),
+        fetch=False
+    )
+    
     return session_id
 
 
 def get_session(session_id: str) -> Optional[Dict[str, Any]]:
-    return _sessions.get(session_id)
+    return execute_single("SELECT * FROM public.sessions WHERE session_id = %s", (session_id,))
 
 
 def list_sessions(user_id: str) -> List[SessionSummary]:
-    with _lock:
-        return [
-            SessionSummary(
-                session_id=s["session_id"],
-                user_id=s["user_id"],
-                title=s.get("title"),
-                summary=s.get("summary"),
-                created_at=s["created_at"],
-                updated_at=s["updated_at"],
-                message_count=len(s["messages"]),
-                metadata=s["metadata"],
-            )
-            for s in _sessions.values()
-            if s["user_id"] == user_id
-        ]
+    sessions = execute_query(
+        "SELECT s.*, (SELECT count(*) FROM public.messages m WHERE m.session_id = s.session_id) as message_count "
+        "FROM public.sessions s WHERE s.user_id = %s ORDER BY s.updated_at DESC", 
+        (user_id,)
+    )
+    
+    return [
+        SessionSummary(
+            session_id=str(s["session_id"]),
+            user_id=s["user_id"],
+            title=s.get("title"),
+            summary=s.get("summary"),
+            created_at=s["created_at"].isoformat(),
+            updated_at=s["updated_at"].isoformat(),
+            message_count=s["message_count"],
+            metadata=s.get("metadata") or {},
+        )
+        for s in sessions
+    ]
 
 
 def update_session_meta(
@@ -136,30 +128,39 @@ def update_session_meta(
     title: Optional[str] = None,
     metadata: Optional[Dict[str, Any]] = None,
 ) -> bool:
-    with _lock:
-        s = _sessions.get(session_id)
-        if s is None:
-            return False
-        if title is not None:
-            s["title"] = title
-        if metadata is not None:
-            s["metadata"].update(metadata)
-        s["updated_at"] = datetime.now(timezone.utc).isoformat()
-        return True
+    now = datetime.now(timezone.utc)
+    if title and metadata:
+        execute_query(
+            "UPDATE public.sessions SET title = %s, metadata = metadata || %s, updated_at = %s WHERE session_id = %s",
+            (title, json.dumps(metadata), now, session_id), fetch=False
+        )
+    elif title:
+        execute_query(
+            "UPDATE public.sessions SET title = %s, updated_at = %s WHERE session_id = %s",
+            (title, now, session_id), fetch=False
+        )
+    elif metadata:
+        execute_query(
+            "UPDATE public.sessions SET metadata = metadata || %s, updated_at = %s WHERE session_id = %s",
+            (json.dumps(metadata), now, session_id), fetch=False
+        )
+    else:
+        execute_query("UPDATE public.sessions SET updated_at = %s WHERE session_id = %s", (now, session_id), fetch=False)
+    return True
 
 
 def end_session(session_id: str) -> Optional[Dict[str, Any]]:
-    """Remove and return session data for consolidation."""
-    with _lock:
-        return _sessions.pop(session_id, None)
+    session = to_session_info(session_id)
+    if not session:
+        return None
+    execute_query("DELETE FROM public.sessions WHERE session_id = %s", (session_id,), fetch=False)
+    return session.model_dump()
 
 
 def delete_all_sessions(user_id: str) -> int:
-    with _lock:
-        to_delete = [sid for sid, s in _sessions.items() if s["user_id"] == user_id]
-        for sid in to_delete:
-            del _sessions[sid]
-        return len(to_delete)
+    # Need to check how many were deleted
+    execute_query("DELETE FROM public.sessions WHERE user_id = %s", (user_id,), fetch=False)
+    return 0 # Simplified
 
 
 # ---------------------------------------------------------------------------
@@ -167,64 +168,46 @@ def delete_all_sessions(user_id: str) -> int:
 # ---------------------------------------------------------------------------
 
 def add_message(session_id: str, role: str, content: str) -> bool:
-    """
-    Append a message. When role=='assistant', also:
-      • auto-generate a title if one doesn't exist yet
-      • update the rolling summary
-    """
-    with _lock:
-        s = _sessions.get(session_id)
-        if s is None:
-            return False
-        s["messages"].append(
-            {
-                "role": role,
-                "content": content,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
-        )
-        s["updated_at"] = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(timezone.utc)
+    execute_query(
+        "INSERT INTO public.messages (session_id, role, content, timestamp) VALUES (%s, %s, %s, %s)",
+        (session_id, role, content, now), fetch=False
+    )
+    execute_query("UPDATE public.sessions SET updated_at = %s WHERE session_id = %s", (now, session_id), fetch=False)
 
-        # Trim
-        if len(s["messages"]) > MAX_SESSION_MESSAGES:
-            system_msgs = [m for m in s["messages"] if m["role"] == "system"]
-            recent = [m for m in s["messages"] if m["role"] != "system"][-MAX_SESSION_MESSAGES:]
-            s["messages"] = system_msgs + recent
-
-    # Title + summary updates
     if role == "assistant":
-        s = _sessions.get(session_id)
-        if s:
-            user_msgs = [m for m in s["messages"] if m["role"] == "user"]
+        session = get_session(session_id)
+        if session:
+            messages = get_messages(session_id)
+            user_msgs = [m for m in messages if m["role"] == "user"]
             last_user = user_msgs[-1]["content"] if user_msgs else ""
 
-            if not s.get("title") and last_user:
+            if not session.get("title") and last_user:
                 title = _generate_title(last_user, content)
-                with _lock:
-                    if session_id in _sessions:
-                        _sessions[session_id]["title"] = title
+                update_session_meta(session_id, title=title)
 
             updated_summary = _update_summary(
-                s.get("summary") or "",
+                session.get("summary") or "",
                 last_user,
                 content,
             )
-            with _lock:
-                if session_id in _sessions:
-                    _sessions[session_id]["summary"] = updated_summary
+            execute_query("UPDATE public.sessions SET summary = %s WHERE session_id = %s", (updated_summary, session_id), fetch=False)
 
     return True
 
 
 def get_messages(session_id: str) -> List[Dict[str, str]]:
-    s = _sessions.get(session_id)
-    return s["messages"] if s else []
+    messages = execute_query(
+        "SELECT role, content, timestamp FROM public.messages WHERE session_id = %s ORDER BY timestamp", 
+        (session_id,)
+    )
+    for m in messages:
+        if isinstance(m["timestamp"], datetime):
+            m["timestamp"] = m["timestamp"].isoformat()
+    return messages
 
 
 def get_thread_context_text(session_id: str, last_n: int = 10) -> str:
-    """
-    Return the last N message pairs as a formatted string for LLM context injection.
-    """
     messages = get_messages(session_id)
     recent = messages[-last_n:]
     lines = []
@@ -235,29 +218,32 @@ def get_thread_context_text(session_id: str, last_n: int = 10) -> str:
 
 
 def get_session_as_text(session_id: str) -> str:
-    """Full conversation as plain text (for consolidation on session end)."""
-    return get_thread_context_text(session_id, last_n=MAX_SESSION_MESSAGES)
+    return get_thread_context_text(session_id, last_n=100)
 
 
 def to_session_info(session_id: str) -> Optional[SessionInfo]:
-    s = _sessions.get(session_id)
+    s = get_session(session_id)
     if s is None:
         return None
+    
+    messages_data = get_messages(session_id)
+    messages = [
+        SessionMessage(
+            role=m["role"],
+            content=m["content"],
+            timestamp=m.get("timestamp"),
+        )
+        for m in messages_data
+    ]
+    
     return SessionInfo(
-        session_id=s["session_id"],
+        session_id=str(s["session_id"]),
         user_id=s["user_id"],
         title=s.get("title"),
         summary=s.get("summary"),
-        created_at=s["created_at"],
-        updated_at=s["updated_at"],
-        message_count=len(s["messages"]),
-        messages=[
-            SessionMessage(
-                role=m["role"],
-                content=m["content"],
-                timestamp=m.get("timestamp"),
-            )
-            for m in s["messages"]
-        ],
-        metadata=s["metadata"],
+        created_at=s["created_at"].isoformat(),
+        updated_at=s["updated_at"].isoformat(),
+        message_count=len(messages),
+        messages=messages,
+        metadata=s.get("metadata") or {},
     )

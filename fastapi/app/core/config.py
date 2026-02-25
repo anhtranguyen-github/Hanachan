@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     embedding_model: str = "text-embedding-3-small"
     embedding_dimensions: int = 1536  # text-embedding-3-small dimension
 
+    # Supabase
+    supabase_url: str = ""
+    supabase_key: str = ""
+
     # Qdrant (cloud)
     qdrant_url: str = ""
     qdrant_api_key: str = ""

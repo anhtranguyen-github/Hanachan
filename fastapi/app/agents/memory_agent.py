@@ -13,6 +13,7 @@ from typing_extensions import TypedDict
 from ..services.memory import episodic_memory as ep_mem
 from ..services.memory import semantic_memory as sem_mem
 from ..services.memory import session_memory as sess_mem
+from ..services import learning_service as learn_serv
 from ..core.config import settings
 from ..schemas.memory import KnowledgeGraph
 
@@ -93,10 +94,43 @@ def retrieve_memory(state: AgentState) -> Dict[str, Any]:
         or "(no semantic facts)"
     )
 
+    # 4. Learning Progress (Supabase)
+    learning_text = ""
+    # Simple heuristic to check for KU identifiers (characters or common words)
+    # Extract kanji/hangul/etc or words from query
+    potential_identifiers = query.split()
+    # Also check if it's a single character request
+    if len(query) == 1:
+        potential_identifiers.append(query)
+    
+    # Check for keywords like "status", "progress", "learning"
+    prog_keywords = ["status", "progress", "learning", "state", "how is my", "review"]
+    is_progress_query = any(k in query.lower() for k in prog_keywords)
+
+    if is_progress_query or len(query) <= 5:
+        progress_info = []
+        for ident in potential_identifiers:
+            # Clean up identifier (remove punctuation)
+            clean_ident = "".join(c for c in ident if c.isalnum() or ord(c) > 0x4e00)
+            if not clean_ident: continue
+            
+            status = learn_serv.get_ku_status(user_id, clean_ident)
+            if status:
+                progress_info.append(
+                    f"- {status.character} ({status.meaning}): State={status.state}, "
+                    f"Reps={status.reps}, Next Review={status.next_review or 'None'}"
+                )
+        
+        if progress_info:
+            learning_text = "\n".join(progress_info)
+        else:
+            learning_text = "(no specific KU status found for this query)"
+    
     combined = (
         f"=== Current Thread Context ===\n{thread_text}\n\n"
         f"=== Relevant Past Conversations (Episodic Memory) ===\n{episodic_text}\n\n"
-        f"=== Known Facts about User (Semantic Memory) ===\n{semantic_text}"
+        f"=== Known Facts about User (Semantic Memory) ===\n{semantic_text}\n\n"
+        f"=== User Learning Progress (Knowledge Units) ===\n{learning_text}"
     )
 
     return {
