@@ -118,7 +118,7 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
 
     return (
         <div className="w-full max-w-2xl mx-auto flex flex-col pt-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
-            {/* Main Card Container - Matching Demo v2 Premium Look */}
+            {/* Main Card Container */}
             <div className="bg-white border-2 border-gray-300 rounded-[56px] shadow-sm flex flex-col overflow-hidden relative min-h-[600px]">
 
                 {/* Colored Header Section */}

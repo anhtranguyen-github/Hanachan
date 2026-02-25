@@ -40,7 +40,7 @@ export class SRSSimulatorInjector implements ContextInjector {
 
         // 2. Use Business Logic (Recommendation Engine)
         const troubleItems = identifyTroubleItems(states);
-        const recommendations = recommendTopics(5, 25); // Hardcoded level 5, 25 mastered for demo
+        const recommendations = recommendTopics(5, 25); // Hardcoded level 5, 25 mastered
 
         // 3. Construct Prompt Context
         let prompt = `
