@@ -71,6 +71,18 @@ data_v6/
 # Plans and agent data
 plans/
 
+# Python services (services/)
+services/**/__pycache__/
+services/**/*.py[cod]
+services/**/.venv/
+services/**/venv/
+services/**/.uv/
+services/**/uv.lock
+services/**/*.egg-info/
+services/**/.pytest_cache/
+services/**/.ipynb_checkpoints/
+services/**/*.ipynb_checkpoints/
+
 # Documentation and bulk data (per user request)
 docs/
 data/

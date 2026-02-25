@@ -1,0 +1,12 @@
+nohup: ignoring input
+warning: The `tool.uv.dev-dependencies` field (used in `pyproject.toml`) is deprecated and will be removed in a future release; use `dependency-groups.dev` instead
+INFO:     Started server process [146698]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8765 (Press CTRL+C to quit)
+[startup] Initialising Qdrant collection …
+[startup] Qdrant ready ✓
+[startup] Initialising Neo4j indexes …
+[startup] Neo4j ready ✓
+[startup] Lifespan complete ✓
+INFO:     127.0.0.1:52270 - "POST /memory/test/seed/test_alice HTTP/1.1" 200 OK

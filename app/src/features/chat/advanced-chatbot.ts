@@ -2,6 +2,7 @@
 import { OpenAI } from "openai";
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
 import { ChatOpenAI } from "@langchain/openai";
+import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { JsonOutputParser } from "@langchain/core/output_parsers";
 import { chatRepo } from './chat-repo';
@@ -11,6 +12,8 @@ import { sentenceService } from '../sentence/service';
 import { sentenceRepository } from '../sentence/db';
 import { kuRepository } from '@/features/knowledge/db';
 import { ReferencedKU } from './simple-agent';
+import { getMemoryContext } from '@/lib/memory-client';
+
 
 
 export class AdvancedChatService {
@@ -22,7 +25,7 @@ export class AdvancedChatService {
     constructor() {
         this.llm = new ChatOpenAI({
             modelName: "gpt-4o",
-            temperature: 0.7,
+            temperature: 0.3,
         });
     }
 
@@ -46,9 +49,23 @@ export class AdvancedChatService {
             return await this.handleAnalysis(resolvedSessionId, userId, text);
         }
 
-        // 4. Construct System Prompt (including Session Summary)
+        // 4. Construct System Prompt (including Session Summary + Memory Context)
         const summary = session.summary || "No summary yet.";
-        let systemContext = await this.buildSystemContext(userId, intent, summary);
+
+        // Fetch memory context from the memory API (non-blocking if unavailable)
+        let memoryContext = '';
+        try {
+            console.log(`🧠 Fetching memory context for user: ${userId}`);
+            const ctx = await getMemoryContext(userId, text, resolvedSessionId, 5);
+            memoryContext = ctx.system_prompt_block;
+            console.log(`✅ Memory context retrieved (${memoryContext.length} chars)`);
+        } catch (err: any) {
+            console.error("❌ Memory context retrieval failed:", err.message);
+            // Memory API offline — continue without it
+        }
+
+        let systemContext = await this.buildSystemContext(userId, intent, summary, memoryContext);
+
 
         // 5. Build LangChain Chain
         const promptTemplate = ChatPromptTemplate.fromMessages([
@@ -183,12 +200,12 @@ export class AdvancedChatService {
         return refs;
     }
 
-    private async buildSystemContext(userId: string, intent: string, summary: string): Promise<string> {
-        let context = `You are Hanachan, an expert Japanese language tutor. 
+    private async buildSystemContext(userId: string, intent: string, summary: string, memoryContext = ''): Promise<string> {
+        let context = `You are Hanachan, an expert Japanese language tutor.
         
 ### CONTEXT MANAGEMENT PRINCIPLES:
 1. DO NOT rely on the entire conversation history. Use the provided Session Summary and recent turns.
-2. The Session Summary is the "working state", not just a summary. 
+2. The Session Summary is the "working state", not just a summary.
 3. Always stick to the goals and decisions locked in the Session Summary.
 4. Do not repeat explanations already locked in the summary unless asked.
 5. Do not change architecture or assumptions without user approval.
@@ -213,6 +230,22 @@ Then:
 If information is missing from the summary or recent turns, ASK the user instead of guessing.
 Prioritize simple solutions and avoid over-engineering.
 `;
+
+        // Inject long-term memory context (from memory API)
+        if (memoryContext) {
+            context += `
+
+### LONG-TERM MEMORY (PAST CONVERSATIONS & FACTS)
+${memoryContext}
+
+[PERSONALIZATION INSTRUCTION]
+The information above in the "LONG-TERM MEMORY" section represents real past interactions or facts about the user. 
+You MUST use this information to provide a personalized experience. 
+If the user asks "Where do I live?" or "Who am I?", use the data from LONG-TERM MEMORY to answer accurately. 
+Do not claim you don't have access to personal info if it is provided in the context block above.
+`;
+        }
+
         context += await this.personaInjector.inject(userId);
 
         if (intent === 'PROJECT_QUERY') {
