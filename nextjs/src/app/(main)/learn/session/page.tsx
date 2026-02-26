@@ -182,7 +182,7 @@ function SessionContent() {
 
         return (
             <div
-                className="h-screen bg-[#FDF8F8] py-8 px-6 flex flex-col max-w-5xl mx-auto space-y-8"
+                className="min-h-screen bg-[#FDF8F8] pt-16 pb-12 px-6 flex flex-col max-w-5xl mx-auto space-y-12"
                 data-testid="lesson-view-phase"
             >
                 <header className="flex justify-between items-center px-4 shrink-0">
@@ -192,7 +192,7 @@ function SessionContent() {
                                 <div key={i} className={clsx(
                                     "h-1.5 rounded-full transition-all duration-700",
                                     i < lessonIndex ? "w-8 bg-primary" :
-                                        i === lessonIndex ? "w-12 bg-primary shadow-[0_0_8px_rgba(244,172,183,0.3)]" :
+                                        i === lessonIndex ? "w-12 bg-primary shadow-lg shadow-primary/20" :
                                             "w-6 bg-gray-100"
                                 )} />
                             ))}
@@ -203,10 +203,13 @@ function SessionContent() {
                     </div>
                     <button
                         onClick={() => router.push('/learn')}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-muted/50 hover:bg-surface border border-border text-foreground/40 hover:text-red-500 transition-all group"
-                        title="Close Session"
+                        className="flex items-center gap-2 pr-4 pl-2 py-2 rounded-2xl bg-white border border-border shadow-sm hover:border-red-200 hover:bg-red-50 transition-all group group"
+                        title="Exit Session"
                     >
-                        <X size={18} className="group-hover:rotate-90 transition-transform" />
+                        <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 group-hover:bg-red-100 transition-colors">
+                            <X size={16} className="text-gray-400 group-hover:text-red-500 group-hover:rotate-90 transition-transform" />
+                        </div>
+                        <span className="text-[9px] font-black text-gray-400 group-hover:text-red-500 tracking-widest uppercase">Exit</span>
                     </button>
                 </header>
 
@@ -224,7 +227,7 @@ function SessionContent() {
     const progress = (stats.completed / Math.max(controller.getProgress().total, 1)) * 100;
 
     return (
-        <div className="h-screen bg-background py-8 px-6 flex flex-col max-w-5xl mx-auto space-y-12" data-testid="quiz-phase">
+        <div className="min-h-screen bg-background pt-16 pb-12 px-6 flex flex-col max-w-5xl mx-auto space-y-12" data-testid="quiz-phase">
             <header className="flex justify-between items-center px-6 shrink-0">
                 <div className="flex items-center gap-6">
                     <div className="space-y-1">
@@ -243,10 +246,13 @@ function SessionContent() {
 
                 <button
                     onClick={() => router.push('/learn')}
-                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-muted/50 hover:bg-surface border border-border text-foreground/40 hover:text-red-500 transition-all group"
+                    className="flex items-center gap-2 pr-4 pl-2 py-2 rounded-2xl bg-white border border-border shadow-sm hover:border-red-200 hover:bg-red-50 transition-all group group"
                     title="Exit Quiz"
                 >
-                    <X size={18} className="group-hover:rotate-90 transition-transform" />
+                    <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 group-hover:bg-red-100 transition-colors">
+                        <X size={16} className="text-gray-400 group-hover:text-red-500 group-hover:rotate-90 transition-transform" />
+                    </div>
+                    <span className="text-[9px] font-black text-gray-400 group-hover:text-red-500 tracking-widest uppercase">Exit</span>
                 </button>
             </header>
 

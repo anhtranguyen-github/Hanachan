@@ -118,10 +118,10 @@ function SessionContent() {
     const progress = (stats.completed / Math.max(stats.totalItems * 2, 1)) * 100;
 
     return (
-        <div className="min-h-screen bg-background py-12 px-6 flex flex-col max-w-5xl mx-auto space-y-12" data-testid="review-session-root">
+        <div className="min-h-screen bg-background pt-16 pb-12 px-6 flex flex-col max-w-5xl mx-auto space-y-12" data-testid="review-session-root">
             <div className="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-primary/10 to-transparent -z-10" />
 
-            <header className="flex justify-between items-center px-6 shrink-0">
+            <header className="flex justify-between items-center px-6 shrink-0 z-10">
                 <div className="flex items-center gap-6">
                     <div className="space-y-1">
                         <span className={clsx("block text-xl font-black leading-none", currentCard?.type === 'kanji' ? 'text-kanji' : 'text-primary')}>
@@ -143,10 +143,13 @@ function SessionContent() {
                     </div>
                     <button
                         onClick={() => router.push('/review')}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-muted/50 hover:bg-surface border border-border text-foreground/40 hover:text-red-500 transition-all group"
+                        className="flex items-center gap-2 pr-4 pl-2 py-2 rounded-2xl bg-white border border-border shadow-sm hover:border-red-200 hover:bg-red-50 transition-all group group"
                         title="End Session"
                     >
-                        <X size={18} className="group-hover:rotate-90 transition-transform" />
+                        <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 group-hover:bg-red-100 transition-colors">
+                            <X size={16} className="text-gray-400 group-hover:text-red-500 group-hover:rotate-90 transition-transform" />
+                        </div>
+                        <span className="text-[9px] font-black text-gray-400 group-hover:text-red-500 tracking-widest uppercase">Exit</span>
                     </button>
                 </div>
             </header>
