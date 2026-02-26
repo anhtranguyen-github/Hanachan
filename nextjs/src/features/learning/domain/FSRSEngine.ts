@@ -49,58 +49,43 @@ export class FSRSEngine {
         if (rating === 'again') {
             reps = 0;
             lapses++;
-            // Penalty: Stability reduces significantly
             stability = Math.max(0.1, stability * 0.5);
             stage = SRS_STAGES.LEARNING;
-        }
-        // Handle Success
-        else {
+        } else if (wrongCount > 0) {
+            // Case 2: Struggle (Has Wrongs) - "Drill Integration"
+            // This is called when user FINALLY gets it right, but had wrongs before
             reps++;
+            const alpha = 0.2; // Sensitivity
+            difficulty = Math.min(5.0, difficulty + (alpha * failureIntensity));
 
-            // Mapping 'pass' to the standard growth factor (1.5x)
+            const beta = 0.3; // Decay factor
+            const decay = Math.exp(-beta * failureIntensity);
+            stability = Math.max(0.1, stability * decay);
+
+            if (failureIntensity > 0.5) {
+                reps = Math.max(1, reps - 1);
+                lapses++;
+                stage = SRS_STAGES.LEARNING;
+            } else {
+                stage = SRS_STAGES.REVIEW;
+            }
+        } else {
+            // Pure Success (rating !== 'again' and wrongCount === 0)
+            reps++;
             const factor = 1.5;
-
-            // On success, card becomes slightly easier
             difficulty = Math.max(1.3, difficulty - 0.1);
 
-            // Foundation Early Stages
             if (reps === 1 && stability < 0.166) stability = 0.166;
             else if (reps === 2 && stability < 0.333) stability = 0.333;
             else if (reps === 3 && stability < 1.0) stability = 1.0;
             else if (reps === 4 && stability < 3.0) stability = 3.0;
-            else stability = stability * factor * difficultyAdjustment;
+            else stability = stability * factor * (1.0 + (5.0 - difficulty) * 0.1);
 
-            stability = Math.max(stability, previousStability);
+            stability = Math.max(stability, current.stability || 0);
 
-            // Advance Stage
             if (stability >= this.BURNED_THRESHOLD_DAYS) stage = SRS_STAGES.BURNED;
             else if (stability >= this.REVIEW_THRESHOLD_DAYS) stage = SRS_STAGES.REVIEW;
             else stage = SRS_STAGES.LEARNING;
-        }
-
-        // Case 2: Struggle (Has Wrongs) - "Drill Integration"
-        // This is called when user FINALLY gets it right, but had wrongs before
-        else {
-            // 1. Penalty on Difficulty (Increase hardness)
-            const alpha = 0.2; // Sensitivity
-            difficulty = Math.min(5.0, difficulty + (alpha * failureIntensity));
-
-            // 2. Penalty on Stability (Decay)
-            // Instead of hard reset (S * 0.4), we decay based on intensity
-            const beta = 0.3; // Decay factor
-            const decay = Math.exp(-beta * failureIntensity);
-
-            stability = Math.max(0.1, stability * decay);
-
-            // 3. Reset Reps Logic (Smart Reset)
-            // If intensity is high (> 0.5), we treat it as a Lapse
-            if (failureIntensity > 0.5) {
-                reps = Math.max(1, reps - 1); // Gentler reset than FSRS standard
-                lapses++;
-                stage = SRS_STAGES.LEARNING;
-            } else {
-                // Minor stumble, keep reps but just decay Stability
-            }
         }
 
         // Calculate timestamp

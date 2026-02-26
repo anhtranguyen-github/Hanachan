@@ -1,4 +1,3 @@
-```typescript
 import { Rating } from './domain/SRSAlgorithm';
 import { lessonRepository } from './lessonRepository';
 import { questionRepository } from './questionRepository';
@@ -104,7 +103,7 @@ export class LearningController {
         const result: QuizItem[] = this.questions.map(q => {
             const ku = this.items.find(i => (i.ku_id || i.id) === q.ku_id);
             return {
-                id: `${ q.ku_id } -${ q.facet } `,
+                id: `${q.ku_id}-${q.facet}`,
                 ku_id: q.ku_id,
                 character: ku?.character || ku?.knowledge_units?.character || ku?.slug || ku?.knowledge_units?.slug,
                 type: ku?.type || ku?.knowledge_units?.type,
@@ -142,7 +141,7 @@ export class LearningController {
         const current = this.quizQueue[0];
         if (!current) return false;
 
-        const isSuccess = rating === 'good';
+        const isSuccess = rating === 'pass';
 
         if (isSuccess) {
             this.quizQueue.shift();
@@ -150,7 +149,7 @@ export class LearningController {
 
             // If this was the last facet for this KU in the queue, it means it's passed
             if (!this.quizQueue.some(q => q.ku_id === current.ku_id)) {
-                console.log(`[LearningController] KU ${ current.ku_id } passed quiz.Initializing SRS.`);
+                console.log(`[LearningController] KU ${current.ku_id} passed quiz. Initializing SRS.`);
 
                 // 1. Update Lesson Item Status to quiz_passed
                 await lessonRepository.updateLessonItemStatus(this.batchId, current.ku_id, 'quiz_passed');

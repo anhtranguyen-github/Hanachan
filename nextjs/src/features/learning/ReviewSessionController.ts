@@ -106,7 +106,7 @@ export class ReviewSessionController {
         const current = this.queue[0];
         if (!current) return false;
 
-        const isSuccess = rating === 'good';
+        const isSuccess = rating === 'pass';
 
         // Initialize state if not exists
         if (!this.sessionState.has(current.id)) {

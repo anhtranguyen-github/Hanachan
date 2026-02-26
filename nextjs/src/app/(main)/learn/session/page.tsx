@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, ArrowLeft, BookOpen, ChevronRight, CheckCircle2, PlayCircle, Zap, X } from 'lucide-react';
 import { clsx } from 'clsx';
-import { startLessonSessionAction } from '@/features/learning/actions';
+import { startLessonSessionAction, completeLessonBatchAction } from '@/features/learning/actions';
 import { useUser } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { QuizItem } from '@/features/learning/LearningController';
@@ -105,7 +105,7 @@ function SessionContent() {
         } else {
             // Batch Complete
             if (batchId) {
-                await lessonRepository.completeLessonBatch(batchId);
+                await completeLessonBatchAction(batchId);
             }
             setPhase('complete');
         }
