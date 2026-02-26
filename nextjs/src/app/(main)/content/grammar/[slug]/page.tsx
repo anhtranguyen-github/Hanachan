@@ -1,297 +1,181 @@
 import React from 'react';
-import { getGrammarBySlug, GrammarData } from '@/lib/grammar-loader';
+import { getLocalKU } from '@/features/knowledge/actions';
 import Link from 'next/link';
-import { ChevronLeft, BookOpen, Lightbulb, Info, Target, PlayCircle, Layers, ExternalLink, Volume2, AlertTriangle } from 'lucide-react';
+import { RichTextRenderer } from '@/components/shared/RichTextRenderer';
+import { ChevronLeft, Zap, Target, Layers, Info, BookOpen, ExternalLink, Globe, Sparkles, Activity, Bookmark, Flame } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export default async function GrammarDetailPage({ params }: { params: { slug: string } }) {
     const slug = decodeURIComponent(params.slug);
-    const grammar: GrammarData | null = getGrammarBySlug(slug);
+    const grammar: any = await getLocalKU('grammar', slug);
 
     if (!grammar) return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center space-y-4">
-            <div className="w-16 h-16 bg-surface-muted rounded-full flex items-center justify-center border border-border">
-                <Info size={32} className="text-foreground/20" />
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-lg">
+            <div className="mn-card p-2xl text-center max-w-md bg-surface border-border shadow-2xl">
+                <Flame size={32} className="text-primary-dark mx-auto mb-md" />
+                <h2 className="text-h2 font-black uppercase mb-sm text-foreground tracking-tight">Grammar Point Not Found</h2>
+                <p className="text-body text-foreground/40 mb-xl font-medium">The structural formula for this grammar unit is missing from the linguistic archives.</p>
+                <Link href="/content?type=grammar" className="mn-btn mn-btn-primary w-full">BACK TO ARCHIVES</Link>
             </div>
-            <h1 className="text-2xl font-black text-foreground uppercase tracking-tighter">Grammar Not Found</h1>
-            <p className="text-foreground/40 text-sm">Could not find: {slug}</p>
-            <Link href="/content?type=grammar" className="mn-btn mn-btn-primary">Return to Library</Link>
         </div>
     );
 
-    const jlptLevel = 6 - Math.ceil((grammar.level || 1) / 10);
+    const details = grammar.ku_grammar || {};
+    const structure = grammar.structure || {};
+    const resources = grammar.resources || { online: [], offline: [] };
+    const related = grammar.related_grammar || [];
 
     return (
-        <div className="max-w-6xl mx-auto py-12 px-8">
-            {/* Breadcrumbs */}
-            <div className="mb-12">
-                <Link
-                    href="/content?type=grammar"
-                    className="flex items-center gap-2 text-foreground/40 hover:text-primary-dark font-bold text-[10px] uppercase tracking-widest transition-all group"
-                >
-                    <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                    Back to Library
+        <div className="max-w-[1400px] mx-auto py-xl px-lg space-y-2xl animate-in fade-in slide-in-from-bottom-8 duration-1000">
+            {/* Nav Header */}
+            <div className="flex items-center justify-between">
+                <Link href="/content?type=grammar" className="flex items-center gap-sm text-foreground/30 hover:text-foreground transition-all group px-lg py-md bg-surface-muted/30 border border-border/50 rounded-2xl">
+                    <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+                    <span className="text-metadata font-black uppercase tracking-[0.2em]">GRAMMAR REPOSITORY</span>
                 </Link>
+                <div className="flex items-center gap-sm">
+                    <span className="text-metadata font-black text-foreground/20 uppercase tracking-widest">Mastery Sig:</span>
+                    <code className="text-metadata font-bold text-primary-dark uppercase bg-primary/5 px-2 py-0.5 rounded-md border border-primary/10">{grammar.id.slice(0, 12)}</code>
+                </div>
             </div>
 
-            {/* Header section */}
-            <header className="flex flex-col md:flex-row items-start md:items-end justify-between gap-8 mb-16">
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                        <div className="px-3 py-1 rounded-lg bg-primary/20 text-foreground text-[10px] font-bold uppercase tracking-widest border border-primary/20">
-                            Grammar Point
+            {/* Spectacular Hero Header - Normalized */}
+            <header className="relative flex flex-col lg:flex-row items-center gap-xl p-xl bg-surface border border-border rounded-clay shadow-2xl shadow-primary/5 group overflow-hidden">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-[120px] -mr-32 -mt-32 pointer-events-none" />
+
+                <div className="relative shrink-0 w-full lg:w-auto flex justify-center">
+                    <div className="absolute inset-0 bg-primary/20 blur-[100px] opacity-20 rounded-full" />
+                    <div className="relative w-64 h-64 lg:w-kanji-hero lg:h-kanji-hero max-w-[450px] aspect-square bg-surface border-b-[8px] border-primary/10 rounded-clay flex items-center justify-center shadow-lg border border-border group-hover:scale-[1.01] transition-transform duration-700 overflow-hidden text-center px-lg">
+                        <span className="text-7xl lg:text-[100px] font-black text-foreground jp-text leading-none">{grammar.character}</span>
+                        <div className="absolute top-8 left-8 flex flex-col gap-2">
+                            <div className="bg-foreground text-surface px-4 py-1.5 rounded-xl text-metadata font-black uppercase tracking-widest shadow-lg">L{grammar.level}</div>
+                            <div className="bg-primary/20 text-primary-dark px-4 py-1.5 rounded-xl text-metadata font-black uppercase tracking-widest border border-primary/10">JLPT N{grammar.jlpt || '?'}</div>
                         </div>
-                        <div className="px-3 py-1 rounded-lg bg-surface-muted text-foreground/40 text-[10px] font-bold uppercase tracking-widest border border-border">
-                            JLPT N{jlptLevel} • LEVEL {grammar.level}
-                        </div>
-                        {grammar.details.register && grammar.details.register !== '一般' && (
-                            <div className="px-3 py-1 rounded-lg bg-secondary/20 text-secondary text-[10px] font-bold uppercase tracking-widest border border-secondary/20">
-                                {grammar.details.register}
-                            </div>
-                        )}
                     </div>
-                    <div className="space-y-2">
-                        <h1 className="text-6xl font-black text-foreground tracking-tight leading-none jp-text">
-                            {grammar.title}
+                </div>
+
+                <div className="flex-1 space-y-lg text-center lg:text-left z-10 w-full overflow-hidden">
+                    <div className="space-y-sm overflow-hidden">
+                        <div className="flex items-center gap-sm justify-center lg:justify-start">
+                            <Target size={14} className="text-primary-dark" />
+                            <span className="text-metadata font-black text-primary-dark uppercase tracking-[0.4em]">UNIT SEMANTIC</span>
+                        </div>
+                        <h1 className="text-h1 font-black text-foreground tracking-tightest leading-tight uppercase truncate min-h-[1.2em]">
+                            {grammar.meaning}
                         </h1>
-                        {grammar.title_with_furigana && grammar.title_with_furigana !== grammar.title && (
-                            <p className="text-xl font-bold text-foreground/40 jp-text">
-                                {grammar.title_with_furigana}
-                            </p>
-                        )}
                     </div>
-                    {/* Meanings Pills */}
-                    <div className="flex flex-wrap gap-2 pt-2">
-                        {grammar.meanings.map((m, i) => (
-                            <div key={i} className="px-4 py-2 rounded-xl bg-primary/10 border border-primary/10 text-base font-bold text-foreground tracking-tight">
-                                {m}
-                            </div>
-                        ))}
+
+                    <div className="flex flex-wrap gap-sm justify-center lg:justify-start">
+                        <div className="px-lg py-sm bg-surface-muted border border-border rounded-xl flex items-center gap-sm h-12">
+                            <Activity size={12} className="text-primary-dark" />
+                            <span className="text-metadata font-black uppercase tracking-widest">PHASE ARCHETYPE</span>
+                        </div>
                     </div>
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                <div className="lg:col-span-2 space-y-12">
-                    {/* About / Description */}
-                    <section className="space-y-6">
-                        <div className="flex items-center gap-3">
-                            <Target size={18} className="text-primary-dark" />
-                            <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Explanation</h2>
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-xl">
+
+                {/* Left: Explanation & Examples */}
+                <div className="xl:col-span-8 space-y-xl">
+                    <section className="relative p-xl bg-primary/5 border border-primary/10 rounded-clay space-y-lg overflow-hidden group/e">
+                        <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/40 group-hover/e:bg-primary transition-colors duration-700" />
+                        <div className="flex items-center gap-sm">
+                            <Zap size={18} className="text-primary-dark" strokeWidth={3} />
+                            <h2 className="text-h3 font-black text-foreground uppercase tracking-[0.4em]">Intellectual Explanation</h2>
                         </div>
-                        <div className="premium-card p-10 bg-surface border-border">
-                            <div className="text-lg leading-relaxed text-foreground/80 tracking-tight font-medium whitespace-pre-line">
-                                {grammar.about.text || grammar.about.description || "No description provided."}
-                            </div>
+                        <div className="text-body font-medium text-foreground/80 leading-relaxed indent-lg overflow-hidden first-letter:text-6xl first-letter:font-black first-letter:text-primary-dark first-letter:float-left first-letter:mr-4 first-letter:mt-1">
+                            <RichTextRenderer content={details.explanation || grammar.mnemonics?.meaning || "Linguistic simulation data not currently indexed."} />
                         </div>
                     </section>
 
-                    {/* Examples Section */}
-                    {grammar.examples && grammar.examples.length > 0 && (
-                        <section className="space-y-6">
-                            <div className="flex items-center gap-3">
-                                <PlayCircle size={18} className="text-secondary" />
-                                <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">
-                                    Example Sentences ({grammar.examples.length})
-                                </h2>
+                    <section className="space-y-xl">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-xl px-lg pb-xl border-b-2 border-border/50">
+                            <div className="space-y-sm">
+                                <div className="flex items-center gap-sm">
+                                    <Globe size={18} className="text-foreground/30" />
+                                    <h2 className="text-h3 font-black text-foreground uppercase tracking-[0.6em]">Linguistic Simulations</h2>
+                                </div>
                             </div>
-                            <div className="space-y-4">
-                                {grammar.examples.slice(0, 8).map((ex, i) => (
-                                    <div key={i} className="premium-card p-8 bg-surface border-border group hover:bg-surface-muted/30 transition-all relative overflow-hidden">
-                                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary/20 group-hover:bg-primary transition-colors" />
-                                        <div className="space-y-4 pl-4">
-                                            {/* Sentence with highlighted grammar point */}
-                                            <div className="text-2xl font-bold text-foreground jp-text leading-relaxed">
-                                                {ex.sentence_structure && ex.sentence_structure.length > 0 ? (
-                                                    ex.sentence_structure.map((part, idx) => (
-                                                        <span
-                                                            key={idx}
-                                                            className={clsx(
-                                                                part.type === 'grammar_point' && "text-primary-dark bg-primary/10 px-1 rounded"
-                                                            )}
-                                                        >
-                                                            {part.content}
-                                                        </span>
-                                                    ))
-                                                ) : (
-                                                    ex.sentence_text
-                                                )}
-                                            </div>
-                                            <div className="text-base text-foreground/50 font-medium">
-                                                {ex.translation}
-                                            </div>
-                                            {ex.audio_url && (
-                                                <a
-                                                    href={ex.audio_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-2 text-[10px] font-bold text-primary-dark uppercase tracking-widest hover:underline"
-                                                >
-                                                    <Volume2 size={14} />
-                                                    Play Audio
-                                                </a>
-                                            )}
-                                        </div>
+                            <div className="px-lg py-sm bg-surface rounded-2xl border border-border">
+                                <span className="text-metadata font-black text-primary-dark uppercase tracking-widest">{(grammar.sentences || []).length} SIMULATED SAMPLES FOUND</span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-lg">
+                            {(grammar.sentences || []).slice(0, 10).map((s: any, i: number) => (
+                                <div key={i} className="relative p-xl bg-surface border border-border rounded-clay group hover:bg-surface-muted/30 transition-all duration-700 overflow-hidden shadow-xl hover:shadow-2xl hover:shadow-primary/5">
+                                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary/10 group-hover:bg-primary transition-all duration-700" />
+                                    <div className="space-y-md pl-md relative z-10 w-full overflow-hidden">
+                                        <div className="text-h2 font-black text-foreground jp-text leading-relaxed tracking-tightest group-hover:text-primary-dark transition-colors duration-700 truncate min-h-[1.5em]" dangerouslySetInnerHTML={{ __html: s.ja }} />
+                                        <div className="text-body font-bold text-foreground/40 italic truncate max-w-full">“{s.en}”</div>
                                     </div>
-                                ))}
+                                    <div className="absolute top-6 right-6 text-metadata font-black text-foreground/5 pointer-events-none group-hover:text-primary/5 transition-colors">#{i + 1}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                </div>
+
+                {/* Right: Structure & Metadata */}
+                <div className="xl:col-span-4 space-y-xl">
+                    <section className="p-xl bg-surface border border-border rounded-clay shadow-xl space-y-lg group/c">
+                        <div className="flex items-center gap-sm border-b border-border/50 pb-lg">
+                            <Layers size={18} className="text-primary-dark" />
+                            <h2 className="text-metadata font-black text-foreground/40 uppercase tracking-[0.4em]">Structural Construction</h2>
+                        </div>
+                        <div className="space-y-lg flex-1">
+                            {structure.variants && Object.entries(structure.variants).map(([name, code]: [string, any]) => {
+                                if (!code) return null;
+                                const displayMap = typeof code === 'object' ? code : { [name]: code };
+                                return Object.entries(displayMap).map(([subName, html]: [string, any]) => (
+                                    <div key={subName} className="space-y-sm group/v">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-foreground/20">{subName} FORMULATION</span>
+                                        <div className="p-lg bg-surface-muted/30 rounded-xl border border-border text-metadata font-black text-foreground/70 jp-text leading-loose truncate group-hover/v:border-primary/20 transition-all" dangerouslySetInnerHTML={{ __html: html }} />
+                                    </div>
+                                ));
+                            })}
+                            {!structure.variants && <div className="py-xl text-center border-2 border-dashed border-border/50 rounded-xl text-metadata font-black text-foreground/10 uppercase tracking-widest">No Construction Data</div>}
+                        </div>
+                    </section>
+
+                    {related.length > 0 && (
+                        <section className="p-xl bg-surface border border-border rounded-clay shadow-xl space-y-lg group/n">
+                            <div className="flex items-center gap-sm border-b border-border/50 pb-lg">
+                                <BookOpen size={18} className="text-foreground/30" />
+                                <h2 className="text-metadata font-black text-foreground/40 uppercase tracking-[0.4em]">Nuance Network</h2>
+                            </div>
+                            <div className="space-y-sm">
+                                {related.slice(0, 5).map((relObj: any, i: number) => {
+                                    const rel = relObj.related;
+                                    return (
+                                        <Link key={i} href={`/content/grammar/${rel.slug}`} className="block relative p-lg rounded-xl bg-surface-muted/10 border border-transparent hover:border-primary/20 transition-all hover:bg-surface-muted/30 group/node overflow-hidden">
+                                            <div className="text-card-title font-black text-foreground/60 group-hover/node:text-primary-dark transition-colors jp-text truncate">{rel.character || rel.meaning}</div>
+                                            <div className="text-metadata font-black text-foreground/20 uppercase tracking-tight mt-1 line-clamp-1 italic truncate">{rel.meaning}</div>
+                                        </Link>
+                                    );
+                                })}
                             </div>
                         </section>
                     )}
 
-                    {/* Cautions Section */}
-                    {grammar.cautions && grammar.cautions.length > 0 && (
-                        <section className="space-y-6">
-                            <div className="flex items-center gap-3">
-                                <AlertTriangle size={18} className="text-accent" />
-                                <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Important Notes</h2>
+                    {resources.online?.length > 0 && (
+                        <section className="p-xl bg-surface border border-border rounded-clay shadow-xl space-y-lg">
+                            <div className="flex items-center gap-sm border-b border-border/50 pb-lg">
+                                <ExternalLink size={18} className="text-foreground/30" />
+                                <h2 className="text-metadata font-black text-foreground/40 uppercase tracking-[0.4em]">External Archives</h2>
                             </div>
-                            <div className="premium-card p-8 bg-accent/5 border-accent/20">
-                                <ul className="space-y-4">
-                                    {grammar.cautions.map((c, i) => (
-                                        <li key={i} className="flex gap-3 text-sm font-medium text-foreground/80 leading-relaxed">
-                                            <span className="text-accent font-bold shrink-0">⚠</span>
-                                            <span>{c.text}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+                            <div className="space-y-sm">
+                                {resources.online.slice(0, 3).map((link: any, i: number) => (
+                                    <a key={i} href={link.url} target="_blank" rel="noreferrer" className="flex items-center justify-between p-lg rounded-xl border border-border hover:border-primary/20 transition-all group/link h-16">
+                                        <span className="text-metadata font-black text-foreground/40 group-hover/link:text-primary transition-colors uppercase tracking-widest truncate">{link.label || 'Archive Source'}</span>
+                                        <ChevronLeft size={14} className="text-foreground/10 rotate-180 group-hover/link:text-primary transition-all shrink-0" />
+                                    </a>
+                                ))}
                             </div>
                         </section>
                     )}
                 </div>
-
-                <aside className="space-y-12">
-                    {/* Structure/Patterns */}
-                    {grammar.structure && (grammar.structure.patterns?.length > 0 || grammar.structure.variants) && (
-                        <section className="space-y-6">
-                            <div className="flex items-center gap-3">
-                                <Layers size={18} className="text-primary-dark" />
-                                <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Construction</h2>
-                            </div>
-                            <div className="premium-card p-8 bg-surface border-border space-y-6">
-                                {grammar.structure.variants?.standard && (
-                                    <div className="space-y-2">
-                                        <div className="text-[8px] uppercase font-bold text-foreground/20 tracking-widest">Standard</div>
-                                        <div className="text-base font-bold text-foreground border-l-2 border-primary/40 pl-4 jp-text">
-                                            {grammar.structure.variants.standard}
-                                        </div>
-                                    </div>
-                                )}
-                                {grammar.structure.variants?.polite && (
-                                    <div className="space-y-2">
-                                        <div className="text-[8px] uppercase font-bold text-foreground/20 tracking-widest">Polite</div>
-                                        <div className="text-base font-bold text-foreground border-l-2 border-secondary/40 pl-4 jp-text">
-                                            {grammar.structure.variants.polite}
-                                        </div>
-                                    </div>
-                                )}
-                                {!grammar.structure.variants?.standard && grammar.structure.patterns && (
-                                    <div className="space-y-3">
-                                        {grammar.structure.patterns.map((p, i) => (
-                                            <div key={i} className="text-sm font-bold text-foreground border-b border-border pb-2 last:border-0 jp-text">{p}</div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </section>
-                    )}
-
-                    {/* Details */}
-                    {(grammar.details.part_of_speech || grammar.details.word_type) && (
-                        <section className="space-y-6">
-                            <div className="flex items-center gap-3">
-                                <Info size={18} className="text-foreground/40" />
-                                <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Details</h2>
-                            </div>
-                            <div className="premium-card p-6 bg-surface-muted/30 border-border space-y-3">
-                                {grammar.details.part_of_speech && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-foreground/40 font-medium">Part of Speech</span>
-                                        <span className="font-bold text-foreground">{grammar.details.part_of_speech}</span>
-                                    </div>
-                                )}
-                                {grammar.details.word_type && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-foreground/40 font-medium">Type</span>
-                                        <span className="font-bold text-foreground">{grammar.details.word_type}</span>
-                                    </div>
-                                )}
-                                {grammar.details.register && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-foreground/40 font-medium">Register</span>
-                                        <span className="font-bold text-foreground">{grammar.details.register}</span>
-                                    </div>
-                                )}
-                            </div>
-                        </section>
-                    )}
-
-                    {/* Related Grammar */}
-                    {grammar.related && grammar.related.length > 0 && (
-                        <section className="space-y-6">
-                            <div className="flex items-center gap-3">
-                                <BookOpen size={18} className="text-secondary" />
-                                <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Related Grammar ({grammar.related.length})</h2>
-                            </div>
-                            <div className="space-y-3">
-                                {grammar.related.slice(0, 6).map((rel, i) => (
-                                    <Link
-                                        key={i}
-                                        href={`/content/grammar/${encodeURIComponent(rel.slug)}`}
-                                        className="block p-5 premium-card bg-surface border-border hover:border-primary/20 transition-all group"
-                                    >
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div className="space-y-1">
-                                                <div className="font-bold text-foreground group-hover:text-primary-dark transition-colors tracking-tight jp-text">
-                                                    {rel.title}
-                                                </div>
-                                                <div className="text-xs text-foreground/40 font-medium">
-                                                    {rel.meaning}
-                                                </div>
-                                            </div>
-                                            <div className="text-[10px] font-bold text-foreground/20 shrink-0">
-                                                N{6 - parseInt(rel.level) || rel.level}
-                                            </div>
-                                        </div>
-                                        {rel.comparison_text && (
-                                            <div className="mt-3 pt-3 border-t border-border text-xs text-foreground/50 leading-relaxed line-clamp-3">
-                                                {rel.comparison_text.substring(0, 200)}...
-                                            </div>
-                                        )}
-                                    </Link>
-                                ))}
-                            </div>
-                        </section>
-                    )}
-
-                    {/* Resources */}
-                    {grammar.resources && (grammar.resources.online?.length > 0 || grammar.resources.offline?.length > 0) && (
-                        <section className="space-y-6">
-                            <div className="flex items-center gap-3">
-                                <ExternalLink size={18} className="text-foreground/40" />
-                                <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Resources</h2>
-                            </div>
-                            <div className="premium-card p-6 bg-surface border-border space-y-4">
-                                {grammar.resources.online?.map((r, i) => (
-                                    <a
-                                        key={i}
-                                        href={r.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center justify-between text-sm hover:text-primary-dark transition-colors"
-                                    >
-                                        <span className="font-medium text-foreground/70 truncate pr-2">{r.title}</span>
-                                        <span className="text-[9px] font-bold text-foreground/30 uppercase shrink-0">{r.source}</span>
-                                    </a>
-                                ))}
-                                {grammar.resources.offline?.map((r, i) => (
-                                    <div key={i} className="text-sm text-foreground/50">
-                                        📚 {r.book} - {r.page}
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-                    )}
-                </aside>
             </div>
         </div>
     );

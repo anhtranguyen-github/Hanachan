@@ -2,12 +2,9 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Book, Filter, Search, Loader2, Lock, Zap, Clock, Flame, Check } from 'lucide-react';
+import { Book, Filter, Search, Loader2, Lock, Zap, Clock, Flame, ChevronRight, Hash, Layers } from 'lucide-react';
 import { clsx } from 'clsx';
-import { kuRepository } from '@/features/knowledge/db';
-import { learningRepository } from '@/features/learning/db';
 import { supabase } from '@/lib/supabase';
-import { GlassCard } from '@/components/premium/GlassCard';
 import { useUser } from '@/features/auth/AuthContext';
 import Link from 'next/link';
 
@@ -31,44 +28,21 @@ function ContentDatabase() {
         try {
             const userId = user.id;
 
-            // 1. Fetch Items based on level/type
-            let queryItems: any[] = [];
-            if (selectedLevel !== 'all') {
-                queryItems = await learningRepository.fetchLevelContent(selectedLevel, userId);
-            } else {
-                // Fetch first 200 items for library overview if no level selected
-                const { data } = await supabase
-                    .from('knowledge_units')
-                    .select('*')
-                    .limit(200);
-                queryItems = data || [];
-            }
+            let query = supabase.from('knowledge_units').select('*');
+            if (selectedLevel !== 'all') query = query.eq('level', selectedLevel);
+            if (filterType !== 'all') query = query.eq('type', filterType);
 
-            // 2. Fetch User States for these items
-            const { data: userStates } = await supabase
-                .from('user_learning_states')
-                .select('*')
-                .eq('user_id', userId);
+            const { data: queryItems } = await query.limit(300);
+            const { data: userStates } = await supabase.from('user_learning_states').select('*').eq('user_id', userId);
 
             const stateMap: Record<string, any> = {};
-            userStates?.forEach((s: any) => {
-                stateMap[s.ku_id] = s;
-            });
+            userStates?.forEach((s: any) => { stateMap[s.ku_id] = s; });
 
-            setItems(queryItems);
+            setItems(queryItems || []);
             setStates(stateMap);
 
-            // Fetch user level
-            try {
-                const { data: userData } = await supabase
-                    .from('users')
-                    .select('level')
-                    .eq('id', userId)
-                    .maybeSingle();
-                setUserLevel(userData?.level || 1);
-            } catch {
-                setUserLevel(1);
-            }
+            const { data: userData } = await supabase.from('users').select('level').eq('id', userId).maybeSingle();
+            setUserLevel(userData?.level || 1);
 
         } catch (error) {
             console.error("Failed to load library data:", error);
@@ -78,88 +52,101 @@ function ContentDatabase() {
     };
 
     useEffect(() => {
-        if (user) {
-            loadData();
-        }
+        if (user) loadData();
     }, [user, filterType, selectedLevel]);
 
     const filteredItems = useMemo(() => {
         return items.filter(unit => {
             const state = states[unit.id];
             const status = unit.level > userLevel ? 'locked' : (!state ? 'new' : state.state);
-
-            const matchesType = filterType === 'all' || unit.type === filterType;
             const matchesStatus = filterStatus === 'all' || status === filterStatus;
             const matchesSearch = unit.meaning.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                unit.character?.includes(searchQuery);
-
-            return matchesType && matchesStatus && matchesSearch;
+                unit.character?.includes(searchQuery) ||
+                unit.slug.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesStatus && matchesSearch;
         });
-    }, [items, states, filterType, filterStatus, searchQuery, userLevel]);
+    }, [items, states, filterStatus, searchQuery, userLevel]);
 
-    const tabs = ['all', 'radical', 'kanji', 'vocabulary', 'grammar'];
+    const tabs = [
+        { id: 'all', label: 'ALL', icon: Layers },
+        { id: 'radical', label: 'RADICALS', icon: Hash },
+        { id: 'kanji', label: 'KANJI', icon: Book },
+        { id: 'vocabulary', label: 'VOCAB', icon: Zap },
+        { id: 'grammar', label: 'GRAMMAR', icon: Flame },
+    ];
 
     return (
-        <div className="max-w-[1400px] mx-auto px-8 py-8 space-y-8 font-sans text-[#3E4A61] animate-in fade-in duration-700">
-            {/* Header: Study Hub / LIBRARY */}
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-[#FFB5B5]">
-                        <Book size={14} fill="currentColor" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">STUDY HUB</span>
+        <div className="max-w-[1400px] mx-auto px-lg py-2xl space-y-xl animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            {/* Header Area */}
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-xl">
+                <div className="space-y-sm">
+                    <div className="flex items-center gap-xs">
+                        <div className="p-sm bg-primary/10 rounded-xl">
+                            <Book size={14} className="text-primary-dark" />
+                        </div>
+                        <span className="text-metadata font-black uppercase tracking-[0.3em] text-foreground/40">Curriculum Archives</span>
                     </div>
-                    <h1 className="text-7xl font-black tracking-tighter text-[#3E4A61]">CONTENT LIBRARY</h1>
+                    <h1 className="text-h1 font-black text-foreground tracking-tight leading-tight">
+                        CONTENT LIBRARY
+                    </h1>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex bg-white border border-[#F0E0E0] p-1 rounded-2xl shadow-sm">
-                    {tabs.map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setFilterType(tab)}
-                            className={`px-6 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all uppercase ${filterType === tab
-                                ? 'bg-[#FFB5B5] text-white shadow-md'
-                                : 'text-[#A0AEC0] hover:text-[#3E4A61]'
-                                }`}
-                        >
-                            {tab === 'vocabulary' ? 'VOCAB' : tab}
-                        </button>
-                    ))}
+                {/* Categories Tab Bar */}
+                <div className="flex p-xs bg-surface-muted/50 backdrop-blur-xl border border-border rounded-clay shadow-2xl shadow-primary/5">
+                    {tabs.map((tab) => {
+                        const Icon = tab.icon;
+                        const active = filterType === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setFilterType(tab.id)}
+                                className={clsx(
+                                    "flex items-center gap-sm px-lg py-sm rounded-2xl text-metadata font-black tracking-widest transition-all duration-500 uppercase",
+                                    active
+                                        ? "bg-foreground text-surface shadow-xl shadow-foreground/20 scale-105"
+                                        : "text-foreground/40 hover:text-foreground hover:bg-surface"
+                                )}
+                            >
+                                <Icon size={12} />
+                                <span className="hidden md:inline">{tab.label}</span>
+                            </button>
+                        );
+                    })}
                 </div>
-            </header>
+            </div>
 
-            {/* Filters Bar */}
-            <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative">
-                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-[#CBD5E0]" size={18} />
+            {/* Controls Bar */}
+            <div className="flex flex-col md:flex-row gap-md p-xs bg-surface border border-border rounded-clay shadow-lg">
+                <div className="flex-1 relative group">
+                    <Search className="absolute left-lg top-1/2 -translate-y-1/2 text-foreground/20 transition-colors group-focus-within:text-primary" size={18} />
                     <input
                         type="text"
-                        placeholder="Search meanings or characters..."
+                        placeholder="Search meanings, characters, or slugs..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full py-4 pl-14 pr-6 bg-white border border-[#F0E0E0] rounded-2xl text-[13px] font-medium outline-none focus:border-[#FFB5B5] transition-all placeholder:text-[#CBD5E0] shadow-sm"
+                        className="w-full py-lg pl-xl pr-lg bg-transparent text-body font-bold placeholder:text-foreground/20 outline-none jp-text"
                     />
                 </div>
-                <div className="flex gap-4">
+
+                <div className="flex gap-sm p-sm">
                     <select
-                        className="appearance-none bg-white border border-[#F0E0E0] rounded-2xl px-6 py-4 w-full md:w-64 text-[10px] font-black uppercase tracking-widest text-[#3E4A61] outline-none focus:border-[#FFB5B5] cursor-pointer shadow-sm"
+                        className="bg-surface-muted/50 border-none rounded-xl px-lg py-sm text-metadata font-black uppercase tracking-widest text-foreground outline-none cursor-pointer hover:bg-surface transition-colors"
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
                     >
                         <option value="all">ANY STATUS</option>
                         <option value="new">UNTACKLED</option>
                         <option value="learning">INTEGRATING</option>
-                        <option value="review">REINFORCING</option>
                         <option value="burned">MASTERED</option>
                         <option value="locked">RESTRICTED</option>
                     </select>
 
                     <select
-                        className="appearance-none bg-white border border-[#F0E0E0] rounded-2xl px-6 py-4 w-full md:w-48 text-[10px] font-black uppercase tracking-widest text-[#3E4A61] outline-none focus:border-[#FFB5B5] cursor-pointer shadow-sm"
+                        className="bg-surface-muted/50 border-none rounded-xl px-lg py-sm text-metadata font-black uppercase tracking-widest text-foreground outline-none cursor-pointer hover:bg-surface transition-colors"
                         value={selectedLevel}
                         onChange={(e) => setSelectedLevel(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
                     >
-                        <option value="all">LEVELS: 1-60</option>
+                        <option value="all">LEVEL ALL</option>
                         {Array.from({ length: 60 }, (_, i) => i + 1).map(l => (
                             <option key={l} value={l}>LEVEL {l}</option>
                         ))}
@@ -167,14 +154,15 @@ function ContentDatabase() {
                 </div>
             </div>
 
+            {/* Grid Display */}
             {loading ? (
-                <div className="py-40 flex flex-col items-center gap-6">
-                    <Loader2 className="w-12 h-12 text-[#FFB5B5] animate-spin" />
-                    <p className="text-[10px] font-black uppercase tracking-[0.5em] text-[#CBD5E0]">Querying database...</p>
+                <div className="py-2xl flex flex-col items-center justify-center gap-xl">
+                    <Loader2 className="animate-spin text-primary" size={48} />
+                    <p className="text-metadata font-black uppercase tracking-[0.6em] text-foreground/20">Synchronizing Archives</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                    {filteredItems.map((unit) => {
+                <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-lg">
+                    {filteredItems.map((unit, idx) => {
                         const state = states[unit.id];
                         const status = unit.level > userLevel ? 'locked' : (!state ? 'new' : state.state);
 
@@ -183,39 +171,50 @@ function ContentDatabase() {
                                 href={`/content/${unit.type === 'vocabulary' ? 'vocabulary' : unit.type === 'radical' ? 'radicals' : unit.type}/${unit.slug}`}
                                 key={unit.id}
                                 className={clsx(
-                                    "group bg-white border border-[#F0E0E0] rounded-3xl p-6 flex flex-col items-center justify-between min-h-[220px] transition-all hover:border-[#FFB5B5] hover:shadow-xl hover:shadow-[#FFB5B5]/5 cursor-pointer relative overflow-hidden",
+                                    "group premium-card p-0 flex flex-col items-stretch bg-surface border-border hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 overflow-hidden h-lib-card",
                                     status === 'locked' && "opacity-40 grayscale pointer-events-none"
                                 )}
                             >
-                                {/* Progress Bar */}
+                                {/* Card Header with Type & Level */}
+                                <div className="p-md flex justify-between items-center bg-surface-muted/30 border-b border-border/50 h-[48px] shrink-0">
+                                    <div className="flex items-center gap-sm">
+                                        <div className={clsx(
+                                            "w-1.5 h-1.5 rounded-full shadow-sm",
+                                            unit.type === 'radical' ? "bg-radical" :
+                                                unit.type === 'kanji' ? "bg-kanji" :
+                                                    unit.type === 'vocabulary' ? "bg-vocab" : "bg-grammar"
+                                        )} />
+                                        <span className="text-metadata font-black uppercase tracking-widest text-foreground/30">{unit.type}</span>
+                                    </div>
+                                    <span className="text-metadata font-black text-foreground/40 bg-surface px-2 py-0.5 rounded-md border border-border">L{unit.level}</span>
+                                </div>
+
+                                {/* Main Character Section */}
+                                <div className="flex-1 flex flex-col items-center justify-center p-lg gap-sm overflow-hidden min-h-0">
+                                    <div className={clsx(
+                                        "text-5xl font-black transition-all group-hover:scale-110 duration-500 jp-text truncate max-w-full",
+                                        unit.type === 'kanji' ? "text-kanji" :
+                                            unit.type === 'vocabulary' ? "text-primary-dark" : "text-foreground"
+                                    )}>
+                                        {unit.character || '—'}
+                                    </div>
+                                    <h3 className="text-metadata font-black text-foreground/60 uppercase tracking-tight text-center line-clamp-2 px-2 italic max-h-[2.4em]">
+                                        {unit.meaning}
+                                    </h3>
+                                </div>
+
+                                {/* Status Footer */}
+                                <div className="px-lg py-md bg-surface-muted/10 border-t border-border/30 flex justify-between items-center group-hover:bg-primary/5 transition-colors h-[48px] shrink-0">
+                                    <StatusTag status={status} />
+                                    <ChevronRight size={14} className="text-foreground/10 group-hover:text-primary transition-all translate-x-0 group-hover:translate-x-1" />
+                                </div>
+
+                                {/* Mini Progress Indicator - Fixed at bottom */}
                                 {state && (
-                                    <div className="absolute top-0 left-0 w-full h-1 bg-[#F0E0E0]">
-                                        <div
-                                            className="h-full bg-[#FFB5B5]/50 transition-all duration-1000"
-                                            style={{ width: `${Math.min(100, (state.reps / 10) * 100)}%` }}
-                                        />
+                                    <div className="absolute bottom-0 left-0 w-full h-[3px] bg-border/10">
+                                        <div className="h-full bg-primary/40 transition-all duration-1000" style={{ width: `${Math.min(100, (state.reps / 12) * 100)}%` }} />
                                     </div>
                                 )}
-
-                                {/* Top Info */}
-                                <div className="w-full flex justify-between items-start">
-                                    <span className="text-[9px] font-black text-[#A0AEC0] uppercase tracking-tighter">LEV {unit.level}</span>
-                                    <StatusIcon status={status} />
-                                </div>
-
-                                {/* Character */}
-                                <div className={clsx(
-                                    "text-6xl font-medium my-4 transition-colors",
-                                    unit.type === 'kanji' ? "text-[#FFB5B5]" : "text-[#3E4A61]"
-                                )}>
-                                    {unit.character || '—'}
-                                </div>
-
-                                {/* Footer Info */}
-                                <div className="w-full space-y-1 text-center">
-                                    <p className="text-[8px] font-black text-[#A0AEC0] uppercase tracking-widest">{unit.type}</p>
-                                    <p className="text-[11px] font-black text-[#3E4A61] uppercase tracking-tight leading-tight line-clamp-2">{unit.meaning}</p>
-                                </div>
                             </Link>
                         );
                     })}
@@ -223,31 +222,42 @@ function ContentDatabase() {
             )}
 
             {!loading && filteredItems.length === 0 && (
-                <div className="text-center py-40 border-2 border-dashed border-[#F0E0E0] rounded-[40px] bg-white">
-                    <h3 className="text-2xl font-black text-[#A0AEC0] mb-2 uppercase tracking-tight">No Results</h3>
-                    <p className="text-[10px] font-black text-[#CBD5E0] uppercase tracking-[0.3em]">Refine your search parameters</p>
+                <div className="py-2xl flex flex-col items-center justify-center text-center space-y-lg bg-surface-muted/20 border-2 border-dashed border-border rounded-clay">
+                    <Search size={32} className="text-foreground/10" />
+                    <div className="space-y-sm">
+                        <h3 className="text-h2 font-black text-foreground/20 uppercase tracking-widest">No Matches</h3>
+                        <p className="text-metadata font-bold text-foreground/10 uppercase tracking-[0.4em]">Try adjusting filters</p>
+                    </div>
                 </div>
             )}
         </div>
     );
 }
 
-function StatusIcon({ status }: { status: string }) {
-    switch (status) {
-        case 'locked': return <Lock size={12} className="text-[#CBD5E0]" />;
-        case 'new': return <Zap size={12} className="text-[#FFD700]" strokeWidth={1} fill="currentColor" />;
-        case 'learning': return <Clock size={12} className="text-[#A2D2FF]" />;
-        case 'review': return <Flame size={12} className="text-[#FFB5B5]/60" />;
-        case 'burned': return <Zap size={12} className="text-[#FFB5B5]" fill="currentColor" />;
-        default: return null;
-    }
+function StatusTag({ status }: { status: string }) {
+    const config: any = {
+        locked: { label: 'RESTRICTED', color: 'bg-foreground/5 text-foreground/20', icon: Lock },
+        new: { label: 'NEW ENTRY', color: 'bg-yellow-400/10 text-yellow-600', icon: Zap },
+        learning: { label: 'TRAINING', color: 'bg-blue-400/10 text-blue-600', icon: Clock },
+        review: { label: 'REINFORCING', color: 'bg-primary/10 text-primary-dark', icon: Flame },
+        burned: { label: 'MASTERED', color: 'bg-green-400/10 text-green-600', icon: Book },
+    };
+
+    const s = config[status] || config.new;
+    const Icon = s.icon;
+
+    return (
+        <div className={clsx("flex items-center gap-xs px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all", s.color)}>
+            <Icon size={10} strokeWidth={3} />
+            {s.label}
+        </div>
+    );
 }
 
 export default function UnifiedContentPage() {
     return (
-        <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-[#FFB5B5]" size={48} /></div>}>
+        <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" size={48} /></div>}>
             <ContentDatabase />
         </Suspense>
     );
 }
-
