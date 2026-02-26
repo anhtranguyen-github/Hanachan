@@ -10,13 +10,19 @@ export function classifyIntent(text: string): ChatIntent {
     const lower = text.toLowerCase().trim();
 
     // 1. Check for Analysis Request (Japanese characters or keywords)
-    // Heuristic: Contains Kanji/Kana OR starts with "analyze/explain"
     const hasJapanese = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(text);
-    if ((lower.startsWith("analyze") || lower.startsWith("explain")) && hasJapanese) {
+    const startsWithAnalyze = lower.startsWith("analyze") || lower.startsWith("explain") || lower.startsWith("breakdown");
+
+    // Explicit analyze request
+    if (startsWithAnalyze && hasJapanese) {
         return 'ANALYZE';
     }
-    // Direct Japanese sentence input (assumption: if short and mostly JP, it's an analysis request)
-    if (hasJapanese && text.length > 5 && text.length < 100 && !lower.includes("how do i")) {
+
+    // Direct Japanese sentence input (assumption: if mostly JP and NOT a common English question starter)
+    const isQuestion = lower.match(/^(what|who|where|when|why|how|tell|tell me)/);
+    if (hasJapanese && text.length > 2 && text.length < 100 && !isQuestion) {
+        // If it's pure Japanese or very short JP-heavy sentence, ANALYZE it.
+        // But if it has "Who am I", it's GENERAL_CHAT.
         return 'ANALYZE';
     }
 

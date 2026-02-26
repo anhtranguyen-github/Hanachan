@@ -96,6 +96,6 @@ data/
 *.mp4
 *.mov
 *.pdf
- *.log
+*.log
 *.tmp
 temp/
