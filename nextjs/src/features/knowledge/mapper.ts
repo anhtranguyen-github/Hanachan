@@ -12,19 +12,19 @@ export function getDetailsTableName(type: KnowledgeUnitType): string {
 }
 
 export function mapToKnowledgeUnit(base: any, details: any, type: KnowledgeUnitType): KnowledgeUnit {
-    // In the new schema, basic info like 'meaning' and 'character' are already in the base table
     const result: any = {
         ...base,
         id: base.id,
         slug: base.slug,
         type: base.type,
-        character: base.character || base.slug.split(':')[1],
+        character: base.character,
         level: base.level,
+        jlpt: base.jlpt,
         meaning: base.meaning,
         details: details
     };
 
-    // Attach details with the legacy key just in case some components rely on it
+    // Attach details with the legacy key for UI compatibility
     const legacyKey = type === 'radical' ? 'ku_radicals' :
         type === 'kanji' ? 'ku_kanji' :
             type === 'vocabulary' ? 'ku_vocabulary' : 'ku_grammar';

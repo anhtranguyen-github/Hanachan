@@ -21,8 +21,10 @@ export async function getLevelData(level: number, type: string) {
         return items.map((item: any) => {
             // Map structure to what frontend expects for explorer lists
             let reading = '';
-            if (item.type === 'kanji') reading = item.kanji_details?.reading_data?.on?.[0] || '';
-            else if (item.type === 'vocabulary') reading = item.vocabulary_details?.reading_primary || '';
+            if (item.type === 'kanji')
+                reading = item.kanji_details?.onyomi?.[0] || item.kanji_details?.reading_data?.on?.[0] || '';
+            else if (item.type === 'vocabulary')
+                reading = item.vocabulary_details?.reading || item.vocabulary_details?.reading_primary || '';
 
             return {
                 ...item,
@@ -44,101 +46,90 @@ export async function getKnowledgeUnit(type: string, slug: string) {
         // Flatten/Normalize for frontend
         let meanings: string[] = [];
         let readings: string[] = [];
+        let mStory: string = "";
+        let rStory: string = "";
+
+        const splitMeanings = item.meaning ? item.meaning.split(',').map((s: string) => s.trim()) : [];
 
         if (type === 'kanji' && item.kanji_details) {
-            const mData = item.kanji_details.meaning_data;
-            const rData = item.kanji_details.reading_data;
-
-            if (mData?.meanings) {
-                meanings = mData.meanings.map((m: any) => typeof m === 'string' ? m : (m.meaning || ""));
-            } else if (mData?.primary || mData?.alternatives) {
-                meanings = [...(mData.primary || []), ...(mData.alternatives || [])];
-            } else {
-                meanings = [item.meaning];
-            }
-
-            const onReadings = (rData?.onyomi || rData?.on || []).map((r: any) => typeof r === 'string' ? r : (r.reading || ""));
-            const unitnReadings = (rData?.unitnyomi || rData?.unitn || []).map((r: any) => typeof r === 'string' ? r : (r.reading || ""));
-            readings = [...onReadings, ...unitnReadings];
+            meanings = splitMeanings;
+            const details = item.kanji_details;
+            const onReadings = details.onyomi || [];
+            const kunReadings = details.kunyomi || [];
+            readings = [...onReadings, ...kunReadings];
 
             item.onReadings = onReadings;
-            item.unitnReadings = unitnReadings;
-
-            // Ensure explanation is available for contextual nuance
-            const mExplanation = mData?.explanation;
-            const existingMnemonic = item.mnemonics?.meaning;
-
-            if (!existingMnemonic && mExplanation) {
-                item.mnemonics = {
-                    ...item.mnemonics,
-                    meaning: mExplanation
-                };
-            }
-
-            // Extract reading mnemonic if available
-            const rExplanation = rData?.explanation;
-            if (!item.mnemonics?.reading && rExplanation) {
-                item.mnemonics = {
-                    ...item.mnemonics,
-                    reading: rExplanation
-                };
-            }
-
+            item.kunReadings = kunReadings;
+            item.stroke_order_svg = details.stroke_order_svg;
+            item.stroke_video_url = details.stroke_video_url;
+            mStory = details.meaning_mnemonic || "";
+            rStory = details.reading_mnemonic || "";
         } else if (type === 'vocabulary' && item.vocabulary_details) {
-            const mData = item.vocabulary_details.meaning_data;
-            if (mData?.meanings) {
-                meanings = mData.meanings.map((m: any) => typeof m === 'string' ? m : (m.meaning || ""));
-            } else if (mData?.primary || mData?.alternatives) {
-                meanings = [...(mData.primary || []), ...(mData.alternatives || [])];
-            } else {
-                meanings = [item.meaning];
-            }
-            readings = [item.vocabulary_details.reading_primary];
+            meanings = splitMeanings;
+            const details = item.vocabulary_details;
+            readings = [details.reading];
+            mStory = details.meaning_mnemonic || "";
 
-            // Extract context sentences from meaning_data if they exist
-            if (mData?.context_sentences && Array.isArray(mData.context_sentences)) {
-                const embeddedSentences = mData.context_sentences.map((s: any) => ({
-                    text_ja: s.ja,
-                    text_en: s.en,
-                    source_type: 'internal'
+            // Support legacy component keys
+            item.ku_vocabulary = {
+                ...details,
+                reading_primary: details.reading,
+                pitch_accent_data: details.pitch_accent,
+                parts_of_speech: details.parts_of_speech || []
+            };
+
+            // Map newer schema back to what components expect for audio/pitch
+            if (details.audio_url && !details.audio_data) {
+                item.ku_vocabulary.audio_data = [{
+                    url: details.audio_url,
+                    metadata: { voice_actor_name: 'WaniKani' }
+                }];
+            }
+
+            // Map context sentences
+            if (details.context_sentences) {
+                item.sentences = details.context_sentences.map((s: any) => ({
+                    ja: s.ja || s.japanese || "",
+                    en: s.en || s.english || ""
                 }));
-                // Merge with existing linked sentences - avoiding duplicates
-                const existingTexts = new Set(item.sentences?.map((s: any) => s.text_ja));
-                const uniqueNew = embeddedSentences.filter((s: any) => !existingTexts.has(s.text_ja));
-                item.sentences = [...(item.sentences || []), ...uniqueNew];
-            }
-
-            // Ensure explanation is available for contextual nuance
-            const mExplanation = mData?.explanation;
-            const existingMnemonic = item.mnemonics?.meaning;
-
-            if (!existingMnemonic && mExplanation) {
-                item.mnemonics = {
-                    ...item.mnemonics,
-                    meaning: mExplanation
-                };
-            }
-
-            // Extract reading mnemonic if available
-            const rExplanation = item.vocabulary_details.reading_data?.explanation;
-            if (!item.mnemonics?.reading && rExplanation) {
-                item.mnemonics = {
-                    ...item.mnemonics,
-                    reading: rExplanation
-                };
             }
         } else if (type === 'radical' && item.radical_details) {
-            meanings = [item.radical_details.name || item.meaning];
+            meanings = splitMeanings;
+            item.ku_radicals = item.radical_details;
+            item.image_url = item.radical_details.image_url;
+            mStory = item.radical_details.meaning_mnemonic || "";
         } else if (type === 'grammar' && item.grammar_details) {
-            meanings = [item.grammar_details.meaning_summary || item.meaning];
+            meanings = splitMeanings;
+            const details = item.grammar_details;
+            mStory = details.explanation || "";
+
+            // Map resources and structure for grammar
+            item.resources = details.external_links || { online: [], offline: [] };
+            item.structure = {
+                variants: { standard: details.structure },
+                patterns: []
+            };
+            item.ku_grammar = details;
+
+            // Map example sentences for grammar
+            if (details.example_sentences) {
+                item.sentences = details.example_sentences.map((ex: any) => ({
+                    ja: ex.japanese_clean || ex.ja || ex.japanese || "",
+                    en: ex.english || ex.en || ""
+                }));
+            }
         } else {
-            meanings = [item.meaning];
+            meanings = splitMeanings;
         }
 
         return {
             ...item,
             meanings: meanings.filter(Boolean),
             readings: readings.filter(Boolean),
+            mnemonics: {
+                meaning: mStory,
+                reading: rStory
+            },
             sentences: item.sentences || [],
             metadata: {}
         };
@@ -148,6 +139,8 @@ export async function getKnowledgeUnit(type: string, slug: string) {
         return null;
     }
 }
+
+export { getKnowledgeUnit as getLocalKU };
 
 export async function seedDatabaseAction() {
     return { success: true };

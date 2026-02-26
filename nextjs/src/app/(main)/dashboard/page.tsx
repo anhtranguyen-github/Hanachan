@@ -12,7 +12,7 @@ import {
     Target
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { fetchUserDashboardStats, fetchCurriculumStats, fetchDeckStats } from '@/features/learning/service';
+import { fetchUserDashboardStats, fetchCurriculumStats, fetchLevelStats } from '@/features/learning/service';
 import { useUser } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
 
@@ -39,7 +39,7 @@ export default function DashboardPage() {
 
             const dashboardStats = await fetchUserDashboardStats(userId);
             const curriculumStats = await fetchCurriculumStats();
-            const levelStats = await fetchDeckStats(userId, `level-${currentLevel}`);
+            const levelStats = await fetchLevelStats(userId, `level-${currentLevel}`);
 
             setStats({
                 ...dashboardStats,

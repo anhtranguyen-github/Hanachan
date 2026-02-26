@@ -7,6 +7,7 @@ import { GlassCard } from '@/components/premium/GlassCard';
 import { useUser } from '@/features/auth/AuthContext';
 import { QuickViewModal, QuickViewData } from '@/components/shared/QuickViewModal';
 import { mapUnitToQuickView } from '@/features/knowledge/ui-mapper';
+import { supabase } from '@/lib/supabase';
 import { getKnowledgeUnit } from '@/features/knowledge/actions';
 
 type Message = {
@@ -49,6 +50,16 @@ export default function ChatbotPage() {
         setMounted(true);
         setDefaultWelcome();
     }, []);
+
+    useEffect(() => {
+        const fetchLevel = async () => {
+            if (user?.id) {
+                const { data } = await supabase.from('users').select('level').eq('id', user.id).maybeSingle();
+                if (data?.level) setUserLevel(data.level);
+            }
+        };
+        if (mounted) fetchLevel();
+    }, [user, mounted]);
 
     useEffect(() => {
         if (mounted) {
@@ -179,7 +190,7 @@ export default function ChatbotPage() {
                         </div>
                     </div>
                     <div className="hidden md:flex items-center gap-4 bg-[#F7FAFC] border border-[#F0E0E0] px-4 py-2 rounded-xl">
-                        <span className="text-[9px] font-black text-[#A0AEC0] uppercase tracking-[0.3em] font-mono">Sync_OK // Level {user?.level || 1}</span>
+                        <span className="text-[9px] font-black text-[#A0AEC0] uppercase tracking-[0.3em] font-mono">Sync_OK // Level {userLevel}</span>
                     </div>
                 </header>
 
@@ -217,13 +228,13 @@ export default function ChatbotPage() {
                             )}>
                                 <div className="whitespace-pre-wrap">{m.content}</div>
 
-                                {m.referencedKUs && m.referencedKUs.length > 0 && (
+                                {m.referencedUnits && m.referencedUnits.length > 0 && (
                                     <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[#EDF2F7]">
                                         <h4 className="w-full text-[8px] font-black text-[#A0AEC0] uppercase tracking-widest mb-1 flex items-center gap-2">Referenced Content</h4>
-                                        {m.referencedKUs.map(ku => (
+                                        {m.referencedUnits.map(ku => (
                                             <button
                                                 key={ku.id}
-                                                onClick={() => handleViewKU(ku)}
+                                                onClick={() => handleViewUnit(ku)}
                                                 data-testid="ku-cta-button"
                                                 className="flex items-center gap-2 px-4 py-2 bg-white border border-[#F0E0E0] hover:border-[#FFB5B5] rounded-xl text-[10px] font-black uppercase text-[#FF6B6B] tracking-wider transition-all shadow-sm active:scale-95"
                                             >
@@ -296,7 +307,7 @@ export default function ChatbotPage() {
                 data={modalData}
             />
 
-            {isLoadingKU && (
+            {isLoadingUnit && (
                 <div className="fixed inset-0 z-[110] bg-black/5 flex items-center justify-center backdrop-blur-sm">
                     <Loader2 className="animate-spin text-[#FFB5B5]" size={48} />
                 </div>
