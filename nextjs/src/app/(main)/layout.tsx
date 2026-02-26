@@ -15,6 +15,7 @@ export default function MainLayout({
     const { user, loading } = useUser();
     const router = useRouter();
     const pathname = usePathname();
+    const [userLevel, setUserLevel] = useState(1);
 
     const isSession = pathname.startsWith('/learn') || pathname.startsWith('/review');
 
@@ -23,6 +24,14 @@ export default function MainLayout({
             router.push('/login');
         }
     }, [user, loading, router]);
+
+    useEffect(() => {
+        if (user) {
+            // Simple fetch for level to show in header or use as context
+            supabase.from('users').select('level').eq('id', user.id).maybeSingle()
+                .then(({ data }) => setUserLevel(data?.level || 1));
+        }
+    }, [user]);
 
     if (loading) {
         return (
@@ -38,16 +47,6 @@ export default function MainLayout({
     if (!user) {
         return null;
     }
-
-    const [userLevel, setUserLevel] = useState(1);
-
-    useEffect(() => {
-        if (user) {
-            // Simple fetch for level to show in header or use as context
-            supabase.from('users').select('level').eq('id', user.id).maybeSingle()
-                .then(({ data }) => setUserLevel(data?.level || 1));
-        }
-    }, [user]);
 
     const pageTitle = pathname.split('/').pop()?.replace('-', ' ') || 'Overview';
 
