@@ -100,9 +100,9 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
         if (card.prompt_variant === 'cloze' && card.sentence_ja) {
             const parts = card.sentence_ja.split(card.cloze_answer || "");
             return (
-                <p className="text-3xl md:text-5xl font-black leading-relaxed text-white">
+                <p className="text-2xl md:text-3xl font-black leading-relaxed text-white">
                     {parts[0]}
-                    <span className="inline-block border-b-8 border-white px-2 min-w-[3ch] mx-2">
+                    <span className="inline-block border-b-4 border-white px-2 min-w-[3ch] mx-2">
                         {submitted && isCorrect ? card.cloze_answer : "?"}
                     </span>
                     {parts[1]}
@@ -111,20 +111,20 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
         }
 
         return (
-            <h2 className="text-[120px] md:text-[160px] font-black leading-none text-white drop-shadow-2xl">
+            <h2 className="text-7xl md:text-8xl font-black leading-none text-white drop-shadow-2xl">
                 {card.character}
             </h2>
         );
     };
 
     return (
-        <div className="w-full max-w-2xl mx-auto flex flex-col pt-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="w-full max-w-2xl mx-auto flex flex-col py-2 md:py-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
             {/* Main Card Container */}
-            <div className="bg-white border-2 border-gray-300 rounded-[56px] shadow-sm flex flex-col overflow-hidden relative min-h-[600px]">
+            <div className="bg-white border-2 border-gray-300 rounded-[48px] shadow-sm flex flex-col overflow-hidden relative max-h-[85vh]">
 
                 {/* Colored Header Section */}
                 <div className={clsx(
-                    "p-16 text-center relative transition-colors duration-500",
+                    "p-10 md:p-12 text-center relative transition-colors duration-500 shrink-0",
                     activeColor
                 )}>
                     {renderHeaderContent()}
@@ -153,7 +153,7 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
                                     onKeyPress={handleKeyPress}
                                     placeholder="た . . ."
                                     className={clsx(
-                                        "w-full py-10 bg-gray-50 border-b-8 border-gray-200 rounded-t-[40px] text-center text-6xl font-black transition-all outline-none placeholder:opacity-20 text-foreground",
+                                        "w-full py-6 bg-gray-50 border-b-4 border-gray-200 rounded-t-[32px] text-center text-4xl font-black transition-all outline-none placeholder:opacity-20 text-foreground",
                                         activeBorderColor
                                     )}
                                     autoFocus

@@ -71,18 +71,8 @@ export default function LearnOverviewPage() {
     const hasActiveBatch = state.batch !== null;
 
     return (
-        <div data-testid="learning-overview-root" className="max-w-5xl mx-auto space-y-8 py-4 font-sans text-[#3E4A61] animate-in fade-in duration-1000">
-            {/* Suggested Actions Divider */}
-            <div className="relative flex items-center justify-center py-2">
-                <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-[#F0E0E0]"></div>
-                </div>
-                <div className="relative bg-[#FFFDFD] px-4">
-                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[#3E4A61]">Suggested Actions</span>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div data-testid="learning-overview-root" className="max-w-5xl mx-auto space-y-sm font-sans text-foreground animate-in fade-in duration-1000">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
                 <div className="bg-white border-2 border-[#F0E0E0] rounded-[40px] p-8 shadow-xl shadow-[#3E4A61]/5 flex flex-col justify-between relative overflow-hidden group min-h-[300px]">
                     <div className="absolute -right-6 -top-6 text-[#F7FAFC] transition-transform duration-700 group-hover:scale-110 group-hover:rotate-6">
                         <Loader2 size={160} strokeWidth={1} className="opacity-10" />

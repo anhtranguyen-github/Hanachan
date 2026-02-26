@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useUser } from '@/features/auth/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 import { clsx } from 'clsx';
 
 export default function MainLayout({
@@ -38,6 +39,16 @@ export default function MainLayout({
         return null;
     }
 
+    const [userLevel, setUserLevel] = useState(1);
+
+    useEffect(() => {
+        if (user) {
+            // Simple fetch for level to show in header or use as context
+            supabase.from('users').select('level').eq('id', user.id).maybeSingle()
+                .then(({ data }) => setUserLevel(data?.level || 1));
+        }
+    }, [user]);
+
     const pageTitle = pathname.split('/').pop()?.replace('-', ' ') || 'Overview';
 
     return (
@@ -45,24 +56,24 @@ export default function MainLayout({
             {!isSession && <Sidebar />}
 
             <div className="flex-1 flex flex-col overflow-hidden relative">
-                {/* Regular Header (Only shown when not overlay/session) */}
+                {/* Regular Header - Optimized for Density */}
                 {!isSession && !pathname.includes('/chatbot') && (
-                    <header className="h-20 border-b border-[#F0E0E0] bg-white/80 backdrop-blur-md flex items-center justify-between px-12 shrink-0 z-30">
-                        <div className="flex items-center gap-4">
-                            <div className="w-1.5 h-1.5 bg-[#FFB5B5] rounded-full animate-pulse" />
-                            <h2 className="text-2xl font-black text-[#3E4A61] tracking-tighter capitalize">
+                    <header className="h-14 border-b border-border bg-white/80 backdrop-blur-md flex items-center justify-between px-md md:px-lg shrink-0 z-30">
+                        <div className="flex items-center gap-xs">
+                            <div className="w-1.5 h-1.5 bg-primary rounded-full shadow-sm shadow-primary/20" />
+                            <h1 className="text-xl font-black text-foreground tracking-tight capitalize py-1">
                                 {pageTitle}
-                            </h2>
+                            </h1>
                         </div>
-                        <div className="flex items-center gap-6">
-                            <div className="flex flex-col items-end">
-                                <span className="text-[10px] font-black text-[#A0AEC0] uppercase tracking-widest">Level {user?.level || 1}</span>
-                                <span className="text-[11px] font-black text-[#3E4A61] uppercase tracking-tighter">
+                        <div className="flex items-center gap-sm">
+                            <div className="flex flex-col items-end leading-none">
+                                <span className="text-[8px] font-black text-foreground/30 uppercase tracking-[0.2em]">Level {userLevel}</span>
+                                <span className="text-[11px] font-black text-foreground uppercase tracking-tight">
                                     {user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'LEARNER'}
                                 </span>
                             </div>
-                            <div className="w-10 h-10 rounded-2xl bg-[#FFF5F5] border-2 border-[#FFDADA] flex items-center justify-center text-[12px] font-black text-[#FFB5B5] shadow-sm">
-                                {(user?.user_metadata?.display_name || user?.email || 'H')[0].toUpperCase()}
+                            <div className="w-7 h-7 rounded-lg bg-surface border border-border flex items-center justify-center text-[10px] font-black text-primary shadow-sm uppercase">
+                                {(user?.user_metadata?.display_name || user?.email || 'H')[0]}
                             </div>
                         </div>
                     </header>
@@ -70,7 +81,7 @@ export default function MainLayout({
 
                 <main className={clsx(
                     "flex-1 overflow-auto custom-scrollbar relative",
-                    isSession ? "z-50" : "p-8 lg:p-12 bg-[#FFFDFD]"
+                    isSession ? "z-50" : "p-sm lg:p-md bg-[#FFFDFD]"
                 )}>
                     {children}
                 </main>

@@ -76,23 +76,10 @@ function ContentDatabase() {
     ];
 
     return (
-        <div className="max-w-[1400px] mx-auto px-lg py-2xl space-y-xl animate-in fade-in slide-in-from-bottom-4 duration-1000">
-            {/* Header Area */}
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-xl">
-                <div className="space-y-sm">
-                    <div className="flex items-center gap-xs">
-                        <div className="p-sm bg-primary/10 rounded-xl">
-                            <Book size={14} className="text-primary-dark" />
-                        </div>
-                        <span className="text-metadata font-black uppercase tracking-[0.3em] text-foreground/40">Curriculum Archives</span>
-                    </div>
-                    <h1 className="text-h1 font-black text-foreground tracking-tight leading-tight">
-                        CONTENT LIBRARY
-                    </h1>
-                </div>
-
-                {/* Categories Tab Bar */}
-                <div className="flex p-xs bg-surface-muted/50 backdrop-blur-xl border border-border rounded-clay shadow-2xl shadow-primary/5">
+        <div className="max-w-[1400px] mx-auto space-y-sm animate-in fade-in duration-700">
+            {/* Header / Action Bar - Consolidated for Density */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-md p-xs bg-surface border border-border rounded-clay shadow-lg">
+                <div className="flex p-px bg-surface-muted/50 backdrop-blur-xl border border-border rounded-xl">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
                         const active = filterType === tab.id;
@@ -101,54 +88,50 @@ function ContentDatabase() {
                                 key={tab.id}
                                 onClick={() => setFilterType(tab.id)}
                                 className={clsx(
-                                    "flex items-center gap-sm px-lg py-sm rounded-2xl text-metadata font-black tracking-widest transition-all duration-500 uppercase",
+                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black tracking-widest transition-all duration-300 uppercase",
                                     active
-                                        ? "bg-foreground text-surface shadow-xl shadow-foreground/20 scale-105"
+                                        ? "bg-foreground text-surface shadow-sm"
                                         : "text-foreground/40 hover:text-foreground hover:bg-surface"
                                 )}
                             >
-                                <Icon size={12} />
+                                <Icon size={10} />
                                 <span className="hidden md:inline">{tab.label}</span>
                             </button>
                         );
                     })}
                 </div>
-            </div>
 
-            {/* Controls Bar */}
-            <div className="flex flex-col md:flex-row gap-md p-xs bg-surface border border-border rounded-clay shadow-lg">
-                <div className="flex-1 relative group">
-                    <Search className="absolute left-lg top-1/2 -translate-y-1/2 text-foreground/20 transition-colors group-focus-within:text-primary" size={18} />
+                <div className="flex-1 relative group mx-sm">
+                    <Search className="absolute left-md top-1/2 -translate-y-1/2 text-foreground/20 transition-colors group-focus-within:text-primary" size={16} />
                     <input
                         type="text"
-                        placeholder="Search meanings, characters, or slugs..."
+                        placeholder="Search curriculum..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full py-lg pl-xl pr-lg bg-transparent text-body font-bold placeholder:text-foreground/20 outline-none jp-text"
+                        className="w-full py-sm pl-xl pr-sm bg-transparent text-sm font-bold placeholder:text-foreground/20 outline-none jp-text"
                     />
                 </div>
 
-                <div className="flex gap-sm p-sm">
+                <div className="flex gap-xs p-xs border-l border-border/50 items-center">
                     <select
-                        className="bg-surface-muted/50 border-none rounded-xl px-lg py-sm text-metadata font-black uppercase tracking-widest text-foreground outline-none cursor-pointer hover:bg-surface transition-colors"
+                        className="bg-transparent border-none rounded-lg px-2 py-1 text-[9px] font-black uppercase tracking-widest text-foreground outline-none cursor-pointer hover:bg-surface-muted transition-colors h-7"
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
                     >
-                        <option value="all">ANY STATUS</option>
-                        <option value="new">UNTACKLED</option>
-                        <option value="learning">INTEGRATING</option>
-                        <option value="burned">MASTERED</option>
-                        <option value="locked">RESTRICTED</option>
+                        <option value="all">STATUS</option>
+                        <option value="new">NEW</option>
+                        <option value="learning">STUDY</option>
+                        <option value="burned">DONE</option>
                     </select>
 
                     <select
-                        className="bg-surface-muted/50 border-none rounded-xl px-lg py-sm text-metadata font-black uppercase tracking-widest text-foreground outline-none cursor-pointer hover:bg-surface transition-colors"
+                        className="bg-transparent border-none rounded-lg px-2 py-1 text-[9px] font-black uppercase tracking-widest text-foreground outline-none cursor-pointer hover:bg-surface-muted transition-colors h-7"
                         value={selectedLevel}
                         onChange={(e) => setSelectedLevel(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
                     >
-                        <option value="all">LEVEL ALL</option>
+                        <option value="all">LEVELS</option>
                         {Array.from({ length: 60 }, (_, i) => i + 1).map(l => (
-                            <option key={l} value={l}>LEVEL {l}</option>
+                            <option key={l} value={l}>L{l}</option>
                         ))}
                     </select>
                 </div>
@@ -190,15 +173,15 @@ function ContentDatabase() {
                                 </div>
 
                                 {/* Main Character Section */}
-                                <div className="flex-1 flex flex-col items-center justify-center p-lg gap-sm overflow-hidden min-h-0">
+                                <div className="flex-1 flex flex-col items-center justify-center p-md gap-sm overflow-hidden min-h-0">
                                     <div className={clsx(
-                                        "text-5xl font-black transition-all group-hover:scale-110 duration-500 jp-text truncate max-w-full",
+                                        "text-4xl font-black transition-all group-hover:scale-105 duration-500 jp-text truncate max-w-full shrink-0",
                                         unit.type === 'kanji' ? "text-kanji" :
                                             unit.type === 'vocabulary' ? "text-primary-dark" : "text-foreground"
                                     )}>
                                         {unit.character || '—'}
                                     </div>
-                                    <h3 className="text-metadata font-black text-foreground/60 uppercase tracking-tight text-center line-clamp-2 px-2 italic max-h-[2.4em]">
+                                    <h3 className="text-metadata font-black text-foreground/60 uppercase tracking-tight text-center line-clamp-2 px-2 italic min-h-[2.4em] flex items-center justify-center">
                                         {unit.meaning}
                                     </h3>
                                 </div>

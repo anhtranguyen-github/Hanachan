@@ -37,15 +37,15 @@
 
   --radius: 20px;
 
-  /* Typography Scale Tokens */
-  --font-size-h1: clamp(36px, 4vw, 44px);
-  --font-size-h2: 28px;
-  --font-size-h3: 20px;
-  --font-size-card-title: 18px;
-  --font-size-body: 15px;
-  --font-size-metadata: 12px;
+  /* Typography Scale Tokens - Refined for Density */
+  --font-size-h1: clamp(24px, 2.8vw, 28px);
+  --font-size-h2: 20px;
+  --font-size-h3: 16px;
+  --font-size-card-title: 15px;
+  --font-size-body: 14px;
+  --font-size-metadata: 10px;
 
-  /* Spacing Tokens */
+  /* Spacing Tokens - Tightened Scale */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;
@@ -54,9 +54,9 @@
   --spacing-2xl: 48px;
 
   /* Component Constraint Tokens */
-  --card-lib-height: 280px;
-  --card-vocab-height: 140px;
-  --card-kanji-size: 450px;
+  --card-lib-height: 240px;
+  --card-vocab-height: 120px;
+  --card-kanji-size: 400px;
   --header-v-rhythm: 2px;
 }
 
@@ -64,6 +64,22 @@
   body {
     @apply bg-background text-foreground antialiased selection:bg-[#F4ACB74D];
     font-family: var(--font-noto-sans), sans-serif;
+  }
+
+  h1 {
+    @apply text-h1 font-black tracking-tight leading-tight;
+  }
+
+  h2 {
+    @apply text-h2 font-black tracking-tight leading-tight;
+  }
+
+  h3 {
+    @apply text-h3 font-black tracking-tight leading-snug;
+  }
+
+  p {
+    @apply text-body font-normal leading-relaxed;
   }
 }
 
@@ -144,7 +160,8 @@
 .jp-text {
   font-family: 'Noto Sans JP', sans-serif;
   letter-spacing: 0.02em;
-  line-height: 1.6;
+  line-height: 1.4;
+  /* Slightly tighter for better visual balance with bold strokes */
 }
 
 .text-sakura {

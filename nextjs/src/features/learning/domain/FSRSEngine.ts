@@ -30,66 +30,81 @@ export class FSRSEngine {
     static calculateNextReview(current: SRSState, rating: Rating, wrongCount: number = 0): NextReviewData {
         let { stage, stability, difficulty, reps, lapses } = current;
 
-        // FIF: Failure Intensity Framework
+        // 1. FIF: Failure Intensity Framework
         // Instead of binary "Again", we use the wrongCount to determine the impact.
-        // If rating is 'again' but wrongCount is 0 (direct API call), treat it as intensity 1.0.
-        const failureIntensity = (rating === 'again' && wrongCount === 0)
-            ? 1.0
-            : Math.min(Math.log2(wrongCount + 1), 3.0);
+        // failIntensity = log2(wrongCount + 1). 
+        // Example: 0 wrong = 0 intensity, 1 wrong = 1 intensity, 3 wrong = 2 intensity.
+        const failureIntensity = Math.min(Math.log2(wrongCount + 1), 4.0);
 
-        console.log(`[FSRS-FIF] Rating=${rating}, Wrong=${wrongCount}, Intensity=${failureIntensity.toFixed(2)}`);
+        console.log(`[FSRS-FIF] Current Stage: ${stage}, Rating: ${rating}, Wrongs: ${wrongCount}, Intensity: ${failureIntensity.toFixed(2)}`);
 
         // Initialize defaults if missing
-        if (!difficulty) difficulty = this.DEFAULT_DIFFICULTY;
+        if (difficulty === undefined || difficulty === 0) difficulty = this.DEFAULT_DIFFICULTY;
         if (stability === undefined || stability === 0) stability = 0.1;
         if (reps === undefined) reps = 0;
         if (lapses === undefined) lapses = 0;
 
-        // Handle Failure
+        // 2. State Transition Logic
+        
+        // CASE A: Hard Reset (Manual 'again' or pure failure)
         if (rating === 'again') {
             reps = 0;
             lapses++;
+            // Strict 50% penalty for a total blank out
             stability = Math.max(0.1, stability * 0.5);
             stage = SRS_STAGES.LEARNING;
-        } else if (wrongCount > 0) {
-            // Case 2: Struggle (Has Wrongs) - "Drill Integration"
-            // This is called when user FINALLY gets it right, but had wrongs before
+        } 
+        
+        // CASE B: Struggle (Has Wrongs) - The "Drill Integration" logic chốt sổ
+        else if (wrongCount > 0) {
             reps++;
-            const alpha = 0.2; // Sensitivity
+            // Sensitivity alpha determines how much difficulty increases per failure intensity
+            const alpha = 0.2; 
             difficulty = Math.min(5.0, difficulty + (alpha * failureIntensity));
 
-            const beta = 0.3; // Decay factor
+            // Decay factor beta determines stability drop. Formula: S = S * exp(-beta * Intensity)
+            const beta = 0.3; 
             const decay = Math.exp(-beta * failureIntensity);
             stability = Math.max(0.1, stability * decay);
 
-            if (failureIntensity > 0.5) {
-                reps = Math.max(1, reps - 1);
+            // If intensity is high enough, we treat it as a lapse (reset progress slightly)
+            if (failureIntensity > 0.8) {
                 lapses++;
                 stage = SRS_STAGES.LEARNING;
+                // Don't reset reps completely, but penalize growth
+                reps = Math.max(1, Math.floor(reps * 0.5));
             } else {
                 stage = SRS_STAGES.REVIEW;
             }
-        } else {
-            // Pure Success (rating !== 'again' and wrongCount === 0)
+        } 
+        
+        // CASE C: Pure Success (rating === 'pass' and wrongCount === 0)
+        else {
             reps++;
-            const factor = 1.5;
+            const factor = 1.65; // Success multiplier
             difficulty = Math.max(1.3, difficulty - 0.1);
 
-            if (reps === 1 && stability < 0.166) stability = 0.166;
-            else if (reps === 2 && stability < 0.333) stability = 0.333;
-            else if (reps === 3 && stability < 1.0) stability = 1.0;
-            else if (reps === 4 && stability < 3.0) stability = 3.0;
-            else stability = stability * factor * (1.0 + (5.0 - difficulty) * 0.1);
+            // Guard: Initial stability steps for new items
+            if (reps === 1 && stability < 0.166) stability = 0.166; // 4h
+            else if (reps === 2 && stability < 0.333) stability = 0.333; // 8h
+            else if (reps === 3 && stability < 1.0) stability = 1.0; // 1d
+            else if (reps === 4 && stability < 3.0) stability = 3.0; // 3d
+            else {
+                // FSRS growth core
+                stability = stability * factor * (1.0 + (5.0 - difficulty) * 0.1);
+            }
 
+            // Ensure stability never drops on pure success
             stability = Math.max(stability, current.stability || 0);
 
+            // Determine stage based on thresholds
             if (stability >= this.BURNED_THRESHOLD_DAYS) stage = SRS_STAGES.BURNED;
             else if (stability >= this.REVIEW_THRESHOLD_DAYS) stage = SRS_STAGES.REVIEW;
             else stage = SRS_STAGES.LEARNING;
         }
 
-        // Calculate timestamp
-        // Stability is in days
+        // 3. Final Scheduling
+        // Stability is in days. Convert to next_review date.
         const intervalMinutes = Math.max(1, Math.round(stability * 1440));
         const next_review = addMinutes(new Date(), intervalMinutes);
 

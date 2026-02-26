@@ -47,18 +47,8 @@ export default function ReviewPage() {
     const hasReviews = stats.due > 0;
 
     return (
-        <div className="max-w-5xl mx-auto space-y-8 py-4 font-sans text-[#3E4A61] animate-in fade-in duration-1000">
-            {/* Suggested Actions Divider */}
-            <div className="relative flex items-center justify-center py-2">
-                <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-[#F0E0E0]"></div>
-                </div>
-                <div className="relative bg-[#FFFDFD] px-4">
-                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[#3E4A61]">Review Pipeline</span>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="max-w-5xl mx-auto space-y-sm font-sans text-foreground animate-in fade-in duration-1000">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
                 <div className="bg-white border-2 border-[#F0E0E0] rounded-[40px] p-10 flex flex-col items-center justify-center text-center space-y-6 shadow-sm hover:border-[#FFB5B5] transition-all group min-h-[320px] relative overflow-hidden">
                     <div className="w-16 h-16 rounded-full bg-[#FFF5F5] flex items-center justify-center text-[#FFB5B5] shadow-inner relative z-10 transition-transform group-hover:scale-110">
                         <Swords size={32} />

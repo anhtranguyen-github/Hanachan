@@ -65,22 +65,31 @@ export class ReviewSessionController {
     private transformItems(items: any[], questions: any[]): QuizItem[] {
         return items.map(item => {
             const ku = item.knowledge_units;
+            if (!ku) {
+                console.warn(`[ReviewSessionController] Item ${item.id} has no knowledge_units metadata.`);
+                return null;
+            }
+
             const question = questions.find(q => q.ku_id === item.ku_id && q.facet === item.facet);
 
-            const reading = ku.vocabulary_details?.[0]?.reading || ku.kanji_details?.[0]?.onyomi?.[0];
+            // Fallback reading mapping
+            const reading = ku.vocabulary_details?.[0]?.reading ||
+                ku.kanji_details?.[0]?.onyomi?.[0] ||
+                ku.kanji_details?.[0]?.kunyomi?.[0];
 
             return {
                 id: `${item.ku_id}-${item.facet}`,
                 ku_id: item.ku_id,
-                character: ku.character || ku.slug,
+                character: ku.character || ku.slug?.split(':')[1] || '?',
                 type: ku.type,
-                prompt: question?.prompt || ku.character || ku.slug,
+                // Fallback prompt: use character or meaning if question is missing
+                prompt: question?.prompt || (item.facet === 'meaning' ? ku.character : (ku.character || ku.meaning)),
                 prompt_variant: item.facet,
                 meaning: ku.meaning,
                 reading: reading,
-                cloze_answer: item.facet === 'cloze' ? question?.correct_answers?.[0] : undefined,
-                sentence_ja: question?.cloze_text_with_blanks,
-                sentence_en: question?.hints?.[0],
+                cloze_answer: item.facet === 'cloze' ? (question?.correct_answers?.[0] || ku.meaning) : undefined,
+                sentence_ja: question?.cloze_text_with_blanks || (item.facet === 'cloze' ? "Grammar check: Try to recall the structure." : undefined),
+                sentence_en: question?.hints?.[0] || (item.facet === 'cloze' ? ku.meaning : undefined),
                 currentState: {
                     stage: item.state,
                     stability: item.stability,
@@ -88,8 +97,8 @@ export class ReviewSessionController {
                     reps: item.reps,
                     lapses: item.lapses
                 }
-            };
-        }).filter(item => !!item.ku_id);
+            } as QuizItem;
+        }).filter((item): item is QuizItem => !!item && !!item.ku_id);
     }
 
     getNextItem(): QuizItem | null {

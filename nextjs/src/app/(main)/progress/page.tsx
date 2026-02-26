@@ -38,23 +38,13 @@ export default function ProgressPage() {
     const maxReviews = Math.max(...last7Days, 1);
 
     return (
-        <div className="max-w-5xl mx-auto space-y-8 py-4 font-sans text-[#3E4A61] animate-in fade-in duration-1000">
-            <div className="relative flex items-center justify-center py-2">
-                <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-[#F0E0E0]"></div>
-                </div>
-                <div className="relative bg-[#FFFDFD] px-4 text-center">
-                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[#3E4A61]">Learning Analytics</span>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Review Activity Heatmap-style */}
-                <div className="bg-white border-2 border-[#F0E0E0] rounded-[40px] p-8 shadow-sm space-y-8">
+        <div className="max-w-5xl mx-auto space-y-sm font-sans text-foreground animate-in fade-in duration-1000">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-md">
+                <div className="premium-card p-md space-y-md">
                     <div className="flex justify-between items-center">
                         <div className="space-y-0.5">
-                            <h3 className="text-lg font-black text-[#3E4A61] uppercase tracking-tight">Review Activity</h3>
-                            <p className="text-[8px] font-black text-[#A0AEC0] uppercase tracking-widest">Last 7 Days</p>
+                            <h3 className="text-card-title font-black text-foreground uppercase tracking-tight">Review Activity</h3>
+                            <p className="text-[8px] font-black text-foreground/40 uppercase tracking-widest">Last 7 Days</p>
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="text-[7px] font-black uppercase text-[#CBD5E0]">Less</span>
@@ -74,8 +64,8 @@ export default function ProgressPage() {
                                 <span className="text-[9px] font-black text-[#3E4A61]">{days[i]}</span>
                                 <div
                                     className={`w-full aspect-square rounded-[18px] transition-all duration-300 ${count > (maxReviews * 0.75) ? 'bg-[#FFB5B5]' :
-                                            count > (maxReviews * 0.4) ? 'bg-[#FFDADA]' :
-                                                count > 0 ? 'bg-[#FFF5F5]' : 'bg-[#F7FAFC]'
+                                        count > (maxReviews * 0.4) ? 'bg-[#FFDADA]' :
+                                            count > 0 ? 'bg-[#FFF5F5]' : 'bg-[#F7FAFC]'
                                         }`}
                                 ></div>
                                 <span className="text-[9px] font-black text-[#3E4A61]">{count}</span>
@@ -84,11 +74,10 @@ export default function ProgressPage() {
                     </div>
                 </div>
 
-                {/* Items by State Breakdown */}
-                <div className="bg-white border-2 border-[#F0E0E0] rounded-[40px] p-8 shadow-sm space-y-6">
+                <div className="premium-card p-md space-y-md">
                     <div className="space-y-0.5">
-                        <h3 className="text-lg font-black text-[#3E4A61] uppercase tracking-tight">Curriculum Status</h3>
-                        <p className="text-[8px] font-black text-[#A0AEC0] uppercase tracking-widest">Item Distribution</p>
+                        <h3 className="text-card-title font-black text-foreground uppercase tracking-tight">Curriculum Status</h3>
+                        <p className="text-[8px] font-black text-foreground/40 uppercase tracking-widest">Item Distribution</p>
                     </div>
 
                     <div className="space-y-5">
@@ -117,11 +106,10 @@ export default function ProgressPage() {
                     </div>
                 </div>
 
-                {/* Forecast Forecast */}
-                <div className="bg-white border-2 border-[#F0E0E0] rounded-[40px] p-8 shadow-sm space-y-8">
+                <div className="premium-card p-md space-y-md">
                     <div className="space-y-0.5">
-                        <h3 className="text-lg font-black text-[#3E4A61] uppercase tracking-tight">Review Forecast</h3>
-                        <p className="text-[8px] font-black text-[#A0AEC0] uppercase tracking-widest">Upcoming Workload</p>
+                        <h3 className="text-card-title font-black text-foreground uppercase tracking-tight">Review Forecast</h3>
+                        <p className="text-[8px] font-black text-foreground/40 uppercase tracking-widest">Upcoming Workload</p>
                     </div>
 
                     <div className="h-32 flex flex-col justify-between">
@@ -146,10 +134,9 @@ export default function ProgressPage() {
                     </div>
                 </div>
 
-                {/* Type Mastery */}
-                <div className="bg-[#3E4A61] rounded-[40px] p-8 text-white space-y-8 flex flex-col shadow-xl">
+                <div className="bg-foreground rounded-[var(--radius)] p-md text-white space-y-md flex flex-col shadow-xl">
                     <div className="space-y-0.5">
-                        <h3 className="text-lg font-black text-white/90 uppercase tracking-tight">Domain Mastery</h3>
+                        <h3 className="text-card-title font-black text-white/90 uppercase tracking-tight">Domain Mastery</h3>
                         <p className="text-[8px] font-black text-white/40 uppercase tracking-widest">Structural Performance</p>
                     </div>
 
