@@ -137,72 +137,89 @@ function ContentDatabase() {
                 </div>
             </div>
 
-            {/* Grid Display */}
+            {/* Grid Display grouped by level */}
             {loading ? (
                 <div className="py-2xl flex flex-col items-center justify-center gap-xl">
                     <Loader2 className="animate-spin text-primary" size={48} />
                     <p className="text-metadata font-black uppercase tracking-[0.6em] text-foreground/20">Synchronizing Archives</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-lg">
-                    {filteredItems.map((unit, idx) => {
-                        const state = states[unit.id];
-                        const status = unit.level > userLevel ? 'locked' : (!state ? 'new' : state.state);
+                <div className="space-y-xl">
+                    {Object.entries(
+                        filteredItems.reduce((acc, item) => {
+                            if (!acc[item.level]) acc[item.level] = [];
+                            acc[item.level].push(item);
+                            return acc;
+                        }, {} as Record<number, any[]>)
+                    ).sort(([a], [b]) => parseInt(a) - parseInt(b)).map(([level, levelItems]) => (
+                        <div key={level} className="space-y-md">
+                            <div className="flex items-center gap-4 px-2">
+                                <h2 className="text-xl font-black text-foreground/40 italic">LEVEL {level}</h2>
+                                <div className="h-px flex-1 bg-border/30" />
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-lg">
+                                {levelItems.map((unit) => {
+                                    const state = states[unit.id];
+                                    const status = unit.level > userLevel ? 'locked' : (!state ? 'new' : state.state);
 
-                        return (
-                            <Link
-                                href={`/content/${unit.type === 'vocabulary' ? 'vocabulary' : unit.type === 'radical' ? 'radicals' : unit.type}/${unit.slug}`}
-                                key={unit.id}
-                                className={clsx(
-                                    "group premium-card p-0 flex flex-col items-stretch bg-surface border-border hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 overflow-hidden h-lib-card",
-                                    status === 'locked' && "opacity-40 grayscale pointer-events-none"
-                                )}
-                            >
-                                {/* Card Header with Type & Level */}
-                                <div className="p-md flex justify-between items-center bg-surface-muted/30 border-b border-border/50 h-[48px] shrink-0">
-                                    <div className="flex items-center gap-sm">
-                                        <div className={clsx(
-                                            "w-1.5 h-1.5 rounded-full shadow-sm",
-                                            unit.type === 'radical' ? "bg-radical" :
-                                                unit.type === 'kanji' ? "bg-kanji" :
-                                                    unit.type === 'vocabulary' ? "bg-vocab" : "bg-grammar"
-                                        )} />
-                                        <span className="text-metadata font-black uppercase tracking-widest text-foreground/30">{unit.type}</span>
-                                    </div>
-                                    <span className="text-metadata font-black text-foreground/40 bg-surface px-2 py-0.5 rounded-md border border-border">L{unit.level}</span>
-                                </div>
+                                    return (
+                                        <Link
+                                            href={`/content/${unit.type === 'vocabulary' ? 'vocabulary' : unit.type === 'radical' ? 'radicals' : unit.type}/${unit.slug}`}
+                                            key={unit.id}
+                                            className={clsx(
+                                                "group premium-card p-0 flex flex-col items-stretch bg-surface border-border hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 overflow-hidden h-lib-card",
+                                                status === 'locked' && "opacity-40 grayscale pointer-events-none"
+                                            )}
+                                        >
+                                            {/* Card Header with Type & Level */}
+                                            <div className="p-md flex justify-between items-center bg-surface-muted/30 border-b border-border/50 h-[48px] shrink-0">
+                                                <div className="flex items-center gap-sm">
+                                                    <div className={clsx(
+                                                        "w-1.5 h-1.5 rounded-full shadow-sm",
+                                                        unit.type === 'radical' ? "bg-radical" :
+                                                            unit.type === 'kanji' ? "bg-kanji" :
+                                                                unit.type === 'vocabulary' ? "bg-vocab" : "bg-grammar"
+                                                    )} />
+                                                    <span className="text-metadata font-black uppercase tracking-widest text-foreground/30">{unit.type}</span>
+                                                </div>
+                                                <span className="text-metadata font-black text-foreground/40 bg-surface px-2 py-0.5 rounded-md border border-border">L{unit.level}</span>
+                                            </div>
 
-                                {/* Main Character Section */}
-                                <div className="flex-1 flex flex-col items-center justify-center p-md gap-sm overflow-hidden min-h-0">
-                                    <div className={clsx(
-                                        "text-4xl font-black transition-all group-hover:scale-105 duration-500 jp-text truncate max-w-full shrink-0",
-                                        unit.type === 'kanji' ? "text-kanji" :
-                                            unit.type === 'vocabulary' ? "text-primary-dark" : "text-foreground"
-                                    )}>
-                                        {unit.character || '—'}
-                                    </div>
-                                    <h3 className="text-metadata font-black text-foreground/60 uppercase tracking-tight text-center line-clamp-2 px-2 italic min-h-[2.4em] flex items-center justify-center">
-                                        {unit.meaning}
-                                    </h3>
-                                </div>
+                                            {/* Main Character Section */}
+                                            <div className="flex-1 flex flex-col items-center justify-center p-md gap-sm overflow-hidden min-h-0">
+                                                <div className={clsx(
+                                                    "text-4xl font-black transition-all group-hover:scale-105 duration-500 jp-text truncate max-w-full shrink-0",
+                                                    unit.type === 'kanji' ? "text-kanji" :
+                                                        unit.type === 'vocabulary' ? "text-primary-dark" : "text-foreground"
+                                                )}>
+                                                    {unit.character || '—'}
+                                                </div>
+                                                <h3 className="text-metadata font-black text-foreground/60 uppercase tracking-tight text-center line-clamp-2 px-2 italic min-h-[2.4em] flex items-center justify-center">
+                                                    {unit.meaning}
+                                                </h3>
+                                            </div>
 
-                                {/* Status Footer */}
-                                <div className="px-lg py-md bg-surface-muted/10 border-t border-border/30 flex justify-between items-center group-hover:bg-primary/5 transition-colors h-[48px] shrink-0">
-                                    <StatusTag status={status} />
-                                    <ChevronRight size={14} className="text-foreground/10 group-hover:text-primary transition-all translate-x-0 group-hover:translate-x-1" />
-                                </div>
+                                            {/* Status Footer */}
+                                            <div className="px-lg py-md bg-surface-muted/10 border-t border-border/30 flex justify-between items-center group-hover:bg-primary/5 transition-colors h-[48px] shrink-0">
+                                                <StatusTag status={status} />
+                                                <ChevronRight size={14} className="text-foreground/10 group-hover:text-primary transition-all translate-x-0 group-hover:translate-x-1" />
+                                            </div>
 
-                                {/* Mini Progress Indicator - Fixed at bottom */}
-                                {state && (
-                                    <div className="absolute bottom-0 left-0 w-full h-[3px] bg-border/10">
-                                        <div className="h-full bg-primary/40 transition-all duration-1000" style={{ width: `${Math.min(100, (state.reps / 12) * 100)}%` }} />
-                                    </div>
-                                )}
-                            </Link>
-                        );
-                    })}
+                                            {/* Mini Progress Indicator - Fixed at bottom */}
+                                            {state && (
+                                                <div className="absolute bottom-0 left-0 w-full h-[3px] bg-border/10">
+                                                    <div className="h-full bg-primary/40 transition-all duration-1000" style={{ width: `${Math.min(100, (state.reps / 12) * 100)}%` }} />
+                                                </div>
+                                            )}
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
+
 
             {!loading && filteredItems.length === 0 && (
                 <div className="py-2xl flex flex-col items-center justify-center text-center space-y-lg bg-surface-muted/20 border-2 border-dashed border-border rounded-clay">

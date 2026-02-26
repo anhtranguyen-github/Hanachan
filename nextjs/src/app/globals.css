@@ -171,3 +171,32 @@
 .bg-sakura-light {
   background-color: var(--secondary);
 }
+
+/* Premium UI Utilities */
+.glass-card {
+  @apply bg-white/60 backdrop-blur-lg border border-white/40 shadow-xl shadow-[0_8px_30px_#0000000a] rounded-[32px];
+}
+
+.glass-card-hover {
+  @apply hover:bg-white/80 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-[0_20px_40px_#f4acb726] hover:border-white/60;
+}
+
+
+
+
+
+@keyframes fadeInPage {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-page-entrance {
+  animation: fadeInPage 1.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
