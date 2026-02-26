@@ -46,16 +46,17 @@ Hanachan is a high-performance Japanese learning platform built with a modern sp
 
 ### Running Locally
 
-Hanachan provides a centralized startup script to launch both services simultaneously:
+Hanachan provides a centralized startup script to launch the entire environment (Infrastructure + Services) simultaneously:
 
 ```bash
 ./run.sh
 ```
 
 This script:
-1.  Cleans up zombie processes on ports `3000` and `8765`.
-2.  Starts the **FastAPI** backend via `uv`.
-3.  Starts the **Next.js** frontend via `pnpm`.
+1.  **Orchestrates Infrastructure**: Starts the **Supabase** local stack (PostgreSQL, Auth, Storage).
+2.  **Cleans Environment**: Force-cleans zombie processes on ports `3000` and `8765` to avoid conflicts.
+3.  **Starts Backend**: Launches the **FastAPI** server using `uv`.
+4.  **Starts Frontend**: Launches the **Next.js** dev server using `pnpm`.
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
 
@@ -69,7 +70,10 @@ Use these pre-configured accounts to explore the platform immediately.
 | `test_worker_2@hanachan.test` | `Password123!` | 5     | Mid-level content unlocked |
 | `test_worker_3@hanachan.test` | `Password123!` | 10    | Advanced content unlocked |
 
-> **Note:** If these users do not exist, they should be created in the Supabase dashboard or via a migration script.
+> **Note:** These accounts are automatically provisioned. If you need to reset them or seed them for the first time, run:
+> ```bash
+> node nextjs/scripts/seed-test-workers.js
+> ```
 
 ## 🧪 Running Tests
 
@@ -80,7 +84,7 @@ We use **Vitest** for unit and integration testing.
 npm test
 ```
 
-📂 Project Structure
+## 📂 Project Structure
 
 ```bash
 .
@@ -114,6 +118,15 @@ Ensure your Supabase instance is running and configured.
 
 -   **Schema**: See `docs/database/final_schema.sql` for the complete database schema.
 -   **Verify Connection**: `pnpm exec tsx verify_init.ts`
+
+## 🛠 Troubleshooting
+
+### Port Already in Use (EADDRINUSE)
+If you encounter `Error: listen EADDRINUSE: address already in use :::3000`, simply restart the startup script:
+```bash
+./run.sh
+```
+The script is designed to aggressively clear existing processes on ports `3000` and `8765` before starting.
 
 ## 📄 License
 
