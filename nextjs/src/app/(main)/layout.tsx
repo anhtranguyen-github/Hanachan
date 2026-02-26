@@ -48,7 +48,28 @@ export default function MainLayout({
         return null;
     }
 
-    const pageTitle = pathname.split('/').pop()?.replace('-', ' ') || 'Overview';
+    const getPageTitle = (path: string) => {
+        const lastPart = path.split('/').pop() || '';
+        if (!lastPart || lastPart === 'dashboard') return 'Overview';
+        if (lastPart === 'learn') return 'Discovery Training';
+        if (lastPart === 'review') return 'Review Session';
+        if (lastPart === 'content') return 'Library';
+        if (lastPart === 'chatbot') return 'Hanachan AI';
+
+        try {
+            const decoded = decodeURIComponent(lastPart);
+            return decoded
+                .replace(/^(vocab|kanji|radical|grammar)_/, '')
+                .replace(/[_-]/g, ' ')
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        } catch (e) {
+            return lastPart.charAt(0).toUpperCase() + lastPart.slice(1);
+        }
+    };
+
+    const pageTitle = getPageTitle(pathname);
 
     return (
         <div className="flex h-screen bg-[#FFFDFD] overflow-hidden font-sans relative">
