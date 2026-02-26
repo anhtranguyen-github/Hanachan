@@ -68,11 +68,34 @@ data_flattened/
 data_v7/
 data_v6/
 
-data/bin/
+# Plans and agent data
+plans/
 
-tra@example.com/
+# Python services (services/)
+services/**/__pycache__/
+services/**/*.py[cod]
+services/**/.venv/
+services/**/venv/
+services/**/.uv/
+services/**/uv.lock
+services/**/*.egg-info/
+services/**/.pytest_cache/
+services/**/.ipynb_checkpoints/
+services/**/*.ipynb_checkpoints/
 
-password/
-grammar_process/
+# Documentation and bulk data (per user request)
+docs/
+data/
 
-kanji_vocab_process/
+# Large files and databases
+*.db
+*.sqlite
+*.sqlite3
+*.zip
+*.tar.gz
+*.mp4
+*.mov
+*.pdf
+*.log
+*.tmp
+temp/

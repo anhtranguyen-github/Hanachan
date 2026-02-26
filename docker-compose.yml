@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  nextjs:
+    build:
+      context: ./nextjs
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./nextjs/.env
+    depends_on:
+      - fastapi
+    networks:
+      - app-network
+
+  fastapi:
+    build:
+      context: ./fastapi
+      dockerfile: Dockerfile
+    ports:
+      - "8765:8765"
+    env_file:
+      - ./fastapi/.env
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
