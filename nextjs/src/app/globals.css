@@ -36,6 +36,28 @@
   /* Soft Sage Green */
 
   --radius: 20px;
+
+  /* Typography Scale Tokens */
+  --font-size-h1: clamp(36px, 4vw, 44px);
+  --font-size-h2: 28px;
+  --font-size-h3: 20px;
+  --font-size-card-title: 18px;
+  --font-size-body: 15px;
+  --font-size-metadata: 12px;
+
+  /* Spacing Tokens */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  /* Component Constraint Tokens */
+  --card-lib-height: 280px;
+  --card-vocab-height: 140px;
+  --card-kanji-size: 450px;
+  --header-v-rhythm: 2px;
 }
 
 @layer base {

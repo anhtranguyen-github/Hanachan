@@ -43,6 +43,27 @@ const config: Config = {
 				'3xl': '32px',
 				'4xl': '40px',
 			},
+			spacing: {
+				'xs': 'var(--spacing-xs)',
+				'sm': 'var(--spacing-sm)',
+				'md': 'var(--spacing-md)',
+				'lg': 'var(--spacing-lg)',
+				'xl': 'var(--spacing-xl)',
+				'2xl': 'var(--spacing-2xl)',
+			},
+			fontSize: {
+				'h1': 'var(--font-size-h1)',
+				'h2': 'var(--font-size-h2)',
+				'h3': 'var(--font-size-h3)',
+				'card-title': 'var(--font-size-card-title)',
+				'body': 'var(--font-size-body)',
+				'metadata': 'var(--font-size-metadata)',
+			},
+			height: {
+				'lib-card': 'var(--card-lib-height)',
+				'vocab-card': 'var(--card-vocab-height)',
+				'kanji-hero': 'var(--card-kanji-size)',
+			},
 			animation: {
 				'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
 			}
