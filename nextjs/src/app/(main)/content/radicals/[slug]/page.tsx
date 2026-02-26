@@ -30,10 +30,7 @@ export default async function RadicalDetailPage({ params }: { params: { slug: st
                     <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
                     <span className="text-metadata font-black uppercase tracking-[0.2em]">RADICAL ARCHIVES</span>
                 </Link>
-                <div className="flex items-center gap-sm">
-                    <span className="text-metadata font-black text-foreground/20 uppercase tracking-widest">Entry ID:</span>
-                    <code className="text-metadata font-bold text-primary-dark bg-primary/5 px-2 py-0.5 rounded-md border border-primary/10">{radical.id.slice(0, 8)}</code>
-                </div>
+                <div />
             </div>
 
             {/* Immersive Hero Header */}
@@ -100,9 +97,7 @@ export default async function RadicalDetailPage({ params }: { params: { slug: st
                             <BookOpen size={16} className="text-foreground/40" />
                             <h2 className="text-h3 font-black text-foreground uppercase tracking-[0.4em]">Integrations</h2>
                         </div>
-                        <div className="text-metadata font-black text-foreground/40 bg-surface px-4 py-2 rounded-xl border border-border">
-                            COUNT: {(radical.kanji || []).length}
-                        </div>
+                        <div />
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-md">
@@ -125,24 +120,7 @@ export default async function RadicalDetailPage({ params }: { params: { slug: st
                 </section>
             </div>
 
-            {/* Mastery Widget System */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
-                {['Current Status', 'Ref Slug', 'Phase'].map((label, i) => (
-                    <div key={label} className="premium-card p-lg bg-surface border-border flex items-center justify-between h-[100px]">
-                        <div className="space-y-1">
-                            <div className="text-metadata font-black text-foreground/20 uppercase tracking-widest">{label}</div>
-                            <div className="text-card-title font-black text-foreground uppercase tracking-tight truncate max-w-[150px]">
-                                {i === 0 ? "NOT TACKLED" : i === 1 ? radical.slug.toUpperCase() : "FOUNDATION"}
-                            </div>
-                        </div>
-                        <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center border border-border">
-                            {i === 0 ? <Zap size={14} className="text-foreground/20" /> :
-                                i === 1 ? <Layers size={14} className="text-foreground/20" /> :
-                                    <Sparkles size={14} className="text-foreground/20" />}
-                        </div>
-                    </div>
-                ))}
-            </div>
+            {/* Mastery Widget System - Removed as per density and clarity requirements */}
         </div>
     );
 }

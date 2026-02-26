@@ -41,10 +41,7 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                     <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
                     <span className="text-metadata font-black uppercase tracking-[0.2em]">VOCABULARY ARCHIVES</span>
                 </Link>
-                <div className="flex items-center gap-sm">
-                    <span className="text-metadata font-black text-foreground/20 uppercase tracking-widest">Mastery Sig:</span>
-                    <code className="text-metadata font-bold text-primary-dark uppercase bg-primary/5 px-2 py-0.5 rounded-md border border-primary/10">{vocab.id.slice(0, 12)}</code>
-                </div>
+                <div />
             </div>
 
             {/* Spectacular Hero Header - Normalized */}
@@ -81,8 +78,8 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                     </div>
 
                     <div className="flex items-center gap-sm justify-center lg:justify-start">
-                        <div className="p-sm bg-surface rounded-2xl border-2 border-border shadow-xl hover:shadow-primary/10 transition-all flex items-center h-16 shrink-0">
-                            <AudioPlayer items={audioItems as any[]} showLabels className="gap-4" />
+                        <div className="p-sm bg-surface rounded-2xl border-2 border-border shadow-xl hover:shadow-primary/10 transition-all flex items-center h-16 shrink-0 gap-4">
+                            <AudioPlayer items={audioItems as any[]} showLabels />
                         </div>
                     </div>
                 </div>
@@ -133,9 +130,7 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                                     <p className="text-metadata font-bold text-foreground/20 uppercase tracking-widest italic">Semantic building blocks</p>
                                 </div>
                             </div>
-                            <div className="text-metadata font-black text-foreground/40 bg-surface px-4 py-2 rounded-xl border border-border">
-                                COUNT: {vocab.kanji?.length || 0}
-                            </div>
+                            <div />
                         </div>
 
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-lg">
@@ -152,12 +147,12 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                     <div className="lg:col-span-4 p-xl bg-surface border border-border rounded-clay space-y-xl flex flex-col h-full">
                         <div className="flex items-center gap-sm border-b border-border/50 pb-lg">
                             <Info size={16} className="text-foreground/40" />
-                            <h2 className="text-metadata font-black text-foreground/40 uppercase tracking-[0.4em]">Archive Metadata</h2>
+                            <h2 className="text-metadata font-black text-foreground/40 uppercase tracking-[0.4em]">Classification</h2>
                         </div>
 
                         <div className="space-y-xl flex-1 flex flex-col justify-center">
                             <div className="space-y-sm">
-                                <span className="text-metadata font-black text-foreground/20 uppercase tracking-[0.2em]">Grammatical Path</span>
+                                <span className="text-metadata font-black text-foreground/20 uppercase tracking-[0.2em]">Grammar Type</span>
                                 <div className="flex flex-wrap gap-sm">
                                     {(kuVocab.parts_of_speech || []).map((pos: string) => (
                                         <span key={pos} className="px-3 py-1 bg-surface-muted border border-border rounded-lg text-metadata font-black text-foreground/60 uppercase tracking-widest">{pos}</span>
@@ -165,7 +160,7 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                                 </div>
                             </div>
                             <div className="space-y-sm">
-                                <span className="text-metadata font-black text-foreground/20 uppercase tracking-[0.2em]">Phase Signature</span>
+                                <span className="text-metadata font-black text-foreground/20 uppercase tracking-[0.2em]">Pitch Pattern</span>
                                 <div className="space-y-sm">
                                     {pitchEntries.map((p: any, idx: number) => (
                                         <div key={idx} className="flex items-center gap-sm p-sm bg-primary/5 border border-primary/10 rounded-xl group/pitch overflow-hidden">

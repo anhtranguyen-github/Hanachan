@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2, ArrowLeft, CheckCircle2, Zap } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle2, Zap, X } from 'lucide-react';
 import { fetchDueItems } from '@/features/learning/service';
 import { ReviewSessionController, QuizItem } from '@/features/learning/ReviewSessionController';
 import { Rating } from '@/features/learning/domain/FSRSEngine';
@@ -121,15 +121,15 @@ function SessionContent() {
         <div className="min-h-screen bg-background py-12 px-6 flex flex-col max-w-5xl mx-auto space-y-12" data-testid="review-session-root">
             <div className="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-primary/10 to-transparent -z-10" />
 
-            <header className="flex justify-between items-center px-6">
+            <header className="flex justify-between items-center px-6 shrink-0">
                 <div className="flex items-center gap-6">
                     <div className="space-y-1">
                         <span className={clsx("block text-xl font-black leading-none", currentCard?.type === 'kanji' ? 'text-kanji' : 'text-primary')}>
                             {stats.completed + 1} / {stats.totalItems}
                         </span>
-                        <span className="block text-[8px] font-black text-gray-300 uppercase tracking-widest leading-none">Items in queue</span>
+                        <span className="block text-[8px] font-black text-foreground/20 uppercase tracking-widest leading-none">Review Progress</span>
                     </div>
-                    <div className="w-48 h-3 bg-gray-100 rounded-full overflow-hidden border border-gray-100">
+                    <div className="w-48 h-2.5 bg-gray-100 rounded-full overflow-hidden border border-gray-100">
                         <div
                             className={clsx("h-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(0,0,0,0.1)]", currentCard?.type === 'kanji' ? 'bg-kanji' : 'bg-primary')}
                             style={{ width: `${progress}%` }}
@@ -138,14 +138,15 @@ function SessionContent() {
                 </div>
 
                 <div className="flex gap-4 items-center">
-                    <div className="bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-100 italic text-[10px] font-black text-orange-400 animate-pulse">
-                        Intra-session Loop Active
+                    <div className="hidden md:block bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-100 italic text-[9px] font-black text-orange-400">
+                        Intra-session Loop
                     </div>
                     <button
                         onClick={() => router.push('/review')}
-                        className="text-gray-300 hover:text-rose-500 font-black text-[10px] uppercase tracking-[0.2em] transition-colors"
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-muted/50 hover:bg-surface border border-border text-foreground/40 hover:text-red-500 transition-all group"
+                        title="End Session"
                     >
-                        End Session
+                        <X size={18} className="group-hover:rotate-90 transition-transform" />
                     </button>
                 </div>
             </header>

@@ -33,10 +33,7 @@ export default async function GrammarDetailPage({ params }: { params: { slug: st
                     <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
                     <span className="text-metadata font-black uppercase tracking-[0.2em]">GRAMMAR REPOSITORY</span>
                 </Link>
-                <div className="flex items-center gap-sm">
-                    <span className="text-metadata font-black text-foreground/20 uppercase tracking-widest">Mastery Sig:</span>
-                    <code className="text-metadata font-bold text-primary-dark uppercase bg-primary/5 px-2 py-0.5 rounded-md border border-primary/10">{grammar.id.slice(0, 12)}</code>
-                </div>
+                <div />
             </div>
 
             {/* Spectacular Hero Header - Normalized */}
@@ -97,9 +94,7 @@ export default async function GrammarDetailPage({ params }: { params: { slug: st
                                     <h2 className="text-h3 font-black text-foreground uppercase tracking-[0.6em]">Linguistic Simulations</h2>
                                 </div>
                             </div>
-                            <div className="px-lg py-sm bg-surface rounded-2xl border border-border">
-                                <span className="text-metadata font-black text-primary-dark uppercase tracking-widest">{(grammar.sentences || []).length} SIMULATED SAMPLES FOUND</span>
-                            </div>
+                            <div />
                         </div>
 
                         <div className="space-y-lg">

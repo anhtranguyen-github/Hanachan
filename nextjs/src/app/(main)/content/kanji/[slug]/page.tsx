@@ -31,10 +31,7 @@ export default async function KanjiDetailPage({ params }: { params: { slug: stri
                     <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
                     <span className="text-metadata font-black uppercase tracking-[0.2em]">KANJI ARCHIVES</span>
                 </Link>
-                <div className="flex items-center gap-sm">
-                    <span className="text-metadata font-black text-foreground/20 uppercase tracking-widest">Entry Hash:</span>
-                    <code className="text-metadata font-bold text-primary-dark bg-primary/5 px-2 py-0.5 rounded-md border border-primary/10">{kanji.id.slice(0, 12)}</code>
-                </div>
+                <div />
             </div>
 
             {/* Spectacular Hero Header - Normalized */}
@@ -163,9 +160,7 @@ export default async function KanjiDetailPage({ params }: { params: { slug: stri
                                 </div>
                                 <h2 className="text-h3 font-black text-foreground uppercase tracking-[0.6em]">Integrated Vocabulary</h2>
                             </div>
-                            <div className="px-lg py-sm bg-surface rounded-2xl border border-border">
-                                <span className="text-metadata font-black text-primary-dark uppercase tracking-widest">{(kanji.vocabulary || []).length} LINKS FOUND</span>
-                            </div>
+                            <div />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-lg">
