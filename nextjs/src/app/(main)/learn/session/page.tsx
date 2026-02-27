@@ -276,60 +276,61 @@ function LessonSlide({ item, onNext, isLastLesson }: { item: any, onNext: () => 
     const activeColor = typeColors[item.type] || 'bg-primary';
 
     return (
-        <div className="flex-1 bg-white border-2 border-gray-300 rounded-[48px] shadow-sm overflow-hidden flex flex-col relative animate-in fade-in slide-in-from-bottom-8 duration-700 max-h-[85vh]">
-            {/* Visual Cue */}
-            <div className="absolute top-6 right-8 z-20">
-                <span className="px-3 py-1.5 bg-primary/10 text-primary rounded-xl text-[9px] font-black uppercase tracking-widest border border-primary/20">
-                    New Discovery
+        <div className="flex-1 bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden flex flex-col relative animate-in fade-in slide-in-from-bottom-6 duration-500 max-h-[85vh]">
+            {/* Type badge */}
+            <div className="absolute top-4 right-4 z-20">
+                <span className="px-2.5 py-1 bg-white/20 backdrop-blur-sm text-white rounded-xl text-[8px] font-black uppercase tracking-widest border border-white/20">
+                    New
                 </span>
             </div>
 
-            {/* Discovery Content Section */}
+            {/* Character hero - compact */}
             <div className={clsx(
-                "p-12 md:p-14 text-center text-white relative overflow-hidden transition-colors duration-500 shrink-0",
+                "px-8 py-8 sm:py-10 text-center text-white relative overflow-hidden transition-colors duration-500 shrink-0",
                 activeColor
             )}>
-                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
-                <h2 className="text-7xl md:text-8xl font-black mb-2 relative z-10 drop-shadow-2xl">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+                <h2 className="text-5xl sm:text-6xl font-black mb-2 relative z-10 drop-shadow-lg jp-text leading-none">
                     {item.character || item.slug.split(':')[1]}
                 </h2>
-                <p className="text-xl font-black opacity-90 relative z-10 tracking-[0.2em] uppercase">
+                <p className="text-sm sm:text-base font-black opacity-90 relative z-10 tracking-[0.15em] uppercase mt-2">
                     {item.meaning}
                 </p>
             </div>
 
-            {/* Detailed Information Section */}
-            <div className="flex-1 p-8 md:p-10 space-y-8 overflow-auto min-h-0 bg-white">
-                <div className="space-y-4">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-300 border-b-2 border-gray-50 pb-2">
-                        {item.type === 'grammar' ? "Grammar Explanation" : "Mnemonic Strategy"}
+            {/* Details */}
+            <div className="flex-1 p-5 sm:p-6 space-y-5 overflow-auto min-h-0 bg-white custom-scrollbar">
+                <div className="space-y-2">
+                    <h3 className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-300 border-b border-gray-100 pb-1.5">
+                        {item.type === 'grammar' ? "Explanation" : "Mnemonic"}
                     </h3>
-                    <p className="text-xl text-gray-700 leading-relaxed font-bold">
-                        {item.type === 'grammar' ? (details?.explanation || "Master this grammar pattern to enhance your sentence structures.") :
-                            (details?.meaning_mnemonic || "Visualize this character to better retain its semantic meaning.")}
+                    <p className="text-sm sm:text-base text-gray-600 leading-relaxed font-medium">
+                        {item.type === 'grammar'
+                            ? (details?.explanation || "Master this grammar pattern.")
+                            : (details?.meaning_mnemonic || "Visualize this character to retain its meaning.")}
                     </p>
                 </div>
 
                 {item.type !== 'radical' && (
-                    <div className="bg-gray-50 p-6 md:p-8 rounded-[32px] border-2 border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-8 shrink-0">
+                    <div className="bg-gray-50 p-4 sm:p-5 rounded-2xl border border-gray-100 grid grid-cols-2 gap-4 shrink-0">
                         {item.type === 'grammar' ? (
-                            <div className="col-span-2 space-y-2">
-                                <h4 className="text-[9px] font-black uppercase tracking-widest text-gray-400">Context Example</h4>
-                                <p className="text-2xl font-black text-gray-800 jp-text leading-tight">
-                                    {details?.example_sentences?.[0]?.ja || details?.sentence_ja || "No context provided."}
+                            <div className="col-span-2 space-y-1.5">
+                                <h4 className="text-[8px] font-black uppercase tracking-widest text-gray-400">Example</h4>
+                                <p className="text-base font-black text-gray-800 jp-text leading-relaxed">
+                                    {details?.example_sentences?.[0]?.ja || details?.sentence_ja || "No example available."}
                                 </p>
                             </div>
                         ) : (
                             <>
                                 <div>
-                                    <h4 className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Reading</h4>
-                                    <p className="text-3xl font-black text-gray-800">
-                                        {item.type === 'vocabulary' ? details?.reading : (details?.onyomi?.[0] || details?.kunyomi?.[0] || "N/A")}
+                                    <h4 className="text-[8px] font-black uppercase tracking-widest text-gray-400 mb-1">Reading</h4>
+                                    <p className="text-xl font-black text-gray-800 jp-text">
+                                        {item.type === 'vocabulary' ? details?.reading : (details?.onyomi?.[0] || details?.kunyomi?.[0] || "—")}
                                     </p>
                                 </div>
                                 <div>
-                                    <h4 className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Curriculum</h4>
-                                    <p className="text-3xl font-black text-gray-800">Level {item.level}</p>
+                                    <h4 className="text-[8px] font-black uppercase tracking-widest text-gray-400 mb-1">Level</h4>
+                                    <p className="text-xl font-black text-gray-800">Lv. {item.level}</p>
                                 </div>
                             </>
                         )}
@@ -337,17 +338,17 @@ function LessonSlide({ item, onNext, isLastLesson }: { item: any, onNext: () => 
                 )}
             </div>
 
-            {/* Footer Interaction - integrated in card */}
-            <footer className="p-10 border-t border-gray-50 flex justify-between items-center bg-gray-50/30">
-                <div className="text-xs font-bold text-gray-400">
-                    * All items must be acknowledged to complete this batch.
-                </div>
+            {/* Footer */}
+            <footer className="p-4 sm:p-5 border-t border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <p className="text-[9px] font-bold text-gray-300 hidden sm:block">
+                    Acknowledge all items to proceed.
+                </p>
                 <button
                     onClick={onNext}
                     data-testid="lesson-next-button"
-                    className="px-16 py-5 bg-primary text-white font-black rounded-[28px] shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all text-xl"
+                    className="ml-auto px-8 sm:px-12 py-3 sm:py-4 bg-primary text-white font-black rounded-2xl shadow-lg shadow-primary/25 hover:scale-[1.02] active:scale-95 transition-all text-sm sm:text-base"
                 >
-                    {isLastLesson ? 'Mastery Quiz →' : 'Mastered →'}
+                    {isLastLesson ? 'Start Quiz →' : 'Next →'}
                 </button>
             </footer>
         </div>
