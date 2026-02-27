@@ -15,7 +15,17 @@ export default defineConfig({
             forks: {
                 singleFork: true // Sequential for DB operations
             }
-        }
+        },
+        coverage: {
+            provider: 'v8',
+            reporter: ['text', 'lcov', 'html'],
+            include: ['src/**/*.ts', 'src/**/*.tsx'],
+            exclude: [
+                'src/**/*.d.ts',
+                'src/app/**',          // Next.js pages — tested via e2e
+                'src/lib/supabase.ts', // External client
+            ],
+        },
     },
     resolve: {
         alias: {

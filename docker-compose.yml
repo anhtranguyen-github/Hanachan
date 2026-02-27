@@ -1,29 +1,104 @@
 version: '3.8'
 
+# ─── Hanachan — Full Stack Docker Compose ────────────────────────────────────
+# Services:
+#   nextjs   — Next.js 14 frontend (port 3000)
+#   fastapi  — FastAPI memory backend (port 8765)
+#
+# Usage:
+#   docker compose up                  # start all services
+#   docker compose up --build          # rebuild images
+#   docker compose run --rm fastapi-test  # run pytest
+#   docker compose run --rm nextjs-test   # run vitest
+# ─────────────────────────────────────────────────────────────────────────────
+
 services:
+  # ── Next.js Frontend ────────────────────────────────────────────────────────
   nextjs:
     build:
       context: ./nextjs
       dockerfile: Dockerfile
+      target: runner
     ports:
       - "3000:3000"
     env_file:
       - ./nextjs/.env
+    environment:
+      - NODE_ENV=production
     depends_on:
-      - fastapi
+      fastapi:
+        condition: service_healthy
     networks:
       - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
+  # ── FastAPI Memory Backend ───────────────────────────────────────────────────
   fastapi:
     build:
       context: ./fastapi
       dockerfile: Dockerfile
+      target: runner
     ports:
       - "8765:8765"
     env_file:
       - ./fastapi/.env
     networks:
       - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8765/openapi.json')\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── FastAPI Test Runner ──────────────────────────────────────────────────────
+  fastapi-test:
+    build:
+      context: ./fastapi
+      dockerfile: Dockerfile
+      target: test
+    env_file:
+      - ./fastapi/.env
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test-key}
+      - SUPABASE_URL=${SUPABASE_URL:-https://test.supabase.co}
+      - SUPABASE_KEY=${SUPABASE_KEY:-test-anon-key}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET:-test-jwt-secret-32-chars-minimum!!}
+      - DB_HOST=${DB_HOST:-localhost}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME:-test_db}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-test-password}
+    networks:
+      - app-network
+    profiles:
+      - test
+
+  # ── Next.js Test Runner ──────────────────────────────────────────────────────
+  nextjs-test:
+    build:
+      context: ./nextjs
+      dockerfile: Dockerfile
+      target: deps
+    command: >
+      sh -c "pnpm run test"
+    environment:
+      - NODE_ENV=test
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-https://test.supabase.co}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-test-anon-key}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test-key}
+      - MEMORY_API_URL=${MEMORY_API_URL:-http://localhost:8765}
+    networks:
+      - app-network
+    profiles:
+      - test
 
 networks:
   app-network:
