@@ -13,7 +13,8 @@ import {
     Swords,
     Library,
     Menu,
-    X
+    X,
+    User
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useUser } from '@/features/auth/AuthContext';
@@ -24,6 +25,8 @@ const navItems = [
     { name: 'Review', href: '/review', icon: Swords, color: '#CDB4DB' },
     { name: 'Chatbot', href: '/immersion/chatbot', icon: MessageSquare, color: '#B7E4C7' },
     { name: 'Curriculum', href: '/content', icon: Library, color: '#FFD6A5' },
+    { name: 'Progress', href: '/progress', icon: TrendingUp, color: '#FFADAD' },
+    { name: 'Profile', href: '/profile', icon: User, color: '#F4ACB7' },
 ];
 
 export function Sidebar() {
@@ -223,7 +226,7 @@ export function Sidebar() {
             {/* ===== MOBILE BOTTOM NAV ===== */}
             <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-[#F0E0E0]/60 shadow-lg safe-area-bottom">
                 <div className="flex items-center justify-around px-2 py-2">
-                    {navItems.slice(0, 5).map((item) => {
+                    {navItems.slice(0, 6).map((item) => {
                         const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
                         return (
                             <Link

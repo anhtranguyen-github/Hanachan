@@ -64,6 +64,7 @@ export default function MainLayout({
         if (lastPart === 'content') return 'Library';
         if (lastPart === 'chatbot') return 'Hanachan AI';
         if (lastPart === 'progress') return 'Progress';
+        if (lastPart === 'profile') return 'Profile';
         try {
             return decodeURIComponent(lastPart)
                 .replace(/^(vocab|kanji|radical|grammar)_/, '')
