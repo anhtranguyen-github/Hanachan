@@ -4,31 +4,16 @@ User Profile Module.
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any, Dict, List, Optional
 
-from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
 from ..services.memory import semantic_memory as sem_mem
-from ..core.config import settings
+from ..core.llm import make_llm
 from ..schemas.memory import UserProfile
 
-# ---------------------------------------------------------------------------
-# LLM lazy init
-# ---------------------------------------------------------------------------
-
-_llm: Optional[ChatOpenAI] = None
-
-
-def _get_llm() -> ChatOpenAI:
-    global _llm
-    if _llm is None:
-        _llm = ChatOpenAI(
-            model=settings.llm_model,
-            temperature=0,
-            openai_api_key=settings.openai_api_key,
-        )
-    return _llm
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -96,7 +81,7 @@ def build_user_profile(user_id: str) -> UserProfile:
         )
 
     try:
-        chain = _PROFILE_PROMPT | _get_llm()
+        chain = _PROFILE_PROMPT | make_llm()
         result = chain.invoke({"user_id": user_id, "facts_text": facts_text})
         text = result.content.strip().lstrip("```json").rstrip("```").strip()
         data = json.loads(text)
@@ -110,7 +95,7 @@ def build_user_profile(user_id: str) -> UserProfile:
             raw_triples=facts,
         )
     except Exception as exc:
-        print(f"[user_profile] LLM parse error: {exc}")
+        logger.error("user_profile_llm_error", extra={"user_id": user_id, "error": str(exc)})
         return UserProfile(
             user_id=user_id,
             name=None,

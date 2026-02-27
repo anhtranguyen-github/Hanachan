@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 class Node(BaseModel):
     id: str = Field(description="Unique identifier — a person's name, company ticker, or concept.")
     type: str = Field(description="Node type, e.g. 'User', 'Company', 'InvestmentPhilosophy'.")
+    properties: Optional[Dict[str, Any]] = Field(default=None, description="Optional extra properties.")
 
 
 class Relationship(BaseModel):
@@ -136,3 +137,5 @@ class HealthResponse(BaseModel):
     status: str
     qdrant: str
     neo4j: str
+    db: str = "ok"
+    degraded: List[str] = []

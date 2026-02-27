@@ -1,36 +1,39 @@
 """
-Session / Working Memory — backed by PostgreSQL (Supabase Fallback).
+Session / Working Memory — backed by PostgreSQL (Supabase).
 """
 from __future__ import annotations
 
+import logging
 import uuid
 import json
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
 from ...core.config import settings
+from ...core.llm import make_llm
 from ...schemas.session import SessionInfo, SessionMessage, SessionSummary
 from ...core.database import execute_query, execute_single
 
+logger = logging.getLogger(__name__)
+
+# Thread pool for fire-and-forget background LLM work
+_bg_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="llm-bg")
+
+
+def shutdown_bg_executor() -> None:
+    """Shutdown the background executor gracefully. Call on application shutdown."""
+    global _bg_executor
+    if _bg_executor is not None:
+        _bg_executor.shutdown(wait=True, cancel_futures=False)
+        _bg_executor = None
+        logger.info("session_memory_bg_executor_shutdown")
+
 # ---------------------------------------------------------------------------
-# LLM helpers (lazy)
+# LLM prompts
 # ---------------------------------------------------------------------------
-
-_llm: Optional[ChatOpenAI] = None
-
-def _get_llm() -> ChatOpenAI:
-    global _llm
-    if _llm is None:
-        _llm = ChatOpenAI(
-            model=settings.llm_model,
-            temperature=0,
-            openai_api_key=settings.openai_api_key,
-        )
-    return _llm
-
 
 _TITLE_PROMPT = ChatPromptTemplate.from_messages([
     (
@@ -60,7 +63,7 @@ _SUMMARY_PROMPT = ChatPromptTemplate.from_messages([
 def _generate_title(user_msg: str, assistant_msg: str) -> str:
     snippet = f"User: {user_msg}\nAssistant: {assistant_msg}"
     try:
-        chain = _TITLE_PROMPT | _get_llm()
+        chain = _TITLE_PROMPT | make_llm()
         return chain.invoke({"snippet": snippet}).content.strip()
     except Exception:
         return user_msg[:60]
@@ -68,7 +71,7 @@ def _generate_title(user_msg: str, assistant_msg: str) -> str:
 
 def _update_summary(existing: str, user_msg: str, assistant_msg: str) -> str:
     try:
-        chain = _SUMMARY_PROMPT | _get_llm()
+        chain = _SUMMARY_PROMPT | make_llm()
         return chain.invoke(
             {
                 "existing_summary": existing or "(none yet)",
@@ -78,7 +81,7 @@ def _update_summary(existing: str, user_msg: str, assistant_msg: str) -> str:
         ).content.strip()
     except Exception:
         return existing
-    
+
 
 # ---------------------------------------------------------------------------
 # Session lifecycle
@@ -87,27 +90,32 @@ def _update_summary(existing: str, user_msg: str, assistant_msg: str) -> str:
 def create_session(user_id: str, metadata: Optional[Dict[str, Any]] = None) -> str:
     session_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc)
-    
+
     execute_query(
-        "INSERT INTO public.sessions (session_id, user_id, created_at, updated_at, metadata) VALUES (%s, %s, %s, %s, %s)",
+        "INSERT INTO public.sessions (session_id, user_id, created_at, updated_at, metadata) "
+        "VALUES (%s, %s, %s, %s, %s)",
         (session_id, user_id, now, now, json.dumps(metadata or {})),
-        fetch=False
+        fetch=False,
     )
-    
+
     return session_id
 
 
 def get_session(session_id: str) -> Optional[Dict[str, Any]]:
-    return execute_single("SELECT * FROM public.sessions WHERE session_id = %s", (session_id,))
+    return execute_single(
+        "SELECT * FROM public.sessions WHERE session_id = %s", (session_id,)
+    )
 
 
 def list_sessions(user_id: str) -> List[SessionSummary]:
     sessions = execute_query(
-        "SELECT s.*, (SELECT count(*) FROM public.messages m WHERE m.session_id = s.session_id) as message_count "
-        "FROM public.sessions s WHERE s.user_id = %s ORDER BY s.updated_at DESC", 
-        (user_id,)
+        "SELECT s.*, "
+        "(SELECT count(*) FROM public.messages m WHERE m.session_id = s.session_id) "
+        "AS message_count "
+        "FROM public.sessions s WHERE s.user_id = %s ORDER BY s.updated_at DESC",
+        (user_id,),
     )
-    
+
     return [
         SessionSummary(
             session_id=str(s["session_id"]),
@@ -128,24 +136,38 @@ def update_session_meta(
     title: Optional[str] = None,
     metadata: Optional[Dict[str, Any]] = None,
 ) -> bool:
+    # Check if session exists first
+    session = get_session(session_id)
+    if not session:
+        return False
+
     now = datetime.now(timezone.utc)
     if title and metadata:
         execute_query(
-            "UPDATE public.sessions SET title = %s, metadata = metadata || %s, updated_at = %s WHERE session_id = %s",
-            (title, json.dumps(metadata), now, session_id), fetch=False
+            "UPDATE public.sessions SET title = %s, metadata = metadata || %s, "
+            "updated_at = %s WHERE session_id = %s",
+            (title, json.dumps(metadata), now, session_id),
+            fetch=False,
         )
     elif title:
         execute_query(
             "UPDATE public.sessions SET title = %s, updated_at = %s WHERE session_id = %s",
-            (title, now, session_id), fetch=False
+            (title, now, session_id),
+            fetch=False,
         )
     elif metadata:
         execute_query(
-            "UPDATE public.sessions SET metadata = metadata || %s, updated_at = %s WHERE session_id = %s",
-            (json.dumps(metadata), now, session_id), fetch=False
+            "UPDATE public.sessions SET metadata = metadata || %s, updated_at = %s "
+            "WHERE session_id = %s",
+            (json.dumps(metadata), now, session_id),
+            fetch=False,
         )
     else:
-        execute_query("UPDATE public.sessions SET updated_at = %s WHERE session_id = %s", (now, session_id), fetch=False)
+        execute_query(
+            "UPDATE public.sessions SET updated_at = %s WHERE session_id = %s",
+            (now, session_id),
+            fetch=False,
+        )
     return True
 
 
@@ -153,53 +175,86 @@ def end_session(session_id: str) -> Optional[Dict[str, Any]]:
     session = to_session_info(session_id)
     if not session:
         return None
-    execute_query("DELETE FROM public.sessions WHERE session_id = %s", (session_id,), fetch=False)
+    execute_query(
+        "DELETE FROM public.sessions WHERE session_id = %s", (session_id,), fetch=False
+    )
     return session.model_dump()
 
 
 def delete_all_sessions(user_id: str) -> int:
-    # Need to check how many were deleted
-    execute_query("DELETE FROM public.sessions WHERE user_id = %s", (user_id,), fetch=False)
-    return 0 # Simplified
+    result = execute_query(
+        "DELETE FROM public.sessions WHERE user_id = %s RETURNING session_id",
+        (user_id,),
+        fetch=True,
+    )
+    return len(result) if result else 0
 
 
 # ---------------------------------------------------------------------------
-# Message management + auto title/summary
+# Message management + async title/summary (fire-and-forget)
 # ---------------------------------------------------------------------------
 
 def add_message(session_id: str, role: str, content: str) -> bool:
     now = datetime.now(timezone.utc)
     execute_query(
-        "INSERT INTO public.messages (session_id, role, content, timestamp) VALUES (%s, %s, %s, %s)",
-        (session_id, role, content, now), fetch=False
+        "INSERT INTO public.messages (session_id, role, content, timestamp) "
+        "VALUES (%s, %s, %s, %s)",
+        (session_id, role, content, now),
+        fetch=False,
     )
-    execute_query("UPDATE public.sessions SET updated_at = %s WHERE session_id = %s", (now, session_id), fetch=False)
+    execute_query(
+        "UPDATE public.sessions SET updated_at = %s WHERE session_id = %s",
+        (now, session_id),
+        fetch=False,
+    )
 
     if role == "assistant":
-        session = get_session(session_id)
-        if session:
-            messages = get_messages(session_id)
-            user_msgs = [m for m in messages if m["role"] == "user"]
-            last_user = user_msgs[-1]["content"] if user_msgs else ""
+        # Retrieve last user message for context
+        messages = get_messages(session_id)
+        user_msgs = [m for m in messages if m["role"] == "user"]
+        last_user_msg = user_msgs[-1]["content"] if user_msgs else ""
 
-            if not session.get("title") and last_user:
-                title = _generate_title(last_user, content)
-                update_session_meta(session_id, title=title)
-
-            updated_summary = _update_summary(
-                session.get("summary") or "",
-                last_user,
-                content,
-            )
-            execute_query("UPDATE public.sessions SET summary = %s WHERE session_id = %s", (updated_summary, session_id), fetch=False)
+        # Fire-and-forget: don't block the response path on LLM calls
+        _bg_executor.submit(
+            _update_session_metadata, session_id, last_user_msg, content
+        )
 
     return True
 
 
+def _update_session_metadata(
+    session_id: str, user_msg: str, assistant_msg: str
+) -> None:
+    """Background task: generate title + rolling summary. Failures are logged, not raised."""
+    try:
+        session = get_session(session_id)
+        if not session:
+            return
+
+        if not session.get("title") and user_msg:
+            title = _generate_title(user_msg, assistant_msg)
+            update_session_meta(session_id, title=title)
+
+        updated_summary = _update_summary(
+            session.get("summary") or "", user_msg, assistant_msg
+        )
+        execute_query(
+            "UPDATE public.sessions SET summary = %s WHERE session_id = %s",
+            (updated_summary, session_id),
+            fetch=False,
+        )
+    except Exception as exc:
+        logger.error(
+            "session_meta_update_failed",
+            extra={"session_id": session_id, "error": str(exc)},
+        )
+
+
 def get_messages(session_id: str) -> List[Dict[str, str]]:
     messages = execute_query(
-        "SELECT role, content, timestamp FROM public.messages WHERE session_id = %s ORDER BY timestamp", 
-        (session_id,)
+        "SELECT role, content, timestamp FROM public.messages "
+        "WHERE session_id = %s ORDER BY timestamp",
+        (session_id,),
     )
     for m in messages:
         if isinstance(m["timestamp"], datetime):
@@ -225,7 +280,7 @@ def to_session_info(session_id: str) -> Optional[SessionInfo]:
     s = get_session(session_id)
     if s is None:
         return None
-    
+
     messages_data = get_messages(session_id)
     messages = [
         SessionMessage(
@@ -235,7 +290,7 @@ def to_session_info(session_id: str) -> Optional[SessionInfo]:
         )
         for m in messages_data
     ]
-    
+
     return SessionInfo(
         session_id=str(s["session_id"]),
         user_id=s["user_id"],
