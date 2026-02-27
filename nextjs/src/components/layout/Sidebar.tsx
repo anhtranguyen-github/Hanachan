@@ -24,7 +24,6 @@ const navItems = [
     { name: 'Review', href: '/review', icon: Swords, color: '#CDB4DB' },
     { name: 'Chatbot', href: '/immersion/chatbot', icon: MessageSquare, color: '#B7E4C7' },
     { name: 'Curriculum', href: '/content', icon: Library, color: '#FFD6A5' },
-    { name: 'Progress', href: '/progress', icon: TrendingUp, color: '#FFADAD' },
 ];
 
 export function Sidebar() {

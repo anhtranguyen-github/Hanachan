@@ -12,7 +12,8 @@ import {
     Target,
     Sparkles,
     Flame,
-    Zap
+    Zap,
+    Activity
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { fetchUserDashboardStats, fetchCurriculumStats, fetchLevelStats } from '@/features/learning/service';
@@ -236,14 +237,94 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            {/* SRS Spread + Forecast - side by side on desktop, stacked on mobile */}
+            {/* Growth & Coverage - MERGED FROM PROGRESS */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Curriculum Status */}
+                <div className="glass-card p-4 sm:p-6 space-y-4 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#FFB5B5]/30 to-transparent" />
+                    <div>
+                        <h3 className="text-base sm:text-lg font-black text-[#3E4A61] tracking-tight text-left">Curriculum Status</h3>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0] mt-0.5 text-left">Overall item distribution</p>
+                    </div>
+                    <div className="space-y-4 mt-2">
+                        {[
+                            { label: 'Mastered', count: stats.totalBurned, color: '#F4ACB7', gradient: 'from-[#F4ACB7] to-[#D88C9A]' },
+                            { label: 'In Review', count: stats.dueBreakdown?.review || 0, color: '#CDB4DB', gradient: 'from-[#CDB4DB] to-[#B09AC5]' },
+                            { label: 'Learning', count: stats.dueBreakdown?.learning || 0, color: '#A2D2FF', gradient: 'from-[#A2D2FF] to-[#7BB8F0]' },
+                            { label: 'Overall Coverage', count: Math.round(stats.totalKUCoverage || 0), suffix: '%', color: '#3E4A61', gradient: 'from-[#3E4A61] to-[#4A5568]' }
+                        ].map((item, i) => (
+                            <div key={i} className="space-y-1.5">
+                                <div className="flex justify-between items-end">
+                                    <span className="text-[10px] font-black text-[#3E4A61] uppercase tracking-widest">{item.label}</span>
+                                    <span className="text-[10px] font-black text-[#3E4A61]">{item.count}{item.suffix || ''}</span>
+                                </div>
+                                <div className="h-2 bg-[#F7FAFC] rounded-full overflow-hidden border border-border/10 shadow-inner p-[1px]">
+                                    <div
+                                        className={`h-full rounded-full transition-all duration-1000 bg-gradient-to-r ${item.gradient}`}
+                                        style={{ width: `${item.suffix === '%' ? item.count : Math.min(100, (item.count / Math.max(stats.totalLearned || 1, 1)) * 100)}%` }}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Domain Mastery Grid */}
+                <div className="relative rounded-[2rem] p-4 sm:p-6 text-white space-y-4 flex flex-col shadow-xl overflow-hidden min-h-[220px]">
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#2D3748] to-[#1A202C]" />
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#F4ACB7]/40 to-transparent" />
+
+                    <div className="relative z-10 flex items-center gap-2">
+                        <div className="p-1.5 bg-white/5 rounded-xl border border-white/10">
+                            <Sparkles size={14} className="text-[#F4ACB7]" />
+                        </div>
+                        <div>
+                            <h3 className="text-base sm:text-lg font-black text-white/95 tracking-tight text-left">Domain Mastery</h3>
+                            <p className="text-[8px] font-black uppercase tracking-widest text-white/30 text-left">Global proficiency level</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 flex-1 items-center relative z-10 mt-2">
+                        {Object.entries(stats.typeMastery || {}).map(([type, percent]: [string, any]) => {
+                            const typeColors: Record<string, string> = {
+                                radical: '#A2D2FF', kanji: '#F4ACB7', vocabulary: '#CDB4DB', grammar: '#B7E4C7',
+                            };
+                            const color = typeColors[type] || '#F4ACB7';
+                            return (
+                                <div key={type} className="space-y-1.5">
+                                    <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-[0.2em]">
+                                        <span className="text-white/40">{type}</span>
+                                        <span style={{ color }}>{percent}%</span>
+                                    </div>
+                                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden p-[0.5px]">
+                                        <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${percent}%`, backgroundColor: color }} />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="pt-3 border-t border-white/8 flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-2">
+                            <Activity size={12} className="text-[#F4ACB7]" />
+                            <span className="text-[8px] font-black uppercase tracking-widest text-white/25">Global Retention</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#48BB78] shadow-[0_0_8px_rgba(72,187,120,0.5)]" />
+                            <span className="text-lg font-black text-white/90">{stats.retention}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* SRS Spread + Forecast */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* SRS Spread */}
                 <div className="glass-card p-4 sm:p-6 space-y-4 relative overflow-hidden" data-testid="srs-spread-card">
                     <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#FF7EB9]/30 to-transparent" />
                     <div>
-                        <h3 className="text-base sm:text-lg font-black text-[#3E4A61] tracking-tight">Learning Balance</h3>
-                        <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0] mt-0.5">SRS stage distribution</p>
+                        <h3 className="text-base sm:text-lg font-black text-[#3E4A61] tracking-tight text-left">Learning Balance</h3>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0] mt-0.5 text-left">SRS stage distribution</p>
                     </div>
                     <div className="space-y-3">
                         {[
@@ -258,7 +339,7 @@ export default function DashboardPage() {
                             const barPct = Math.round((count / maxCount) * 100);
                             return (
                                 <div key={s.key} className="space-y-1 group">
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex justify-between items-center px-0.5">
                                         <div className="flex items-center gap-1.5">
                                             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color }} />
                                             <span className="text-[9px] font-black uppercase tracking-widest text-[#3E4A61]/50">{s.label}</span>
@@ -282,8 +363,8 @@ export default function DashboardPage() {
                     <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#4DABF7]/30 to-transparent" />
                     <div className="flex justify-between items-center">
                         <div>
-                            <h3 className="text-base sm:text-lg font-black text-[#3E4A61] tracking-tight">Review Forecast</h3>
-                            <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0] mt-0.5">Upcoming load</p>
+                            <h3 className="text-base sm:text-lg font-black text-[#3E4A61] tracking-tight text-left">Review Forecast</h3>
+                            <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0] mt-0.5 text-left">Upcoming load</p>
                         </div>
                         <div className="flex bg-[#F7FAFC] p-0.5 rounded-xl border border-border/20">
                             {(['hourly', 'daily'] as const).map(t => (
@@ -333,8 +414,8 @@ export default function DashboardPage() {
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
                 <div className="flex justify-between items-start">
                     <div>
-                        <h3 className="text-base sm:text-lg font-black text-[#3E4A61] tracking-tight">Consistency Map</h3>
-                        <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0] mt-0.5">52-week activity</p>
+                        <h3 className="text-base sm:text-lg font-black text-[#3E4A61] tracking-tight text-left">Consistency Map</h3>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0] mt-0.5 text-left">52-week activity</p>
                     </div>
                     <div className="flex items-center gap-1.5 text-primary">
                         <TrendingUp size={12} />
@@ -371,8 +452,8 @@ export default function DashboardPage() {
                     </div>
                 </div>
                 <div className="flex justify-between items-center">
-                    <span className="text-[7px] font-black text-[#CBD5E0] uppercase tracking-widest">Less</span>
-                    <div className="flex gap-1">
+                    <span className="text-[7px] font-black text-[#CBD5E0] uppercase tracking-widest leading-none">Less Active</span>
+                    <div className="flex gap-1 items-center">
                         {[0, 1, 2, 3, 4].map(idx => (
                             <div key={idx} className={clsx("w-2 h-2 rounded-[2px]",
                                 idx === 0 && "bg-[#F7FAFC]",
@@ -383,7 +464,7 @@ export default function DashboardPage() {
                             )} />
                         ))}
                     </div>
-                    <span className="text-[7px] font-black text-[#CBD5E0] uppercase tracking-widest">More</span>
+                    <span className="text-[7px] font-black text-[#CBD5E0] uppercase tracking-widest leading-none">Master Level</span>
                 </div>
             </div>
         </main>
