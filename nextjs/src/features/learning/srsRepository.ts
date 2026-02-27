@@ -168,7 +168,7 @@ export const srsRepository = {
         // 1. Fetch Current States Summary
         const { data: learnedStates, error: statsError } = await supabase
             .from('user_learning_states')
-            .select('state, ku_id, last_review, knowledge_units(type)')
+            .select('state, ku_id, last_review, stability, knowledge_units(type)')
             .eq('user_id', userId);
 
         if (statsError) {
@@ -196,10 +196,27 @@ export const srsRepository = {
             mastered: uniqueKUs.filter(g => g.mastered === g.total).length,
             burned: uniqueKUs.filter(g => g.burned === g.total).length,
             typeMastery: { radical: 0, kanji: 0, vocabulary: 0, grammar: 0 },
+            srsSpread: {
+                apprentice: 0,
+                guru: 0,
+                master: 0,
+                enlightened: 0,
+                burned: 0
+            },
             last7Days: [0, 0, 0, 0, 0, 0, 0],
             heatmap: {} as Record<string, number>,
             totalKUs: 0
         };
+
+        // Calculate Spread from raw states
+        learnedStates?.forEach(s => {
+            const stab = s.stability || 0;
+            if (s.state === 'burned') stats.srsSpread.burned++;
+            else if (stab >= 30.0) stats.srsSpread.enlightened++;
+            else if (stab >= 14.0) stats.srsSpread.master++;
+            else if (stab >= 3.0) stats.srsSpread.guru++;
+            else stats.srsSpread.apprentice++;
+        });
 
         uniqueKUs.forEach(g => {
             if (g.type && stats.typeMastery[g.type as keyof typeof stats.typeMastery] !== undefined) {
@@ -236,5 +253,22 @@ export const srsRepository = {
         stats.totalKUs = count || 1;
 
         return stats;
+    },
+
+    async fetchReviewForecast(userId: string) {
+        const { data, error } = await supabase
+            .from('user_learning_states')
+            .select('next_review')
+            .eq('user_id', userId)
+            .neq('state', 'burned')
+            .not('next_review', 'is', null)
+            .order('next_review', { ascending: true });
+
+        if (error) {
+            console.error("[srsRepository] Error fetching forecast data:", error);
+            return [];
+        }
+
+        return data;
     }
 };

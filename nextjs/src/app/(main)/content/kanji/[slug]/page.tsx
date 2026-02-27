@@ -59,7 +59,7 @@ export default async function KanjiDetailPage({ params }: { params: { slug: stri
                         </h1>
                         <div className="flex flex-wrap gap-sm justify-center lg:justify-start">
                             {meanings.slice(1).map((m: string, i: number) => (
-                                <span key={i} className="text-h3 font-black text-foreground/10 uppercase tracking-tighter italic truncate max-w-[200px]">{m}</span>
+                                <span key={i} className="text-h3 font-black text-foreground/10 uppercase tracking-tighter truncate max-w-[200px]">{m}</span>
                             ))}
                         </div>
                     </div>
@@ -95,12 +95,12 @@ export default async function KanjiDetailPage({ params }: { params: { slug: stri
                                 <div className="space-y-sm">
                                     <div className="text-metadata font-black text-primary-dark uppercase tracking-widest border-b border-primary/10 pb-1">ONYOMI</div>
                                     <div className="text-h2 font-black text-foreground jp-text tracking-tighter">{kuKanji.reading_onyomi || '—'}</div>
-                                    <div className="text-[10px] font-bold text-foreground/20 uppercase tracking-widest italic">Acoustic Signal</div>
+                                    <div className="text-[10px] font-bold text-foreground/20 uppercase tracking-widest">Acoustic Signal</div>
                                 </div>
                                 <div className="space-y-sm">
                                     <div className="text-metadata font-black text-foreground/40 uppercase tracking-widest border-b border-border/50 pb-1">KUNYOMI</div>
                                     <div className="text-h2 font-black text-foreground jp-text tracking-tighter">{kuKanji.reading_kunyomi || '—'}</div>
-                                    <div className="text-[10px] font-bold text-foreground/20 uppercase tracking-widest italic">Conceptual Signal</div>
+                                    <div className="text-[10px] font-bold text-foreground/20 uppercase tracking-widest">Conceptual Signal</div>
                                 </div>
                             </div>
                         </div>
@@ -136,7 +136,7 @@ export default async function KanjiDetailPage({ params }: { params: { slug: stri
                                 </div>
                                 <div className="space-y-1">
                                     <h2 className="text-h3 font-black text-foreground uppercase tracking-[0.4em]">Composition Nodes</h2>
-                                    <p className="text-metadata font-bold text-foreground/20 uppercase tracking-widest italic">Integrated building blocks</p>
+                                    <p className="text-metadata font-bold text-foreground/20 uppercase tracking-widest">Integrated building blocks</p>
                                 </div>
                             </div>
                         </div>
@@ -171,7 +171,7 @@ export default async function KanjiDetailPage({ params }: { params: { slug: stri
                                         <div className="w-1.5 h-1.5 bg-primary/10 rounded-full group-hover:bg-primary transition-colors shrink-0" />
                                     </div>
                                     <div className="space-y-sm">
-                                        <div className="text-metadata font-black text-foreground/60 uppercase tracking-tight line-clamp-1 italic">{v.reading || v.reading_primary}</div>
+                                        <div className="text-metadata font-black text-foreground/60 uppercase tracking-tight line-clamp-1">{v.reading || v.reading_primary}</div>
                                         <div className="text-card-title font-black text-foreground/40 uppercase tracking-tight line-clamp-1 truncate">{v.meaning}</div>
                                     </div>
                                     <div className="absolute right-0 top-1/2 -translate-y-1/2 p-lg rotate-180 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Loader2, BookOpen, ChevronRight, Target } from 'lucide-react';
+import { Loader2, BookOpen, ChevronRight, Target, X } from 'lucide-react';
 import { fetchNewItems, fetchLevelStats } from '@/features/learning/service';
 import { useUser } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -71,7 +71,22 @@ export default function LearnOverviewPage() {
     const hasActiveBatch = state.batch !== null;
 
     return (
-        <div data-testid="learning-overview-root" className="max-w-5xl mx-auto space-y-sm font-sans text-foreground animate-in fade-in duration-1000">
+        <div data-testid="learning-overview-root" className="max-w-5xl mx-auto pt-12 pb-16 space-y-sm font-sans text-foreground animate-in fade-in duration-1000">
+            {/* Immersive Header */}
+            <div className="flex justify-between items-center mb-12">
+                <div className="flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 bg-[#FFB5B5] rounded-full" />
+                    <h2 className="text-xl font-black text-[#3E4A61] tracking-tight uppercase">Discovery Hub</h2>
+                </div>
+                <Link
+                    href="/dashboard"
+                    className="p-3 bg-[#F7FAFC] border border-[#EDF2F7] rounded-2xl text-[#A0AEC0] hover:text-[#3E4A61] hover:bg-white hover:border-[#FFB5B5] shadow-sm transition-all group"
+                    title="Close and Return to Dashboard"
+                >
+                    <X size={20} className="group-hover:rotate-90 transition-transform duration-300" />
+                </Link>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
                 <div className="bg-white border-2 border-[#F0E0E0] rounded-[40px] p-8 shadow-xl shadow-[#3E4A61]/5 flex flex-col justify-between relative overflow-hidden group min-h-[300px]">
                     <div className="absolute -right-6 -top-6 text-[#F7FAFC] transition-transform duration-700 group-hover:scale-110 group-hover:rotate-6">
@@ -80,10 +95,6 @@ export default function LearnOverviewPage() {
 
                     <div className="relative z-10 space-y-6">
                         <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                                <BookOpen size={14} className="text-[#3E4A61]" />
-                                <span className="text-[9px] font-black uppercase tracking-widest text-[#3E4A61]">Active Batch</span>
-                            </div>
                             <h3 className="text-3xl font-black text-[#3E4A61]">Level {userLevel}</h3>
                             <p className="text-sm font-black text-[#FFB5B5] tracking-tight">
                                 {hasActiveBatch ? `Batch ${state.batch.id}` : 'No Batches Available'}
@@ -109,7 +120,7 @@ export default function LearnOverviewPage() {
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-sm italic text-[#A0AEC0]">You've completed all current items!</p>
+                            <p className="text-sm text-[#A0AEC0]">You've completed all current items!</p>
                         )}
                     </div>
 
@@ -163,12 +174,7 @@ export default function LearnOverviewPage() {
                     <div className="w-12 h-12 bg-[#FFF5F5] rounded-xl flex items-center justify-center">
                         <BookOpen size={24} className="text-[#FFB5B5]" />
                     </div>
-                    <div className="space-y-0.5">
-                        <h4 className="text-sm font-black text-[#3E4A61] uppercase tracking-tight">Ready to Learn</h4>
-                        <p className="text-[10px] font-black text-[#A0AEC0] uppercase tracking-widest">
-                            {state.totalNew} New items waiting in level {userLevel}
-                        </p>
-                    </div>
+                    <h4 className="text-sm font-black text-[#3E4A61] uppercase tracking-tight">Ready to Learn</h4>
                 </div>
                 <Link
                     href="/dashboard"

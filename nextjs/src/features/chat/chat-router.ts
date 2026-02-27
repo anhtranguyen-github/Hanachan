@@ -4,7 +4,7 @@
  * In production, this could be a small LLM call, but Regex is faster for now.
  */
 
-export type ChatIntent = 'GREETING' | 'PROJECT_QUERY' | 'SEARCH_KU' | 'GENERAL_CHAT';
+export type ChatIntent = 'GREETING' | 'PROJECT_QUERY' | 'SEARCH_KU' | 'GENERAL_CHAT' | 'ANALYZE' | 'STUDY_REQUEST' | 'SRS_SESSION';
 
 export function classifyIntent(text: string): ChatIntent {
     const lower = text.toLowerCase().trim();

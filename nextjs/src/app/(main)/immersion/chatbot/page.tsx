@@ -171,6 +171,7 @@ export default function ChatbotPage() {
                             <p className="text-[10px] font-black uppercase tracking-widest text-[#A0AEC0]">No previous logs</p>
                         </div>
                     </div>
+                </div>
             </aside>
 
             {/* Chat Interface */}

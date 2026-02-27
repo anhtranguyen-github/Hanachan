@@ -129,6 +129,7 @@ export class LearningController {
             this.items.forEach(item => {
                 const ku = item.knowledge_units || item;
                 const unitId = item.ku_id || item.id;
+                const facets: string[] = ['meaning'];
 
                 // 1. Meaning Question (All types)
                 result.push({
@@ -149,6 +150,7 @@ export class LearningController {
                         : (ku.kanji_details?.[0]?.onyomi?.[0] || ku.kanji_details?.[0]?.kunyomi?.[0]);
 
                     if (reading) {
+                        facets.push('reading');
                         result.push({
                             id: `${unitId}-reading`,
                             ku_id: unitId,
@@ -161,6 +163,7 @@ export class LearningController {
                         });
                     }
                 }
+                this.initialFacets.set(unitId, facets);
             });
         }
 

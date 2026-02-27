@@ -43,7 +43,7 @@ async function seed() {
 
     for (const s of samples) {
         try {
-            await kuRepository.createKU(s);
+            await kuRepository.createKnowledgeUnit(s);
             console.log(`✅ Created KU: ${s.slug}`);
         } catch (err) {
             console.error(`❌ Failed to create KU: ${s.slug}`, err);

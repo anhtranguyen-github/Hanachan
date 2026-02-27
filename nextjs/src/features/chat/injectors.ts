@@ -32,29 +32,3 @@ You are "Hana-chan" (はなちゃん), a cheerful and encouraging Japanese AI Tu
     }
 }
 
-export class SRSSimulatorInjector implements ContextInjector {
-    async inject(userId: string): Promise<string> {
-        // 1. Get SRS Data from Supabase (unified repo)
-        const states = await chatRepo.getSRSStates(userId) as SRSStateSnapshot[];
-
-        // 2. Use Business Logic (Recommendation Engine)
-        const troubleItems = identifyTroubleItems(states);
-        const recommendations = recommendTopics(5, 25); // Hardcoded level 5, 25 mastered
-
-        // 3. Construct Prompt Context
-        let prompt = `
-[SRS LEARNING STATUS]
-- Total Items: ${states.length}
-`;
-
-        if (troubleItems.length > 0) {
-            prompt += `- ⚠️ TROUBLE ITEMS (Please quiz the user on these): ${troubleItems.join(', ')}\n`;
-        } else {
-            prompt += `- Status: All clear! No trouble items.\n`;
-        }
-
-        prompt += `- Recommended Topics: ${recommendations.join(', ')}\n`;
-
-        return prompt;
-    }
-}

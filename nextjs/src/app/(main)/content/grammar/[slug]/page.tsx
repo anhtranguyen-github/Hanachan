@@ -103,7 +103,7 @@ export default async function GrammarDetailPage({ params }: { params: { slug: st
                                     <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary/10 group-hover:bg-primary transition-all duration-700" />
                                     <div className="space-y-md pl-md relative z-10 w-full overflow-hidden">
                                         <div className="text-h2 font-black text-foreground jp-text leading-relaxed tracking-tightest group-hover:text-primary-dark transition-colors duration-700 truncate min-h-[1.5em]" dangerouslySetInnerHTML={{ __html: s.ja }} />
-                                        <div className="text-body font-bold text-foreground/40 italic truncate max-w-full">“{s.en}”</div>
+                                        <div className="text-body font-bold text-foreground/40 truncate max-w-full">“{s.en}”</div>
                                     </div>
                                     <div className="absolute top-6 right-6 text-metadata font-black text-foreground/5 pointer-events-none group-hover:text-primary/5 transition-colors">#{i + 1}</div>
                                 </div>
@@ -146,7 +146,7 @@ export default async function GrammarDetailPage({ params }: { params: { slug: st
                                     return (
                                         <Link key={i} href={`/content/grammar/${rel.slug}`} className="block relative p-lg rounded-xl bg-surface-muted/10 border border-transparent hover:border-primary/20 transition-all hover:bg-surface-muted/30 group/node overflow-hidden">
                                             <div className="text-card-title font-black text-foreground/60 group-hover/node:text-primary-dark transition-colors jp-text truncate">{rel.character || rel.meaning}</div>
-                                            <div className="text-metadata font-black text-foreground/20 uppercase tracking-tight mt-1 line-clamp-1 italic truncate">{rel.meaning}</div>
+                                            <div className="text-metadata font-black text-foreground/20 uppercase tracking-tight mt-1 line-clamp-1 truncate">{rel.meaning}</div>
                                         </Link>
                                     );
                                 })}

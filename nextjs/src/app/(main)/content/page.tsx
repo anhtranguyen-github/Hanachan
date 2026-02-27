@@ -154,11 +154,11 @@ function ContentDatabase() {
                     ).sort(([a], [b]) => parseInt(a) - parseInt(b)).map(([level, levelItems]) => (
                         <div key={level} className="space-y-md">
                             <div className="flex items-center gap-4 px-2">
-                                <h2 className="text-xl font-black text-foreground/40 italic">LEVEL {level}</h2>
+                                <h2 className="text-xl font-black text-foreground/40">LEVEL {level}</h2>
                                 <div className="h-px flex-1 bg-border/30" />
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-lg">
-                                {levelItems.map((unit) => {
+                                {(levelItems as any[]).map((unit) => {
                                     const state = states[unit.id];
                                     const status = unit.level > userLevel ? 'locked' : (!state ? 'new' : state.state);
 
@@ -194,7 +194,7 @@ function ContentDatabase() {
                                                 )}>
                                                     {unit.character || '—'}
                                                 </div>
-                                                <h3 className="text-metadata font-black text-foreground/60 uppercase tracking-tight text-center line-clamp-2 px-2 italic min-h-[2.4em] flex items-center justify-center">
+                                                <h3 className="text-metadata font-black text-foreground/60 uppercase tracking-tight text-center line-clamp-2 px-2 min-h-[2.4em] flex items-center justify-center">
                                                     {unit.meaning}
                                                 </h3>
                                             </div>

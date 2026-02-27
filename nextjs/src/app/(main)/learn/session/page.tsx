@@ -23,9 +23,11 @@ function SessionContent() {
     const [lessonIndex, setLessonIndex] = useState(0);
     const [batchId, setBatchId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const hasLoaded = React.useRef(false);
 
     const loadSession = async () => {
-        if (!user) return;
+        if (!user || hasLoaded.current) return;
+        hasLoaded.current = true;
 
         try {
             const { data: profile } = await supabase
@@ -141,7 +143,7 @@ function SessionContent() {
                     >
                         Back to Dashboard
                     </button>
-                    <p className="text-[10px] font-black uppercase text-gray-300 tracking-[0.4em]">Rest is part of the training</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">Rest is part of the training</p>
                 </div>
             );
         }
@@ -227,32 +229,27 @@ function SessionContent() {
     const progress = (stats.completed / Math.max(controller.getProgress().total, 1)) * 100;
 
     return (
-        <div className="min-h-screen bg-background pt-16 pb-12 px-6 flex flex-col max-w-5xl mx-auto space-y-12" data-testid="quiz-phase">
-            <header className="flex justify-between items-center px-6 shrink-0">
-                <div className="flex items-center gap-6">
-                    <div className="space-y-1">
-                        <span className={clsx("block text-xl font-black leading-none", currentCard?.type === 'kanji' ? 'text-kanji' : 'text-primary')}>
-                            {stats.completed + 1} / {controller.getProgress().total}
-                        </span>
-                        <span className="block text-[8px] font-black text-foreground/20 uppercase tracking-widest leading-none">Quiz Progress</span>
-                    </div>
-                    <div className="w-48 h-2.5 bg-gray-100 rounded-full overflow-hidden border border-gray-100">
+        <div className="min-h-screen bg-[#FDFDFD] pt-8 md:pt-12 pb-12 px-6 flex flex-col max-w-4xl mx-auto" data-testid="quiz-phase">
+            <header className="flex justify-between items-center mb-16 shrink-0 h-10">
+                <div className="flex items-center gap-4">
+                    <div className="w-32 md:w-48 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                         <div
-                            className={clsx("h-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(0,0,0,0.1)]", currentCard?.type === 'kanji' ? 'bg-kanji' : 'bg-primary')}
+                            className={clsx("h-full transition-all duration-700 ease-out", currentCard?.type === 'kanji' ? 'bg-kanji' : 'bg-primary')}
                             style={{ width: `${progress}%` }}
                         />
                     </div>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] whitespace-nowrap">
+                        {stats.completed + 1} / {controller.getProgress().total}
+                    </span>
                 </div>
 
                 <button
                     onClick={() => router.push('/learn')}
-                    className="flex items-center gap-2 pr-4 pl-2 py-2 rounded-2xl bg-white border border-border shadow-sm hover:border-red-200 hover:bg-red-50 transition-all group group"
+                    className="group flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-2xl transition-all duration-300"
                     title="Exit Quiz"
                 >
-                    <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 group-hover:bg-red-100 transition-colors">
-                        <X size={16} className="text-gray-400 group-hover:text-red-500 group-hover:rotate-90 transition-transform" />
-                    </div>
-                    <span className="text-[9px] font-black text-gray-400 group-hover:text-red-500 tracking-widest uppercase">Exit</span>
+                    <X size={16} className="text-gray-400 group-hover:text-gray-600 group-hover:rotate-90 transition-transform duration-300" />
+                    <span className="text-[10px] font-bold text-gray-400 group-hover:text-gray-600 tracking-widest uppercase">Exit</span>
                 </button>
             </header>
 
@@ -296,7 +293,7 @@ function LessonSlide({ item, onNext, isLastLesson }: { item: any, onNext: () => 
                 activeColor
             )}>
                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
-                <h2 className="text-7xl md:text-8xl font-black mb-2 relative z-10 drop-shadow-2xl italic">
+                <h2 className="text-7xl md:text-8xl font-black mb-2 relative z-10 drop-shadow-2xl">
                     {item.character || item.slug.split(':')[1]}
                 </h2>
                 <p className="text-xl font-black opacity-90 relative z-10 tracking-[0.2em] uppercase">
@@ -310,7 +307,7 @@ function LessonSlide({ item, onNext, isLastLesson }: { item: any, onNext: () => 
                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-300 border-b-2 border-gray-50 pb-2">
                         {item.type === 'grammar' ? "Grammar Explanation" : "Mnemonic Strategy"}
                     </h3>
-                    <p className="text-xl text-gray-700 leading-relaxed font-bold italic">
+                    <p className="text-xl text-gray-700 leading-relaxed font-bold">
                         {item.type === 'grammar' ? (details?.explanation || "Master this grammar pattern to enhance your sentence structures.") :
                             (details?.meaning_mnemonic || "Visualize this character to better retain its semantic meaning.")}
                     </p>

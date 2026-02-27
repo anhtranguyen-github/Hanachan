@@ -72,7 +72,7 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                         </h1>
                         <div className="flex flex-wrap gap-sm justify-center lg:justify-start">
                             {vocab.meanings?.slice(1).map((m: string, i: number) => (
-                                <span key={i} className="text-h3 font-black text-foreground/10 uppercase tracking-tighter italic truncate max-w-[200px]">{m}</span>
+                                <span key={i} className="text-h3 font-black text-foreground/10 uppercase tracking-tighter truncate max-w-[200px]">{m}</span>
                             ))}
                         </div>
                     </div>
@@ -127,7 +127,7 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                                 </div>
                                 <div className="space-y-1">
                                     <h2 className="text-h3 font-black text-foreground uppercase tracking-[0.4em]">Integrated Nodes</h2>
-                                    <p className="text-metadata font-bold text-foreground/20 uppercase tracking-widest italic">Semantic building blocks</p>
+                                    <p className="text-metadata font-bold text-foreground/20 uppercase tracking-widest">Semantic building blocks</p>
                                 </div>
                             </div>
                             <div />
@@ -167,11 +167,11 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                                             <Activity size={12} className="text-primary-dark shrink-0" />
                                             <div className="flex flex-col truncate">
                                                 <div className="text-metadata font-black text-primary-dark uppercase tracking-widest truncate">{p.type.toUpperCase()}</div>
-                                                <div className="text-[10px] font-black text-foreground/20 uppercase tracking-widest italic truncate">{p.description || "Active Profile"}</div>
+                                                <div className="text-[10px] font-black text-foreground/20 uppercase tracking-widest truncate">{p.description || "Active Profile"}</div>
                                             </div>
                                         </div>
                                     ))}
-                                    {pitchEntries.length === 0 && <span className="text-metadata font-black text-foreground/10 uppercase tracking-widest italic">No profile data indexed.</span>}
+                                    {pitchEntries.length === 0 && <span className="text-metadata font-black text-foreground/10 uppercase tracking-widest">No profile data indexed.</span>}
                                 </div>
                             </div>
                         </div>
@@ -187,7 +187,7 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                             <Languages size={18} className="text-primary-dark" />
                             <h2 className="text-h3 font-black text-foreground uppercase tracking-[0.6em]">Linguistic Scenarios</h2>
                         </div>
-                        <p className="text-metadata font-bold text-foreground/20 uppercase tracking-widest italic">Samples of linguistic utilization from the database</p>
+                        <p className="text-metadata font-bold text-foreground/20 uppercase tracking-widest">Samples of linguistic utilization from the database</p>
                     </div>
                 </div>
 
@@ -199,7 +199,7 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                                 <div className="text-h2 font-black text-foreground jp-text leading-relaxed tracking-tightest group-hover:text-primary-dark transition-colors duration-700 truncate min-h-[1.5em]">{s.ja}</div>
                                 <div className="flex items-start gap-sm overflow-hidden">
                                     <Volume2 size={16} className="text-foreground/10 shrink-0 mt-1" />
-                                    <div className="text-body font-bold text-foreground/40 italic truncate max-w-full">“{s.en}”</div>
+                                    <div className="text-body font-bold text-foreground/40 truncate max-w-full">“{s.en}”</div>
                                 </div>
                             </div>
                         </div>

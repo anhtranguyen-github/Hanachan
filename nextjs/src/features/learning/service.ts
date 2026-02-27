@@ -158,10 +158,32 @@ export async function fetchLevelStats(userId: string, levelId: string) {
             return states.every((s: any) => s.state === 'review' || s.state === 'burned');
         }).length;
 
+        const typeStats = {
+            radical: { total: 0, mastered: 0 },
+            kanji: { total: 0, mastered: 0 },
+            vocabulary: { total: 0, mastered: 0 },
+            grammar: { total: 0, mastered: 0 }
+        };
+
+        levelItems.forEach(i => {
+            let type: string = i.type;
+            if (type === 'vocab') type = 'vocabulary';
+
+            const typeKey = type as keyof typeof typeStats;
+            if (typeStats[typeKey]) {
+                typeStats[typeKey].total++;
+                const states = i.user_learning_states;
+                if (states?.length > 0 && states.every((s: any) => s.state === 'review' || s.state === 'burned')) {
+                    typeStats[typeKey].mastered++;
+                }
+            }
+        });
+
         return {
             total,
             learned,
             mastered,
+            typeStats,
             due: levelItems.filter(i => {
                 const state = i.user_learning_states?.[0];
                 return state && new Date(state.next_review) <= new Date();
@@ -189,8 +211,40 @@ export async function fetchUserDashboardStats(userId: string) {
         const repoStats = await srsRepository.fetchStats(userId);
         const dailyStats = await analyticsService.getDashboardStats(userId);
         const todayBatchCount = await lessonRepository.countTodayBatches(userId);
+        const rawForecast = await srsRepository.fetchReviewForecast(userId);
 
         console.log('[LearningService] Live Data:', { due: dueItems?.length, learned: repoStats?.learned, today: dailyStats?.daily, todayBatches: todayBatchCount });
+
+        // Process Forecast (Hourly for 24h, Daily for 14d)
+        const now = new Date();
+        const hourlyForecast = Array.from({ length: 24 }, (_, i) => {
+            const hourStart = new Date(now);
+            hourStart.setHours(now.getHours() + i, 0, 0, 0);
+            const hourEnd = new Date(hourStart);
+            hourEnd.setHours(hourEnd.getHours() + 1);
+
+            const count = rawForecast.filter(f => {
+                const d = new Date(f.next_review);
+                return d >= hourStart && d < hourEnd;
+            }).length;
+
+            return { time: hourStart.toISOString(), count };
+        });
+
+        const dailyForecast = Array.from({ length: 14 }, (_, i) => {
+            const dayStart = new Date(now);
+            dayStart.setDate(now.getDate() + i);
+            dayStart.setHours(0, 0, 0, 0);
+            const dayEnd = new Date(dayStart);
+            dayEnd.setDate(dayEnd.getDate() + 1);
+
+            const count = rawForecast.filter(f => {
+                const d = new Date(f.next_review);
+                return d >= dayStart && d < dayEnd;
+            }).length;
+
+            return { date: dayStart.toISOString().split('T')[0], count };
+        });
 
         // Calculate Type Mastery Percentages
         const typePercentages = {
@@ -212,15 +266,17 @@ export async function fetchUserDashboardStats(userId: string) {
             recentLevels: [1, 2, 3],
             retention: dailyStats?.daily.retention || 90,
             minutesSpent: dailyStats?.daily.minutes || 0,
-            reviewsToday: dailyStats?.daily.reviews || 0,
+            reviewsToday: repoStats?.last7Days[6] || 0, // Use repo data for accuracy
             actionFrequencies: { analyze: 0, flashcard: repoStats?.learned || 0, srs: 0 },
             dailyReviews: repoStats?.last7Days || [0, 0, 0, 0, 0, 0, 0],
-            forecast: Array.from({ length: 7 }, (_, i) => ({
-                day: `D${i}`,
-                count: i === 0 ? (dueItems?.length || 0) : Math.round((dueItems?.length || 0) * Math.pow(0.8, i)) // Mock forecast logic
-            })),
+            forecast: {
+                hourly: hourlyForecast,
+                daily: dailyForecast,
+                total: rawForecast.length
+            },
             heatmap: repoStats?.heatmap || {},
             typeMastery: typePercentages,
+            srsSpread: repoStats?.srsSpread || { apprentice: 0, guru: 0, master: 0, enlightened: 0, burned: 0 },
             totalKUCoverage: repoStats ? (repoStats.learned / repoStats.totalKUs) * 100 : 0,
             streak: 0, // Adding missing field to satisfy UI
             todayBatchCount

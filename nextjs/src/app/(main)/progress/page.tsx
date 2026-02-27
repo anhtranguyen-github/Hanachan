@@ -42,10 +42,7 @@ export default function ProgressPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-md">
                 <div className="premium-card p-md space-y-md">
                     <div className="flex justify-between items-center">
-                        <div className="space-y-0.5">
-                            <h3 className="text-card-title font-black text-foreground uppercase tracking-tight">Review Activity</h3>
-                            <p className="text-[8px] font-black text-foreground/40 uppercase tracking-widest">Last 7 Days</p>
-                        </div>
+                        <h3 className="text-card-title font-black text-foreground uppercase tracking-tight">Review Activity</h3>
                         <div className="flex items-center gap-2">
                             <span className="text-[7px] font-black uppercase text-[#CBD5E0]">Less</span>
                             <div className="flex gap-1">
@@ -75,10 +72,7 @@ export default function ProgressPage() {
                 </div>
 
                 <div className="premium-card p-md space-y-md">
-                    <div className="space-y-0.5">
-                        <h3 className="text-card-title font-black text-foreground uppercase tracking-tight">Curriculum Status</h3>
-                        <p className="text-[8px] font-black text-foreground/40 uppercase tracking-widest">Item Distribution</p>
-                    </div>
+                    <h3 className="text-card-title font-black text-foreground uppercase tracking-tight">Curriculum Status</h3>
 
                     <div className="space-y-5">
                         {[
@@ -107,10 +101,7 @@ export default function ProgressPage() {
                 </div>
 
                 <div className="premium-card p-md space-y-md">
-                    <div className="space-y-0.5">
-                        <h3 className="text-card-title font-black text-foreground uppercase tracking-tight">Review Forecast</h3>
-                        <p className="text-[8px] font-black text-foreground/40 uppercase tracking-widest">Upcoming Workload</p>
-                    </div>
+                    <h3 className="text-card-title font-black text-foreground uppercase tracking-tight">Review Forecast</h3>
 
                     <div className="h-32 flex flex-col justify-between">
                         <div className="flex-1 flex items-end justify-between px-4 pb-4">
@@ -135,10 +126,7 @@ export default function ProgressPage() {
                 </div>
 
                 <div className="bg-foreground rounded-[var(--radius)] p-md text-white space-y-md flex flex-col shadow-xl">
-                    <div className="space-y-0.5">
-                        <h3 className="text-card-title font-black text-white/90 uppercase tracking-tight">Domain Mastery</h3>
-                        <p className="text-[8px] font-black text-white/40 uppercase tracking-widest">Structural Performance</p>
-                    </div>
+                    <h3 className="text-card-title font-black text-white/90 uppercase tracking-tight">Domain Mastery</h3>
 
                     <div className="grid grid-cols-2 gap-6 flex-1 items-center">
                         {Object.entries(stats.typeMastery).map(([type, percent]: [string, any]) => (
@@ -162,7 +150,7 @@ export default function ProgressPage() {
                             <Activity size={16} className="text-[#FFB5B5]" />
                             <span className="text-[10px] font-black uppercase tracking-widest text-white/40">General Heath</span>
                         </div>
-                        <span className="text-xl font-black text-[#FFB5B5] italic">{stats.retention}%</span>
+                        <span className="text-xl font-black text-[#FFB5B5]">{stats.retention}%</span>
                     </div>
                 </div>
             </div>

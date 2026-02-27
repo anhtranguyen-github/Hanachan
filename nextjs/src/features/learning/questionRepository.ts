@@ -40,7 +40,7 @@ export const questionRepository = {
         // and filter in-memory if the batch is small, or use a RPC if large.
         // Given typically batches are 5-20 items, this is fine.
 
-        const unitIds = [...new Set(items.map(i => i.unitId))];
+        const unitIds = Array.from(new Set(items.map(i => i.unitId)));
 
         const { data, error } = await supabase
             .from('questions')
