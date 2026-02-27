@@ -291,8 +291,12 @@ export async function fetchUserDashboardStats(userId: string) {
             recentLevels: [1, 2, 3], retention: 0.9,
             actionFrequencies: { analyze: 0, flashcard: 0, srs: 0 },
             dailyReviews: [0, 0, 0, 0, 0, 0, 0],
-            forecast: Array.from({ length: 7 }, (_, i) => ({ day: `D${i}`, count: 0 })),
-            heatmap: Array.from({ length: 365 }, () => 0),
+            forecast: {
+                hourly: Array.from({ length: 24 }, () => ({ time: new Date().toISOString(), count: 0 })),
+                daily: Array.from({ length: 14 }, () => ({ date: new Date().toISOString().split('T')[0], count: 0 })),
+                total: 0
+            },
+            heatmap: {},
             typeMastery: { radical: 0, kanji: 0, vocabulary: 0, grammar: 0 },
             totalKUCoverage: 0,
             streak: 0,
