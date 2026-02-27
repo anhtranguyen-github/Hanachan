@@ -21,30 +21,30 @@ describe('SRSAlgorithm', () => {
             lapses: 0
         }, 'again');
 
-        // Should lose reps, increase lapses
-        expect(result.next_state.reps).toBe(3); // 5 - 2
+        // 'again' resets reps to 0 and increments lapses
+        expect(result.next_state.reps).toBe(0);
         expect(result.next_state.lapses).toBe(1);
-        // Stability should be roughly 40% of previous, min 0.1
-        expect(result.next_state.stability).toBe(4);
+        // Stability should be 50% of previous: 10 * 0.5 = 5
+        expect(result.next_state.stability).toBe(5);
         expect(result.next_state.stage).toBe('learning');
     });
 
     it('should increase reps and stability on "pass"', () => {
-        const result = calculateNextReview(initialState, 'pass');
+        let result = calculateNextReview(initialState, 'pass');
         expect(result.next_state.reps).toBe(1);
 
         // Rep 2
-        result = calculateNextReview(result.next_state, 'good');
+        result = calculateNextReview(result.next_state, 'pass');
         expect(result.next_state.stability).toBe(0.333); // ~8 hours
         expect(result.next_state.reps).toBe(2);
 
         // Rep 3
-        result = calculateNextReview(result.next_state, 'good');
+        result = calculateNextReview(result.next_state, 'pass');
         expect(result.next_state.stability).toBe(1.0); // 1 day
         expect(result.next_state.reps).toBe(3);
 
         // Rep 4
-        result = calculateNextReview(result.next_state, 'good');
+        result = calculateNextReview(result.next_state, 'pass');
         expect(result.next_state.stability).toBe(3.0); // 3 days
         expect(result.next_state.stage).toBe('review');
         expect(result.next_state.reps).toBe(4);

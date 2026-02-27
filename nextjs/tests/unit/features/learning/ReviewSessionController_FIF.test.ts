@@ -73,7 +73,7 @@ describe('ReviewSessionController (FIF Mechanics)', () => {
     });
 
     it('should implement the "Drill then Commit" flow', async () => {
-        // First item fail
+        // First item fail — 'again' is the only failure rating
         const success1 = await controller.submitAnswer('again');
 
         expect(success1).toBe(false);
@@ -87,28 +87,29 @@ describe('ReviewSessionController (FIF Mechanics)', () => {
 
         // Queue check: item 1 should be moved to the back
         const next = controller.getNextItem();
-        expect(next.id).toBe('2-meaning');
+        expect(next!.id).toBe('2-meaning');
 
-        // Answer second item correctly
-        const success2 = await controller.submitAnswer('good');
+        // Answer second item correctly — 'pass' is the success rating
+        const success2 = await controller.submitAnswer('pass');
         expect(success2).toBe(true);
         // Should call submitReview (Commit)
-        expect(submitReview).toHaveBeenCalledWith(userId, '2', 'meaning', 'good', expect.any(Object), 0);
+        expect(submitReview).toHaveBeenCalledWith(userId, '2', 'meaning', 'pass', expect.any(Object), 0);
 
         // Answer first item correctly (second attempt)
-        const success3 = await controller.submitAnswer('good');
+        const success3 = await controller.submitAnswer('pass');
         expect(success3).toBe(true);
         // Should call submitReview with wrongCount = 1
-        expect(submitReview).toHaveBeenCalledWith(userId, '1', 'meaning', 'good', expect.any(Object), 1);
+        expect(submitReview).toHaveBeenCalledWith(userId, '1', 'meaning', 'pass', expect.any(Object), 1);
 
         expect(srsRepository.updateReviewSessionItem).toHaveBeenCalledWith(
-            expect.any(String), '1', 'meaning', 'correct', 'good', 1, 2
+            expect.any(String), '1', 'meaning', 'correct', 'pass', 1, 2
         );
     });
 
     it('should finish session when all items are committed', async () => {
-        await controller.submitAnswer('good');
-        await controller.submitAnswer('good');
+        // Answer both items correctly with 'pass'
+        await controller.submitAnswer('pass');
+        await controller.submitAnswer('pass');
 
         expect(controller.getNextItem()).toBeNull();
         expect(srsRepository.finishReviewSession).toHaveBeenCalled();

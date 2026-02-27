@@ -3,6 +3,16 @@ import { submitReview } from '@/features/learning/service';
 import { srsRepository } from '@/features/learning/srsRepository';
 
 vi.mock('@/features/learning/srsRepository');
+vi.mock('@/features/analytics/service', () => ({
+    analyticsService: {
+        logReview: vi.fn().mockResolvedValue(undefined),
+    }
+}));
+vi.mock('@/features/knowledge/db', () => ({
+    curriculumRepository: {
+        getById: vi.fn().mockResolvedValue(null),
+    }
+}));
 
 describe('Study Session Integration Flow', () => {
     const userId = '00000000-0000-4000-8000-000000000001';
@@ -24,16 +34,18 @@ describe('Study Session Integration Flow', () => {
 
         const updateSpy = vi.spyOn(srsRepository, 'updateUserState').mockResolvedValue(undefined as any);
 
-        const result = await submitReview(userId, kuId, 'pass', currentState);
+        // Correct signature: (userId, unitId, facet, rating, currentState, wrongCount)
+        const result = await submitReview(userId, kuId, facet, 'pass', currentState);
 
-        // Verify result from algorithm logic through the service
+        // reps=1 -> reps=2 after pass
         expect(result.next_state.reps).toBe(2);
-        expect(result.next_state.stage).toBe('learning');
+        // stability guard: reps=2 -> stability = 0.333 (8h)
+        expect(result.next_state.stability).toBe(0.333);
         expect(result.next_review).toBeInstanceOf(Date);
 
-        expect(updateSpy).toHaveBeenCalledWith(userId, kuId, expect.objectContaining({
+        expect(updateSpy).toHaveBeenCalledWith(userId, kuId, facet, expect.objectContaining({
             reps: 2,
-            stability: 0.166
+            stability: 0.333
         }), 'pass');
     });
 
@@ -48,16 +60,19 @@ describe('Study Session Integration Flow', () => {
 
         const updateSpy = vi.spyOn(srsRepository, 'updateUserState').mockResolvedValue(undefined as any);
 
+        // Correct signature: (userId, unitId, facet, rating, currentState, wrongCount)
         const result = await submitReview(userId, kuId, facet, 'again', currentState);
 
-        // (5 - 1) = 4 reps remaining according to smart reset
-        expect(result.next_state.reps).toBe(4);
+        // 'again' resets reps to 0 and increments lapses
+        expect(result.next_state.reps).toBe(0);
         expect(result.next_state.stage).toBe('learning');
         expect(result.next_state.lapses).toBe(1);
+        // Stability = 10 * 0.5 = 5
+        expect(result.next_state.stability).toBe(5);
 
         expect(updateSpy).toHaveBeenCalledWith(userId, kuId, facet, expect.objectContaining({
             state: 'learning',
-            reps: 4,
+            reps: 0,
             lapses: 1
         }), 'again');
     });

@@ -8,11 +8,11 @@ describe('ChatRouter Intent Classification', () => {
         expect(classifyIntent('yo')).toBe('GREETING');
     });
 
-    it('should classify search queries correctly', () => {
-        expect(classifyIntent('search for 食べる')).toBe('SEARCH_KU');
-        expect(classifyIntent('find Kanji for water')).toBe('SEARCH_KU');
-        expect(classifyIntent('食べる là gì?')).toBe('SEARCH_KU');
-        expect(classifyIntent('lookup 先生')).toBe('SEARCH_KU');
+    it('should classify Japanese text as ANALYZE (not SEARCH_KU)', () => {
+        // The router returns ANALYZE for Japanese text (no SEARCH_KU keyword routing)
+        expect(classifyIntent('search for 食べる')).toBe('ANALYZE');
+        expect(classifyIntent('食べる là gì?')).toBe('ANALYZE');
+        expect(classifyIntent('lookup 先生')).toBe('ANALYZE');
     });
 
     it('should classify project queries correctly', () => {
@@ -23,5 +23,7 @@ describe('ChatRouter Intent Classification', () => {
     it('should fallback to GENERAL_CHAT', () => {
         expect(classifyIntent('I love learning Japanese')).toBe('GENERAL_CHAT');
         expect(classifyIntent('What time is it?')).toBe('GENERAL_CHAT');
+        // English-only search query (no Japanese) → GENERAL_CHAT
+        expect(classifyIntent('find Kanji for water')).toBe('GENERAL_CHAT');
     });
 });

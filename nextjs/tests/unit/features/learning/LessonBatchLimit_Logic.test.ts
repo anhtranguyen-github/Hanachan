@@ -26,7 +26,9 @@ vi.mock('@/features/learning/srsRepository', () => ({
             last7Days: [0, 0, 0, 0, 0, 0, 0],
             heatmap: {},
             totalKUs: 100
-        })
+        }),
+        // fetchReviewForecast is required by fetchUserDashboardStats
+        fetchReviewForecast: vi.fn().mockResolvedValue([])
     }
 }));
 
@@ -43,6 +45,21 @@ describe('Lesson Batch Daily Limit', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        // Re-apply defaults after clearAllMocks
+        vi.mocked(srsRepository.fetchDueItems).mockResolvedValue([]);
+        vi.mocked(srsRepository.fetchStats).mockResolvedValue({
+            learned: 10,
+            mastered: 5,
+            burned: 2,
+            typeMastery: { radical: 0, kanji: 0, vocabulary: 0, grammar: 0 },
+            last7Days: [0, 0, 0, 0, 0, 0, 0],
+            heatmap: {},
+            totalKUs: 100
+        } as any);
+        vi.mocked(srsRepository.fetchReviewForecast).mockResolvedValue([]);
+        vi.mocked(analyticsService.getDashboardStats).mockResolvedValue({
+            daily: { reviews: 0, retention: 90, minutes: 0 }
+        } as any);
     });
 
     it('should allow starting a session when below the limit (e.g., 5 batches)', async () => {

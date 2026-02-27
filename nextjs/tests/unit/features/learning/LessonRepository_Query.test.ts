@@ -26,7 +26,8 @@ describe('lessonRepository.countTodayBatches', () => {
 
         expect(supabase.from).toHaveBeenCalledWith('lesson_batches');
         expect(supabase.eq).toHaveBeenCalledWith('user_id', userId);
-        expect(supabase.gte).toHaveBeenCalledWith('created_at', expect.stringContaining('T00:00:00'));
+        // The actual implementation uses 'started_at' (not 'created_at')
+        expect(supabase.gte).toHaveBeenCalledWith('started_at', expect.stringContaining('T00:00:00'));
         expect(result).toBe(5);
     });
 

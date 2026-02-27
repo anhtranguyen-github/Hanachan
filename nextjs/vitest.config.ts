@@ -10,12 +10,8 @@ export default defineConfig({
         exclude: ['node_modules', '.next'],
         testTimeout: 60000, // 60s for bulk tests
         hookTimeout: 120000, // 2min for setup/teardown
-        pool: 'forks',
-        poolOptions: {
-            forks: {
-                singleFork: true // Sequential for DB operations
-            }
-        },
+        // vitest 4: pool options are now top-level
+        singleFork: true, // Sequential for DB operations
         coverage: {
             provider: 'v8',
             reporter: ['text', 'lcov', 'html'],
