@@ -2,7 +2,7 @@ import React from 'react';
 import { getLocalKU } from '@/features/knowledge/actions';
 import Link from 'next/link';
 import { RichTextRenderer } from '@/components/shared/RichTextRenderer';
-import { ChevronLeft, PlayCircle, Download } from 'lucide-react';
+import { ChevronLeft, PlayCircle, Download, BookOpen, Layers, Zap, Sparkles, Target, Info, Hash } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export default async function KanjiDetailPage({ params }: { params: { slug: string } }) {
@@ -10,145 +10,179 @@ export default async function KanjiDetailPage({ params }: { params: { slug: stri
     const kanji: any = await getLocalKU('kanji', slug);
 
     if (!kanji) return (
-        <div className="min-h-screen bg-background flex items-center justify-center">
-            <div className="mn-card p-12 text-center">
-                <h2 className="text-xl font-bold uppercase mb-4 text-foreground">Kanji Not Found</h2>
-                <Link href="/content?type=kanji" className="mn-btn mn-btn-primary">BACK TO LIBRARY</Link>
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-lg">
+            <div className="mn-card p-2xl text-center max-w-md border border-border bg-surface">
+                <Info size={32} className="text-primary-dark mx-auto mb-md" />
+                <h2 className="text-h2 font-black uppercase mb-sm text-foreground tracking-tight">Kanji Not Found</h2>
+                <p className="text-body text-foreground/40 mb-xl">The data signature for this kanji could not be retrieved.</p>
+                <Link href="/content?type=kanji" className="mn-btn mn-btn-primary w-full">BACK TO ARCHIVES</Link>
             </div>
         </div>
     );
 
-    return (
-        <div className="max-w-5xl mx-auto space-y-12 pb-20 px-6">
-            <Link href="/content?type=kanji" className="flex items-center gap-3 text-gray-400 hover:text-kanji transition-all font-bold uppercase text-[10px] tracking-widest group mb-8">
-                <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                Back to Library
-            </Link>
+    const kuKanji = kanji.ku_kanji || {};
+    const meanings = kanji.meanings || [kanji.meaning];
 
-            {/* Header: Identity & Stroke Order Animation */}
-            <header className="grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
-                <div className="md:col-span-5 text-center">
-                    <div className="w-56 h-56 bg-kanji text-white rounded-[60px] flex items-center justify-center text-[120px] font-black shadow-2xl mx-auto transform hover:rotate-3 transition-transform cursor-help shadow-kanji/30">
-                        {kanji.character}
+    return (
+        <div className="max-w-[1400px] mx-auto py-xl px-lg space-y-2xl animate-in fade-in slide-in-from-bottom-8 duration-1000">
+            {/* Nav Header */}
+            <div className="flex items-center justify-between">
+                <Link href="/content?type=kanji" className="flex items-center gap-sm text-foreground/30 hover:text-foreground transition-all group px-lg py-md bg-surface-muted/30 border border-border/50 rounded-2xl">
+                    <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+                    <span className="text-metadata font-black uppercase tracking-[0.2em]">KANJI ARCHIVES</span>
+                </Link>
+                <div />
+            </div>
+
+            {/* Spectacular Hero Header - Normalized */}
+            <header className="relative flex flex-col lg:flex-row items-center gap-xl p-xl bg-surface border border-border rounded-clay shadow-2xl shadow-primary/5 group overflow-hidden">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-[120px] -mr-32 -mt-32 pointer-events-none" />
+
+                <div className="relative shrink-0">
+                    <div className="absolute inset-0 bg-primary/20 blur-[100px] opacity-20 rounded-full" />
+                    <div className="relative w-64 h-64 lg:w-kanji-hero lg:h-kanji-hero max-w-[450px] aspect-square bg-surface border-b-[8px] border-primary/10 rounded-clay flex items-center justify-center shadow-lg border border-border group-hover:scale-[1.01] transition-transform duration-700 overflow-hidden text-center px-lg">
+                        <span className="text-[100px] lg:text-[140px] font-black text-foreground jp-text leading-none">{kanji.character}</span>
+                        <div className="absolute top-8 left-8 bg-foreground text-surface px-6 py-2 rounded-2xl text-metadata font-black uppercase tracking-widest shadow-lg">
+                            L{kanji.level}
+                        </div>
                     </div>
                 </div>
-                <div className="md:col-span-7 space-y-6">
-                    <div className="flex items-center gap-3">
-                        <span className="px-5 py-2 bg-kanji/10 text-kanji rounded-full text-[10px] font-black uppercase tracking-widest border border-kanji/20">
-                            Level {kanji.level} Kanji
-                        </span>
-                        <span className="px-5 py-2 bg-gray-100 text-gray-500 rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-200">
-                            JLPT N{5 - Math.floor(kanji.level / 10)}
-                        </span>
-                    </div>
-                    <div>
-                        <h1 className="text-6xl md:text-7xl font-black text-gray-900 leading-tight mb-2 tracking-tight">
-                            {kanji.meanings?.[0] || kanji.meaning}
+
+                <div className="flex-1 space-y-lg text-center lg:text-left z-10 w-full overflow-hidden">
+                    <div className="space-y-sm overflow-hidden">
+                        <div className="flex items-center gap-sm justify-center lg:justify-start">
+                            <Target size={14} className="text-primary-dark" />
+                            <span className="text-metadata font-black text-primary-dark uppercase tracking-[0.4em]">Primary Concept</span>
+                        </div>
+                        <h1 className="text-h1 font-black text-foreground tracking-tightest leading-tight uppercase truncate">
+                            {meanings[0]}
                         </h1>
-                        <div className="flex flex-wrap gap-2">
-                            {kanji.meanings?.slice(1).map((m: string, i: number) => (
-                                <span key={i} className="text-lg font-bold text-gray-400">{m}{i < kanji.meanings.slice(1).length - 1 ? ',' : ''}</span>
+                        <div className="flex flex-wrap gap-sm justify-center lg:justify-start">
+                            {meanings.slice(1).map((m: string, i: number) => (
+                                <span key={i} className="text-h3 font-black text-foreground/10 uppercase tracking-tighter truncate max-w-[200px]">{m}</span>
                             ))}
                         </div>
                     </div>
 
-                    <div className="flex gap-4 pt-4">
-                        <button className="flex-1 py-4 bg-white border-2 border-gray-200 rounded-2xl font-black text-xs text-gray-400 hover:text-gray-900 hover:border-gray-900 transition-all flex items-center justify-center gap-2 uppercase tracking-widest">
-                            <Download size={16} /> SVG
-                        </button>
-                        <button className="flex-1 py-4 bg-gray-900 text-white rounded-2xl font-black text-xs shadow-xl hover:bg-black transition-all flex items-center justify-center gap-2 uppercase tracking-widest hover:scale-105 active:scale-95">
-                            <PlayCircle size={16} /> Stroke Video
-                        </button>
+                    <div className="flex flex-wrap gap-sm justify-center lg:justify-start">
+                        <div className="px-lg py-sm bg-surface-muted border border-border rounded-xl flex items-center gap-sm h-12">
+                            <Zap size={12} className="text-primary-dark" />
+                            <span className="text-metadata font-black uppercase tracking-widest">N{kanji.jlpt || '?'} Visual Archetype</span>
+                        </div>
                     </div>
                 </div>
             </header>
 
-            {/* Readings & Composition Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-white border-2 border-gray-200 p-10 rounded-[48px] shadow-sm space-y-10 hover:border-kanji/30 transition-colors">
-                    <div className="space-y-3">
-                        <p className="text-[10px] font-black text-kanji uppercase tracking-[0.3em] flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-kanji"></span> Onyomi
-                        </p>
-                        <p className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight leading-normal">
-                            {kanji.onReadings?.join(', ') || <span className="text-gray-300 text-2xl">None</span>}
-                        </p>
-                    </div>
-                    <div className="h-[2px] bg-gray-50 w-full" />
-                    <div className="space-y-3">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-gray-300"></span> Kunyomi
-                        </p>
-                        <p className="text-3xl md:text-4xl font-black text-gray-700 tracking-tight leading-normal">
-                            {kanji.kunReadings?.join(', ') || <span className="text-gray-300 text-2xl">None</span>}
-                        </p>
-                    </div>
-                </div>
+            {/* Strategic Information Architecture */}
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-xl">
 
-                <div className="bg-white border-2 border-gray-200 p-10 rounded-[48px] shadow-sm space-y-8 flex flex-col">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 border-b-2 border-gray-50 pb-4">Composition (Radicals)</h3>
-                    <div className="grid grid-cols-2 gap-4 flex-1 content-start">
-                        {kanji.radicals?.map((r: any, i: number) => (
-                            <Link key={i} href={`/content/radicals/${r.slug}`}>
-                                <div className="p-6 bg-gray-50 rounded-3xl border-2 border-gray-100 text-center hover:bg-radical/5 hover:border-radical/30 transition-all cursor-pointer group h-full flex flex-col items-center justify-center gap-2">
-                                    <span className="block text-4xl font-black text-gray-800 group-hover:text-radical transition-colors">{r.character || r.slug}</span>
-                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest group-hover:text-radical/60">{r.name || 'Radical'}</span>
-                                </div>
-                            </Link>
-                        ))}
-                        {(!kanji.radicals || kanji.radicals.length === 0) && (
-                            <div className="col-span-2 text-center py-10 text-gray-300 font-bold text-sm">No radical breakdown available</div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Mnemonics - The Heart of Learning */}
-            <div className="space-y-12">
-                <section className="space-y-6">
-                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-gray-400 border-b-2 border-gray-100 pb-2 pl-4">Meaning Mnemonic</h3>
-                    <div className="bg-white border-2 border-gray-200 p-10 md:p-12 rounded-[48px] shadow-sm shadow-kanji/5 text-lg md:text-2xl text-gray-700 leading-relaxed font-bold">
-                        <RichTextRenderer content={kanji.mnemonics?.meaning || "No mnemonic data available."} />
-                    </div>
-                </section>
-
-                <section className="space-y-6">
-                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-gray-400 border-b-2 border-gray-100 pb-2 pl-4">Reading Mnemonic</h3>
-                    <div className="bg-white border-2 border-gray-200 p-10 md:p-12 rounded-[48px] shadow-sm shadow-gray-100 text-lg md:text-2xl text-gray-700 leading-relaxed font-bold">
-                        <RichTextRenderer content={kanji.mnemonics?.reading || "No reading mnemonic available."} />
-                    </div>
-                </section>
-            </div>
-
-            {/* Related Vocabulary */}
-            <section className="space-y-8">
-                <div className="flex justify-between items-end px-4">
-                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-gray-400">Related Vocabulary</h3>
-                    <span className="text-[10px] font-black text-kanji uppercase tracking-widest">{kanji.vocabulary?.length || 0} Items Found</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {kanji.vocabulary?.map((v: any, i: number) => (
-                        <Link key={i} href={`/content/vocabulary/${v.slug}`}>
-                            <div className="bg-white border-2 border-gray-200 p-8 rounded-[40px] shadow-sm flex items-center justify-between hover:border-vocab/30 hover:shadow-vocab/10 transition-all group cursor-pointer relative overflow-hidden min-h-[140px]">
-                                <div className="absolute top-0 right-0 w-20 h-20 bg-vocab/5 rounded-bl-[50px] flex items-center justify-center">
-                                    <span className="text-[10px] font-black text-vocab/40 uppercase rotate-45 mr-[-10px] mt-[-10px]">Vocab</span>
-                                </div>
-                                <div className="space-y-1 z-10">
-                                    <p className="text-3xl font-black text-gray-900 group-hover:text-vocab transition-colors">{v.character}</p>
-                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">{v.reading}</p>
-                                </div>
-                                <p className="text-lg font-black text-gray-600 max-w-[50%] text-right leading-tight z-10">{v.meaning}</p>
-                            </div>
-                        </Link>
-                    ))}
-                    {(!kanji.vocabulary || kanji.vocabulary.length === 0) && (
-                        <div className="col-span-2 text-center py-12 border-2 border-dashed border-gray-200 rounded-[40px] text-gray-400 font-bold">
-                            No vocabulary found using this Kanji.
+                {/* Left: Readings & Mnemonics */}
+                <div className="xl:col-span-12 grid grid-cols-1 lg:grid-cols-2 gap-xl">
+                    {/* Specialized Reading Matrix */}
+                    <div className="p-xl bg-primary/5 border border-primary/10 rounded-clay relative overflow-hidden group/read">
+                        <div className="absolute top-0 right-0 p-lg">
+                            <Hash size={48} className="text-primary-dark/5" />
                         </div>
-                    )}
+                        <div className="space-y-lg relative z-10 h-full flex flex-col justify-between">
+                            <div className="flex items-center gap-sm">
+                                <div className="p-sm bg-primary/20 rounded-xl">
+                                    <PlayCircle size={18} className="text-primary-dark" />
+                                </div>
+                                <h2 className="text-h3 font-black text-foreground uppercase tracking-[0.4em]">Phonetic Profile</h2>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-xl pt-lg">
+                                <div className="space-y-sm">
+                                    <div className="text-metadata font-black text-primary-dark uppercase tracking-widest border-b border-primary/10 pb-1">ONYOMI</div>
+                                    <div className="text-h2 font-black text-foreground jp-text tracking-tighter">{kuKanji.reading_onyomi || '—'}</div>
+                                    <div className="text-[10px] font-bold text-foreground/20 uppercase tracking-widest">Acoustic Signal</div>
+                                </div>
+                                <div className="space-y-sm">
+                                    <div className="text-metadata font-black text-foreground/40 uppercase tracking-widest border-b border-border/50 pb-1">KUNYOMI</div>
+                                    <div className="text-h2 font-black text-foreground jp-text tracking-tighter">{kuKanji.reading_kunyomi || '—'}</div>
+                                    <div className="text-[10px] font-bold text-foreground/20 uppercase tracking-widest">Conceptual Signal</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Dynamic Narrative Strategy */}
+                    <div className="p-xl bg-surface border border-border rounded-clay relative overflow-hidden group/strategy">
+                        <div className="absolute top-0 right-0 p-lg">
+                            <Sparkles size={48} className="text-foreground/5" />
+                        </div>
+                        <div className="space-y-lg relative z-10 overflow-hidden">
+                            <div className="flex items-center gap-sm">
+                                <div className="p-sm bg-surface-muted rounded-xl">
+                                    <BookOpen size={18} className="text-foreground/40" />
+                                </div>
+                                <h2 className="text-h3 font-black text-foreground/40 uppercase tracking-[0.4em]">Anchor Strategy</h2>
+                            </div>
+                            <div className="text-body font-medium text-foreground/80 leading-relaxed indent-lg line-clamp-[6] overflow-hidden first-letter:text-6xl first-letter:font-black first-letter:text-primary-dark first-letter:float-left first-letter:mr-4">
+                                <RichTextRenderer content={kuKanji.meaning_explanation || kanji.mnemonics?.meaning || "A strategic memory anchor for this kanji has not yet been indexed."} />
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </section>
+
+                {/* Full Width Sections */}
+                <div className="xl:col-span-12 space-y-xl">
+                    {/* Composition Hierarchy */}
+                    <section className="p-xl bg-surface border border-border rounded-clay shadow-xl group">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-xl border-b border-border/50 pb-lg mb-xl">
+                            <div className="flex items-center gap-sm">
+                                <div className="p-sm bg-primary/5 rounded-2xl">
+                                    <Layers size={18} className="text-primary-dark" />
+                                </div>
+                                <div className="space-y-1">
+                                    <h2 className="text-h3 font-black text-foreground uppercase tracking-[0.4em]">Composition Nodes</h2>
+                                    <p className="text-metadata font-bold text-foreground/20 uppercase tracking-widest">Integrated building blocks</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-lg">
+                            {(kanji.radicals || []).map((r: any, i: number) => (
+                                <Link key={i} href={`/content/radicals/${r.slug}`} className="flex flex-col items-center justify-center gap-sm p-lg rounded-[2.5rem] bg-surface-muted/30 border border-border hover:border-primary/20 hover:scale-[1.02] transition-all group/node h-[120px]">
+                                    <span className="text-4xl font-black text-foreground group-hover/node:text-primary-dark transition-colors jp-text">{r.character}</span>
+                                    <span className="text-metadata font-black text-foreground/20 uppercase tracking-widest text-center truncate w-full px-2">{r.meaning}</span>
+                                </Link>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* Contextual Network - Normalized grid and items */}
+                    <section className="space-y-lg">
+                        <div className="flex items-center justify-between px-lg pb-lg border-b-2 border-border/50">
+                            <div className="flex items-center gap-sm">
+                                <div className="p-sm bg-surface-muted rounded-xl">
+                                    <Target size={18} className="text-foreground/30" />
+                                </div>
+                                <h2 className="text-h3 font-black text-foreground uppercase tracking-[0.6em]">Integrated Vocabulary</h2>
+                            </div>
+                            <div />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-lg">
+                            {kanji.vocabulary?.map((v: any, i: number) => (
+                                <Link key={i} href={`/content/vocabulary/${v.slug}`} className="group relative p-lg bg-surface border border-border rounded-clay hover:border-primary/30 transition-all duration-500 overflow-hidden h-vocab-card flex flex-col justify-between shadow-sm hover:shadow-xl">
+                                    <div className="flex items-start justify-between gap-xl">
+                                        <div className="text-4xl font-black text-foreground group-hover:text-primary-dark transition-colors jp-text truncate flex-1">{v.character}</div>
+                                        <div className="w-1.5 h-1.5 bg-primary/10 rounded-full group-hover:bg-primary transition-colors shrink-0" />
+                                    </div>
+                                    <div className="space-y-sm">
+                                        <div className="text-metadata font-black text-foreground/60 uppercase tracking-tight line-clamp-1">{v.reading || v.reading_primary}</div>
+                                        <div className="text-card-title font-black text-foreground/40 uppercase tracking-tight line-clamp-1 truncate">{v.meaning}</div>
+                                    </div>
+                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 p-lg rotate-180 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
+                                        <ChevronLeft size={18} className="text-primary-dark rotate-180" />
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </section>
+                </div>
+            </div>
         </div>
     );
 }
-

@@ -51,7 +51,7 @@ export default function LevelDetailsPage() {
 
             <header className="border border-black p-8 flex flex-col items-center gap-4">
                 <h1 className="text-3xl font-bold uppercase">{level.name}</h1>
-                <p className="text-center italic text-gray-500">{level.description}</p>
+                <p className="text-center text-gray-500">{level.description}</p>
                 <div className="flex gap-4 mt-4">
                     <div className="border border-black p-4 text-center">
                         <div className="text-[10px] font-bold uppercase">Completion</div>

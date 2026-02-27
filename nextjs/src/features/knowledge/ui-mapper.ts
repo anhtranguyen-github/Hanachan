@@ -35,17 +35,28 @@ export function mapUnitToQuickView(unit: KnowledgeUnit): QuickViewData {
         }));
     }
 
+    const getTitle = () => {
+        if (unit.character) return unit.character;
+        try {
+            const decoded = decodeURIComponent(unit.slug);
+            return decoded.replace(/^(vocab|kanji|radical|grammar)_/, '').replace(/[_-]/g, ' ');
+        } catch (e) {
+            return unit.slug;
+        }
+    };
+
     return {
         type: isGrammar ? 'GRAMMAR' : 'TOKEN',
-        title: unit.character || unit.slug.split(':')[1] || unit.slug,
+        title: getTitle(),
         meaning: unit.meaning,
         reading: isGrammar ? "" : (details.reading || (Array.isArray(details.onyomi) ? details.onyomi[0] : "")),
         explanation: meaningMnemonic,
         reading_mnemonic: readingMnemonic,
         examples: examples,
         level: unit.level?.toString(),
-        unit_type: unit.type,
+        ku_type: unit.type,
         components: components,
+        slug: unit.slug,
         raw: unit
     };
 }

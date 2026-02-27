@@ -24,7 +24,7 @@ export class KnowledgeService {
 
     async getSentencesByKU(unitId: string): Promise<any[]> {
         uuidSchema.parse(unitId);
-        return await curriculumRepository.getSentencesByKU(unitId);
+        return await curriculumRepository.getSentencesByUnit(unitId);
     }
 
     async getLinkedKanjiByRadical(radicalSlug: string): Promise<any[]> {

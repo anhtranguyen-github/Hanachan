@@ -1,9 +1,13 @@
 'use server';
 
-fetchUserDashboardStats,
+import {
+    submitReview,
+    fetchDueItems,
+    fetchUserDashboardStats,
     initializeSRS,
     startLessonSession
 } from './service';
+import { lessonRepository } from './lessonRepository';
 import { revalidatePath } from 'next/cache';
 
 export async function initializeSRSAction(userId: string, unitId: string, facets: string[]) {
@@ -58,6 +62,18 @@ export async function startLessonSessionAction(userId: string, level: number) {
         return { success: true, data: result };
     } catch (e: any) {
         console.error("[LearningActions] startLessonSession error:", e);
+        return { success: false, error: e.message };
+    }
+}
+
+export async function completeLessonBatchAction(batchId: string) {
+    try {
+        await lessonRepository.completeLessonBatch(batchId);
+        revalidatePath('/dashboard');
+        revalidatePath('/learn');
+        return { success: true };
+    } catch (e: any) {
+        console.error("[LearningActions] completeLessonBatch error:", e);
         return { success: false, error: e.message };
     }
 }

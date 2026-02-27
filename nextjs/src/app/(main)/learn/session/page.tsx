@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, ArrowLeft, BookOpen, ChevronRight, CheckCircle2, PlayCircle, Zap, X } from 'lucide-react';
 import { clsx } from 'clsx';
-import { startLessonSessionAction } from '@/features/learning/actions';
+import { startLessonSessionAction, completeLessonBatchAction } from '@/features/learning/actions';
 import { useUser } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { QuizItem } from '@/features/learning/LearningController';
@@ -23,9 +23,11 @@ function SessionContent() {
     const [lessonIndex, setLessonIndex] = useState(0);
     const [batchId, setBatchId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const hasLoaded = React.useRef(false);
 
     const loadSession = async () => {
-        if (!user) return;
+        if (!user || hasLoaded.current) return;
+        hasLoaded.current = true;
 
         try {
             const { data: profile } = await supabase
@@ -105,7 +107,7 @@ function SessionContent() {
         } else {
             // Batch Complete
             if (batchId) {
-                await lessonRepository.completeLessonBatch(batchId);
+                await completeLessonBatchAction(batchId);
             }
             setPhase('complete');
         }
@@ -141,7 +143,7 @@ function SessionContent() {
                     >
                         Back to Dashboard
                     </button>
-                    <p className="text-[10px] font-black uppercase text-gray-300 tracking-[0.4em]">Rest is part of the training</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">Rest is part of the training</p>
                 </div>
             );
         }
@@ -182,28 +184,34 @@ function SessionContent() {
 
         return (
             <div
-                className="h-screen bg-[#FDF8F8] py-8 px-6 flex flex-col max-w-5xl mx-auto space-y-8"
+                className="min-h-screen bg-[#FDF8F8] pt-16 pb-12 px-6 flex flex-col max-w-5xl mx-auto space-y-12"
                 data-testid="lesson-view-phase"
             >
-                <header className="flex justify-between items-center px-4">
-                    <div className="space-y-3">
-                        <div className="flex gap-2.5">
+                <header className="flex justify-between items-center px-4 shrink-0">
+                    <div className="flex-1 space-y-3">
+                        <div className="flex gap-2">
                             {lessonQueue.map((_, i) => (
                                 <div key={i} className={clsx(
-                                    "h-2.5 rounded-full transition-all duration-700",
-                                    i < lessonIndex ? "w-12 bg-primary" :
-                                        i === lessonIndex ? "w-16 bg-primary shadow-[0_0_10px_rgba(244,172,183,0.4)]" :
-                                            "w-8 bg-gray-100"
+                                    "h-1.5 rounded-full transition-all duration-700",
+                                    i < lessonIndex ? "w-8 bg-primary" :
+                                        i === lessonIndex ? "w-12 bg-primary shadow-lg shadow-primary/20" :
+                                            "w-6 bg-gray-100"
                                 )} />
                             ))}
                         </div>
-                        <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">
-                            Discovery Batch: {lessonIndex + 1} / {lessonQueue.length} Items Viewed
+                        <p className="text-[9px] font-black text-foreground/30 uppercase tracking-[0.2em]">
+                            Lesson {lessonIndex + 1} of {lessonQueue.length}
                         </p>
                     </div>
-                    <button onClick={() => router.back()} className="group flex items-center gap-3 text-gray-300 hover:text-red-500 transition-colors">
-                        <span className="text-[10px] font-black uppercase tracking-widest">Abort Batch</span>
-                        <X size={18} className="group-hover:rotate-90 transition-transform" />
+                    <button
+                        onClick={() => router.push('/learn')}
+                        className="flex items-center gap-2 pr-4 pl-2 py-2 rounded-2xl bg-white border border-border shadow-sm hover:border-red-200 hover:bg-red-50 transition-all group group"
+                        title="Exit Session"
+                    >
+                        <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 group-hover:bg-red-100 transition-colors">
+                            <X size={16} className="text-gray-400 group-hover:text-red-500 group-hover:rotate-90 transition-transform" />
+                        </div>
+                        <span className="text-[9px] font-black text-gray-400 group-hover:text-red-500 tracking-widest uppercase">Exit</span>
                     </button>
                 </header>
 
@@ -221,31 +229,28 @@ function SessionContent() {
     const progress = (stats.completed / Math.max(controller.getProgress().total, 1)) * 100;
 
     return (
-        <div className="h-screen bg-background py-8 px-6 flex flex-col max-w-5xl mx-auto space-y-12" data-testid="quiz-phase">
-            <header className="flex justify-between items-center px-6">
-                <div className="flex items-center gap-6">
-                    <div className="space-y-1">
-                        <span className={clsx("block text-xl font-black leading-none", currentCard?.type === 'kanji' ? 'text-kanji' : 'text-primary')}>
-                            {stats.completed + 1} / {controller.getProgress().total}
-                        </span>
-                        <span className="block text-[8px] font-black text-gray-300 uppercase tracking-widest leading-none">Items in queue</span>
-                    </div>
-                    <div className="w-48 h-3 bg-gray-100 rounded-full overflow-hidden border border-gray-100">
+        <div className="min-h-screen bg-[#FDFDFD] pt-8 md:pt-12 pb-12 px-6 flex flex-col max-w-4xl mx-auto" data-testid="quiz-phase">
+            <header className="flex justify-between items-center mb-16 shrink-0 h-10">
+                <div className="flex items-center gap-4">
+                    <div className="w-32 md:w-48 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                         <div
-                            className={clsx("h-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(0,0,0,0.1)]", currentCard?.type === 'kanji' ? 'bg-kanji' : 'bg-primary')}
+                            className={clsx("h-full transition-all duration-700 ease-out", currentCard?.type === 'kanji' ? 'bg-kanji' : 'bg-primary')}
                             style={{ width: `${progress}%` }}
                         />
                     </div>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] whitespace-nowrap">
+                        {stats.completed + 1} / {controller.getProgress().total}
+                    </span>
                 </div>
 
-                <div className="flex gap-4 items-center">
-                    <button
-                        onClick={() => router.push('/learn')}
-                        className="text-gray-300 hover:text-rose-500 font-black text-[10px] uppercase tracking-[0.2em] transition-colors"
-                    >
-                        Abort Quiz
-                    </button>
-                </div>
+                <button
+                    onClick={() => router.push('/learn')}
+                    className="group flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-2xl transition-all duration-300"
+                    title="Exit Quiz"
+                >
+                    <X size={16} className="text-gray-400 group-hover:text-gray-600 group-hover:rotate-90 transition-transform duration-300" />
+                    <span className="text-[10px] font-bold text-gray-400 group-hover:text-gray-600 tracking-widest uppercase">Exit</span>
+                </button>
             </header>
 
             <div className="flex-1 flex items-center justify-center">
@@ -274,60 +279,60 @@ function LessonSlide({ item, onNext, isLastLesson }: { item: any, onNext: () => 
     const activeColor = typeColors[item.type] || 'bg-primary';
 
     return (
-        <div className="flex-1 bg-white border-2 border-gray-300 rounded-[64px] shadow-sm overflow-hidden flex flex-col relative animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="flex-1 bg-white border-2 border-gray-300 rounded-[48px] shadow-sm overflow-hidden flex flex-col relative animate-in fade-in slide-in-from-bottom-8 duration-700 max-h-[85vh]">
             {/* Visual Cue */}
-            <div className="absolute top-8 right-10 z-20">
-                <span className="px-4 py-2 bg-primary/10 text-primary rounded-2xl text-[10px] font-black uppercase tracking-widest border border-primary/20">
+            <div className="absolute top-6 right-8 z-20">
+                <span className="px-3 py-1.5 bg-primary/10 text-primary rounded-xl text-[9px] font-black uppercase tracking-widest border border-primary/20">
                     New Discovery
                 </span>
             </div>
 
             {/* Discovery Content Section */}
             <div className={clsx(
-                "p-20 text-center text-white relative overflow-hidden transition-colors duration-500",
+                "p-12 md:p-14 text-center text-white relative overflow-hidden transition-colors duration-500 shrink-0",
                 activeColor
             )}>
                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
-                <h2 className="text-[120px] md:text-[140px] font-black mb-4 relative z-10 drop-shadow-2xl italic">
+                <h2 className="text-7xl md:text-8xl font-black mb-2 relative z-10 drop-shadow-2xl">
                     {item.character || item.slug.split(':')[1]}
                 </h2>
-                <p className="text-2xl font-black opacity-90 relative z-10 tracking-[0.3em] uppercase">
+                <p className="text-xl font-black opacity-90 relative z-10 tracking-[0.2em] uppercase">
                     {item.meaning}
                 </p>
             </div>
 
             {/* Detailed Information Section */}
-            <div className="flex-1 p-12 md:p-16 space-y-12 overflow-auto">
-                <div className="space-y-6">
-                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-gray-300 border-b-2 border-gray-50 pb-2">
+            <div className="flex-1 p-8 md:p-10 space-y-8 overflow-auto min-h-0 bg-white">
+                <div className="space-y-4">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-300 border-b-2 border-gray-50 pb-2">
                         {item.type === 'grammar' ? "Grammar Explanation" : "Mnemonic Strategy"}
                     </h3>
-                    <p className="text-2xl text-gray-700 leading-relaxed font-bold italic">
+                    <p className="text-xl text-gray-700 leading-relaxed font-bold">
                         {item.type === 'grammar' ? (details?.explanation || "Master this grammar pattern to enhance your sentence structures.") :
                             (details?.meaning_mnemonic || "Visualize this character to better retain its semantic meaning.")}
                     </p>
                 </div>
 
                 {item.type !== 'radical' && (
-                    <div className="bg-gray-50 p-10 rounded-[40px] border-2 border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div className="bg-gray-50 p-6 md:p-8 rounded-[32px] border-2 border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-8 shrink-0">
                         {item.type === 'grammar' ? (
-                            <div className="col-span-2 space-y-4">
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Context Example</h4>
-                                <p className="text-4xl font-black text-gray-800 jp-text">
+                            <div className="col-span-2 space-y-2">
+                                <h4 className="text-[9px] font-black uppercase tracking-widest text-gray-400">Context Example</h4>
+                                <p className="text-2xl font-black text-gray-800 jp-text leading-tight">
                                     {details?.example_sentences?.[0]?.ja || details?.sentence_ja || "No context provided."}
                                 </p>
                             </div>
                         ) : (
                             <>
                                 <div>
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Reading</h4>
-                                    <p className="text-4xl font-black text-gray-800">
+                                    <h4 className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Reading</h4>
+                                    <p className="text-3xl font-black text-gray-800">
                                         {item.type === 'vocabulary' ? details?.reading : (details?.onyomi?.[0] || details?.kunyomi?.[0] || "N/A")}
                                     </p>
                                 </div>
                                 <div>
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Curriculum</h4>
-                                    <p className="text-4xl font-black text-gray-800">Level {item.level}</p>
+                                    <h4 className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Curriculum</h4>
+                                    <p className="text-3xl font-black text-gray-800">Level {item.level}</p>
                                 </div>
                             </>
                         )}

@@ -2,113 +2,125 @@ import React from 'react';
 import { getLocalKU } from '@/features/knowledge/actions';
 import Link from 'next/link';
 import { RichTextRenderer } from '@/components/shared/RichTextRenderer';
-import { ChevronLeft, Zap, Target, Layers, Info } from 'lucide-react';
+import { ChevronLeft, Zap, Layers, Info, Target, Sparkles, BookOpen } from 'lucide-react';
+import { clsx } from 'clsx';
 
 export default async function RadicalDetailPage({ params }: { params: { slug: string } }) {
     const slug = decodeURIComponent(params.slug);
     const radical: any = await getLocalKU('radical', slug);
 
     if (!radical) return (
-        <div className="min-h-screen bg-background flex items-center justify-center">
-            <div className="mn-card p-12 text-center">
-                <h2 className="text-xl font-bold uppercase mb-4 text-foreground">Radical Not Found</h2>
-                <Link href="/content?type=radical" className="mn-btn mn-btn-primary">BACK TO LIBRARY</Link>
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-lg">
+            <div className="mn-card p-2xl text-center max-w-md border border-border bg-surface">
+                <Info size={32} className="text-primary-dark mx-auto mb-md" />
+                <h2 className="text-h2 font-black uppercase mb-sm text-foreground tracking-tight">Radical Not Found</h2>
+                <p className="text-body text-foreground/40 mb-xl">The data signature for this foundational radical could not be retrieved.</p>
+                <Link href="/content?type=radical" className="mn-btn mn-btn-primary w-full">BACK TO ARCHIVES</Link>
             </div>
         </div>
     );
 
-    return (
-        <div className="max-w-5xl mx-auto py-12 px-8 space-y-12">
-            <Link href="/content?type=radical" className="flex items-center gap-3 text-foreground/40 hover:text-primary-dark transition-all font-bold uppercase text-[10px] tracking-widest group">
-                <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                Back to Radical Library
-            </Link>
+    const hasImage = !!radical.image_url;
 
-            {/* Premium Header Card */}
-            <header className="premium-card p-12 bg-surface border-border flex flex-col md:flex-row items-center gap-12 relative overflow-hidden group">
-                <div className="relative">
-                    <div className="w-48 h-48 bg-primary/10 rounded-3xl flex items-center justify-center text-[100px] font-black text-foreground tracking-tighter border-b-4 border-primary/20 group-hover:scale-105 transition-transform duration-500 jp-text">
-                        {radical.character || '？'}
-                    </div>
-                    <div className="absolute -top-3 -left-3 bg-foreground text-surface px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
-                        LEVEL {radical.level}
+    return (
+        <div className="max-w-[1400px] mx-auto py-xl px-lg space-y-2xl animate-in fade-in slide-in-from-bottom-6 duration-1000">
+            {/* Nav Header */}
+            <div className="flex items-center justify-between">
+                <Link href="/content?type=radical" className="flex items-center gap-sm text-foreground/30 hover:text-foreground transition-all group px-lg py-md bg-surface-muted/30 border border-border/50 rounded-2xl">
+                    <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+                    <span className="text-metadata font-black uppercase tracking-[0.2em]">RADICAL ARCHIVES</span>
+                </Link>
+                <div />
+            </div>
+
+            {/* Immersive Hero Header */}
+            <header className="relative p-xl bg-surface border border-border rounded-clay group overflow-hidden flex flex-col lg:flex-row items-center gap-xl shadow-2xl shadow-primary/5">
+                <div className="relative shrink-0">
+                    <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full opacity-30" />
+                    <div className="relative w-64 h-64 bg-surface border-b-4 border-primary/10 rounded-clay flex items-center justify-center shadow-lg border border-border group-hover:scale-[1.02] transition-transform duration-700 overflow-hidden">
+                        {hasImage ? (
+                            <img src={radical.image_url} alt={radical.meaning} className="w-40 h-40 object-contain invert-[.05]" />
+                        ) : (
+                            <div className="text-8xl font-black text-foreground jp-text leading-none">{radical.character || '？'}</div>
+                        )}
+                        <div className="absolute top-6 left-6 bg-foreground text-surface px-4 py-1.5 rounded-xl text-metadata font-black uppercase tracking-widest shadow-lg">
+                            L{radical.level}
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex-1 space-y-6 text-center md:text-left">
-                    <div className="space-y-1">
-                        <div className="text-[10px] font-bold text-primary-dark uppercase tracking-[0.3em] flex items-center gap-2 justify-center md:justify-start">
-                            <Target size={14} />
-                            Foundation Name
+                <div className="flex-1 space-y-md text-center lg:text-left z-10 w-full">
+                    <div className="space-y-sm">
+                        <div className="flex items-center gap-sm justify-center lg:justify-start">
+                            <Target size={14} className="text-primary-dark" />
+                            <span className="text-metadata font-black text-primary-dark uppercase tracking-[0.4em]">FOUNDATION NAME</span>
                         </div>
-                        <h1 className="text-6xl font-black text-foreground tracking-tight uppercase leading-none">
+                        <h1 className="text-h1 font-black text-foreground tracking-tight leading-tight uppercase truncate">
                             {radical.meanings?.[0] || radical.meaning}
                         </h1>
+                    </div>
+
+                    <div className="flex flex-wrap gap-sm justify-center lg:justify-start">
+                        <div className="px-lg py-sm bg-surface-muted border border-border rounded-xl flex items-center gap-sm">
+                            <Sparkles size={12} className="text-yellow-500" />
+                            <span className="text-metadata font-black text-foreground uppercase tracking-widest">Mastery Efficiency: HIGH</span>
+                        </div>
+                        <div className="px-lg py-sm bg-surface-muted border border-border rounded-xl flex items-center gap-sm">
+                            <Layers size={12} className="text-blue-500" />
+                            <span className="text-metadata font-black text-foreground uppercase tracking-widest">{radical.kanji?.length || 0} Integrations</span>
+                        </div>
                     </div>
                 </div>
             </header>
 
-            {/* Mnemonic Section */}
-            <section className="premium-card p-12 bg-primary/5 border-primary/10 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
-                <div className="space-y-6">
-                    <div className="flex items-center gap-3">
+            <div className="space-y-2xl">
+                {/* Mnemonic Section */}
+                <section className="relative p-xl bg-primary/5 border border-primary/10 rounded-clay space-y-lg overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
+                    <div className="flex items-center gap-sm">
                         <Zap size={18} className="text-primary-dark" strokeWidth={3} />
-                        <h2 className="text-[11px] font-bold text-foreground uppercase tracking-widest">Memory Hook</h2>
+                        <h2 className="text-h3 font-black text-foreground uppercase tracking-[0.4em]">Memory Hook</h2>
                     </div>
-                    <div className="text-lg font-medium text-foreground/80 leading-relaxed pr-12">
+
+                    <div className="text-h1-like-body font-medium text-foreground/70 leading-relaxed max-w-4xl">
                         <RichTextRenderer
                             content={radical.mnemonics?.meaning?.content || radical.mnemonics?.meaning || radical.mnemonics?.text || radical.ku_radicals?.mnemonic_story ||
                                 "No mnemonic available for this foundational radical."}
                         />
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* Found In Kanji Section */}
-            <section className="space-y-8">
-                <div className="flex items-center gap-3">
-                    <Layers size={18} className="text-primary-dark" />
-                    <h2 className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Integrated in Kanji</h2>
-                </div>
+                {/* Kanji Integration Grid */}
+                <section className="space-y-lg">
+                    <div className="flex items-center justify-between border-b border-border/50 pb-md">
+                        <div className="flex items-center gap-sm">
+                            <BookOpen size={16} className="text-foreground/40" />
+                            <h2 className="text-h3 font-black text-foreground uppercase tracking-[0.4em]">Integrations</h2>
+                        </div>
+                        <div />
+                    </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
-                    {radical.kanji?.map((k: any, i: number) => (
-                        <Link
-                            key={i}
-                            href={`/content/kanji/${k.slug}`}
-                            className="premium-card aspect-square flex flex-col items-center justify-center gap-1 bg-surface border-border hover:border-primary/40 transition-all active:scale-95 group"
-                        >
-                            <span className="text-4xl font-bold text-foreground group-hover:text-primary-dark transition-colors jp-text">{k.character}</span>
-                            <span className="text-[8px] font-bold text-foreground/20 uppercase tracking-widest">{k.meaning}</span>
-                        </Link>
-                    ))}
-                    {(radical.kanji || []).length === 0 && <div className="col-span-full py-12 mn-card !bg-surface-muted/30 border-dashed text-center text-foreground/20">No associated kanji links found yet.</div>}
-                </div>
-            </section>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-md">
+                        {radical.kanji?.map((k: any, i: number) => (
+                            <Link
+                                key={i}
+                                href={`/content/kanji/${k.slug}`}
+                                className="premium-card aspect-square flex flex-col items-center justify-center p-sm bg-surface border-border hover:border-primary/40 transition-all group overflow-hidden h-[120px]"
+                            >
+                                <span className="text-3xl font-black text-foreground group-hover:text-primary-dark transition-all duration-500 jp-text">{k.character}</span>
+                                <span className="text-metadata font-black text-foreground/20 uppercase tracking-widest mt-1 truncate w-full text-center px-2">{k.meaning}</span>
+                            </Link>
+                        ))}
+                        {(radical.kanji || []).length === 0 && (
+                            <div className="col-span-full py-xl rounded-clay bg-surface-muted/30 border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-sm">
+                                <p className="text-metadata font-black text-foreground/10 uppercase tracking-[0.5em]">No cross-referenced kanji found</p>
+                            </div>
+                        )}
+                    </div>
+                </section>
+            </div>
 
-            {/* Stats / Metadata */}
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="premium-card p-8 bg-surface border-border flex items-center justify-between group">
-                    <div className="space-y-1">
-                        <div className="text-[8px] font-bold text-foreground/20 uppercase tracking-widest">Mastery Level</div>
-                        <div className="text-xl font-black text-foreground uppercase">NOT STARTED</div>
-                    </div>
-                    <div className="w-10 h-10 rounded-full bg-surface-muted flex items-center justify-center border border-border group-hover:border-primary/20 transition-colors">
-                        <Info size={16} className="text-foreground/20" />
-                    </div>
-                </div>
-                <div className="premium-card p-8 bg-surface border-border flex items-center justify-between group">
-                    <div className="space-y-1">
-                        <div className="text-[8px] font-bold text-foreground/20 uppercase tracking-widest">Next Phase</div>
-                        <div className="text-xl font-black text-foreground uppercase">LEARNING I</div>
-                    </div>
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/10">
-                        <Zap size={16} className="text-primary-dark" />
-                    </div>
-                </div>
-            </section>
+            {/* Mastery Widget System - Removed as per density and clarity requirements */}
         </div>
     );
 }
-

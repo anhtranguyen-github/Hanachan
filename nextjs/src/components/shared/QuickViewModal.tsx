@@ -21,6 +21,7 @@ export interface QuickViewData {
     ku_type?: string;
     audio_items?: any[];
     components?: { character: string; meaning: string; slug: string }[];
+    slug: string;
     raw?: any;
 }
 
@@ -131,7 +132,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ isOpen, onClose,
                     )}
                     {!onAddToDeck && (
                         <Link
-                            href={`/content/${data.ku_type?.toLowerCase() === 'vocabulary' ? 'vocabulary' : data.ku_type?.toLowerCase() === 'radical' ? 'radicals' : data.ku_type?.toLowerCase() || 'kanji'}/${data.title}`}
+                            href={`/content/${data.ku_type?.toLowerCase() === 'vocabulary' ? 'vocabulary' : data.ku_type?.toLowerCase() === 'radical' ? 'radicals' : data.ku_type?.toLowerCase() || 'kanji'}/${data.slug}`}
                             className="flex-[2] py-4 bg-[#FFB5B5] text-white rounded-[20px] text-[10px] font-black uppercase flex items-center justify-center gap-2 shadow-lg transition-all"
                         >
                             OPEN FULL PAGE

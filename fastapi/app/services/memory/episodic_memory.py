@@ -12,6 +12,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 
 from ...core.config import settings
+from ...core.llm import make_embedding_model
 from ...schemas.memory import EpisodicMemory
 
 
@@ -37,10 +38,7 @@ def _get_client() -> QdrantClient:
 def _get_embedder() -> OpenAIEmbeddings:
     global _embedder
     if _embedder is None:
-        _embedder = OpenAIEmbeddings(
-            model=settings.embedding_model,
-            openai_api_key=settings.openai_api_key,
-        )
+        _embedder = make_embedding_model()
     return _embedder
 
 
@@ -186,3 +184,13 @@ def clear_episodic_memory(user_id: str) -> int:
         ),
     )
     return 0  # Qdrant cloud doesn't return deleted count
+
+
+def delete_episodic_memory_by_id(memory_id: str) -> bool:
+    """Delete a single episodic memory point by ID. Returns True if deleted."""
+    client = _get_client()
+    client.delete(
+        collection_name=settings.qdrant_collection,
+        points_selector=qmodels.PointIdsList(points=[memory_id]),
+    )
+    return True

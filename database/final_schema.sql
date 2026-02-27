@@ -83,7 +83,8 @@ CREATE TABLE public.vocabulary_details (
   audio_url text,
   parts_of_speech text[],
   pitch_accent jsonb,
-  meaning_mnemonic text
+  meaning_mnemonic text,
+  context_sentences jsonb
 );
 
 CREATE TABLE public.grammar_details (

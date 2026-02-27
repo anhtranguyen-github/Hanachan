@@ -100,9 +100,9 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
         if (card.prompt_variant === 'cloze' && card.sentence_ja) {
             const parts = card.sentence_ja.split(card.cloze_answer || "");
             return (
-                <p className="text-3xl md:text-5xl font-black leading-relaxed text-white">
+                <p className="text-xl md:text-2xl font-bold leading-relaxed text-white">
                     {parts[0]}
-                    <span className="inline-block border-b-8 border-white px-2 min-w-[3ch] mx-2">
+                    <span className="inline-block border-b-2 border-white px-1 mx-1 min-w-[2ch]">
                         {submitted && isCorrect ? card.cloze_answer : "?"}
                     </span>
                     {parts[1]}
@@ -111,152 +111,123 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
         }
 
         return (
-            <h2 className="text-[120px] md:text-[160px] font-black leading-none text-white drop-shadow-2xl">
+            <h2 className="text-6xl font-black text-white">
                 {card.character}
             </h2>
         );
     };
 
     return (
-        <div className="w-full max-w-2xl mx-auto flex flex-col pt-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
-            {/* Main Card Container */}
-            <div className="bg-white border-2 border-gray-300 rounded-[56px] shadow-sm flex flex-col overflow-hidden relative min-h-[600px]">
+        <div className="w-full max-w-[480px] mx-auto flex flex-col py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Subtle Background Header */}
+            <div className={clsx(
+                "w-full h-32 md:h-40 rounded-[32px] flex items-center justify-center relative overflow-hidden mb-8 shadow-sm transition-colors duration-500",
+                activeColor
+            )}>
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+                {renderHeaderContent()}
 
-                {/* Colored Header Section */}
-                <div className={clsx(
-                    "p-16 text-center relative transition-colors duration-500",
-                    activeColor
-                )}>
-                    {renderHeaderContent()}
+                <div className="absolute top-4 left-1/2 -translate-x-1/2">
+                    <span className="bg-black/10 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest text-white">
+                        {card.prompt || (card.prompt_variant === 'meaning' ? "Recall Meaning" : "Recall Reading")}
+                    </span>
+                </div>
+            </div>
 
-                    {/* Prompt Header Badge */}
-                    <div className="absolute top-6 left-1/2 -translate-x-1/2">
-                        <span className="bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-white">
-                            {card.prompt || (
-                                card.prompt_variant === 'meaning' ? "Recall Meaning" :
-                                    card.prompt_variant === 'reading' ? "Recall Reading" :
-                                        "Fill in the Context"
-                            )}
-                        </span>
+            <div className="w-full flex-1 flex flex-col min-h-0">
+                {!submitted ? (
+                    <div className="flex-1 flex flex-col space-y-8 px-2 animate-in fade-in zoom-in-95 duration-300">
+                        <div className="relative w-full">
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={userInput}
+                                onChange={(e) => setUserInput(e.target.value)}
+                                onKeyPress={handleKeyPress}
+                                placeholder="Enter answer..."
+                                className={clsx(
+                                    "w-full py-5 bg-white border-2 border-gray-100 rounded-2xl text-center text-3xl font-bold transition-all outline-none shadow-sm focus:shadow-md",
+                                    activeBorderColor
+                                )}
+                                autoFocus
+                            />
+                            <div className="text-center mt-4 space-y-1">
+                                <p className="text-gray-400 font-bold uppercase text-[9px] tracking-widest">
+                                    Expected: {card.prompt_variant === 'meaning' ? "Meaning" : "Reading"}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-center">
+                            <button
+                                onClick={handleVerify}
+                                className="h-12 px-12 bg-[#1a1a1a] text-white font-bold rounded-xl text-sm shadow-lg hover:shadow-xl hover:translate-y-[-1px] active:translate-y-[1px] transition-all"
+                            >
+                                Verify Answer
+                            </button>
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="flex-1 flex flex-col animate-in zoom-in-98 fade-in duration-400 px-2">
+                        {/* Result Card */}
+                        <div className={clsx(
+                            "w-full rounded-2xl p-8 text-center shadow-sm border transition-all duration-500",
+                            isCorrect
+                                ? "bg-[#F0FDF4] border-[#DCFCE7] text-[#166534]"
+                                : "bg-[#FEF2F2] border-[#FEE2E2] text-[#991B1B]"
+                        )}>
+                            <h3 className="text-2xl font-black mb-6 tracking-tight">
+                                {isCorrect ? "Correct!" : "Incorrect"}
+                            </h3>
 
-                <div className="flex-1 p-10 flex flex-col">
-                    {!submitted ? (
-                        <div className="flex-1 flex flex-col justify-center space-y-8 animate-in fade-in zoom-in-95 duration-300">
-                            <div className="relative group max-w-md mx-auto w-full">
-                                <input
-                                    ref={inputRef}
-                                    type="text"
-                                    value={userInput}
-                                    onChange={(e) => setUserInput(e.target.value)}
-                                    onKeyPress={handleKeyPress}
-                                    placeholder="た . . ."
-                                    className={clsx(
-                                        "w-full py-10 bg-gray-50 border-b-8 border-gray-200 rounded-t-[40px] text-center text-6xl font-black transition-all outline-none placeholder:opacity-20 text-foreground",
-                                        activeBorderColor
-                                    )}
-                                    autoFocus
-                                />
-                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-32 h-1.5 rounded-t-full opacity-0 group-focus-within:opacity-100 transition-opacity bg-current" style={{ backgroundColor: 'currentColor' }}>
-                                    <div className={clsx("w-full h-full rounded-t-full", activeBgColor)}></div>
-                                </div>
-                                <div className="text-center mt-6">
-                                    <p className="text-gray-400 font-black uppercase text-[10px] tracking-[0.4em] mt-4">
-                                        Aspect: {card.prompt_variant === 'meaning' ? "English Meaning" : "Reading"}
-                                    </p>
-                                    <div
-                                        className="w-[1px] h-[1px] opacity-[0.01] absolute pointer-events-none"
-                                        data-testid="debug-answer"
-                                        data-ku-id={card.ku_id}
-                                        data-answer={
-                                            card.prompt_variant === 'meaning' ? card.meaning :
-                                                card.prompt_variant === 'reading' ? card.reading :
-                                                    card.cloze_answer
-                                        }
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex justify-center pt-8">
-                                <button
-                                    onClick={handleVerify}
-                                    className="px-16 py-6 bg-gray-900 text-white font-black rounded-[32px] text-xl shadow-xl hover:scale-105 active:scale-95 transition-all"
-                                >
-                                    Verify Answer
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex-1 flex flex-col justify-between animate-in zoom-in-95 fade-in duration-500">
-                            <div className="flex-1 flex flex-col items-center justify-center space-y-10">
-                                <div className={clsx(
-                                    "p-10 rounded-[48px] text-center w-full max-w-sm transition-all duration-500",
-                                    isCorrect
-                                        ? "bg-emerald-500 text-white shadow-2xl shadow-emerald-500/20"
-                                        : "bg-white border-4 border-rose-500 text-rose-500 shadow-2xl shadow-rose-500/10"
-                                )}>
-                                    <h3 className="text-4xl font-black tracking-tighter mb-2">
-                                        {isCorrect ? "Correct!" : "Incorrect"}
-                                    </h3>
-
-                                    <div className={clsx(
-                                        "p-6 rounded-3xl space-y-1 mb-4",
-                                        isCorrect ? "bg-white/10" : "bg-rose-50"
-                                    )}>
-                                        {isCorrect ? (
-                                            <>
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-white/60">
-                                                    {card.prompt_variant === 'meaning' ? "The Meaning is" : "The Reading is"}
-                                                </p>
-                                                <p className="text-4xl font-black text-white">
-                                                    {card.prompt_variant === 'meaning' ? card.meaning : card.reading || card.cloze_answer}
-                                                </p>
-                                            </>
-                                        ) : (
-                                            <div className="py-4">
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-rose-400 mb-2">Strict Loop Active</p>
-                                                <p className="text-lg font-black text-rose-600 leading-tight">
-                                                    Answer hidden.<br />
-                                                    Item re-queued.
-                                                </p>
-                                                <p className="mt-4 text-rose-400/60 font-medium text-xs">You entered: {userInput}</p>
-                                            </div>
-                                        )}
+                            <div className="space-y-4">
+                                {isCorrect ? (
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">
+                                            THE {card.prompt_variant === 'meaning' ? "MEANING" : "READING"} IS
+                                        </p>
+                                        <p className="text-4xl font-black tracking-tight">
+                                            {card.prompt_variant === 'meaning' ? card.meaning : card.reading || card.cloze_answer}
+                                        </p>
                                     </div>
+                                ) : (
+                                    <div className="space-y-4 py-2">
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] font-bold uppercase tracking-[0.2em] opacity-50">Strict Protocol</p>
+                                            <p className="text-base font-bold leading-snug">
+                                                Answer hidden. Item re-queued for mastery.
+                                            </p>
+                                        </div>
+                                        <p className="text-[10px] opacity-40 font-medium">Attempt: {userInput}</p>
+                                    </div>
+                                )}
 
-                                    <div className="text-4xl">{isCorrect ? "✨" : "🛑"}</div>
-                                </div>
-
-                                <div className="flex flex-col items-center gap-4 w-full max-w-sm">
-                                    <button
-                                        onClick={() => onRate(isCorrect ? 'pass' : 'again', userInput)}
-                                        className={clsx(
-                                            "group flex items-center justify-center gap-4 px-16 py-6 rounded-[32px] text-2xl font-black transition-all hover:scale-105 active:scale-95 shadow-xl w-full",
-                                            isCorrect ? "bg-gray-900 text-white" : "bg-rose-500 text-white"
-                                        )}
-                                    >
-                                        {isCorrect ? "Next Item" : "Got it, Continue"}
-                                        <ArrowRight className="group-hover:translate-x-2 transition-transform" />
-                                    </button>
-                                    <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest flex items-center gap-2">
-                                        <Keyboard size={14} /> Press Enter to Continue
-                                    </p>
+                                <div className="text-2xl mt-4 opacity-80">
+                                    {isCorrect ? "✨" : "🛑"}
                                 </div>
                             </div>
                         </div>
-                    )}
-                </div>
 
-                {/* Card Footer Detail */}
-                <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-center gap-12">
-                    <span className="font-black text-foreground/20 uppercase text-[10px] tracking-widest">
-                        Hanachan v2 Final
-                    </span>
-                    <span className="font-black text-foreground/20 uppercase text-[10px] tracking-widest">
-                        {(card.type || card.ku_type || "").toUpperCase()}
-                    </span>
-                </div>
+                        {/* Action Section */}
+                        <div className="mt-10 flex flex-col items-center space-y-4">
+                            <button
+                                onClick={() => onRate(isCorrect ? 'pass' : 'again', userInput)}
+                                className={clsx(
+                                    "h-12 px-12 rounded-xl text-sm font-bold shadow-lg transition-all hover:shadow-xl hover:translate-y-[-1px] active:translate-y-[1px] flex items-center justify-center gap-2",
+                                    isCorrect ? "bg-[#1a1a1a] text-white" : "bg-rose-600 text-white"
+                                )}
+                            >
+                                {isCorrect ? "Next Item" : "Got it, Continue"}
+                                <ArrowRight size={16} />
+                            </button>
+
+                            <div className="flex items-center gap-2 text-gray-300">
+                                <Keyboard size={12} className="opacity-50" />
+                                <span className="text-[9px] font-bold uppercase tracking-widest">Enter to continue</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -1,6 +1,6 @@
 # Hanachan V2 (Final)
 
-Hanachan is an advanced Japanese learning platform built with **Next.js 14**, **Supabase**, and **TailwindCSS**. It features a custom "Sakura" design system and implements the **FSRS (Free Spaced Repetition Scheduler)** algorithm for optimized long-term memory retention.
+Hanachan is a high-performance Japanese learning platform built with a modern split-stack architecture: **Next.js 14** (Frontend) and **FastAPI** (Backend). It utilizes **Supabase** for data persistence and implements the **FSRS (Free Spaced Repetition Scheduler)** algorithm for optimized long-term memory retention.
 
 ## 🌸 Core Features
 
@@ -18,6 +18,8 @@ Hanachan is an advanced Japanese learning platform built with **Next.js 14**, **
 
 ### UI/UX
 *   **Sakura Design System**: Premium UI with rounded aesthetics (`rounded-[40px]`), glassmorphism, and a curated pastel palette.
+*   **Density-Optimized Layout**: Refactored to maximize content area by removing duplicate headers and reducing vertical white space.
+*   **Streamlined Data**: All technical metadata (Hashes, IDs, counts) is hidden from the main learning interface for a clean, immersive experience.
 *   **Batch Learning**: Structured "Discovery Batches" of 5 items to manage cognitive load.
 *   **Content Library**: Unified interface to browse Kanji, Radicals, Vocabulary, and Grammar with advanced filtering.
 *   **Interactive Dashboard**: Real-time analytics, daily streaks, heatmaps, and level progression tracking.
@@ -32,29 +34,29 @@ Hanachan is an advanced Japanese learning platform built with **Next.js 14**, **
 ### Installation
 
 1.  Clone the repository.
-2.  Install dependencies:
-
+2.  Install frontend dependencies:
     ```bash
-    pnpm install
-    # or
-    npm install
+    cd nextjs && pnpm install
     ```
-
-3.  Set up your `.env.local` file with your Supabase credentials:
-    ```env
-    NEXT_PUBLIC_SUPABASE_URL=your_project_url
-    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key # For admin tasks/seeding
-    OPENAI_API_KEY=your_openai_key # For AI Chatbot
+3.  Install backend dependencies (requires `uv`):
+    ```bash
+    cd fastapi && uv sync
     ```
+4.  Set up your `.env` file in the root directory (see `.env.example`).
 
 ### Running Locally
 
-To start the development server:
+Hanachan provides a centralized startup script to launch the entire environment (Infrastructure + Services) simultaneously:
 
 ```bash
-pnpm dev
+./run.sh
 ```
+
+This script:
+1.  **Orchestrates Infrastructure**: Starts the **Supabase** local stack (PostgreSQL, Auth, Storage).
+2.  **Cleans Environment**: Force-cleans zombie processes on ports `3000` and `8765` to avoid conflicts.
+3.  **Starts Backend**: Launches the **FastAPI** server using `uv`.
+4.  **Starts Frontend**: Launches the **Next.js** dev server using `pnpm`.
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
 
@@ -68,7 +70,10 @@ Use these pre-configured accounts to explore the platform immediately.
 | `test_worker_2@hanachan.test` | `Password123!` | 5     | Mid-level content unlocked |
 | `test_worker_3@hanachan.test` | `Password123!` | 10    | Advanced content unlocked |
 
-> **Note:** If these users do not exist, they should be created in the Supabase dashboard or via a migration script.
+> **Note:** These accounts are automatically provisioned. If you need to reset them or seed them for the first time, run:
+> ```bash
+> node nextjs/scripts/seed-test-workers.js
+> ```
 
 ## 🧪 Running Tests
 
@@ -76,37 +81,56 @@ We use **Vitest** for unit and integration testing.
 
 ### Run All E2E Tests
 ```bash
-npm test
+pnpm test
+```
+
+## 🤖 Agent Architecture
+
+The Hanachan AI assistant uses an iterative **LangGraph** workflow to gather context and provide personalized responses.
+
+```mermaid
+graph TD
+    START((START)) --> P[Planner Node]
+    P -- Tool Calls --> T[Tools Node]
+    T --> P
+    P -- No More Tools --> R[Reviewer Node]
+    R -- Rewrite Query --> RW[Rewriter Node]
+    RW --> P
+    R -- Context Sufficient --> G[Generator Node]
+    G --> U[Update Memory Node]
+    U --> END((END))
+
+    subgraph "Context Gathering (Tools)"
+        direction LR
+        T1["Episodic (Qdrant)"]
+        T2["Semantic (Neo4j)"]
+        T3["Progress (Supabase)"]
+        T4["Knowledge (Postgres)"]
+    end
+
+    T -.-> T1
+    T -.-> T2
+    T -.-> T3
+    T -.-> T4
 ```
 
 ## 📂 Project Structure
 
-```
-src/
-├── app/                    # Next.js App Router pages
-│   ├── (main)/             # Authenticated routes (dashboard, learn, review, etc.)
-│   └── api/                # API routes (chat, auth)
-├── features/               # Feature-based architecture
-│   ├── auth/               # Authentication (Supabase Auth)
-│   ├── chat/               # AI Chatbot (LangChain + OpenAI)
-│   ├── knowledge/          # Knowledge Units (Kanji, Vocab, Grammar)
-│   ├── learning/           # SRS Engine, Session Controller
-│   └── analytics/          # User stats and progress tracking
-├── components/             # Reusable UI components
-│   ├── shared/             # QuickViewModal, AudioPlayer, etc.
-│   └── premium/            # GlassCard, SRSProgressIcon
-└── lib/                    # Utilities (Supabase client, validation)
-
-tests/
-├── unit/                   # Unit tests
-└── integration/            # Integration tests
-
-docs/
-├── businessflow/           # Business logic documentation
-├── class/                  # Class design specifications
-├── er/                     # Entity Relationship diagrams
-├── fsrs/                   # FSRS algorithm documentation
-└── reports/                # Audit and test reports
+```bash
+.
+├── nextjs/                 # Frontend (Next.js 14 + Tailwind)
+│   ├── src/app/            # App Router pages
+│   ├── src/features/       # Feature-based components & logic
+│   └── src/components/     # Shared UI components
+├── fastapi/                # Backend (Python + FastAPI)
+│   ├── app/                # Core logic & API endpoints
+│   ├── core/               # Configuration & security
+│   └── scripts/            # Database migrations & utilities
+├── docs/                   # System Documentation
+│   ├── businessflow/       # Business logic documentation
+│   ├── er/                 # Entity Relationship diagrams
+│   └── fsrs/               # Algorithm documentation
+└── run.sh                  # Centralized startup script
 ```
 
 ## 📚 Documentation
@@ -124,6 +148,15 @@ Ensure your Supabase instance is running and configured.
 
 -   **Schema**: See `docs/database/final_schema.sql` for the complete database schema.
 -   **Verify Connection**: `pnpm exec tsx verify_init.ts`
+
+## 🛠 Troubleshooting
+
+### Port Already in Use (EADDRINUSE)
+If you encounter `Error: listen EADDRINUSE: address already in use :::3000`, simply restart the startup script:
+```bash
+./run.sh
+```
+The script is designed to aggressively clear existing processes on ports `3000` and `8765` before starting.
 
 ## 📄 License
 

@@ -16,8 +16,7 @@ export const lessonRepository = {
             .select('*, kanji_details(*), vocabulary_details(*), grammar_details(*)');
 
         if (learnedIds.length > 0) {
-            // Manual format (id1,id2) for Postgrest
-            query = query.filter('id', 'not.in', `(${learnedIds.join(',')})`);
+            query = query.not('id', 'in', learnedIds);
         }
 
         if (level) {
@@ -70,7 +69,7 @@ export const lessonRepository = {
 
         const { count, error } = await supabase
             .from('lesson_batches')
-            .select('*', { count: 'exact', head: true })
+            .select('id', { count: 'exact', head: true })
             .eq('user_id', userId)
             .gte('created_at', today.toISOString());
 

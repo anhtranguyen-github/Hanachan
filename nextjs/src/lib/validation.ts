@@ -18,10 +18,10 @@ export const KnowledgeUnitSchema = z.object({
     id: z.string().uuid().optional(),
     slug: z.string().min(1),
     type: KnowledgeUnitTypeSchema,
-    character: z.string().min(1),
-    level: z.number().int().min(1).max(60),
+    character: z.string().min(1).nullable(),
+    level: z.number().int().min(0).max(60),
+    jlpt: z.number().int().min(1).max(5).nullable().optional(),
     meaning: z.string().min(1),
-    mnemonics: z.any().optional(),
     details: z.any().optional(),
 });
 

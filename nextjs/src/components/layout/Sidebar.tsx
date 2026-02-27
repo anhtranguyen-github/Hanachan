@@ -46,24 +46,34 @@ export function Sidebar() {
                 isCollapsed ? "w-20" : "w-64"
             )}
         >
-            {/* Branding */}
+            {/* Branding & Toggle */}
             <div className={clsx(
-                "p-6 h-20 flex items-center shrink-0",
-                isCollapsed ? "justify-center" : "gap-3"
+                "px-6 h-16 flex items-center shrink-0 border-b border-[#F0E0E0] relative bg-[#FFFDFD]",
+                isCollapsed ? "justify-center" : "justify-between"
             )}>
-                <div className="w-10 h-10 bg-[#FFB5B5] rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-xl shadow-[#FFB5B5]/20 shrink-0">
-                    花
-                </div>
-                {!isCollapsed && (
-                    <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-                        <h1 className="text-[13px] font-black tracking-widest text-[#3E4A61] leading-none uppercase">
-                            HANACHAN
-                        </h1>
-                        <p className="text-[9px] text-[#A0AEC0] font-black uppercase tracking-tighter">
-                            Master Japanese
-                        </p>
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg shadow-primary/20 shrink-0">
+                        花
                     </div>
-                )}
+                    {!isCollapsed && (
+                        <div className="animate-in fade-in slide-in-from-left-4 duration-500">
+                            <h1 className="text-[11px] font-black tracking-widest text-[#3E4A61] leading-none uppercase">
+                                HANACHAN
+                            </h1>
+                        </div>
+                    )}
+                </div>
+
+                {/* Toggle Button - Now in Header */}
+                <button
+                    onClick={() => setIsCollapsed(!isCollapsed)}
+                    className={clsx(
+                        "w-6 h-6 bg-surface-muted/50 hover:bg-surface border border-border rounded-lg flex items-center justify-center text-foreground/40 hover:text-primary transition-all lg:flex hidden",
+                        isCollapsed && "absolute -right-3 top-1/2 -translate-y-1/2 bg-white shadow-sm z-50"
+                    )}
+                >
+                    <ChevronRight size={14} className={clsx("transition-transform duration-300", isCollapsed ? "" : "rotate-180")} />
+                </button>
             </div>
 
             {/* Navigation */}
@@ -115,13 +125,6 @@ export function Sidebar() {
                 </button>
             </div>
 
-            {/* Collapse Toggle */}
-            <button
-                onClick={() => setIsCollapsed(!isCollapsed)}
-                className="hidden lg:flex absolute shadow-sm -right-3 top-24 w-6 h-6 bg-white border border-[#F0E0E0] rounded-full items-center justify-center text-[#A0AEC0] hover:text-[#FFB5B5] transition-all z-50"
-            >
-                <ChevronRight size={14} className={clsx("transition-transform duration-300", isCollapsed ? "" : "rotate-180")} />
-            </button>
         </aside>
     );
 }

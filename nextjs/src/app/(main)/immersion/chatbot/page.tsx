@@ -7,7 +7,9 @@ import { GlassCard } from '@/components/premium/GlassCard';
 import { useUser } from '@/features/auth/AuthContext';
 import { QuickViewModal, QuickViewData } from '@/components/shared/QuickViewModal';
 import { mapUnitToQuickView } from '@/features/knowledge/ui-mapper';
+import { supabase } from '@/lib/supabase';
 import { getKnowledgeUnit } from '@/features/knowledge/actions';
+import { HanaTime } from '@/lib/time';
 
 type Message = {
     id: string;
@@ -40,7 +42,7 @@ export default function ChatbotPage() {
                 id: '1',
                 role: 'assistant',
                 content: 'Konnichiwa! I am Hanachan, your Japanese language tutor. I can help you search the database, analyze sentences, or tell you about your progress. How can I help you study today?',
-                timestamp: new Date().toISOString()
+                timestamp: HanaTime.getNowISO()
             }
         ]);
     };
@@ -49,6 +51,16 @@ export default function ChatbotPage() {
         setMounted(true);
         setDefaultWelcome();
     }, []);
+
+    useEffect(() => {
+        const fetchLevel = async () => {
+            if (user?.id) {
+                const { data } = await supabase.from('users').select('level').eq('id', user.id).maybeSingle();
+                if (data?.level) setUserLevel(data.level);
+            }
+        };
+        if (mounted) fetchLevel();
+    }, [user, mounted]);
 
     useEffect(() => {
         if (mounted) {
@@ -63,7 +75,7 @@ export default function ChatbotPage() {
             id: Date.now().toString(),
             role: 'user',
             content: input,
-            timestamp: new Date().toISOString(),
+            timestamp: HanaTime.getNowISO(),
         };
 
         setMessages(prev => [...prev, userMsg]);
@@ -88,7 +100,7 @@ export default function ChatbotPage() {
                     id: (Date.now() + 1).toString(),
                     role: 'assistant',
                     content: data.reply,
-                    timestamp: new Date().toISOString(),
+                    timestamp: HanaTime.getNowISO(),
                     toolsUsed: data.toolsUsed,
                     referencedUnits: data.referencedUnits
                 };
@@ -103,7 +115,7 @@ export default function ChatbotPage() {
                 id: Date.now().toString(),
                 role: 'assistant',
                 content: "I apologize, but I encountered a disruption in my neural link. Please try again.",
-                timestamp: new Date().toISOString()
+                timestamp: HanaTime.getNowISO()
             }]);
         } finally {
             setIsTyping(false);
@@ -135,35 +147,37 @@ export default function ChatbotPage() {
                 sidebarOpen ? "w-80" : "w-0 opacity-0 overflow-hidden"
             )}>
                 <div className="p-6">
-                    <button
-                        onClick={() => setSidebarOpen(false)}
-                        className="w-full py-4 mb-6 border-2 border-[#F0E0E0] text-[#A0AEC0] hover:text-[#3E4A61] hover:border-[#3E4A61]/20 rounded-[20px] font-black text-[10px] tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 bg-white"
-                    >
-                        <ChevronLeft size={16} />
-                        COLLAPSE SIDEBAR
-                    </button>
+                    <div className="flex flex-col gap-sm p-md shrink-0">
+                        <button
+                            onClick={() => setSidebarOpen(false)}
+                            className="w-full py-3 border border-border text-foreground/40 hover:text-foreground hover:border-primary/20 rounded-xl font-black text-[9px] tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 bg-surface"
+                        >
+                            <ChevronLeft size={14} />
+                            COLLAPSE
+                        </button>
 
-                    <button
-                        onClick={() => setMessages([])}
-                        className="w-full py-4 bg-[#FFB5B5] hover:bg-[#FFC5C5] text-white rounded-[20px] font-black text-xs tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-[#FFB5B5]/30 transition-all active:scale-95"
-                    >
-                        <Plus size={18} />
-                        NEW SESSION
-                    </button>
-                </div>
+                        <button
+                            onClick={() => setMessages([])}
+                            className="w-full py-3 bg-primary hover:opacity-90 text-white rounded-xl font-black text-[10px] tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all active:scale-95"
+                        >
+                            <Plus size={16} />
+                            NEW SESSION
+                        </button>
+                    </div>
 
-                <div className="px-5 flex-1 overflow-y-auto custom-scrollbar">
-                    <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-[#CBD5E0] mb-5 px-3">Integration History</h3>
-                    <div className="text-center py-20 opacity-20">
-                        <MessageSquare size={48} className="mx-auto mb-4 text-[#A0AEC0]" />
-                        <p className="text-[10px] font-black uppercase tracking-widest text-[#A0AEC0]">No previous logs</p>
+                    <div className="px-5 flex-1 overflow-y-auto custom-scrollbar">
+                        <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-[#CBD5E0] mb-5 px-3">Integration History</h3>
+                        <div className="text-center py-20 opacity-20">
+                            <MessageSquare size={48} className="mx-auto mb-4 text-[#A0AEC0]" />
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[#A0AEC0]">No previous logs</p>
+                        </div>
                     </div>
                 </div>
             </aside>
 
             {/* Chat Interface */}
             <main className="flex-1 flex flex-col relative bg-white">
-                <header className="h-16 border-b border-[#F0E0E0] flex items-center justify-between px-8 shrink-0">
+                <header className="h-16 border-b border-border flex items-center justify-between px-lg shrink-0 bg-surface/80 backdrop-blur-md">
                     <div className="flex items-center gap-3">
                         {!sidebarOpen && (
                             <button
@@ -173,16 +187,16 @@ export default function ChatbotPage() {
                                 <Menu size={16} className="text-foreground/40" />
                             </button>
                         )}
-                        <div className="w-1.5 h-1.5 bg-[#FFB5B5] rounded-full animate-pulse" />
-                        <div>
-                            <h2 className="text-xl font-black text-[#3E4A61] tracking-tighter uppercase">HANACHAN ASSISTANT</h2>
-                        </div>
+                        <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+                        <h2 className="text-h2 font-black text-foreground tracking-tighter uppercase">ASSISTANT</h2>
                     </div>
-
+                    <div className="hidden md:flex items-center gap-4 bg-surface-muted border border-border px-4 py-2 rounded-xl">
+                        <span className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.3em] font-mono">Sync_OK // Level {userLevel}</span>
+                    </div>
                 </header>
 
                 {/* Messages Area */}
-                <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar pb-40">
+                <div className="flex-1 overflow-y-auto p-md md:p-lg space-y-md custom-scrollbar pb-32">
                     {messages.map((m) => (
                         <div
                             key={m.id}
@@ -208,20 +222,20 @@ export default function ChatbotPage() {
                             </div>
 
                             <div className={clsx(
-                                "p-6 rounded-[32px] text-[14px] font-medium leading-relaxed shadow-sm space-y-4",
+                                "p-md rounded-[24px] text-body font-medium leading-relaxed shadow-sm space-y-2",
                                 m.role === 'user'
-                                    ? "bg-[#3E4A61] text-white rounded-tr-none"
-                                    : "bg-[#F7FAFC] text-[#3E4A61] border border-[#F0E0E0] rounded-tl-none"
+                                    ? "bg-foreground text-white rounded-tr-none"
+                                    : "bg-surface-muted text-foreground border border-border rounded-tl-none"
                             )}>
                                 <div className="whitespace-pre-wrap">{m.content}</div>
 
-                                {m.referencedKUs && m.referencedKUs.length > 0 && (
+                                {m.referencedUnits && m.referencedUnits.length > 0 && (
                                     <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[#EDF2F7]">
                                         <h4 className="w-full text-[8px] font-black text-[#A0AEC0] uppercase tracking-widest mb-1 flex items-center gap-2">Referenced Content</h4>
-                                        {m.referencedKUs.map(ku => (
+                                        {m.referencedUnits.map(ku => (
                                             <button
                                                 key={ku.id}
-                                                onClick={() => handleViewKU(ku)}
+                                                onClick={() => handleViewUnit(ku)}
                                                 data-testid="ku-cta-button"
                                                 className="flex items-center gap-2 px-4 py-2 bg-white border border-[#F0E0E0] hover:border-[#FFB5B5] rounded-xl text-[10px] font-black uppercase text-[#FF6B6B] tracking-wider transition-all shadow-sm active:scale-95"
                                             >
@@ -263,7 +277,7 @@ export default function ChatbotPage() {
                 </div>
 
                 {/* Input Area */}
-                <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-white via-white to-transparent pointer-events-none">
+                <div className="absolute bottom-0 left-0 right-0 p-lg bg-gradient-to-t from-surface via-surface to-transparent pointer-events-none">
                     <div className="max-w-2xl mx-auto relative group pointer-events-auto">
                         <input
                             type="text"
@@ -294,7 +308,7 @@ export default function ChatbotPage() {
                 data={modalData}
             />
 
-            {isLoadingKU && (
+            {isLoadingUnit && (
                 <div className="fixed inset-0 z-[110] bg-black/5 flex items-center justify-center backdrop-blur-sm">
                     <Loader2 className="animate-spin text-[#FFB5B5]" size={48} />
                 </div>

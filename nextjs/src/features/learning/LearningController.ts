@@ -1,4 +1,3 @@
-```typescript
 import { Rating } from './domain/SRSAlgorithm';
 import { lessonRepository } from './lessonRepository';
 import { questionRepository } from './questionRepository';
@@ -100,24 +99,73 @@ export class LearningController {
     }
 
     private transformToQuizItems(): QuizItem[] {
-        // Map stored DB questions directly to QuizItems
-        const result: QuizItem[] = this.questions.map(q => {
-            const ku = this.items.find(i => (i.ku_id || i.id) === q.ku_id);
-            return {
-                id: `${ q.ku_id } -${ q.facet } `,
-                ku_id: q.ku_id,
-                character: ku?.character || ku?.knowledge_units?.character || ku?.slug || ku?.knowledge_units?.slug,
-                type: ku?.type || ku?.knowledge_units?.type,
-                prompt: q.prompt,
-                prompt_variant: q.facet,
-                meaning: ku?.meaning || ku?.knowledge_units?.meaning,
-                reading: ku?.vocabulary_details?.[0]?.reading || ku?.knowledge_units?.vocabulary_details?.[0]?.reading ||
-                    ku?.kanji_details?.[0]?.onyomi?.[0] || ku?.knowledge_units?.kanji_details?.[0]?.onyomi?.[0],
-                cloze_answer: q.facet === 'cloze' ? q.correct_answers?.[0] : undefined,
-                sentence_ja: q.cloze_text_with_blanks,
-                sentence_en: q.hints?.[0]
-            };
-        });
+        let result: QuizItem[] = [];
+
+        if (this.questions && this.questions.length > 0) {
+            // Map stored DB questions
+            result = this.questions.map(q => {
+                const ku = this.items.find(i => (i.ku_id || i.id) === q.ku_id);
+                const kuData = ku?.knowledge_units || ku;
+
+                return {
+                    id: `${q.ku_id}-${q.facet}`,
+                    ku_id: q.ku_id,
+                    character: kuData?.character || kuData?.slug?.split(':')[1] || '?',
+                    type: kuData?.type,
+                    prompt: q.prompt || kuData?.character || kuData?.meaning,
+                    prompt_variant: q.facet,
+                    meaning: kuData?.meaning,
+                    reading: kuData?.vocabulary_details?.[0]?.reading ||
+                        kuData?.kanji_details?.[0]?.onyomi?.[0] ||
+                        kuData?.kanji_details?.[0]?.kunyomi?.[0],
+                    cloze_answer: q.facet === 'cloze' ? q.correct_answers?.[0] : undefined,
+                    sentence_ja: q.cloze_text_with_blanks,
+                    sentence_en: q.hints?.[0]
+                };
+            });
+        } else {
+            // FALLBACK: Generate Virtual Questions from KU data
+            console.warn("[LearningController] No questions found in DB. Generating virtual questions.");
+            this.items.forEach(item => {
+                const ku = item.knowledge_units || item;
+                const unitId = item.ku_id || item.id;
+                const facets: string[] = ['meaning'];
+
+                // 1. Meaning Question (All types)
+                result.push({
+                    id: `${unitId}-meaning`,
+                    ku_id: unitId,
+                    character: ku.character || ku.slug?.split(':')[1],
+                    type: ku.type,
+                    prompt: ku.character || ku.slug?.split(':')[1],
+                    prompt_variant: 'meaning',
+                    meaning: ku.meaning,
+                    reading: ku.vocabulary_details?.[0]?.reading || ku.kanji_details?.[0]?.onyomi?.[0]
+                });
+
+                // 2. Reading Question (Kanji and Vocab only)
+                if (ku.type === 'kanji' || ku.type === 'vocabulary') {
+                    const reading = ku.type === 'vocabulary'
+                        ? ku.vocabulary_details?.[0]?.reading
+                        : (ku.kanji_details?.[0]?.onyomi?.[0] || ku.kanji_details?.[0]?.kunyomi?.[0]);
+
+                    if (reading) {
+                        facets.push('reading');
+                        result.push({
+                            id: `${unitId}-reading`,
+                            ku_id: unitId,
+                            character: ku.character || ku.slug?.split(':')[1],
+                            type: ku.type,
+                            prompt: ku.character || ku.slug?.split(':')[1],
+                            prompt_variant: 'reading',
+                            meaning: ku.meaning,
+                            reading: reading
+                        });
+                    }
+                }
+                this.initialFacets.set(unitId, facets);
+            });
+        }
 
         // Sort: Meaning before Reading
         result.sort((a, b) => {
@@ -142,7 +190,7 @@ export class LearningController {
         const current = this.quizQueue[0];
         if (!current) return false;
 
-        const isSuccess = rating === 'good';
+        const isSuccess = rating === 'pass';
 
         if (isSuccess) {
             this.quizQueue.shift();
@@ -150,7 +198,7 @@ export class LearningController {
 
             // If this was the last facet for this KU in the queue, it means it's passed
             if (!this.quizQueue.some(q => q.ku_id === current.ku_id)) {
-                console.log(`[LearningController] KU ${ current.ku_id } passed quiz.Initializing SRS.`);
+                console.log(`[LearningController] KU ${current.ku_id} passed quiz. Initializing SRS.`);
 
                 // 1. Update Lesson Item Status to quiz_passed
                 await lessonRepository.updateLessonItemStatus(this.batchId, current.ku_id, 'quiz_passed');

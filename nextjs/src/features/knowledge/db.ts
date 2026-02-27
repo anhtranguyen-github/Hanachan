@@ -217,3 +217,5 @@ export const curriculumRepository = {
     }
 };
 
+export const kuRepository = curriculumRepository;
+
