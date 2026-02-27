@@ -5,6 +5,7 @@
  */
 
 const MEMORY_API_BASE = process.env.MEMORY_API_URL ?? 'http://localhost:8765';
+const MEMORY_API_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // ---------------------------------------------------------------------------
 // Types (mirrors Python models)
@@ -69,12 +70,18 @@ async function memFetch<T>(
     path: string,
     options: RequestInit = {},
 ): Promise<T> {
+    const headers: any = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+    };
+
+    if (MEMORY_API_KEY) {
+        headers['Authorization'] = `Bearer ${MEMORY_API_KEY}`;
+    }
+
     const res = await fetch(`${MEMORY_API_BASE}${path}`, {
         ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            ...options.headers,
-        },
+        headers,
     });
     if (!res.ok) {
         const text = await res.text().catch(() => '');

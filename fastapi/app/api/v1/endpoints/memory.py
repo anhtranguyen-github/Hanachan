@@ -45,7 +45,7 @@ async def get_chat_context(
 ):
     """Primary chatbot integration endpoint."""
     # Ownership: user can only fetch their own context
-    if req.user_id != token.get("sub"):
+    if req.user_id != token.get("sub") and token.get("role") != "service_role":
         raise HTTPException(status_code=403, detail="Forbidden")
 
     try:
@@ -117,7 +117,7 @@ async def search_episodic(
     req: EpisodicSearchRequest,
     token: dict = Depends(require_auth),
 ):
-    if req.user_id != token.get("sub"):
+    if req.user_id != token.get("sub") and token.get("role") != "service_role":
         raise HTTPException(status_code=403, detail="Forbidden")
     results = await run_in_threadpool(ep_mem.search_episodic_memory, req.user_id, req.query, req.k)
     return EpisodicSearchResponse(user_id=req.user_id, query=req.query, results=results)
@@ -128,7 +128,7 @@ async def add_episodic(
     req: AddEpisodicRequest,
     token: dict = Depends(require_auth),
 ):
-    if req.user_id != token.get("sub"):
+    if req.user_id != token.get("sub") and token.get("role") != "service_role":
         raise HTTPException(status_code=403, detail="Forbidden")
     pid = await run_in_threadpool(ep_mem.add_episodic_memory, req.user_id, req.text)
     return AddEpisodicResponse(user_id=req.user_id, text=req.text, id=pid)
@@ -140,7 +140,7 @@ async def forget_episodic(
     user_id: str = Query(...),
     token: dict = Depends(require_auth),
 ):
-    if user_id != token.get("sub"):
+    if user_id != token.get("sub") and token.get("role") != "service_role":
         raise HTTPException(status_code=403, detail="Forbidden")
     try:
         await run_in_threadpool(
@@ -165,7 +165,7 @@ async def search_semantic(
     req: SemanticSearchRequest,
     token: dict = Depends(require_auth),
 ):
-    if req.user_id != token.get("sub"):
+    if req.user_id != token.get("sub") and token.get("role") != "service_role":
         raise HTTPException(status_code=403, detail="Forbidden")
     keywords = [w for w in req.query.split() if len(w) > 2]
     results = await run_in_threadpool(sem_mem.search_semantic_memory, req.user_id, keywords)
@@ -177,7 +177,7 @@ async def add_semantic(
     req: AddSemanticRequest,
     token: dict = Depends(require_auth),
 ):
-    if req.user_id != token.get("sub"):
+    if req.user_id != token.get("sub") and token.get("role") != "service_role":
         raise HTTPException(status_code=403, detail="Forbidden")
     n, r = await run_in_threadpool(
         sem_mem.add_nodes_and_relationships, req.user_id, req.nodes, req.relationships

@@ -55,8 +55,12 @@ def require_auth(
     Uses RS256 (asymmetric) with JWKS for token verification.
     """
     token = creds.credentials
+
+    # 1. Allow Service Role Key (Server-to-Server)
+    if token == settings.supabase_key:
+        return {"sub": "service_role", "role": "service_role"}
     
-    # RS256 only (Supabase default)
+    # 2. RS256 (User JWT)
     try:
         return _decode_token_rs256(token)
     except PyJWKClientError as e:
@@ -78,7 +82,9 @@ def require_own_user(
     user_id: str,
     payload: dict = Depends(require_auth),
 ) -> str:
-    """Ensures the authenticated user can only touch their own data."""
-    if payload.get("sub") != user_id:
+    """Ensures the authenticated user can only touch their own data.
+    Allows 'service_role' to bypass this check.
+    """
+    if payload.get("role") != "service_role" and payload.get("sub") != user_id:
         raise HTTPException(status_code=403, detail="Forbidden")
     return user_id

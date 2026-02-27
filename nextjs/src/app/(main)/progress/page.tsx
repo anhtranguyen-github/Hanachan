@@ -105,7 +105,7 @@ export default function ProgressPage() {
 
                     <div className="h-32 flex flex-col justify-between">
                         <div className="flex-1 flex items-end justify-between px-4 pb-4">
-                            {stats.forecast.map((f: any, i: number) => (
+                            {(stats.forecast?.daily || []).slice(0, 7).map((f: any, i: number) => (
                                 <div key={i} className="flex-1 flex justify-center">
                                     <div className="w-1.5 bg-[#F7FAFC] rounded-full flex items-end overflow-hidden h-20">
                                         <div className="w-full bg-[#FFB5B5] rounded-full" style={{ height: `${Math.min(100, (f.count / 50) * 100)}%` }}></div>
@@ -115,7 +115,7 @@ export default function ProgressPage() {
                         </div>
 
                         <div className="flex justify-between items-center px-2 text-center">
-                            {stats.forecast.map((f: any, i: number) => (
+                            {(stats.forecast?.daily || []).slice(0, 7).map((f: any, i: number) => (
                                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
                                     <span className="text-[7px] font-black text-[#A0AEC0] uppercase tracking-widest">{i === 0 ? 'TODAY' : `D+${i}`}</span>
                                     <span className="text-[9px] font-black text-[#3E4A61]">{f.count}</span>
