@@ -32,7 +32,7 @@ function ContentDatabase() {
             if (selectedLevel !== 'all') query = query.eq('level', selectedLevel);
             if (filterType !== 'all') query = query.eq('type', filterType);
 
-            const { data: queryItems } = await query.limit(300);
+            const { data: queryItems } = await query.order('level', { ascending: true }).order('type', { ascending: true }).limit(300);
             const { data: userStates } = await supabase.from('user_learning_states').select('*').eq('user_id', userId);
 
             const stateMap: Record<string, any> = {};

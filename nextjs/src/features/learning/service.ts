@@ -6,11 +6,12 @@ import { lessonRepository } from './lessonRepository';
 import { curriculumRepository } from '../knowledge/db';
 import { analyticsService } from '../analytics/service';
 import { getUserProfile, updateUserProfile } from '../auth/db';
+import { HanaTime } from '@/lib/time';
 
 export async function initializeSRS(userId: string, unitId: string, facets: string[]) {
     const initialStability = 0.166; // Approx 4 hours
     const initialDifficulty = 3.0;
-    const nextReview = addHours(new Date(), 4);
+    const nextReview = addHours(HanaTime.getNow(), 4);
 
     console.log(`[LearningService] Initializing SRS for ${unitId} with facets: ${facets.join(', ')}`);
 
@@ -20,7 +21,7 @@ export async function initializeSRS(userId: string, unitId: string, facets: stri
             next_review: nextReview.toISOString(),
             reps: 1,
             lapses: 0,
-            last_review: new Date().toISOString(),
+            last_review: HanaTime.getNowISO(),
             stability: initialStability,
             difficulty: initialDifficulty
         });
@@ -186,7 +187,7 @@ export async function fetchLevelStats(userId: string, levelId: string) {
             typeStats,
             due: levelItems.filter(i => {
                 const state = i.user_learning_states?.[0];
-                return state && new Date(state.next_review) <= new Date();
+                return state && new Date(state.next_review) <= HanaTime.getNow();
             }).length,
             new: total - learned
         };
@@ -216,7 +217,7 @@ export async function fetchUserDashboardStats(userId: string) {
         console.log('[LearningService] Live Data:', { due: dueItems?.length, learned: repoStats?.learned, today: dailyStats?.daily, todayBatches: todayBatchCount });
 
         // Process Forecast (Hourly for 24h, Daily for 14d)
-        const now = new Date();
+        const now = HanaTime.getNow();
         const hourlyForecast = Array.from({ length: 24 }, (_, i) => {
             const hourStart = new Date(now);
             hourStart.setHours(now.getHours() + i, 0, 0, 0);
@@ -277,7 +278,7 @@ export async function fetchUserDashboardStats(userId: string) {
             heatmap: repoStats?.heatmap || {},
             typeMastery: typePercentages,
             srsSpread: repoStats?.srsSpread || { apprentice: 0, guru: 0, master: 0, enlightened: 0, burned: 0 },
-            totalKUCoverage: repoStats ? (repoStats.learned / repoStats.totalKUs) * 100 : 0,
+            totalKUCoverage: repoStats && repoStats.totalKUs > 0 ? (repoStats.learned / repoStats.totalKUs) * 100 : 0,
             streak: 0, // Adding missing field to satisfy UI
             todayBatchCount
         };

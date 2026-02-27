@@ -81,7 +81,7 @@ We use **Vitest** for unit and integration testing.
 
 ### Run All E2E Tests
 ```bash
-npm test
+pnpm test
 ```
 
 ## 📂 Project Structure

@@ -129,6 +129,38 @@ export default function LoginPage() {
                             <div className="absolute inset-0 bg-gradient-to-r from-[#F4ACB7] to-[#CDB4DB] transition-all duration-500 group-hover/btn:scale-105"></div>
                             <span className="relative z-10">{loading ? 'Processing...' : 'Authorize Session'}</span>
                         </button>
+
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                setLoading(true);
+                                // The system expects "user@hanachan.app" / "password123" to exist per earlier seeds
+                                const testEmail = "user@hanachan.app";
+                                const testPass = "password123";
+                                const { error: loginErr } = await supabase.auth.signInWithPassword({
+                                    email: testEmail, password: testPass
+                                });
+                                if (loginErr) {
+                                    // If test user doesn't exist, try creating it automatically for auto-login
+                                    const { error: signUpErr } = await supabase.auth.signUp({
+                                        email: testEmail, password: testPass,
+                                        options: { data: { display_name: 'Auto User', level: 1 } }
+                                    });
+                                    if (!signUpErr) {
+                                        router.push('/dashboard');
+                                    } else {
+                                        setError(signUpErr.message);
+                                        setLoading(false);
+                                    }
+                                } else {
+                                    router.push('/dashboard');
+                                }
+                            }}
+                            disabled={loading}
+                            className="w-full py-4 border-2 border-dashed border-[#F4ACB7]/30 hover:border-[#F4ACB7] rounded-2xl font-black text-[10px] uppercase tracking-widest text-[#F4ACB7]/70 hover:text-[#F4ACB7] transition-all bg-[#F4ACB7]/5 hover:bg-[#F4ACB7]/10"
+                        >
+                            Developer Auto-Login
+                        </button>
                     </form>
 
                     <div className="mt-8 flex flex-col items-center gap-4">

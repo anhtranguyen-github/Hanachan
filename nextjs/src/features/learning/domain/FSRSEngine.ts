@@ -2,6 +2,7 @@
 import { addDays, addMinutes, addHours } from 'date-fns';
 import { SRSStateSchema, RatingSchema } from '@/lib/validation';
 import { z } from 'zod';
+import { HanaTime } from '@/lib/time';
 
 export type SRSState = z.infer<typeof SRSStateSchema>;
 export type Rating = z.infer<typeof RatingSchema>;
@@ -45,7 +46,7 @@ export class FSRSEngine {
         if (lapses === undefined) lapses = 0;
 
         // 2. State Transition Logic
-        
+
         // CASE A: Hard Reset (Manual 'again' or pure failure)
         if (rating === 'again') {
             reps = 0;
@@ -53,17 +54,17 @@ export class FSRSEngine {
             // Strict 50% penalty for a total blank out
             stability = Math.max(0.1, stability * 0.5);
             stage = SRS_STAGES.LEARNING;
-        } 
-        
+        }
+
         // CASE B: Struggle (Has Wrongs) - The "Drill Integration" logic chốt sổ
         else if (wrongCount > 0) {
             reps++;
             // Sensitivity alpha determines how much difficulty increases per failure intensity
-            const alpha = 0.2; 
+            const alpha = 0.2;
             difficulty = Math.min(5.0, difficulty + (alpha * failureIntensity));
 
             // Decay factor beta determines stability drop. Formula: S = S * exp(-beta * Intensity)
-            const beta = 0.3; 
+            const beta = 0.3;
             const decay = Math.exp(-beta * failureIntensity);
             stability = Math.max(0.1, stability * decay);
 
@@ -76,8 +77,8 @@ export class FSRSEngine {
             } else {
                 stage = SRS_STAGES.REVIEW;
             }
-        } 
-        
+        }
+
         // CASE C: Pure Success (rating === 'pass' and wrongCount === 0)
         else {
             reps++;
@@ -106,7 +107,7 @@ export class FSRSEngine {
         // 3. Final Scheduling
         // Stability is in days. Convert to next_review date.
         const intervalMinutes = Math.max(1, Math.round(stability * 1440));
-        const next_review = addMinutes(new Date(), intervalMinutes);
+        const next_review = addMinutes(HanaTime.getNow(), intervalMinutes);
 
         return {
             next_review,

@@ -15,6 +15,7 @@ import { clsx } from 'clsx';
 import { fetchUserDashboardStats, fetchCurriculumStats, fetchLevelStats } from '@/features/learning/service';
 import { useUser } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { HanaTime } from '@/lib/time';
 
 export default function DashboardPage() {
     const { user } = useUser();
@@ -78,6 +79,15 @@ export default function DashboardPage() {
         if (user) {
             refreshData();
         }
+
+        // Automatic refresh if time is accelerated (every simulated hour = frequency check)
+        const checkInterval = setInterval(() => {
+            if (HanaTime.getSpeed() > 1) {
+                refreshData();
+            }
+        }, 5000); // Check every 5s real time
+
+        return () => clearInterval(checkInterval);
     }, [user]);
 
     if (!mounted || !stats) {
@@ -89,7 +99,7 @@ export default function DashboardPage() {
     }
 
     const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Learner';
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const today = HanaTime.getNow().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
     return (
         <main data-testid="dashboard-root" className="max-w-[1400px] mx-auto space-y-xl animate-page-entrance px-4 lg:px-0">
@@ -123,7 +133,7 @@ export default function DashboardPage() {
                     <div className="flex justify-between items-end relative z-10">
                         <div className="flex gap-1.5">
                             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => {
-                                const isToday = idx === new Date().getDay();
+                                const isToday = idx === HanaTime.getNow().getDay();
                                 const hasActivity = stats.streak > (6 - idx); // Dummy logic for visual
                                 return (
                                     <div key={idx} className="flex flex-col items-center gap-2">
@@ -452,7 +462,7 @@ export default function DashboardPage() {
                     <div className="flex-1 flex flex-col justify-center">
                         <div className="flex flex-wrap gap-1.5 justify-center max-w-[560px] mx-auto">
                             {Array.from({ length: 52 * 7 }).map((_, i) => {
-                                const date = new Date();
+                                const date = HanaTime.getNow();
                                 date.setDate(date.getDate() - (52 * 7 - i));
                                 const dateStr = date.toISOString().split('T')[0];
                                 const count = stats.heatmap?.[dateStr] || 0;
@@ -502,11 +512,6 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            {/* Empty Space / Footer Branding */}
-            <div className="py-20 text-center opacity-10 select-none pointer-events-none">
-                <h2 className="text-7xl font-black tracking-widest text-[#3E4A61]">HANACHAN V2</h2>
-                <p className="text-xs font-black uppercase tracking-[1em] mt-4">Cognitive Mastery System</p>
-            </div>
         </main>
     );
 }

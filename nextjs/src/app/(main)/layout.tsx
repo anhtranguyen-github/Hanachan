@@ -6,6 +6,7 @@ import { useUser } from '@/features/auth/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { clsx } from 'clsx';
+import { HanaClock } from '@/components/shared/HanaClock';
 
 export default function MainLayout({
     children,
@@ -105,6 +106,7 @@ export default function MainLayout({
                 )}>
                     {children}
                 </main>
+                <HanaClock />
             </div>
         </div>
     );

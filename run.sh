@@ -6,6 +6,8 @@
 FRONTEND_PORT=3000
 BACKEND_PORT=8765
 
+MODE=${1:-dev}
+
 # Root directory
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -14,7 +16,7 @@ cd "$ROOT_DIR"
 if ! docker ps | grep -q "supabase_db"; then
   echo "Starting Supabase local stack..."
   # Only start essential core services for faster boot
-  npx supabase start
+  pnpm dlx supabase start
 else
   echo "Supabase containers are already active."
 fi
@@ -47,8 +49,8 @@ cleanup_port $FRONTEND_PORT
 
 echo "--- 🚀 Phase 3: Starting Services ---"
 
-# Trap exits to kill background processes
-trap "echo 'Stopping...'; kill 0" EXIT
+# Trap exits to kill background processes only on interruption
+trap "echo 'Stopping...'; kill 0" SIGINT SIGTERM
 
 # 1. Start FastAPI Backend
 echo "[Backend] Starting on port $BACKEND_PORT..."
@@ -71,9 +73,23 @@ for i in {1..10}; do
 done
 
 # 2. Start Next.js Frontend with pnpm
-echo "[Frontend] Starting on port $FRONTEND_PORT using pnpm..."
 cd "$ROOT_DIR/nextjs"
-PORT=$FRONTEND_PORT pnpm run dev &
+
+if [ "$MODE" = "prod" ] || [ "$MODE" = "product" ]; then
+  echo "[Frontend] Building for production..."
+  pnpm run build
+  echo "[Frontend] Starting production server on port $FRONTEND_PORT..."
+  PORT=$FRONTEND_PORT pnpm run start &
+elif [ "$MODE" = "build" ]; then
+  echo "[Frontend] Running build check..."
+  pnpm run build
+  echo "--- ✅ Build Complete ---"
+  kill $BACKEND_PID
+  exit 0
+else
+  echo "[Frontend] Starting dev server on port $FRONTEND_PORT using pnpm..."
+  PORT=$FRONTEND_PORT pnpm run dev &
+fi
 FRONTEND_PID=$!
 
 echo "--- ✅ Startup Complete ---"

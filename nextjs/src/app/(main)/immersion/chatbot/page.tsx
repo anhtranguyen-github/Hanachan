@@ -9,6 +9,7 @@ import { QuickViewModal, QuickViewData } from '@/components/shared/QuickViewModa
 import { mapUnitToQuickView } from '@/features/knowledge/ui-mapper';
 import { supabase } from '@/lib/supabase';
 import { getKnowledgeUnit } from '@/features/knowledge/actions';
+import { HanaTime } from '@/lib/time';
 
 type Message = {
     id: string;
@@ -41,7 +42,7 @@ export default function ChatbotPage() {
                 id: '1',
                 role: 'assistant',
                 content: 'Konnichiwa! I am Hanachan, your Japanese language tutor. I can help you search the database, analyze sentences, or tell you about your progress. How can I help you study today?',
-                timestamp: new Date().toISOString()
+                timestamp: HanaTime.getNowISO()
             }
         ]);
     };
@@ -74,7 +75,7 @@ export default function ChatbotPage() {
             id: Date.now().toString(),
             role: 'user',
             content: input,
-            timestamp: new Date().toISOString(),
+            timestamp: HanaTime.getNowISO(),
         };
 
         setMessages(prev => [...prev, userMsg]);
@@ -99,7 +100,7 @@ export default function ChatbotPage() {
                     id: (Date.now() + 1).toString(),
                     role: 'assistant',
                     content: data.reply,
-                    timestamp: new Date().toISOString(),
+                    timestamp: HanaTime.getNowISO(),
                     toolsUsed: data.toolsUsed,
                     referencedUnits: data.referencedUnits
                 };
@@ -114,7 +115,7 @@ export default function ChatbotPage() {
                 id: Date.now().toString(),
                 role: 'assistant',
                 content: "I apologize, but I encountered a disruption in my neural link. Please try again.",
-                timestamp: new Date().toISOString()
+                timestamp: HanaTime.getNowISO()
             }]);
         } finally {
             setIsTyping(false);
