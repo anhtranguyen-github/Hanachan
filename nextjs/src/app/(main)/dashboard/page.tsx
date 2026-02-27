@@ -217,9 +217,7 @@ export default function DashboardPage() {
                                 style={{ width: `${stats.retention}%` }}
                             />
                         </div>
-                        <p className="text-[8px] font-bold text-[#A0AEC0] italic">
-                            Keep up the momentum to reach your 90% stability goal!
-                        </p>
+
                     </div>
                 </div>
             </div>

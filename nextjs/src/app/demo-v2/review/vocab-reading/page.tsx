@@ -28,10 +28,7 @@ export default function ReviewVocabReading() {
             <div className="flex-1 bg-white border-2 border-gray-300 rounded-[56px] shadow-sm flex flex-col overflow-hidden relative">
                 {/* Content Header - The Question Aspect */}
                 <div className="bg-vocab p-20 text-center text-white relative">
-                    <div className="absolute top-6 left-10 flex gap-2">
-                        <div className="px-3 py-1 bg-white/20 rounded-full text-[8px] font-black tracking-widest uppercase">Reading: ?</div>
-                        <div className="px-3 py-1 bg-white/20 rounded-full text-[8px] font-black tracking-widest uppercase opacity-40">Meaning: OK</div>
-                    </div>
+
                     <h2 className="text-[120px] font-black leading-none drop-shadow-2xl">日本語</h2>
                     <div className="mt-6 inline-block px-6 py-2 bg-black/10 rounded-2xl backdrop-blur-sm border border-white/10">
                         <span className="text-xl font-bold opacity-80 italic">Japanese Language</span>

@@ -178,9 +178,7 @@ export default function ChatbotPage() {
                             <h2 className="text-xl font-black text-[#3E4A61] tracking-tighter uppercase">HANACHAN ASSISTANT</h2>
                         </div>
                     </div>
-                    <div className="hidden md:flex items-center gap-4 bg-[#F7FAFC] border border-[#F0E0E0] px-4 py-2 rounded-xl">
-                        <span className="text-[9px] font-black text-[#A0AEC0] uppercase tracking-[0.3em] font-mono">Sync_OK // Level {user?.level || 1}</span>
-                    </div>
+
                 </header>
 
                 {/* Messages Area */}

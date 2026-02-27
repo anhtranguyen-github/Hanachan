@@ -170,7 +170,7 @@ function ContentDatabase() {
             {loading ? (
                 <div className="py-40 flex flex-col items-center gap-6">
                     <Loader2 className="w-12 h-12 text-[#FFB5B5] animate-spin" />
-                    <p className="text-[10px] font-black uppercase tracking-[0.5em] text-[#CBD5E0]">Querying database...</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.5em] text-[#CBD5E0]">Loading...</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">

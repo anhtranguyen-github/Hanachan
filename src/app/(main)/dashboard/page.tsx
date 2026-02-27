@@ -218,9 +218,7 @@ export default function DashboardPage() {
                                 <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Pending</span>
                             </div>
                         </div>
-                        <div className="text-[10px] font-black text-gray-200 uppercase tracking-[0.4em]">
-                            Curriculum Pipeline v2 // Active
-                        </div>
+
                     </div>
                 </div>
             </div>

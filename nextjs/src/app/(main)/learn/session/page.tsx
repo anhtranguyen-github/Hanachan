@@ -115,7 +115,7 @@ function SessionContent() {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-8 gap-8 bg-[#FDF8F8]">
                 <Loader2 className="animate-spin text-primary" size={48} />
-                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">Synchronizing Curriculum...</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">Loading...</p>
             </div>
         );
     }

@@ -75,7 +75,7 @@ function SessionContent() {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-8 gap-8">
                 <Loader2 className="animate-spin text-primary" size={48} />
-                <p className="text-xs font-bold uppercase tracking-widest text-foreground/40">Synchronizing memory state...</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-foreground/40">Loading...</p>
             </div>
         );
     }
@@ -159,9 +159,7 @@ function SessionContent() {
                 />
             </div>
 
-            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 text-[9px] font-black text-foreground/5 uppercase tracking-[0.5em] pointer-events-none font-mono">
-                SECURE_LEARNING_PROTOCOL // SAKURA-V2-ALGO-ACTIVE
-            </div>
+
         </div >
     );
 }

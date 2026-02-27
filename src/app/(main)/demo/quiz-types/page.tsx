@@ -95,9 +95,7 @@ export default function QuizTypesPage() {
                             <div className="px-3 py-1.5 bg-primary/10 rounded-lg border border-primary/20">
                                 <span className="text-[10px] font-bold text-primary-dark uppercase tracking-widest">Reading Quiz</span>
                             </div>
-                            <div className="px-3 py-1.5 bg-surface rounded-lg border border-border">
-                                <span className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Level 1</span>
-                            </div>
+
                         </div>
                     </header>
 

@@ -56,7 +56,6 @@ export default function MainLayout({
                         </div>
                         <div className="flex items-center gap-6">
                             <div className="flex flex-col items-end">
-                                <span className="text-[10px] font-black text-[#A0AEC0] uppercase tracking-widest">Level {user?.level || 1}</span>
                                 <span className="text-[11px] font-black text-[#3E4A61] uppercase tracking-tighter">
                                     {user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'LEARNER'}
                                 </span>
