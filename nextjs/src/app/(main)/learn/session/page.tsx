@@ -184,34 +184,32 @@ function SessionContent() {
 
         return (
             <div
-                className="min-h-screen bg-[#FDF8F8] pt-16 pb-12 px-6 flex flex-col max-w-5xl mx-auto space-y-12"
+                className="min-h-screen bg-[#FDF8F8] pt-4 sm:pt-16 pb-4 sm:pb-12 px-4 sm:px-6 flex flex-col max-w-5xl mx-auto space-y-4 sm:space-y-12"
                 data-testid="lesson-view-phase"
             >
-                <header className="flex justify-between items-center px-4 shrink-0">
-                    <div className="flex-1 space-y-3">
-                        <div className="flex gap-2">
+                <header className="flex justify-between items-center shrink-0">
+                    <div className="flex-1 space-y-2">
+                        <div className="flex gap-1.5">
                             {lessonQueue.map((_, i) => (
                                 <div key={i} className={clsx(
                                     "h-1.5 rounded-full transition-all duration-700",
-                                    i < lessonIndex ? "w-8 bg-primary" :
-                                        i === lessonIndex ? "w-12 bg-primary shadow-lg shadow-primary/20" :
-                                            "w-6 bg-gray-100"
+                                    i < lessonIndex ? "w-6 sm:w-8 bg-primary" :
+                                        i === lessonIndex ? "w-8 sm:w-12 bg-primary shadow-lg shadow-primary/20" :
+                                            "w-4 sm:w-6 bg-gray-100"
                                 )} />
                             ))}
                         </div>
-                        <p className="text-[9px] font-black text-foreground/30 uppercase tracking-[0.2em]">
-                            Lesson {lessonIndex + 1} of {lessonQueue.length}
+                        <p className="text-[8px] font-black text-foreground/30 uppercase tracking-[0.15em]">
+                            {lessonIndex + 1} / {lessonQueue.length}
                         </p>
                     </div>
                     <button
                         onClick={() => router.push('/learn')}
-                        className="flex items-center gap-2 pr-4 pl-2 py-2 rounded-2xl bg-white border border-border shadow-sm hover:border-red-200 hover:bg-red-50 transition-all group group"
+                        className="flex items-center gap-1.5 px-2.5 py-2 rounded-2xl bg-white border border-border shadow-sm hover:border-red-200 hover:bg-red-50 transition-all group"
                         title="Exit Session"
                     >
-                        <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 group-hover:bg-red-100 transition-colors">
-                            <X size={16} className="text-gray-400 group-hover:text-red-500 group-hover:rotate-90 transition-transform" />
-                        </div>
-                        <span className="text-[9px] font-black text-gray-400 group-hover:text-red-500 tracking-widest uppercase">Exit</span>
+                        <X size={14} className="text-gray-400 group-hover:text-red-500 group-hover:rotate-90 transition-transform" />
+                        <span className="text-[8px] font-black text-gray-400 group-hover:text-red-500 tracking-widest uppercase hidden sm:inline">Exit</span>
                     </button>
                 </header>
 
@@ -229,27 +227,26 @@ function SessionContent() {
     const progress = (stats.completed / Math.max(controller.getProgress().total, 1)) * 100;
 
     return (
-        <div className="min-h-screen bg-[#FDFDFD] pt-8 md:pt-12 pb-12 px-6 flex flex-col max-w-4xl mx-auto" data-testid="quiz-phase">
-            <header className="flex justify-between items-center mb-16 shrink-0 h-10">
-                <div className="flex items-center gap-4">
-                    <div className="w-32 md:w-48 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className="min-h-screen bg-[#FDFDFD] pt-4 sm:pt-8 pb-4 sm:pb-12 px-4 sm:px-6 flex flex-col max-w-4xl mx-auto" data-testid="quiz-phase">
+            <header className="flex justify-between items-center mb-8 sm:mb-16 shrink-0 h-10">
+                <div className="flex items-center gap-3">
+                    <div className="w-24 sm:w-48 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                         <div
                             className={clsx("h-full transition-all duration-700 ease-out", currentCard?.type === 'kanji' ? 'bg-kanji' : 'bg-primary')}
                             style={{ width: `${progress}%` }}
                         />
                     </div>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] whitespace-nowrap">
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.15em] whitespace-nowrap">
                         {stats.completed + 1} / {controller.getProgress().total}
                     </span>
                 </div>
-
                 <button
                     onClick={() => router.push('/learn')}
-                    className="group flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-2xl transition-all duration-300"
+                    className="group flex items-center gap-1.5 px-2.5 py-1.5 hover:bg-gray-100 rounded-2xl transition-all duration-300"
                     title="Exit Quiz"
                 >
-                    <X size={16} className="text-gray-400 group-hover:text-gray-600 group-hover:rotate-90 transition-transform duration-300" />
-                    <span className="text-[10px] font-bold text-gray-400 group-hover:text-gray-600 tracking-widest uppercase">Exit</span>
+                    <X size={14} className="text-gray-400 group-hover:text-gray-600 group-hover:rotate-90 transition-transform duration-300" />
+                    <span className="text-[9px] font-bold text-gray-400 group-hover:text-gray-600 tracking-widest uppercase hidden sm:inline">Exit</span>
                 </button>
             </header>
 
