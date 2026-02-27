@@ -42,7 +42,7 @@ export function Sidebar() {
     return (
         <aside
             className={clsx(
-                "border-r border-[#F0E0E0] flex flex-col overflow-hidden bg-white shrink-0 transition-all duration-500 ease-in-out relative z-40",
+                "border-r border-[#F0E0E0] flex flex-col bg-white shrink-0 transition-all duration-500 ease-in-out relative z-40",
                 isCollapsed ? "w-20" : "w-64"
             )}
         >
@@ -118,7 +118,7 @@ export function Sidebar() {
             {/* Collapse Toggle */}
             <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="absolute shadow-sm -right-3 top-24 w-6 h-6 bg-white border border-[#F0E0E0] rounded-full flex items-center justify-center text-[#A0AEC0] hover:text-[#FFB5B5] transition-all z-50 lg:flex hidden"
+                className="hidden lg:flex absolute shadow-sm -right-3 top-24 w-6 h-6 bg-white border border-[#F0E0E0] rounded-full items-center justify-center text-[#A0AEC0] hover:text-[#FFB5B5] transition-all z-50"
             >
                 <ChevronRight size={14} className={clsx("transition-transform duration-300", isCollapsed ? "" : "rotate-180")} />
             </button>
