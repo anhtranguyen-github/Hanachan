@@ -107,7 +107,8 @@ async def chat_stream(
                         # If the planner produced messages with tool calls, we can signal that
                         last_msg = state_update["messages"][-1]
                         if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
-                            yield f"data: {json.dumps({'type': 'status', 'content': f'Planning tools: {[t['name'] for t in last_msg.tool_calls]}'})}\n\n"
+                            tool_names = [tc["name"] for tc in last_msg.tool_calls]
+                            yield f"data: {json.dumps({'type': 'status', 'content': f'Planning tools: {tool_names}'})}\n\n"
                     
                     elif node_name == "tools":
                         yield f"data: {json.dumps({'type': 'status', 'content': 'Retrieving knowledge...'})}\n\n"

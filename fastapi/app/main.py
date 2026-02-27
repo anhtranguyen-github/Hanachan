@@ -25,7 +25,6 @@ from .api.v1.api import api_router
 from .services.memory import episodic_memory as ep_mem
 from .services.memory import semantic_memory as sem_mem
 from .services.memory import session_memory as sess_mem
-from .agents.memory_agent import shutdown_pool
 
 # Configure structured JSON logging before anything else
 configure_logging()
@@ -100,7 +99,6 @@ async def lifespan(app: FastAPI):
 
     # Shutdown: close all pools and executors
     close_pool()
-    shutdown_pool()
     sess_mem.shutdown_bg_executor()
     logger.info("shutdown_complete")
 
