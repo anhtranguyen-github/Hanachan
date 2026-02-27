@@ -21,12 +21,12 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
 from ....schemas.chat import ChatRequest, ChatResponse
-from ....agents.memory_agent import run_chat, retrieve_memory, update_memory, AgentState
+from ....agents.memory_agent import run_chat, memory_agent, AgentState
 from ....core.security import require_auth
 from ....core.rate_limit import limiter
 from ....core.llm import make_llm
 from ....core.config import settings
-from ....agents.memory_agent import _GENERATION_PROMPT
+from langchain_core.messages import HumanMessage
 
 logger = logging.getLogger(__name__)
 
@@ -74,86 +74,59 @@ async def chat_stream(
     req: ChatRequest,
     token: dict = Depends(require_auth),
 ):
-    """Streaming version of /chat using Server-Sent Events."""
+    """Streaming version of /chat using the new iterative LangGraph."""
     # Issue #8: user_id must match the JWT subject
     if req.user_id != token.get("sub"):
         raise HTTPException(status_code=403, detail="user_id does not match token")
 
     async def event_stream() -> AsyncGenerator[str, None]:
-        ctx_state: AgentState = {
+        # Initialize state
+        initial_state = {
             "user_id": req.user_id,
             "session_id": req.session_id,
             "user_input": req.message,
+            "messages": [HumanMessage(content=req.message)],
+            "iterations": 0,
+            "generation": "",
             "thread_context": "",
             "retrieved_episodic": "",
-            "retrieved_semantic": "",
-            "retrieved_memories": "",
-            "generation": "",
+            "retrieved_semantic": ""
         }
 
-        # Issue #19: timeout memory retrieval
-        try:
-            retrieved = await asyncio.wait_for(
-                asyncio.get_running_loop().run_in_executor(
-                    None, retrieve_memory, ctx_state
-                ),
-                timeout=10.0,
-            )
-            ctx_state.update(retrieved)
-        except asyncio.TimeoutError:
-            logger.warning("stream_memory_retrieval_timeout", extra={"user_id": req.user_id})
-            yield f"data: {json.dumps({'type': 'error', 'message': 'Memory retrieval timed out'})}\n\n"
-            return
-        except Exception as exc:
-            logger.error("stream_memory_error", extra={"user_id": req.user_id, "error": str(exc)})
-            yield f"data: {json.dumps({'type': 'error', 'message': 'Memory unavailable'})}\n\n"
-            return
-
-        context_payload = json.dumps({
-            "type": "context",
-            "episodic": ctx_state["retrieved_episodic"],
-            "semantic": ctx_state["retrieved_semantic"],
-            "thread": ctx_state["thread_context"],
-        })
-        yield f"data: {context_payload}\n\n"
-
-        # Issue #5: streaming LLM with timeout
-        llm_stream = make_llm(streaming=True)
-        chain = _GENERATION_PROMPT | llm_stream
         full_response = ""
-
+        
         try:
-            async with asyncio.timeout(60.0):  # 60s wall-clock deadline for full stream
-                async for chunk in chain.astream(
-                    {
-                        "user_input": req.message,
-                        "retrieved_memories": ctx_state["retrieved_memories"],
-                    }
-                ):
-                    token_text = chunk.content
-                    full_response += token_text
-                    yield f"data: {json.dumps({'type': 'token', 'content': token_text})}\n\n"
-        except asyncio.TimeoutError:
-            logger.warning("stream_generation_timeout", extra={"user_id": req.user_id})
-            yield f"data: {json.dumps({'type': 'error', 'message': 'Generation timed out'})}\n\n"
-            return
-        except Exception as exc:
-            logger.error("stream_generation_error", extra={"user_id": req.user_id, "error": str(exc)})
-            yield f"data: {json.dumps({'type': 'error', 'message': 'Generation failed'})}\n\n"
-            return
+            # We use astream to yield updates from the graph
+            async for event in memory_agent.astream(
+                initial_state, 
+                config={"configurable": {"thread_id": req.session_id or req.user_id}}
+            ):
+                # We can yield "meta" events for planning/tools
+                for node_name, state_update in event.items():
+                    if node_name == "planner":
+                        # If the planner produced messages with tool calls, we can signal that
+                        last_msg = state_update["messages"][-1]
+                        if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
+                            yield f"data: {json.dumps({'type': 'status', 'content': f'Planning tools: {[t['name'] for t in last_msg.tool_calls]}'})}\n\n"
+                    
+                    elif node_name == "tools":
+                        yield f"data: {json.dumps({'type': 'status', 'content': 'Retrieving knowledge...'})}\n\n"
+                    
+                    elif node_name == "generate":
+                        # The final generation
+                        full_response = state_update["generation"]
+                        # In the current implementation, 'generate' node produces the full response at once.
+                        # If we wanted token-by-token streaming, we'd need to emit from inside the node or use a stream_mode.
+                        yield f"data: {json.dumps({'type': 'token', 'content': full_response})}\n\n"
 
-        ctx_state["generation"] = full_response
-        try:
-            await asyncio.get_running_loop().run_in_executor(
-                None, update_memory, ctx_state
-            )
+            yield f"data: {json.dumps({'type': 'done', 'session_id': req.session_id})}\n\n"
+            
         except Exception as exc:
-            logger.error("stream_memory_update_error", extra={"user_id": req.user_id, "error": str(exc)})
-
-        yield f"data: {json.dumps({'type': 'done', 'session_id': req.session_id})}\n\n"
+            logger.error("stream_graph_error", extra={"user_id": req.user_id, "error": str(exc)})
+            yield f"data: {json.dumps({'type': 'error', 'message': f'Processing failed: {str(exc)}'})}\n\n"
 
     return StreamingResponse(
         event_stream(),
         media_type="text/event-stream",
-        headers={"X-Accel-Buffering": "no"},  # disable nginx buffering for SSE
+        headers={"X-Accel-Buffering": "no"},
     )

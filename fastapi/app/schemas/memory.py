@@ -1,17 +1,18 @@
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # ---------------------------------------------------------------------------
 # Internal / LLM-structured-output models
 # ---------------------------------------------------------------------------
 
 class Node(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     id: str = Field(description="Unique identifier — a person's name, company ticker, or concept.")
     type: str = Field(description="Node type, e.g. 'User', 'Company', 'InvestmentPhilosophy'.")
-    properties: Optional[Dict[str, Any]] = Field(default=None, description="Optional extra properties.")
 
 
 class Relationship(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     source: Node = Field(description="Source node.")
     target: Node = Field(description="Target node.")
     type: str = Field(description="Relationship type, e.g. 'INTERESTED_IN', 'HAS_GOAL'.")
@@ -19,6 +20,7 @@ class Relationship(BaseModel):
 
 class KnowledgeGraph(BaseModel):
     """Structured knowledge extracted from a conversation by the LLM."""
+    model_config = ConfigDict(extra="forbid")
     relationships: List[Relationship] = Field(
         description="Relationships to add to the knowledge graph."
     )

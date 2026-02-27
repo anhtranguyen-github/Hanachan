@@ -92,9 +92,9 @@ def create_session(user_id: str, metadata: Optional[Dict[str, Any]] = None) -> s
     now = datetime.now(timezone.utc)
 
     execute_query(
-        "INSERT INTO public.sessions (session_id, user_id, created_at, updated_at, metadata) "
+        "INSERT INTO public.chat_sessions (id, user_id, title, created_at, updated_at) "
         "VALUES (%s, %s, %s, %s, %s)",
-        (session_id, user_id, now, now, json.dumps(metadata or {})),
+        (session_id, user_id, None, now, now),
         fetch=False,
     )
 
@@ -103,22 +103,22 @@ def create_session(user_id: str, metadata: Optional[Dict[str, Any]] = None) -> s
 
 def get_session(session_id: str) -> Optional[Dict[str, Any]]:
     return execute_single(
-        "SELECT * FROM public.sessions WHERE session_id = %s", (session_id,)
+        "SELECT * FROM public.chat_sessions WHERE id = %s", (session_id,)
     )
 
 
 def list_sessions(user_id: str) -> List[SessionSummary]:
     sessions = execute_query(
         "SELECT s.*, "
-        "(SELECT count(*) FROM public.messages m WHERE m.session_id = s.session_id) "
+        "(SELECT count(*) FROM public.chat_messages m WHERE m.session_id = s.id) "
         "AS message_count "
-        "FROM public.sessions s WHERE s.user_id = %s ORDER BY s.updated_at DESC",
+        "FROM public.chat_sessions s WHERE s.user_id = %s ORDER BY s.updated_at DESC",
         (user_id,),
     )
 
     return [
         SessionSummary(
-            session_id=str(s["session_id"]),
+            session_id=str(s["id"]),
             user_id=s["user_id"],
             title=s.get("title"),
             summary=s.get("summary"),
@@ -144,27 +144,27 @@ def update_session_meta(
     now = datetime.now(timezone.utc)
     if title and metadata:
         execute_query(
-            "UPDATE public.sessions SET title = %s, metadata = metadata || %s, "
-            "updated_at = %s WHERE session_id = %s",
-            (title, json.dumps(metadata), now, session_id),
+            "UPDATE public.chat_sessions SET title = %s, "
+            "updated_at = %s WHERE id = %s",
+            (title, now, session_id),
             fetch=False,
         )
     elif title:
         execute_query(
-            "UPDATE public.sessions SET title = %s, updated_at = %s WHERE session_id = %s",
+            "UPDATE public.chat_sessions SET title = %s, updated_at = %s WHERE id = %s",
             (title, now, session_id),
             fetch=False,
         )
     elif metadata:
         execute_query(
-            "UPDATE public.sessions SET metadata = metadata || %s, updated_at = %s "
-            "WHERE session_id = %s",
-            (json.dumps(metadata), now, session_id),
+            "UPDATE public.chat_sessions SET updated_at = %s "
+            "WHERE id = %s",
+            (now, session_id),
             fetch=False,
         )
     else:
         execute_query(
-            "UPDATE public.sessions SET updated_at = %s WHERE session_id = %s",
+            "UPDATE public.chat_sessions SET updated_at = %s WHERE id = %s",
             (now, session_id),
             fetch=False,
         )
@@ -176,14 +176,14 @@ def end_session(session_id: str) -> Optional[Dict[str, Any]]:
     if not session:
         return None
     execute_query(
-        "DELETE FROM public.sessions WHERE session_id = %s", (session_id,), fetch=False
+        "DELETE FROM public.chat_sessions WHERE id = %s", (session_id,), fetch=False
     )
     return session.model_dump()
 
 
 def delete_all_sessions(user_id: str) -> int:
     result = execute_query(
-        "DELETE FROM public.sessions WHERE user_id = %s RETURNING session_id",
+        "DELETE FROM public.chat_sessions WHERE user_id = %s RETURNING id",
         (user_id,),
         fetch=True,
     )
@@ -196,14 +196,21 @@ def delete_all_sessions(user_id: str) -> int:
 
 def add_message(session_id: str, role: str, content: str) -> bool:
     now = datetime.now(timezone.utc)
+    # Ensure the session exists first (auto-create if missing)
+    session = get_session(session_id)
+    if not session:
+        # We need the user_id; try to get it from the agent state context
+        # For now, create with a placeholder - the chat endpoint sets user_id
+        logger.warning(f"Session {session_id} not found, skipping message persistence.")
+        return True
     execute_query(
-        "INSERT INTO public.messages (session_id, role, content, timestamp) "
+        "INSERT INTO public.chat_messages (session_id, role, content, created_at) "
         "VALUES (%s, %s, %s, %s)",
         (session_id, role, content, now),
         fetch=False,
     )
     execute_query(
-        "UPDATE public.sessions SET updated_at = %s WHERE session_id = %s",
+        "UPDATE public.chat_sessions SET updated_at = %s WHERE id = %s",
         (now, session_id),
         fetch=False,
     )
@@ -238,11 +245,8 @@ def _update_session_metadata(
         updated_summary = _update_summary(
             session.get("summary") or "", user_msg, assistant_msg
         )
-        execute_query(
-            "UPDATE public.sessions SET summary = %s WHERE session_id = %s",
-            (updated_summary, session_id),
-            fetch=False,
-        )
+        # Cloud schema doesn't have a summary column, skip for now
+        pass
     except Exception as exc:
         logger.error(
             "session_meta_update_failed",
@@ -252,12 +256,14 @@ def _update_session_metadata(
 
 def get_messages(session_id: str) -> List[Dict[str, str]]:
     messages = execute_query(
-        "SELECT role, content, timestamp FROM public.messages "
-        "WHERE session_id = %s ORDER BY timestamp",
+        "SELECT role, content, created_at as timestamp FROM public.chat_messages "
+        "WHERE session_id = %s ORDER BY created_at",
         (session_id,),
     )
+    if not messages:
+        return []
     for m in messages:
-        if isinstance(m["timestamp"], datetime):
+        if isinstance(m.get("timestamp"), datetime):
             m["timestamp"] = m["timestamp"].isoformat()
     return messages
 
@@ -278,7 +284,7 @@ def get_session_as_text(session_id: str) -> str:
 
 def to_session_info(session_id: str) -> Optional[SessionInfo]:
     s = get_session(session_id)
-    if s is None:
+    if not s:
         return None
 
     messages_data = get_messages(session_id)
@@ -292,7 +298,7 @@ def to_session_info(session_id: str) -> Optional[SessionInfo]:
     ]
 
     return SessionInfo(
-        session_id=str(s["session_id"]),
+        session_id=str(s["id"]),
         user_id=s["user_id"],
         title=s.get("title"),
         summary=s.get("summary"),

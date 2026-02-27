@@ -162,46 +162,86 @@ def add_nodes_and_relationships(
 
 
 def search_semantic_memory(user_id: str, keywords: List[str]) -> List[Dict[str, Any]]:
-    """Fulltext search using a single OR query across all keywords (Issue #18).
-
-    Falls back gracefully if the fulltext index is unavailable.
-    """
+    """Fulltext search with fuzzy matching and fallback 'about me' logic."""
     if not keywords:
         return []
 
-    # Build a Lucene OR query from all keywords (cap at 10)
-    kw_query = " OR ".join(keywords[:10])
+    # 1. Clean and enhance keywords
+    noise = {"ABOUT", "ME", "THE", "IS", "WHAT", "DO", "YOU", "KNOW", "FOR", "AND", "MY", "FACTS"}
+    clean_kws = [k.strip().upper() for k in keywords if k.strip().upper() not in noise]
+    
+    # If all keywords were noise, use original keywords but at least we tried
+    if not clean_kws:
+        clean_kws = [k.upper() for k in keywords]
+    
+    logger.info(f"search_semantic_memory clean_kws: {clean_kws}")
+
+    # Build Lucene query with fuzzy matching (~) for each term, quoting terms with spaces
+    lucene_terms = []
+    for k in clean_kws[:10]:
+        if " " in k:
+            lucene_terms.append(f'"{k}"~')
+        else:
+            lucene_terms.append(f"{k}~")
+    kw_query = " OR ".join(lucene_terms)
 
     driver = _get_driver()
     results: List[Dict[str, Any]] = []
 
     with driver.session() as session:
         try:
-            records = session.run(
-                """
-                CALL db.index.fulltext.queryNodes("entity", $kw_query)
-                YIELD node, score
-                WHERE node.user_id = $user_id
-                MATCH (node)-[r]-(related)
-                WHERE related.user_id = $user_id
-                RETURN node, r, related, score
-                ORDER BY score DESC
-                LIMIT 20
-                """,
-                kw_query=kw_query,
-                user_id=user_id,
-            )
-            for rec in records:
-                results.append(
-                    {
-                        "node": dict(rec["node"]),
-                        "relationship": rec["r"].type,
-                        "related": dict(rec["related"]),
-                        "score": rec["score"],
-                    }
+            # 1. Primary search: Fulltext matching
+            if kw_query:
+                records = session.run(
+                    """
+                    CALL db.index.fulltext.queryNodes("entity", $kw_query)
+                    YIELD node, score
+                    WHERE node.user_id = $user_id
+                    MATCH (node)-[r]-(related)
+                    WHERE related.user_id = $user_id
+                    RETURN node, r, related, score
+                    ORDER BY score DESC
+                    LIMIT 20
+                    """,
+                    kw_query=kw_query,
+                    user_id=user_id,
                 )
+                for rec in records:
+                    rel = rec["r"]
+                    results.append(
+                        {
+                            "source": dict(rec["node"]),
+                            "relationship": rel.type,
+                            "target": dict(rec["related"]),
+                            "score": rec["score"],
+                        }
+                    )
+
+            # 2. Fallback: If nothing found or query is general, pull all persona relationships
+            is_general = any(k.upper() in {"ME", "MY", "INFO", "FACTS", "INTERESTS", "GOALS", "ABOUT", "PROFILE"} for k in clean_kws)
+            logger.info(f"search_semantic_memory results_len: {len(results)}, is_general: {is_general}")
+            if (not results or is_general) and len(results) < 10:
+                logger.info(f"search_semantic_memory entering fallback for user: {user_id}")
+                extra_records = session.run(
+                    """
+                    MATCH (n:Entity {user_id: $user_id})-[r]-(m)
+                    WHERE m.user_id = $user_id
+                    RETURN n, r, m, 1.0 AS score
+                    LIMIT 30
+                    """,
+                    user_id=user_id,
+                )
+                for rec in extra_records:
+                    results.append(
+                        {
+                            "source": dict(rec["n"]),
+                            "relationship": rec["r"].type,
+                            "target": dict(rec["m"]),
+                            "score": rec["score"],
+                        }
+                    )
         except Exception as exc:
-            logger.warning("semantic_search_failed", extra={"error": str(exc)})
+            logger.warning("semantic_search_failed", extra={"error": str(exc), "kw_query": kw_query})
             return []
 
     return _deduplicate(results)
@@ -212,9 +252,9 @@ def _deduplicate(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     deduped: List[Dict[str, Any]] = []
     for item in results:
         key = (
-            item["node"].get("id"),
+            item["source"].get("id"),
             item["relationship"],
-            item["related"].get("id"),
+            item["target"].get("id"),
         )
         if key not in seen:
             seen.add(key)
