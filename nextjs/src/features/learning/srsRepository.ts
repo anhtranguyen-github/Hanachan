@@ -106,7 +106,7 @@ export const srsRepository = {
         };
 
         if (rating) updates.first_rating = rating;
-        if (wrongCount !== undefined) updates.wrong_count = wrongCount;
+        // Note: wrong_count column does not exist in schema - use attempts to track total attempts
         if (attempts !== undefined) updates.attempts = attempts;
 
         const { error } = await supabase

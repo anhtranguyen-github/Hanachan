@@ -20,7 +20,8 @@ export async function POST(req: NextRequest) {
             success: true,
             reply: response.reply,
             actions: response.actions,
-            referencedKUs: response.referencedKUs,
+            referencedUnits: response.referencedKUs,
+            toolsUsed: [],
         });
 
     } catch (e: any) {
