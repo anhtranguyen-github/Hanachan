@@ -1,7 +1,4 @@
-'use client';
-// This is actually a server-side service but it was marked as client? 
-// No, the file is in src/features/chat/advanced-chatbot.ts. It should NOT be 'use client'.
-
+// Server-side chat service - do NOT add 'use client' here
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";

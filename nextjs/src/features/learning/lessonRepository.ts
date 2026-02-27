@@ -67,11 +67,12 @@ export const lessonRepository = {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
+        // Note: lesson_batches uses 'started_at', not 'created_at'
         const { count, error } = await supabase
             .from('lesson_batches')
             .select('id', { count: 'exact', head: true })
             .eq('user_id', userId)
-            .gte('created_at', today.toISOString());
+            .gte('started_at', today.toISOString());
 
         if (error) {
             console.error("[lessonRepository] Error counting today's batches:", error);
