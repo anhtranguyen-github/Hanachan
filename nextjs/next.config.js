@@ -2,13 +2,7 @@
 const nextConfig = {
   distDir: '.next_clean',
   async redirects() {
-    return [
-      {
-        source: '/progress',
-        destination: '/dashboard',
-        permanent: true,
-      }
-    ];
+    return [];
   },
   eslint: {
     ignoreDuringBuilds: true,
