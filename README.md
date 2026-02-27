@@ -84,6 +84,36 @@ We use **Vitest** for unit and integration testing.
 pnpm test
 ```
 
+## 🤖 Agent Architecture
+
+The Hanachan AI assistant uses an iterative **LangGraph** workflow to gather context and provide personalized responses.
+
+```mermaid
+graph TD
+    START((START)) --> P[Planner Node]
+    P -- Tool Calls --> T[Tools Node]
+    T --> P
+    P -- No More Tools --> R[Reviewer Node]
+    R -- Rewrite Query --> RW[Rewriter Node]
+    RW --> P
+    R -- Context Sufficient --> G[Generator Node]
+    G --> U[Update Memory Node]
+    U --> END((END))
+
+    subgraph "Context Gathering (Tools)"
+        direction LR
+        T1["Episodic (Qdrant)"]
+        T2["Semantic (Neo4j)"]
+        T3["Progress (Supabase)"]
+        T4["Knowledge (Postgres)"]
+    end
+
+    T -.-> T1
+    T -.-> T2
+    T -.-> T3
+    T -.-> T4
+```
+
 ## 📂 Project Structure
 
 ```bash
