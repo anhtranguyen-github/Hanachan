@@ -118,33 +118,30 @@ function SessionContent() {
     const progress = (stats.completed / Math.max(stats.totalItems * 2, 1)) * 100;
 
     return (
-        <div className="min-h-screen bg-[#FDFDFD] pt-8 md:pt-12 pb-12 px-6 flex flex-col max-w-4xl mx-auto" data-testid="review-session-root">
-            <header className="flex justify-between items-center mb-16 shrink-0 h-10">
-                <div className="flex items-center gap-4">
-                    <div className="w-32 md:w-48 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className="min-h-screen bg-[#FDFDFD] pt-4 sm:pt-8 pb-4 sm:pb-12 px-4 sm:px-6 flex flex-col max-w-4xl mx-auto" data-testid="review-session-root">
+            <header className="flex justify-between items-center mb-8 sm:mb-16 shrink-0 h-10">
+                <div className="flex items-center gap-3">
+                    <div className="w-24 sm:w-48 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                         <div
                             className={clsx("h-full transition-all duration-700 ease-out", currentCard?.type === 'kanji' ? 'bg-kanji' : 'bg-primary')}
                             style={{ width: `${progress}%` }}
                         />
                     </div>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] whitespace-nowrap">
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.15em] whitespace-nowrap">
                         {stats.completed + 1} / {stats.totalItems}
                     </span>
                 </div>
-                
-                <div className="flex gap-4 items-center">
-                    <button
-                        onClick={() => router.push('/review')}
-                        className="group flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-2xl transition-all duration-300"
-                        title="Exit Review"
-                    >
-                        <X size={16} className="text-gray-400 group-hover:text-gray-600 group-hover:rotate-90 transition-transform duration-300" />
-                        <span className="text-[10px] font-bold text-gray-400 group-hover:text-gray-600 tracking-widest uppercase">Exit</span>
-                    </button>
-                </div>
+                <button
+                    onClick={() => router.push('/review')}
+                    className="group flex items-center gap-1.5 px-2.5 py-1.5 hover:bg-gray-100 rounded-2xl transition-all duration-300"
+                    title="Exit Review"
+                >
+                    <X size={14} className="text-gray-400 group-hover:text-gray-600 group-hover:rotate-90 transition-transform duration-300" />
+                    <span className="text-[9px] font-bold text-gray-400 group-hover:text-gray-600 tracking-widest uppercase hidden sm:inline">Exit</span>
+                </button>
             </header>
 
-            <div className="relative z-10">
+            <div className="relative z-10 flex-1 flex items-center justify-center">
                 <ReviewCardDisplay
                     card={currentCard}
                     mode="review"
@@ -152,9 +149,7 @@ function SessionContent() {
                     onRate={handleAnswer}
                 />
             </div>
-
-
-        </div >
+        </div>
     );
 }
 

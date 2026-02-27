@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Book, Filter, Search, Loader2, Lock, Zap, Clock, Flame, ChevronRight, Hash, Layers } from 'lucide-react';
+import { Book, Search, Loader2, Lock, Zap, Clock, Flame, ChevronRight, Hash, Layers, Library } from 'lucide-react';
 import { clsx } from 'clsx';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/features/auth/AuthContext';
@@ -27,23 +27,17 @@ function ContentDatabase() {
         setLoading(true);
         try {
             const userId = user.id;
-
             let query = supabase.from('knowledge_units').select('*');
             if (selectedLevel !== 'all') query = query.eq('level', selectedLevel);
             if (filterType !== 'all') query = query.eq('type', filterType);
-
             const { data: queryItems } = await query.order('level', { ascending: true }).order('type', { ascending: true }).limit(300);
             const { data: userStates } = await supabase.from('user_learning_states').select('*').eq('user_id', userId);
-
             const stateMap: Record<string, any> = {};
             userStates?.forEach((s: any) => { stateMap[s.ku_id] = s; });
-
             setItems(queryItems || []);
             setStates(stateMap);
-
             const { data: userData } = await supabase.from('users').select('level').eq('id', userId).maybeSingle();
             setUserLevel(userData?.level || 1);
-
         } catch (error) {
             console.error("Failed to load library data:", error);
         } finally {
@@ -68,83 +62,88 @@ function ContentDatabase() {
     }, [items, states, filterStatus, searchQuery, userLevel]);
 
     const tabs = [
-        { id: 'all', label: 'ALL', icon: Layers },
-        { id: 'radical', label: 'RADICALS', icon: Hash },
-        { id: 'kanji', label: 'KANJI', icon: Book },
-        { id: 'vocabulary', label: 'VOCAB', icon: Zap },
-        { id: 'grammar', label: 'GRAMMAR', icon: Flame },
+        { id: 'all', label: 'ALL', icon: Layers, color: '#4A4E69' },
+        { id: 'radical', label: 'RAD', icon: Hash, color: '#3A6EA5' },
+        { id: 'kanji', label: 'KAN', icon: Book, color: '#D88C9A' },
+        { id: 'vocabulary', label: 'VOC', icon: Zap, color: '#9B7DB5' },
+        { id: 'grammar', label: 'GRM', icon: Flame, color: '#5A9E72' },
     ];
 
     return (
-        <div className="max-w-[1400px] mx-auto space-y-sm animate-in fade-in duration-700">
-            {/* Header / Action Bar - Consolidated for Density */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-md p-xs bg-surface border border-border rounded-clay shadow-lg">
-                <div className="flex p-px bg-surface-muted/50 backdrop-blur-xl border border-border rounded-xl">
-                    {tabs.map((tab) => {
-                        const Icon = tab.icon;
-                        const active = filterType === tab.id;
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setFilterType(tab.id)}
-                                className={clsx(
-                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black tracking-widest transition-all duration-300 uppercase",
-                                    active
-                                        ? "bg-foreground text-surface shadow-sm"
-                                        : "text-foreground/40 hover:text-foreground hover:bg-surface"
-                                )}
-                            >
-                                <Icon size={10} />
-                                <span className="hidden md:inline">{tab.label}</span>
-                            </button>
-                        );
-                    })}
+        <div className="max-w-[1400px] mx-auto space-y-3 animate-in fade-in duration-700">
+            {/* Filter Bar */}
+            <div className="flex flex-col gap-2 p-2 bg-white/80 backdrop-blur-xl border border-border/40 rounded-3xl shadow-sm">
+                {/* Type tabs + search row */}
+                <div className="flex items-center gap-2">
+                    <div className="flex p-0.5 bg-[#F7FAFC] border border-border/30 rounded-2xl gap-0.5 shrink-0">
+                        {tabs.map((tab) => {
+                            const Icon = tab.icon;
+                            const active = filterType === tab.id;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setFilterType(tab.id)}
+                                    className={clsx(
+                                        "flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-xl text-[8px] sm:text-[9px] font-black tracking-widest transition-all duration-300 uppercase",
+                                        active ? "bg-white shadow-sm border border-border/20" : "text-foreground/30 hover:text-foreground/60"
+                                    )}
+                                    style={active ? { color: tab.color } : {}}
+                                >
+                                    <Icon size={9} />
+                                    <span className="hidden sm:inline">{tab.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="flex-1 relative group">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/20 transition-colors group-focus-within:text-primary" size={13} />
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full py-2 pl-8 pr-3 bg-transparent text-sm font-bold placeholder:text-foreground/20 outline-none"
+                        />
+                    </div>
                 </div>
 
-                <div className="flex-1 relative group mx-sm">
-                    <Search className="absolute left-md top-1/2 -translate-y-1/2 text-foreground/20 transition-colors group-focus-within:text-primary" size={16} />
-                    <input
-                        type="text"
-                        placeholder="Search curriculum..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full py-sm pl-xl pr-sm bg-transparent text-sm font-bold placeholder:text-foreground/20 outline-none jp-text"
-                    />
-                </div>
-
-                <div className="flex gap-xs p-xs border-l border-border/50 items-center">
+                {/* Filter selects */}
+                <div className="flex gap-2 border-t border-border/20 pt-2">
                     <select
-                        className="bg-transparent border-none rounded-lg px-2 py-1 text-[9px] font-black uppercase tracking-widest text-foreground outline-none cursor-pointer hover:bg-surface-muted transition-colors h-7"
+                        className="flex-1 bg-[#F7FAFC] border border-border/30 rounded-xl px-2 py-1.5 text-[9px] font-black uppercase tracking-widest text-foreground/60 outline-none cursor-pointer"
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
                     >
-                        <option value="all">STATUS</option>
-                        <option value="new">NEW</option>
-                        <option value="learning">STUDY</option>
-                        <option value="burned">DONE</option>
+                        <option value="all">All Status</option>
+                        <option value="new">New</option>
+                        <option value="learning">Learning</option>
+                        <option value="burned">Mastered</option>
                     </select>
-
                     <select
-                        className="bg-transparent border-none rounded-lg px-2 py-1 text-[9px] font-black uppercase tracking-widest text-foreground outline-none cursor-pointer hover:bg-surface-muted transition-colors h-7"
+                        className="flex-1 bg-[#F7FAFC] border border-border/30 rounded-xl px-2 py-1.5 text-[9px] font-black uppercase tracking-widest text-foreground/60 outline-none cursor-pointer"
                         value={selectedLevel}
                         onChange={(e) => setSelectedLevel(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
                     >
-                        <option value="all">LEVELS</option>
+                        <option value="all">All Levels</option>
                         {Array.from({ length: 60 }, (_, i) => i + 1).map(l => (
-                            <option key={l} value={l}>L{l}</option>
+                            <option key={l} value={l}>Level {l}</option>
                         ))}
                     </select>
                 </div>
             </div>
 
-            {/* Grid Display grouped by level */}
+            {/* Grid */}
             {loading ? (
-                <div className="py-2xl flex flex-col items-center justify-center gap-xl">
-                    <Loader2 className="animate-spin text-primary" size={48} />
-                    <p className="text-metadata font-black uppercase tracking-[0.6em] text-foreground/20">Synchronizing Archives</p>
+                <div className="py-16 flex flex-col items-center justify-center gap-4">
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-primary rounded-2xl blur-xl opacity-20 animate-pulse" />
+                        <div className="relative w-10 h-10 bg-gradient-to-br from-[#F4ACB7] to-[#D88C9A] rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-lg">花</div>
+                    </div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.4em] text-foreground/20">Loading...</p>
                 </div>
             ) : (
-                <div className="space-y-xl">
+                <div className="space-y-6">
                     {Object.entries(
                         filteredItems.reduce((acc, item) => {
                             if (!acc[item.level]) acc[item.level] = [];
@@ -152,64 +151,63 @@ function ContentDatabase() {
                             return acc;
                         }, {} as Record<number, any[]>)
                     ).sort(([a], [b]) => parseInt(a) - parseInt(b)).map(([level, levelItems]) => (
-                        <div key={level} className="space-y-md">
-                            <div className="flex items-center gap-4 px-2">
-                                <h2 className="text-xl font-black text-foreground/40">LEVEL {level}</h2>
-                                <div className="h-px flex-1 bg-border/30" />
+                        <div key={level} className="space-y-2">
+                            <div className="flex items-center gap-2 px-1">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-5 h-5 bg-gradient-to-br from-[#F4ACB7]/20 to-[#CDB4DB]/10 rounded-lg flex items-center justify-center border border-primary/10">
+                                        <span className="text-[7px] font-black text-primary">{level}</span>
+                                    </div>
+                                    <h2 className="text-[10px] font-black text-foreground/30 uppercase tracking-[0.25em]">Level {level}</h2>
+                                </div>
+                                <div className="h-px flex-1 bg-gradient-to-r from-border/30 to-transparent" />
+                                <span className="text-[8px] font-black text-foreground/20 uppercase tracking-widest">{(levelItems as any[]).length}</span>
                             </div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-lg">
+
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                                 {(levelItems as any[]).map((unit) => {
                                     const state = states[unit.id];
                                     const status = unit.level > userLevel ? 'locked' : (!state ? 'new' : state.state);
+
+                                    const typeTextColor: Record<string, string> = {
+                                        radical: 'text-[#3A6EA5]',
+                                        kanji: 'text-[#D88C9A]',
+                                        vocabulary: 'text-[#9B7DB5]',
+                                        grammar: 'text-[#5A9E72]',
+                                    };
+
+                                    const typeBorderColor: Record<string, string> = {
+                                        radical: '#A2D2FF',
+                                        kanji: '#F4ACB7',
+                                        vocabulary: '#CDB4DB',
+                                        grammar: '#B7E4C7',
+                                    };
 
                                     return (
                                         <Link
                                             href={`/content/${unit.type === 'vocabulary' ? 'vocabulary' : unit.type === 'radical' ? 'radicals' : unit.type}/${unit.slug}`}
                                             key={unit.id}
                                             className={clsx(
-                                                "group premium-card p-0 flex flex-col items-stretch bg-surface border-border hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 overflow-hidden h-lib-card",
+                                                "group relative flex flex-col items-center bg-white border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg aspect-square justify-center gap-1 p-2",
                                                 status === 'locked' && "opacity-40 grayscale pointer-events-none"
                                             )}
+                                            style={{ borderColor: `${typeBorderColor[unit.type]}40` }}
                                         >
-                                            {/* Card Header with Type & Level */}
-                                            <div className="p-md flex justify-between items-center bg-surface-muted/30 border-b border-border/50 h-[48px] shrink-0">
-                                                <div className="flex items-center gap-sm">
-                                                    <div className={clsx(
-                                                        "w-1.5 h-1.5 rounded-full shadow-sm",
-                                                        unit.type === 'radical' ? "bg-radical" :
-                                                            unit.type === 'kanji' ? "bg-kanji" :
-                                                                unit.type === 'vocabulary' ? "bg-vocab" : "bg-grammar"
-                                                    )} />
-                                                    <span className="text-metadata font-black uppercase tracking-widest text-foreground/30">{unit.type}</span>
-                                                </div>
-                                                <span className="text-metadata font-black text-foreground/40 bg-surface px-2 py-0.5 rounded-md border border-border">L{unit.level}</span>
-                                            </div>
+                                            {/* Type color top bar */}
+                                            <div className="absolute top-0 left-0 right-0 h-0.5" style={{ backgroundColor: typeBorderColor[unit.type] }} />
 
-                                            {/* Main Character Section */}
-                                            <div className="flex-1 flex flex-col items-center justify-center p-md gap-sm overflow-hidden min-h-0">
-                                                <div className={clsx(
-                                                    "text-4xl font-black transition-all group-hover:scale-105 duration-500 jp-text truncate max-w-full shrink-0",
-                                                    unit.type === 'kanji' ? "text-kanji" :
-                                                        unit.type === 'vocabulary' ? "text-primary-dark" : "text-foreground"
-                                                )}>
-                                                    {unit.character || '—'}
-                                                </div>
-                                                <h3 className="text-metadata font-black text-foreground/60 uppercase tracking-tight text-center line-clamp-2 px-2 min-h-[2.4em] flex items-center justify-center">
-                                                    {unit.meaning}
-                                                </h3>
+                                            <div className={clsx(
+                                                "text-2xl sm:text-3xl font-black transition-all group-hover:scale-110 duration-300 jp-text",
+                                                typeTextColor[unit.type] || 'text-foreground'
+                                            )}>
+                                                {unit.character || '—'}
                                             </div>
+                                            <h3 className="text-[7px] sm:text-[8px] font-black text-foreground/40 uppercase tracking-tight text-center line-clamp-1 px-1">
+                                                {unit.meaning}
+                                            </h3>
 
-                                            {/* Status Footer */}
-                                            <div className="px-lg py-md bg-surface-muted/10 border-t border-border/30 flex justify-between items-center group-hover:bg-primary/5 transition-colors h-[48px] shrink-0">
-                                                <StatusTag status={status} />
-                                                <ChevronRight size={14} className="text-foreground/10 group-hover:text-primary transition-all translate-x-0 group-hover:translate-x-1" />
-                                            </div>
-
-                                            {/* Mini Progress Indicator - Fixed at bottom */}
+                                            {/* Status dot */}
                                             {state && (
-                                                <div className="absolute bottom-0 left-0 w-full h-[3px] bg-border/10">
-                                                    <div className="h-full bg-primary/40 transition-all duration-1000" style={{ width: `${Math.min(100, (state.reps / 12) * 100)}%` }} />
-                                                </div>
+                                                <div className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: typeBorderColor[unit.type] }} />
                                             )}
                                         </Link>
                                     );
@@ -220,13 +218,12 @@ function ContentDatabase() {
                 </div>
             )}
 
-
             {!loading && filteredItems.length === 0 && (
-                <div className="py-2xl flex flex-col items-center justify-center text-center space-y-lg bg-surface-muted/20 border-2 border-dashed border-border rounded-clay">
-                    <Search size={32} className="text-foreground/10" />
-                    <div className="space-y-sm">
-                        <h3 className="text-h2 font-black text-foreground/20 uppercase tracking-widest">No Matches</h3>
-                        <p className="text-metadata font-bold text-foreground/10 uppercase tracking-[0.4em]">Try adjusting filters</p>
+                <div className="py-16 flex flex-col items-center justify-center text-center space-y-3 bg-white/50 border-2 border-dashed border-border/30 rounded-3xl">
+                    <Search size={24} className="text-foreground/20" />
+                    <div>
+                        <h3 className="text-sm font-black text-foreground/20 uppercase tracking-widest">No Matches</h3>
+                        <p className="text-[9px] font-bold text-foreground/10 uppercase tracking-[0.3em] mt-1">Try adjusting filters</p>
                     </div>
                 </div>
             )}
@@ -234,29 +231,23 @@ function ContentDatabase() {
     );
 }
 
-function StatusTag({ status }: { status: string }) {
-    const config: any = {
-        locked: { label: 'RESTRICTED', color: 'bg-foreground/5 text-foreground/20', icon: Lock },
-        new: { label: 'NEW ENTRY', color: 'bg-yellow-400/10 text-yellow-600', icon: Zap },
-        learning: { label: 'TRAINING', color: 'bg-blue-400/10 text-blue-600', icon: Clock },
-        review: { label: 'REINFORCING', color: 'bg-primary/10 text-primary-dark', icon: Flame },
-        burned: { label: 'MASTERED', color: 'bg-green-400/10 text-green-600', icon: Book },
-    };
-
-    const s = config[status] || config.new;
-    const Icon = s.icon;
-
-    return (
-        <div className={clsx("flex items-center gap-xs px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all", s.color)}>
-            <Icon size={10} strokeWidth={3} />
-            {s.label}
-        </div>
-    );
-}
-
 export default function UnifiedContentPage() {
     return (
-        <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" size={48} /></div>}>
+        <Suspense fallback={
+            <div className="h-full flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-primary rounded-2xl blur-xl opacity-20 animate-pulse" />
+                        <div className="relative w-10 h-10 bg-gradient-to-br from-[#F4ACB7] to-[#D88C9A] rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-lg">花</div>
+                    </div>
+                    <div className="flex gap-1.5">
+                        {[0, 1, 2].map(i => (
+                            <div key={i} className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                        ))}
+                    </div>
+                </div>
+            </div>
+        }>
             <ContentDatabase />
         </Suspense>
     );
