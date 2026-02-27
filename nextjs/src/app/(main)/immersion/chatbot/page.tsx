@@ -408,11 +408,6 @@ export default function ChatbotPage() {
                                 Stop
                             </button>
                         )}
-                        <div className="hidden md:flex items-center gap-2 bg-surface-muted border border-border px-3 py-1.5 rounded-xl">
-                            <span className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.3em] font-mono">
-                                {threads.length} thread{threads.length !== 1 ? 's' : ''}
-                            </span>
-                        </div>
                     </div>
                 </header>
 
