@@ -42,9 +42,14 @@ export interface UserProfile {
     email?: string | null;
     display_name?: string | null;
     avatar_url?: string | null;
+    avatar_color?: string | null;
+    bio?: string | null;
+    native_language?: string | null;
+    learning_goals?: string[] | null;
     role: Role;
     level: number;
     created_at?: string;
+    last_activity_at?: string;
 }
 
 export interface UserSettings {

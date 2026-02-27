@@ -7,29 +7,62 @@ import { getUserProfile, updateUserProfile } from '@/features/auth/db';
 import { fetchUserDashboardStats } from '@/features/learning/service';
 import {
     User, Brain, Map, Settings, Edit3, Save, X, Loader2,
-    Trophy, Flame, Target, BookOpen, Zap, Star, Shield,
-    Calendar, Clock, TrendingUp, CheckCircle2, AlertCircle,
-    ChevronRight, Trash2, RefreshCw, Eye, EyeOff
+    Flame, Target, BookOpen, Zap, Star, Shield,
+    CheckCircle2, AlertCircle, ChevronRight,
+    Globe, Plus, Palette
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { HanaTime } from '@/lib/time';
+import type { UserProfile } from '@/features/auth/types';
 
 type Tab = 'overview' | 'memories' | 'learning-path' | 'settings';
+
+// ─── Avatar Color Palette ─────────────────────────────────────────────────────
+
+const AVATAR_COLORS = [
+    { id: 'pink', from: '#F4ACB7', to: '#D88C9A', label: 'Sakura' },
+    { id: 'purple', from: '#CDB4DB', to: '#9B7DB5', label: 'Wisteria' },
+    { id: 'blue', from: '#A2D2FF', to: '#5BA4CF', label: 'Sky' },
+    { id: 'green', from: '#B7E4C7', to: '#52B788', label: 'Matcha' },
+    { id: 'orange', from: '#FFD6A5', to: '#F4A261', label: 'Yuzu' },
+    { id: 'red', from: '#FFADAD', to: '#E63946', label: 'Torii' },
+    { id: 'teal', from: '#A8DADC', to: '#457B9D', label: 'Ocean' },
+    { id: 'dark', from: '#6B7280', to: '#3E4A61', label: 'Ink' },
+];
+
+const NATIVE_LANGUAGES = [
+    'English', 'Spanish', 'French', 'German', 'Portuguese', 'Italian',
+    'Chinese (Mandarin)', 'Chinese (Cantonese)', 'Korean', 'Arabic',
+    'Russian', 'Hindi', 'Dutch', 'Polish', 'Swedish', 'Other'
+];
+
+const LEARNING_GOAL_SUGGESTIONS = [
+    'Pass JLPT N5', 'Pass JLPT N4', 'Pass JLPT N3', 'Pass JLPT N2', 'Pass JLPT N1',
+    'Travel to Japan', 'Watch anime without subtitles', 'Read manga in Japanese',
+    'Business Japanese', 'Conversational fluency', 'Read novels', 'Academic research'
+];
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
     const { user, signOut } = useUser();
     const [activeTab, setActiveTab] = useState<Tab>('overview');
-    const [profile, setProfile] = useState<any>(null);
+    const [profile, setProfile] = useState<UserProfile | null>(null);
     const [stats, setStats] = useState<any>(null);
     const [mounted, setMounted] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    // Settings state
-    const [editingName, setEditingName] = useState(false);
-    const [newDisplayName, setNewDisplayName] = useState('');
-    const [savingName, setSavingName] = useState(false);
-    const [nameError, setNameError] = useState('');
-    const [nameSuccess, setNameSuccess] = useState(false);
+    // Edit state
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState({
+        display_name: '',
+        bio: '',
+        native_language: '',
+        avatar_color: 'pink',
+        learning_goals: [] as string[],
+    });
+    const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState('');
+    const [saveSuccess, setSaveSuccess] = useState(false);
 
     // Memory state
     const [memories, setMemories] = useState<any>(null);
@@ -45,7 +78,15 @@ export default function ProfilePage() {
             ]);
             setProfile(profileData);
             setStats(statsData);
-            setNewDisplayName(profileData?.display_name || user?.user_metadata?.display_name || '');
+            if (profileData) {
+                setEditForm({
+                    display_name: profileData.display_name || user?.user_metadata?.display_name || '',
+                    bio: profileData.bio || '',
+                    native_language: profileData.native_language || '',
+                    avatar_color: profileData.avatar_color || 'pink',
+                    learning_goals: profileData.learning_goals || [],
+                });
+            }
         } catch (e) {
             console.error('Failed to load profile:', e);
         } finally {
@@ -63,7 +104,6 @@ export default function ProfilePage() {
                 setMemories(data);
             }
         } catch (e) {
-            // Memory API may not be running - show placeholder
             setMemories({ goals: [], interests: [], facts: [], preferences: [] });
         } finally {
             setLoadingMemories(false);
@@ -79,21 +119,45 @@ export default function ProfilePage() {
         if (activeTab === 'memories' && user) loadMemories();
     }, [activeTab, user]);
 
-    const handleSaveName = async () => {
-        if (!user || !newDisplayName.trim()) return;
-        setSavingName(true);
-        setNameError('');
+    const handleSaveProfile = async () => {
+        if (!user) return;
+        setSaving(true);
+        setSaveError('');
         try {
-            await updateUserProfile(user.id, { display_name: newDisplayName.trim() });
-            await supabase.auth.updateUser({ data: { display_name: newDisplayName.trim() } });
-            setProfile((p: any) => ({ ...p, display_name: newDisplayName.trim() }));
-            setEditingName(false);
-            setNameSuccess(true);
-            setTimeout(() => setNameSuccess(false), 3000);
+            const updates: Partial<UserProfile> = {
+                display_name: editForm.display_name.trim() || undefined,
+                bio: editForm.bio.trim() || undefined,
+                native_language: editForm.native_language || undefined,
+                avatar_color: editForm.avatar_color,
+                learning_goals: editForm.learning_goals,
+            };
+            await updateUserProfile(user.id, updates);
+            // Also update Supabase auth metadata for display_name
+            if (editForm.display_name.trim()) {
+                await supabase.auth.updateUser({ data: { display_name: editForm.display_name.trim() } });
+            }
+            setProfile(prev => prev ? { ...prev, ...updates } : null);
+            setIsEditing(false);
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 3000);
         } catch (e: any) {
-            setNameError(e.message || 'Failed to update name');
+            setSaveError(e.message || 'Failed to save profile');
         } finally {
-            setSavingName(false);
+            setSaving(false);
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditing(false);
+        setSaveError('');
+        if (profile) {
+            setEditForm({
+                display_name: profile.display_name || '',
+                bio: profile.bio || '',
+                native_language: profile.native_language || '',
+                avatar_color: profile.avatar_color || 'pink',
+                learning_goals: profile.learning_goals || [],
+            });
         }
     };
 
@@ -120,6 +184,8 @@ export default function ProfilePage() {
     const joinDate = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Unknown';
     const level = profile?.level || 1;
 
+    const avatarColor = AVATAR_COLORS.find(c => c.id === (profile?.avatar_color || 'pink')) || AVATAR_COLORS[0];
+
     const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
         { id: 'overview', label: 'Overview', icon: User },
         { id: 'memories', label: 'Memories', icon: Brain },
@@ -129,12 +195,17 @@ export default function ProfilePage() {
 
     return (
         <div className="max-w-4xl mx-auto space-y-5 animate-page-entrance pb-8">
-            {/* Profile Header */}
+            {/* ── Profile Header ── */}
             <div className="bg-white border border-border rounded-3xl overflow-hidden shadow-sm">
                 {/* Banner */}
-                <div className="h-24 sm:h-32 bg-gradient-to-br from-[#F4ACB7]/30 via-[#CDB4DB]/20 to-[#A2D2FF]/20 relative overflow-hidden">
+                <div
+                    className="h-24 sm:h-32 relative overflow-hidden"
+                    style={{
+                        background: `linear-gradient(135deg, ${avatarColor.from}30, ${avatarColor.to}20, #A2D2FF20)`
+                    }}
+                >
                     <div className="absolute inset-0 dot-grid opacity-30" />
-                    <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-primary/10 rounded-full blur-2xl" />
+                    <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full blur-2xl" style={{ backgroundColor: `${avatarColor.from}20` }} />
                 </div>
 
                 {/* Avatar + info */}
@@ -142,7 +213,10 @@ export default function ProfilePage() {
                     <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-8 sm:-mt-10">
                         {/* Avatar */}
                         <div className="relative shrink-0">
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[#F4ACB7] to-[#D88C9A] flex items-center justify-center text-white font-black text-2xl sm:text-3xl shadow-xl border-4 border-white">
+                            <div
+                                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-white font-black text-2xl sm:text-3xl shadow-xl border-4 border-white"
+                                style={{ background: `linear-gradient(135deg, ${avatarColor.from}, ${avatarColor.to})` }}
+                            >
                                 {initials}
                             </div>
                             <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#48BB78] rounded-full border-2 border-white shadow-sm" />
@@ -151,23 +225,75 @@ export default function ProfilePage() {
                         {/* Name + meta */}
                         <div className="flex-1 min-w-0 sm:pb-1">
                             <h1 className="text-xl sm:text-2xl font-black text-[#3E4A61] tracking-tight truncate">{displayName}</h1>
+                            {profile?.bio && (
+                                <p className="text-sm text-foreground/50 font-medium mt-0.5 line-clamp-2">{profile.bio}</p>
+                            )}
                             <div className="flex flex-wrap items-center gap-2 mt-1">
                                 <span className="text-[9px] font-black text-foreground/40 uppercase tracking-widest">{user?.email}</span>
                                 <span className="w-1 h-1 bg-border rounded-full" />
                                 <span className="text-[9px] font-black text-foreground/40 uppercase tracking-widest">Joined {joinDate}</span>
+                                {profile?.native_language && (
+                                    <>
+                                        <span className="w-1 h-1 bg-border rounded-full" />
+                                        <span className="text-[9px] font-black text-foreground/40 uppercase tracking-widest flex items-center gap-1">
+                                            <Globe size={8} /> {profile.native_language}
+                                        </span>
+                                    </>
+                                )}
                             </div>
+                            {profile?.learning_goals && profile.learning_goals.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                    {profile.learning_goals.slice(0, 3).map((goal, i) => (
+                                        <span key={i} className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border" style={{ color: avatarColor.to, borderColor: `${avatarColor.from}50`, backgroundColor: `${avatarColor.from}15` }}>
+                                            {goal}
+                                        </span>
+                                    ))}
+                                    {profile.learning_goals.length > 3 && (
+                                        <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-border/20 text-foreground/30">
+                                            +{profile.learning_goals.length - 3} more
+                                        </span>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
-                        {/* Level badge */}
-                        <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/15 to-[#CDB4DB]/10 border border-primary/20 rounded-2xl shrink-0">
-                            <Star size={14} className="text-primary" />
-                            <span className="text-sm font-black text-[#3E4A61]">Level {level}</span>
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 shrink-0">
+                            {saveSuccess && (
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#48BB78]/10 border border-[#48BB78]/20 rounded-xl">
+                                    <CheckCircle2 size={12} className="text-[#48BB78]" />
+                                    <span className="text-[9px] font-black text-[#48BB78] uppercase tracking-widest">Saved!</span>
+                                </div>
+                            )}
+                            <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/15 to-[#CDB4DB]/10 border border-primary/20 rounded-2xl">
+                                <Star size={14} className="text-primary" />
+                                <span className="text-sm font-black text-[#3E4A61]">Level {level}</span>
+                            </div>
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-[#3E4A61] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity shadow-sm"
+                            >
+                                <Edit3 size={12} />
+                                Edit Profile
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Tabs */}
+            {/* ── Edit Profile Modal ── */}
+            {isEditing && (
+                <EditProfileModal
+                    editForm={editForm}
+                    setEditForm={setEditForm}
+                    saving={saving}
+                    saveError={saveError}
+                    onSave={handleSaveProfile}
+                    onCancel={handleCancelEdit}
+                />
+            )}
+
+            {/* ── Tabs ── */}
             <div className="flex gap-1 p-1 bg-white border border-border rounded-2xl shadow-sm overflow-x-auto no-scrollbar">
                 {tabs.map((tab) => {
                     const Icon = tab.icon;
@@ -177,10 +303,10 @@ export default function ProfilePage() {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={clsx(
-                                "flex items-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-200 whitespace-nowrap flex-1 justify-center",
+                                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-200 whitespace-nowrap flex-1 justify-center',
                                 active
-                                    ? "bg-[#3E4A61] text-white shadow-sm"
-                                    : "text-foreground/40 hover:text-foreground hover:bg-surface-muted"
+                                    ? 'bg-[#3E4A61] text-white shadow-sm'
+                                    : 'text-foreground/40 hover:text-foreground hover:bg-surface-muted'
                             )}
                         >
                             <Icon size={13} />
@@ -190,7 +316,7 @@ export default function ProfilePage() {
                 })}
             </div>
 
-            {/* Tab Content */}
+            {/* ── Tab Content ── */}
             {activeTab === 'overview' && (
                 <OverviewTab stats={stats} profile={profile} level={level} displayName={displayName} />
             )}
@@ -204,16 +330,6 @@ export default function ProfilePage() {
                 <SettingsTab
                     user={user}
                     profile={profile}
-                    displayName={displayName}
-                    editingName={editingName}
-                    newDisplayName={newDisplayName}
-                    savingName={savingName}
-                    nameError={nameError}
-                    nameSuccess={nameSuccess}
-                    onEditName={() => setEditingName(true)}
-                    onCancelEdit={() => { setEditingName(false); setNewDisplayName(profile?.display_name || ''); }}
-                    onNameChange={setNewDisplayName}
-                    onSaveName={handleSaveName}
                     onSignOut={signOut}
                 />
             )}
@@ -221,7 +337,227 @@ export default function ProfilePage() {
     );
 }
 
-// ===== OVERVIEW TAB =====
+// ─── Edit Profile Modal ───────────────────────────────────────────────────────
+
+function EditProfileModal({
+    editForm,
+    setEditForm,
+    saving,
+    saveError,
+    onSave,
+    onCancel,
+}: {
+    editForm: {
+        display_name: string;
+        bio: string;
+        native_language: string;
+        avatar_color: string;
+        learning_goals: string[];
+    };
+    setEditForm: React.Dispatch<React.SetStateAction<typeof editForm>>;
+    saving: boolean;
+    saveError: string;
+    onSave: () => void;
+    onCancel: () => void;
+}) {
+    const [goalInput, setGoalInput] = useState('');
+
+    const addGoal = (goal: string) => {
+        const trimmed = goal.trim();
+        if (!trimmed || editForm.learning_goals.includes(trimmed)) return;
+        setEditForm(prev => ({ ...prev, learning_goals: [...prev.learning_goals, trimmed] }));
+        setGoalInput('');
+    };
+
+    const removeGoal = (goal: string) => {
+        setEditForm(prev => ({ ...prev, learning_goals: prev.learning_goals.filter(g => g !== goal) }));
+    };
+
+    const selectedColor = AVATAR_COLORS.find(c => c.id === editForm.avatar_color) || AVATAR_COLORS[0];
+    const initials = (editForm.display_name || 'U').slice(0, 2).toUpperCase();
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border">
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-white rounded-t-3xl z-10">
+                    <div>
+                        <h2 className="text-base font-black text-[#3E4A61] uppercase tracking-tight">Edit Profile</h2>
+                        <p className="text-[9px] font-black text-foreground/30 uppercase tracking-widest mt-0.5">Customize your learner identity</p>
+                    </div>
+                    <button onClick={onCancel} className="p-2 hover:bg-[#F7FAFC] rounded-xl transition-colors text-foreground/40">
+                        <X size={16} />
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-6">
+                    {/* Avatar Preview + Color */}
+                    <div className="flex flex-col items-center gap-4">
+                        <div
+                            className="w-20 h-20 rounded-2xl flex items-center justify-center text-white font-black text-3xl shadow-xl"
+                            style={{ background: `linear-gradient(135deg, ${selectedColor.from}, ${selectedColor.to})` }}
+                        >
+                            {initials}
+                        </div>
+                        <div className="space-y-2 w-full">
+                            <label className="text-[9px] font-black text-foreground/40 uppercase tracking-widest flex items-center gap-1.5">
+                                <Palette size={10} /> Avatar Color
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                                {AVATAR_COLORS.map(color => (
+                                    <button
+                                        key={color.id}
+                                        onClick={() => setEditForm(prev => ({ ...prev, avatar_color: color.id }))}
+                                        title={color.label}
+                                        className={clsx(
+                                            'w-8 h-8 rounded-xl transition-all',
+                                            editForm.avatar_color === color.id
+                                                ? 'ring-2 ring-offset-2 ring-[#3E4A61] scale-110'
+                                                : 'hover:scale-105'
+                                        )}
+                                        style={{ background: `linear-gradient(135deg, ${color.from}, ${color.to})` }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Display Name */}
+                    <div className="space-y-2">
+                        <label className="text-[9px] font-black text-foreground/40 uppercase tracking-widest">Display Name</label>
+                        <input
+                            type="text"
+                            value={editForm.display_name}
+                            onChange={e => setEditForm(prev => ({ ...prev, display_name: e.target.value }))}
+                            placeholder="Your display name"
+                            maxLength={50}
+                            className="w-full px-4 py-3 bg-[#F7FAFC] border border-border rounded-2xl text-sm font-bold text-[#3E4A61] outline-none focus:border-primary transition-colors"
+                        />
+                    </div>
+
+                    {/* Bio */}
+                    <div className="space-y-2">
+                        <label className="text-[9px] font-black text-foreground/40 uppercase tracking-widest">Bio</label>
+                        <textarea
+                            value={editForm.bio}
+                            onChange={e => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
+                            placeholder="Tell us about yourself and your Japanese learning journey..."
+                            maxLength={200}
+                            rows={3}
+                            className="w-full px-4 py-3 bg-[#F7FAFC] border border-border rounded-2xl text-sm font-medium text-[#3E4A61] outline-none focus:border-primary transition-colors resize-none"
+                        />
+                        <p className="text-[8px] text-foreground/20 font-black uppercase tracking-widest text-right">{editForm.bio.length}/200</p>
+                    </div>
+
+                    {/* Native Language */}
+                    <div className="space-y-2">
+                        <label className="text-[9px] font-black text-foreground/40 uppercase tracking-widest flex items-center gap-1.5">
+                            <Globe size={10} /> Native Language
+                        </label>
+                        <select
+                            value={editForm.native_language}
+                            onChange={e => setEditForm(prev => ({ ...prev, native_language: e.target.value }))}
+                            className="w-full px-4 py-3 bg-[#F7FAFC] border border-border rounded-2xl text-sm font-bold text-[#3E4A61] outline-none focus:border-primary transition-colors appearance-none cursor-pointer"
+                        >
+                            <option value="">Select your native language</option>
+                            {NATIVE_LANGUAGES.map(lang => (
+                                <option key={lang} value={lang}>{lang}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Learning Goals */}
+                    <div className="space-y-3">
+                        <label className="text-[9px] font-black text-foreground/40 uppercase tracking-widest flex items-center gap-1.5">
+                            <Target size={10} /> Learning Goals
+                        </label>
+
+                        {/* Current goals */}
+                        {editForm.learning_goals.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                                {editForm.learning_goals.map(goal => (
+                                    <div key={goal} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-xl">
+                                        <span className="text-[10px] font-black text-primary">{goal}</span>
+                                        <button
+                                            onClick={() => removeGoal(goal)}
+                                            className="text-primary/50 hover:text-primary transition-colors"
+                                        >
+                                            <X size={10} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Add custom goal */}
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={goalInput}
+                                onChange={e => setGoalInput(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && addGoal(goalInput)}
+                                placeholder="Add a custom goal..."
+                                className="flex-1 px-3 py-2 bg-[#F7FAFC] border border-border rounded-xl text-xs font-bold text-[#3E4A61] outline-none focus:border-primary transition-colors"
+                            />
+                            <button
+                                onClick={() => addGoal(goalInput)}
+                                disabled={!goalInput.trim()}
+                                className="px-3 py-2 bg-primary text-white rounded-xl text-xs font-black disabled:opacity-40 hover:opacity-90 transition-opacity"
+                            >
+                                <Plus size={12} />
+                            </button>
+                        </div>
+
+                        {/* Suggestions */}
+                        <div className="space-y-1.5">
+                            <p className="text-[8px] font-black text-foreground/20 uppercase tracking-widest">Suggestions</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {LEARNING_GOAL_SUGGESTIONS.filter(g => !editForm.learning_goals.includes(g)).slice(0, 8).map(goal => (
+                                    <button
+                                        key={goal}
+                                        onClick={() => addGoal(goal)}
+                                        className="px-2.5 py-1 bg-[#F7FAFC] border border-border hover:border-primary/30 rounded-lg text-[9px] font-bold text-foreground/40 hover:text-foreground transition-all"
+                                    >
+                                        + {goal}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Error */}
+                    {saveError && (
+                        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-2xl">
+                            <AlertCircle size={14} className="text-red-400 shrink-0" />
+                            <span className="text-xs font-bold text-red-500">{saveError}</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer */}
+                <div className="flex gap-3 p-6 border-t border-border sticky bottom-0 bg-white rounded-b-3xl">
+                    <button
+                        onClick={onCancel}
+                        className="flex-1 py-3 bg-[#F7FAFC] border border-border rounded-2xl text-xs font-black uppercase tracking-widest text-foreground/50 hover:text-foreground transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={onSave}
+                        disabled={saving}
+                        className="flex-1 py-3 bg-[#3E4A61] text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                        {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                        Save Profile
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Overview Tab ─────────────────────────────────────────────────────────────
+
 function OverviewTab({ stats, profile, level, displayName }: any) {
     const achievements = [
         { icon: '🌸', label: 'First Lesson', desc: 'Completed your first lesson', earned: true },
@@ -287,10 +623,10 @@ function OverviewTab({ stats, profile, level, displayName }: any) {
                         <div
                             key={i}
                             className={clsx(
-                                "flex items-center gap-3 p-3 rounded-2xl border transition-all",
+                                'flex items-center gap-3 p-3 rounded-2xl border transition-all',
                                 a.earned
-                                    ? "bg-gradient-to-br from-primary/8 to-transparent border-primary/20"
-                                    : "bg-[#F7FAFC] border-border/30 opacity-50"
+                                    ? 'bg-gradient-to-br from-primary/8 to-transparent border-primary/20'
+                                    : 'bg-[#F7FAFC] border-border/30 opacity-50'
                             )}
                         >
                             <span className="text-xl shrink-0">{a.icon}</span>
@@ -307,7 +643,8 @@ function OverviewTab({ stats, profile, level, displayName }: any) {
     );
 }
 
-// ===== MEMORIES TAB =====
+// ─── Memories Tab ─────────────────────────────────────────────────────────────
+
 function MemoriesTab({ memories, loading, userId }: any) {
     if (loading) {
         return (
@@ -376,7 +713,8 @@ function MemoriesTab({ memories, loading, userId }: any) {
     );
 }
 
-// ===== LEARNING PATH TAB =====
+// ─── Learning Path Tab ────────────────────────────────────────────────────────
+
 function LearningPathTab({ stats, level }: any) {
     const levels = Array.from({ length: 10 }, (_, i) => {
         const lvl = i + 1;
@@ -439,26 +777,26 @@ function LearningPathTab({ stats, level }: any) {
                         <div
                             key={lvl}
                             className={clsx(
-                                "flex items-center gap-3 p-3 rounded-2xl border transition-all",
-                                isCompleted && "bg-[#48BB78]/5 border-[#48BB78]/20",
-                                isCurrent && "bg-gradient-to-r from-primary/10 to-[#CDB4DB]/5 border-primary/25",
-                                isLocked && "bg-[#F7FAFC] border-border/20 opacity-50"
+                                'flex items-center gap-3 p-3 rounded-2xl border transition-all',
+                                isCompleted && 'bg-[#48BB78]/5 border-[#48BB78]/20',
+                                isCurrent && 'bg-gradient-to-r from-primary/10 to-[#CDB4DB]/5 border-primary/25',
+                                isLocked && 'bg-[#F7FAFC] border-border/20 opacity-50'
                             )}
                         >
                             <div className={clsx(
-                                "w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0",
-                                isCompleted && "bg-[#48BB78] text-white",
-                                isCurrent && "bg-primary text-white shadow-md shadow-primary/30",
-                                isLocked && "bg-border/30 text-foreground/30"
+                                'w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0',
+                                isCompleted && 'bg-[#48BB78] text-white',
+                                isCurrent && 'bg-primary text-white shadow-md shadow-primary/30',
+                                isLocked && 'bg-border/30 text-foreground/30'
                             )}>
                                 {isCompleted ? <CheckCircle2 size={14} /> : lvl}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className={clsx(
-                                    "text-xs font-black",
-                                    isCompleted && "text-[#48BB78]",
-                                    isCurrent && "text-[#3E4A61]",
-                                    isLocked && "text-foreground/30"
+                                    'text-xs font-black',
+                                    isCompleted && 'text-[#48BB78]',
+                                    isCurrent && 'text-[#3E4A61]',
+                                    isLocked && 'text-foreground/30'
                                 )}>
                                     Level {lvl}
                                     {isCurrent && <span className="ml-2 text-[8px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-md uppercase tracking-widest">Current</span>}
@@ -503,91 +841,30 @@ function LearningPathTab({ stats, level }: any) {
     );
 }
 
-// ===== SETTINGS TAB =====
-function SettingsTab({
-    user, profile, displayName, editingName, newDisplayName, savingName,
-    nameError, nameSuccess, onEditName, onCancelEdit, onNameChange, onSaveName, onSignOut
-}: any) {
+// ─── Settings Tab ─────────────────────────────────────────────────────────────
+
+function SettingsTab({ user, profile, onSignOut }: any) {
     return (
         <div className="space-y-4">
             {/* Account info */}
             <div className="bg-white border border-border rounded-3xl p-5 shadow-sm space-y-4">
                 <h3 className="text-sm font-black text-[#3E4A61] uppercase tracking-tight">Account Information</h3>
 
-                {/* Display name */}
-                <div className="space-y-2">
-                    <label className="text-[9px] font-black text-foreground/40 uppercase tracking-widest">Display Name</label>
-                    {editingName ? (
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={newDisplayName}
-                                onChange={(e) => onNameChange(e.target.value)}
-                                className="flex-1 px-4 py-2.5 bg-[#F7FAFC] border border-border rounded-2xl text-sm font-bold text-[#3E4A61] outline-none focus:border-primary transition-colors"
-                                placeholder="Your display name"
-                                autoFocus
-                                onKeyDown={(e) => e.key === 'Enter' && onSaveName()}
-                            />
-                            <button
-                                onClick={onSaveName}
-                                disabled={savingName}
-                                className="px-4 py-2.5 bg-primary text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1.5"
-                            >
-                                {savingName ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-                                Save
-                            </button>
-                            <button
-                                onClick={onCancelEdit}
-                                className="px-3 py-2.5 bg-[#F7FAFC] border border-border rounded-2xl text-foreground/40 hover:text-foreground transition-colors"
-                            >
-                                <X size={14} />
-                            </button>
+                <div className="space-y-3">
+                    {[
+                        { label: 'Email', value: user?.email, note: 'Read-only' },
+                        { label: 'User ID', value: user?.id?.slice(0, 8) + '...', note: 'Internal' },
+                        { label: 'Current Level', value: `Level ${profile?.level || 1}`, note: 'Auto-managed' },
+                        { label: 'Account Role', value: profile?.role || 'USER', note: 'System' },
+                    ].map((item, i) => (
+                        <div key={i} className="space-y-1">
+                            <label className="text-[9px] font-black text-foreground/40 uppercase tracking-widest">{item.label}</label>
+                            <div className="flex items-center justify-between p-3 bg-[#F7FAFC] border border-border rounded-2xl">
+                                <span className="text-sm font-bold text-[#3E4A61]">{item.value}</span>
+                                <span className="text-[8px] font-black text-foreground/20 uppercase tracking-widest">{item.note}</span>
+                            </div>
                         </div>
-                    ) : (
-                        <div className="flex items-center justify-between p-3 bg-[#F7FAFC] border border-border rounded-2xl">
-                            <span className="text-sm font-bold text-[#3E4A61]">{displayName}</span>
-                            <button
-                                onClick={onEditName}
-                                className="flex items-center gap-1.5 text-[9px] font-black text-foreground/40 hover:text-primary transition-colors uppercase tracking-widest"
-                            >
-                                <Edit3 size={11} />
-                                Edit
-                            </button>
-                        </div>
-                    )}
-                    {nameError && (
-                        <div className="flex items-center gap-2 text-red-500">
-                            <AlertCircle size={12} />
-                            <span className="text-[10px] font-bold">{nameError}</span>
-                        </div>
-                    )}
-                    {nameSuccess && (
-                        <div className="flex items-center gap-2 text-[#48BB78]">
-                            <CheckCircle2 size={12} />
-                            <span className="text-[10px] font-bold">Name updated successfully!</span>
-                        </div>
-                    )}
-                </div>
-
-                {/* Email (read-only) */}
-                <div className="space-y-2">
-                    <label className="text-[9px] font-black text-foreground/40 uppercase tracking-widest">Email</label>
-                    <div className="flex items-center justify-between p-3 bg-[#F7FAFC] border border-border rounded-2xl">
-                        <span className="text-sm font-bold text-[#3E4A61]">{user?.email}</span>
-                        <span className="text-[8px] font-black text-foreground/20 uppercase tracking-widest">Read-only</span>
-                    </div>
-                </div>
-
-                {/* Level (read-only) */}
-                <div className="space-y-2">
-                    <label className="text-[9px] font-black text-foreground/40 uppercase tracking-widest">Current Level</label>
-                    <div className="flex items-center justify-between p-3 bg-[#F7FAFC] border border-border rounded-2xl">
-                        <div className="flex items-center gap-2">
-                            <Star size={14} className="text-primary" />
-                            <span className="text-sm font-bold text-[#3E4A61]">Level {profile?.level || 1}</span>
-                        </div>
-                        <span className="text-[8px] font-black text-foreground/20 uppercase tracking-widest">Auto-managed</span>
-                    </div>
+                    ))}
                 </div>
             </div>
 

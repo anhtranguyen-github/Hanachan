@@ -34,6 +34,22 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     return data as UserProfile | null;
 }
 
-export async function updateUserProfile(userId: string, data: Partial<UserProfile>): Promise<void> {
-    await supabase.from('users').update(data).eq('id', userId);
+export async function updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<void> {
+    // Only include fields that are defined (avoid overwriting with undefined)
+    const safeUpdates: Record<string, unknown> = {};
+    const allowedFields: (keyof UserProfile)[] = [
+        'display_name', 'avatar_url', 'avatar_color', 'bio',
+        'native_language', 'learning_goals', 'last_activity_at'
+    ];
+    for (const key of allowedFields) {
+        if (key in updates) {
+            safeUpdates[key] = updates[key];
+        }
+    }
+    if (Object.keys(safeUpdates).length === 0) return;
+    const { error } = await supabase.from('users').update(safeUpdates).eq('id', userId);
+    if (error) {
+        console.error("Error updating profile:", error);
+        throw error;
+    }
 }
