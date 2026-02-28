@@ -217,9 +217,11 @@ export async function getUserLibrary(
     .from('user_video_library')
     .select(`
       *,
-      video:videos(*),
       category:video_categories(*),
-      progress:video_progress(*)
+      video:videos(
+        *,
+        progress:video_progress(*)
+      )
     `)
     .eq('user_id', userId)
     .order('added_at', { ascending: false });
@@ -243,11 +245,21 @@ export async function getUserLibrary(
   const { data, error } = await q;
   if (error) throw error;
 
-  // Flatten progress (it's a 1-to-1 but Supabase returns array)
-  return (data || []).map((entry: any) => ({
-    ...entry,
-    progress: Array.isArray(entry.progress) ? entry.progress[0] || null : entry.progress,
-  }));
+  // Flatten progress from video -> progress to the root entry
+  return (data || []).map((entry: any) => {
+    const progressArray = entry.video?.progress;
+    const progress = Array.isArray(progressArray) ? progressArray[0] || null : progressArray || null;
+
+    // Create clean video object without nested progress to match types
+    const video = entry.video ? { ...entry.video } : undefined;
+    if (video) delete video.progress;
+
+    return {
+      ...entry,
+      video,
+      progress,
+    };
+  });
 }
 
 export async function isVideoInLibrary(userId: string, videoId: string): Promise<boolean> {
