@@ -27,7 +27,9 @@ logger = logging.getLogger(__name__)
 class ReadingConfig(TypedDict):
     exercises_per_session: int
     time_limit_minutes: int
-    difficulty_level: str  # 'beginner' | 'elementary' | 'intermediate' | 'advanced' | 'adaptive'
+    difficulty_level: (
+        str  # 'beginner' | 'elementary' | 'intermediate' | 'advanced' | 'adaptive'
+    )
     jlpt_target: Optional[int]
     vocab_weight: int
     grammar_weight: int
@@ -377,26 +379,35 @@ def generate_reading_exercise(
     jlpt_target = config.get("jlpt_target") or _level_to_jlpt(context["user_level"])
 
     # 6. Build prompt context
-    vocab_list_text = "\n".join(
-        [
-            f"- {v.get('character', '')} ({v.get('reading', '')}) = {v.get('meaning', '')}"
-            for v in featured["vocab"][:10]
-        ]
-    ) or "No specific vocabulary (use N5 basics)"
+    vocab_list_text = (
+        "\n".join(
+            [
+                f"- {v.get('character', '')} ({v.get('reading', '')}) = {v.get('meaning', '')}"
+                for v in featured["vocab"][:10]
+            ]
+        )
+        or "No specific vocabulary (use N5 basics)"
+    )
 
-    grammar_list_text = "\n".join(
-        [
-            f"- {g.get('character', '')} ({g.get('structure', '')}) = {g.get('meaning', '')}"
-            for g in featured["grammar"][:5]
-        ]
-    ) or "No specific grammar (use basic patterns)"
+    grammar_list_text = (
+        "\n".join(
+            [
+                f"- {g.get('character', '')} ({g.get('structure', '')}) = {g.get('meaning', '')}"
+                for g in featured["grammar"][:5]
+            ]
+        )
+        or "No specific grammar (use basic patterns)"
+    )
 
-    kanji_list_text = "\n".join(
-        [
-            f"- {k.get('character', '')} = {k.get('meaning', '')}"
-            for k in featured["kanji"][:10]
-        ]
-    ) or "No specific kanji (use hiragana/katakana)"
+    kanji_list_text = (
+        "\n".join(
+            [
+                f"- {k.get('character', '')} = {k.get('meaning', '')}"
+                for k in featured["kanji"][:10]
+            ]
+        )
+        or "No specific kanji (use hiragana/katakana)"
+    )
 
     passage_length = config.get("passage_length", "medium")
     word_count_target = PASSAGE_LENGTH_CHARS.get(passage_length, 300)
@@ -422,7 +433,9 @@ def generate_reading_exercise(
     )
 
     messages = [
-        SystemMessage(content="You are a Japanese language teacher. Always respond with valid JSON only."),
+        SystemMessage(
+            content="You are a Japanese language teacher. Always respond with valid JSON only."
+        ),
         HumanMessage(content=prompt),
     ]
 
@@ -438,15 +451,21 @@ def generate_reading_exercise(
     try:
         data = json.loads(content)
     except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse LLM response as JSON: {e}\nContent: {content[:500]}")
+        logger.error(
+            f"Failed to parse LLM response as JSON: {e}\nContent: {content[:500]}"
+        )
         # Return a fallback exercise
         data = _create_fallback_exercise(topic, difficulty, jlpt_target)
 
     # 9. Build exercise object
     exercise: ReadingExercise = {
         "passage_ja": data.get("passage_ja", ""),
-        "passage_furigana": data.get("passage_furigana") if config.get("include_furigana") else None,
-        "passage_en": data.get("passage_en", "") if config.get("include_translation") else "",
+        "passage_furigana": data.get("passage_furigana")
+        if config.get("include_furigana")
+        else None,
+        "passage_en": data.get("passage_en", "")
+        if config.get("include_translation")
+        else "",
         "passage_title": data.get("passage_title", ""),
         "difficulty_level": difficulty,
         "jlpt_level": jlpt_target,
@@ -484,9 +503,11 @@ def generate_reading_session(
         try:
             exercise = generate_reading_exercise(user_id, config, topic)
             exercises.append(exercise)
-            logger.info(f"Generated exercise {i+1}/{num_exercises} for user {user_id}")
+            logger.info(
+                f"Generated exercise {i + 1}/{num_exercises} for user {user_id}"
+            )
         except Exception as e:
-            logger.error(f"Failed to generate exercise {i+1}: {e}")
+            logger.error(f"Failed to generate exercise {i + 1}: {e}")
             # Add fallback
             jlpt = config.get("jlpt_target") or 5
             exercises.append(_create_fallback_exercise(topic, "intermediate", jlpt))

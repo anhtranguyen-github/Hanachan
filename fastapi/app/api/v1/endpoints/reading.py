@@ -116,7 +116,11 @@ async def update_reading_config(
 ):
     """Create or update user's reading practice configuration."""
     # Validate weights sum
-    if body.vocab_weight is not None and body.grammar_weight is not None and body.kanji_weight is not None:
+    if (
+        body.vocab_weight is not None
+        and body.grammar_weight is not None
+        and body.kanji_weight is not None
+    ):
         total = body.vocab_weight + body.grammar_weight + body.kanji_weight
         if total != 100:
             raise HTTPException(
@@ -209,15 +213,25 @@ async def create_reading_session(
 
     if config_rows:
         row = config_rows[0]
-        config.update({k: v for k, v in row.items() if v is not None and k not in ("id", "user_id", "created_at", "updated_at")})
+        config.update(
+            {
+                k: v
+                for k, v in row.items()
+                if v is not None
+                and k not in ("id", "user_id", "created_at", "updated_at")
+            }
+        )
 
     # Apply overrides
     if body.config_override:
-        override = {k: v for k, v in body.config_override.model_dump().items() if v is not None}
+        override = {
+            k: v for k, v in body.config_override.model_dump().items() if v is not None
+        }
         config.update(override)
 
     # Get user learning context for generation metadata
     from ....agents.reading_creator import get_user_learning_context
+
     context = get_user_learning_context(user_id, config)
 
     generation_context = {
@@ -247,7 +261,9 @@ async def create_reading_session(
     )
 
     # Generate exercises (run in thread pool since it's sync + LLM calls)
-    logger.info(f"Generating {config['exercises_per_session']} exercises for user {user_id}")
+    logger.info(
+        f"Generating {config['exercises_per_session']} exercises for user {user_id}"
+    )
     exercises = await run_in_threadpool(generate_reading_session, user_id, config)
 
     # Save exercises to DB
@@ -368,7 +384,7 @@ async def get_session_detail(
     )
 
     exercises = []
-    for ex in (exercise_rows or []):
+    for ex in exercise_rows or []:
         ex_dict = dict(ex)
         # Parse questions JSON if it's a string
         if isinstance(ex_dict.get("questions"), str):
@@ -379,7 +395,9 @@ async def get_session_detail(
     if isinstance(session_dict.get("config_snapshot"), str):
         session_dict["config_snapshot"] = json.loads(session_dict["config_snapshot"])
     if isinstance(session_dict.get("generation_context"), str):
-        session_dict["generation_context"] = json.loads(session_dict["generation_context"])
+        session_dict["generation_context"] = json.loads(
+            session_dict["generation_context"]
+        )
 
     session_dict["exercises"] = exercises
     return session_dict
@@ -399,7 +417,9 @@ async def start_session(
         raise HTTPException(status_code=404, detail="Session not found")
 
     if rows[0]["status"] not in ("pending",):
-        raise HTTPException(status_code=400, detail=f"Session is already {rows[0]['status']}")
+        raise HTTPException(
+            status_code=400, detail=f"Session is already {rows[0]['status']}"
+        )
 
     execute_query(
         "UPDATE public.reading_sessions SET status = 'active', started_at = NOW() WHERE id = %s",
