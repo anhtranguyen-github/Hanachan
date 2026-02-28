@@ -91,7 +91,7 @@ export default function LoginPage() {
                     </h1>
                     <div className="h-0.5 w-12 bg-gradient-to-r from-transparent via-[#F4ACB7] to-transparent mt-2"></div>
                     <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-medium mt-4">
-                        Advanced Language Synthesis Core
+                        Japanese Learning App
                     </p>
                 </div>
 
@@ -103,7 +103,7 @@ export default function LoginPage() {
                     <form onSubmit={handleLogin} className="space-y-6 relative">
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-[11px] text-gray-400 uppercase font-bold tracking-wider ml-1">Digital Identity</label>
+                                <label className="text-[11px] text-gray-400 uppercase font-bold tracking-wider ml-1">Email</label>
                                 <div className="relative group/input">
                                     <input
                                         type="email"
@@ -119,7 +119,7 @@ export default function LoginPage() {
 
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center ml-1">
-                                    <label className="text-[11px] text-gray-400 uppercase font-bold tracking-wider">Access Protocol</label>
+                                    <label className="text-[11px] text-gray-400 uppercase font-bold tracking-wider">Password</label>
                                     <Link href="#" className="text-[10px] text-[#F4ACB7] uppercase font-bold hover:underline transition-all">Forgot?</Link>
                                 </div>
                                 <div className="relative group/input">
@@ -149,14 +149,14 @@ export default function LoginPage() {
                             className="group/btn relative w-full py-5 rounded-2xl font-black text-xs uppercase tracking-widest text-[#592E38] transition-all duration-500 overflow-hidden active:scale-[0.98] disabled:opacity-50"
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-[#F4ACB7] to-[#CDB4DB] transition-all duration-500 group-hover/btn:scale-105"></div>
-                            <span className="relative z-10">{loading ? 'Processing...' : 'Authorize Session'}</span>
+                            <span className="relative z-10">{loading ? 'Signing in...' : 'Sign in'}</span>
                         </button>
                     </form>
 
                     <div className="mt-8 flex flex-col items-center gap-4">
                         <div className="flex items-center gap-4 w-full">
                             <div className="h-[1px] bg-white/10 flex-1" />
-                            <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Connect Via</p>
+                            <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Continue with</p>
                             <div className="h-[1px] bg-white/10 flex-1" />
                         </div>
                         <div className="flex gap-3 w-full">
@@ -194,9 +194,9 @@ export default function LoginPage() {
                 {/* Footer Link */}
                 <div className="mt-8 text-center transition-all duration-700 delay-300 opacity-100">
                     <p className="text-gray-500 text-[11px] font-bold uppercase tracking-widest leading-loose">
-                        Initial Enrollment? {' '}
+                        New here? {' '}
                         <Link href="/signup" className="text-white hover:text-[#F4ACB7] underline decoration-[#F4ACB7]/30 hover:decoration-[#F4ACB7] transition-all ml-1">
-                            Register Core
+                            Create account
                         </Link>
                     </p>
                 </div>

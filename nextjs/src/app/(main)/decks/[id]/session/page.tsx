@@ -110,7 +110,7 @@ export default function LevelReviewSessionPage() {
             <div className="min-h-screen bg-white flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 border-4 border-black border-t-transparent animate-spin"></div>
-                    <p className="text-xs font-bold uppercase tracking-widest">Loading Level Core...</p>
+                    <p className="text-xs font-bold uppercase tracking-widest">Loading...</p>
                 </div>
             </div>
         );

@@ -69,7 +69,7 @@ export default function LearnOverviewPage() {
                         <div className="relative w-8 h-8 bg-gradient-to-br from-[#A2D2FF] to-[#7BB8F0] rounded-xl flex items-center justify-center text-white font-black text-sm shadow-md">学</div>
                     </div>
                     <div>
-                        <h2 className="text-lg font-black text-[#3E4A61] tracking-tight uppercase">Discovery Hub</h2>
+                        <h2 className="text-lg font-black text-[#3E4A61] tracking-tight uppercase">Learn</h2>
                         <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0]">Level {userLevel}</p>
                     </div>
                 </div>
@@ -128,7 +128,7 @@ export default function LearnOverviewPage() {
                         className="relative z-10 mt-5 w-full py-4 bg-gradient-to-r from-[#3A6EA5] to-[#2D5A8A] text-white rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] hover:shadow-xl hover:shadow-[#3A6EA5]/25 hover:scale-[1.02] transition-all duration-300 group/btn"
                     >
                         <Sparkles size={13} />
-                        Start Discovery
+                        Start Lesson
                         <ChevronRight size={13} className="group-hover/btn:translate-x-1 transition-transform" />
                     </Link>
                 )}

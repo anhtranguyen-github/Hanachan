@@ -383,7 +383,7 @@ function EditProfileModal({
                 <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-white rounded-t-3xl z-10">
                     <div>
                         <h2 className="text-base font-black text-[#3E4A61] uppercase tracking-tight">Edit Profile</h2>
-                        <p className="text-[9px] font-black text-foreground/30 uppercase tracking-widest mt-0.5">Customize your learner identity</p>
+                        <p className="text-[9px] font-black text-foreground/30 uppercase tracking-widest mt-0.5">Update your profile</p>
                     </div>
                     <button onClick={onCancel} className="p-2 hover:bg-[#F7FAFC] rounded-xl transition-colors text-foreground/40">
                         <X size={16} />
@@ -670,9 +670,9 @@ function MemoriesTab({ memories, loading, userId }: any) {
             <div className="bg-gradient-to-r from-[#CDB4DB]/10 to-[#A2D2FF]/10 border border-[#CDB4DB]/20 rounded-3xl p-4 flex items-start gap-3">
                 <Brain size={16} className="text-[#9B7DB5] shrink-0 mt-0.5" />
                 <div>
-                    <p className="text-xs font-black text-[#3E4A61]">AI Memory System</p>
+                    <p className="text-xs font-black text-[#3E4A61]">AI Memory</p>
                     <p className="text-[10px] text-foreground/50 font-medium mt-0.5 leading-relaxed">
-                        Hanachan AI remembers facts about you from your conversations to provide personalized tutoring. These memories are automatically extracted and stored.
+                        Hanachan remembers things you share in conversations to give you more personalized help. These notes are saved automatically.
                     </p>
                 </div>
             </div>
@@ -703,7 +703,7 @@ function MemoriesTab({ memories, loading, userId }: any) {
                         ) : (
                             <div className="py-4 text-center">
                                 <p className="text-[10px] font-bold text-foreground/20 uppercase tracking-widest">{section.empty}</p>
-                                <p className="text-[9px] text-foreground/15 mt-1">Chat with Hanachan AI to build your memory profile.</p>
+                                <p className="text-[9px] text-foreground/15 mt-1">Chat with Hanachan to add entries here.</p>
                             </div>
                         )}
                     </div>
