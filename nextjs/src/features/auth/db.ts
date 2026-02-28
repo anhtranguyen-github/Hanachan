@@ -12,11 +12,15 @@ export async function provisionUserProfile(userId: string, email: string, displa
         .maybeSingle();
 
     if (!existing) {
-        await supabase.from('users').insert({
+        const insertData: Record<string, unknown> = {
             id: userId,
             display_name: displayName || email.split('@')[0],
-            avatar_url: avatarUrl || null,
-        });
+        };
+        if (avatarUrl) insertData.avatar_url = avatarUrl;
+        await supabase.from('users').insert(insertData);
+    } else if (avatarUrl) {
+        // Update avatar on subsequent logins
+        await supabase.from('users').update({ avatar_url: avatarUrl }).eq('id', userId);
     }
 }
 
