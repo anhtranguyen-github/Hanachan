@@ -28,11 +28,8 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ## Test Accounts
 
-| Email | Password |
-|-------|----------|
-| `test_worker_1@hanachan.test` | `Password123!` |
-| `test_worker_2@hanachan.test` | `Password123!` |
-| `test_worker_3@hanachan.test` | `Password123!` |
+Test account credentials are stored securely and not committed to the repository.  
+See your Supabase dashboard or contact the project maintainer for access.
 
 ## Structure
 
