@@ -29,7 +29,8 @@ export async function login(prevState: any, formData: FormData) {
     }
 
     revalidatePath('/', 'layout');
-    redirect('/dashboard');
+    // Don't redirect - let client handle staying on current page
+    return { success: true };
 }
 
 export async function signup(prevState: any, formData: FormData) {
@@ -62,6 +63,6 @@ export async function logout() {
     const { error } = await supabase.auth.signOut();
     if (!error) {
         revalidatePath('/', 'layout')
-        redirect('/login')
+        // Don't redirect - stay on current page
     }
 }

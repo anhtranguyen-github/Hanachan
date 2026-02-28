@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP, Noto_Serif_JP } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "/features/auth/AuthContext";
-import { AuthModal } from "/features/auth/AuthModal";
+import { AuthProvider } from "@/features/auth/AuthContext";
+import { AuthModal } from "@/features/auth/AuthModal";
 
 const notoSans = Noto_Sans_JP({
   subsets: ["latin"],
