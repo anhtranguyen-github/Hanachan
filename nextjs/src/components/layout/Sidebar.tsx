@@ -57,10 +57,10 @@ export function Sidebar() {
                 {/* Subtle gradient overlay at top */}
                 <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#FFF5F7] to-transparent pointer-events-none z-0" />
 
-                {/* Branding & Toggle */}
+                {/* Branding */}
                 <div className={clsx(
                     "px-5 h-16 flex items-center shrink-0 border-b border-[#F0E0E0]/60 relative z-10",
-                    isCollapsed ? "justify-center" : "justify-between"
+                    isCollapsed ? "justify-center" : "justify-start"
                 )}>
                     <div className="flex items-center gap-3">
                         <div className="relative shrink-0">
@@ -80,15 +80,16 @@ export function Sidebar() {
                             </div>
                         )}
                     </div>
+                </div>
 
+                {/* Collapse/Expand Toggle */}
+                <div className={clsx("px-3 pt-2 pb-1 relative z-10", isCollapsed ? "flex justify-center" : "flex justify-end pr-5")}>
                     <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
-                        className={clsx(
-                            "w-6 h-6 bg-surface-muted/50 hover:bg-[#FFF0F2] border border-border/50 hover:border-primary/30 rounded-lg flex items-center justify-center text-foreground/30 hover:text-primary transition-all duration-300",
-                            isCollapsed && "absolute -right-3 top-1/2 -translate-y-1/2 bg-white shadow-md shadow-primary/10 z-50 border-primary/20"
-                        )}
+                        className="w-7 h-7 bg-[#F7FAFC] hover:bg-[#FFF0F2] border border-[#F0E0E0]/80 hover:border-primary/30 rounded-lg flex items-center justify-center text-[#A0AEC0] hover:text-primary transition-all duration-300"
+                        title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                     >
-                        <ChevronRight size={12} className={clsx("transition-transform duration-300", isCollapsed ? "" : "rotate-180")} />
+                        <ChevronRight size={14} className={clsx("transition-transform duration-300", isCollapsed ? "" : "rotate-180")} />
                     </button>
                 </div>
 

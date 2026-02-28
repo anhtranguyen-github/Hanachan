@@ -65,6 +65,37 @@ export interface SpeakingPrompt {
     tip?: string;
 }
 
+// ─── Dynamic Practice Types (from API) ────────────────────────────────────────
+
+export interface DynamicPracticeSentence {
+    japanese: string;
+    reading: string;
+    english: string;
+    source_word: string;
+    difficulty: PromptDifficulty;
+    learned_words_count: number;
+    audio_url?: string;
+}
+
+export interface PracticeSessionData {
+    success: boolean;
+    session_id?: string;
+    sentences: DynamicPracticeSentence[];
+    difficulty: PromptDifficulty;
+    user_level: number;
+    total_sentences: number;
+    error?: string;
+}
+
+export interface AdaptiveFeedback {
+    next_action: 'repeat' | 'simpler' | 'next' | 'advance' | 'mastered';
+    next_difficulty: PromptDifficulty;
+    reason: string;
+    should_repeat: boolean;
+}
+
+export type PracticeMode = 'dynamic' | 'static';
+
 // ─── Practice Session ─────────────────────────────────────────────────────────
 
 export interface PracticeAttempt {

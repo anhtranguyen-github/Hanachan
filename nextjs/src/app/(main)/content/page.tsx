@@ -163,56 +163,99 @@ function ContentDatabase() {
                                 <span className="text-[8px] font-black text-foreground/20 uppercase tracking-widest">{(levelItems as any[]).length}</span>
                             </div>
 
-                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2">
-                                {(levelItems as any[]).map((unit) => {
-                                    const state = states[unit.id];
-                                    const status = unit.level > userLevel ? 'locked' : (!state ? 'new' : state.state);
+                            {(() => {
+                                const grammarItems = (levelItems as any[]).filter(u => u.type === 'grammar');
+                                const nonGrammarItems = (levelItems as any[]).filter(u => u.type !== 'grammar');
 
-                                    const typeTextColor: Record<string, string> = {
-                                        radical: 'text-[#3A6EA5]',
-                                        kanji: 'text-[#D88C9A]',
-                                        vocabulary: 'text-[#9B7DB5]',
-                                        grammar: 'text-[#5A9E72]',
-                                    };
-
-                                    const typeBorderColor: Record<string, string> = {
-                                        radical: '#A2D2FF',
-                                        kanji: '#F4ACB7',
-                                        vocabulary: '#CDB4DB',
-                                        grammar: '#B7E4C7',
-                                    };
-
-                                    return (
-                                        <Link
-                                            href={`/content/${unit.type === 'vocabulary' ? 'vocabulary' : unit.type === 'radical' ? 'radicals' : unit.type}/${unit.slug}`}
-                                            key={unit.id}
-                                            className={clsx(
-                                                "group relative flex flex-col items-center bg-white border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg aspect-square justify-center gap-1 p-2",
-                                                status === 'locked' && "opacity-40 grayscale pointer-events-none"
-                                            )}
-                                            style={{ borderColor: `${typeBorderColor[unit.type]}40` }}
-                                        >
-                                            {/* Type color top bar */}
-                                            <div className="absolute top-0 left-0 right-0 h-0.5" style={{ backgroundColor: typeBorderColor[unit.type] }} />
-
-                                            <div className={clsx(
-                                                "text-2xl sm:text-3xl font-black transition-all group-hover:scale-110 duration-300 jp-text",
-                                                typeTextColor[unit.type] || 'text-foreground'
-                                            )}>
-                                                {unit.character || '—'}
+                                return (
+                                    <>
+                                        {/* Square grid for vocab/kanji/radical */}
+                                        {nonGrammarItems.length > 0 && (
+                                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2">
+                                                {nonGrammarItems.map((unit) => {
+                                                    const state = states[unit.id];
+                                                    const status = unit.level > userLevel ? 'locked' : (!state ? 'new' : state.state);
+                                                    const typeTextColor: Record<string, string> = { radical: 'text-[#3A6EA5]', kanji: 'text-[#D88C9A]', vocabulary: 'text-[#9B7DB5]' };
+                                                    const typeBorderColor: Record<string, string> = { radical: '#A2D2FF', kanji: '#F4ACB7', vocabulary: '#CDB4DB' };
+                                                    return (
+                                                        <Link
+                                                            href={`/content/${unit.type === 'vocabulary' ? 'vocabulary' : unit.type === 'radical' ? 'radicals' : unit.type}/${unit.slug}`}
+                                                            key={unit.id}
+                                                            className={clsx(
+                                                                "group relative flex flex-col items-center bg-white border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg aspect-square justify-center gap-1 p-2",
+                                                                status === 'locked' && "opacity-40 grayscale pointer-events-none"
+                                                            )}
+                                                            style={{ borderColor: `${typeBorderColor[unit.type]}40` }}
+                                                        >
+                                                            <div className="absolute top-0 left-0 right-0 h-0.5" style={{ backgroundColor: typeBorderColor[unit.type] }} />
+                                                            <div className={clsx("text-2xl sm:text-3xl font-black transition-all group-hover:scale-110 duration-300 jp-text", typeTextColor[unit.type] || 'text-foreground')}>
+                                                                {unit.character || '—'}
+                                                            </div>
+                                                            <h3 className="text-[7px] sm:text-[8px] font-black text-foreground/40 uppercase tracking-tight text-center line-clamp-1 px-1">
+                                                                {unit.meaning}
+                                                            </h3>
+                                                            {state && (
+                                                                <div className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: typeBorderColor[unit.type] }} />
+                                                            )}
+                                                        </Link>
+                                                    );
+                                                })}
                                             </div>
-                                            <h3 className="text-[7px] sm:text-[8px] font-black text-foreground/40 uppercase tracking-tight text-center line-clamp-1 px-1">
-                                                {unit.meaning}
-                                            </h3>
+                                        )}
 
-                                            {/* Status dot */}
-                                            {state && (
-                                                <div className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: typeBorderColor[unit.type] }} />
-                                            )}
-                                        </Link>
-                                    );
-                                })}
-                            </div>
+                                        {/* Horizontal rows for grammar */}
+                                        {grammarItems.length > 0 && (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                                {grammarItems.map((unit) => {
+                                                    const state = states[unit.id];
+                                                    const status = unit.level > userLevel ? 'locked' : (!state ? 'new' : state.state);
+                                                    return (
+                                                        <Link
+                                                            href={`/content/grammar/${unit.slug}`}
+                                                            key={unit.id}
+                                                            className={clsx(
+                                                                "group relative flex items-center gap-3 bg-white border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg px-4 py-3",
+                                                                status === 'locked' && "opacity-40 grayscale pointer-events-none"
+                                                            )}
+                                                            style={{ borderColor: '#B7E4C740' }}
+                                                        >
+                                                            {/* Left accent bar */}
+                                                            <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl" style={{ backgroundColor: '#5A9E72' }} />
+
+                                                            {/* Japanese pattern */}
+                                                            <div className="text-base sm:text-lg font-black text-[#5A9E72] jp-text shrink-0 group-hover:scale-105 transition-transform duration-300 min-w-0">
+                                                                {unit.character || '—'}
+                                                            </div>
+
+                                                            {/* Divider */}
+                                                            <div className="w-px h-8 bg-[#B7E4C7]/40 shrink-0" />
+
+                                                            {/* Meaning */}
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-[9px] sm:text-[10px] font-bold text-foreground/50 leading-tight line-clamp-2">
+                                                                    {unit.meaning}
+                                                                </p>
+                                                            </div>
+
+                                                            {/* JLPT badge */}
+                                                            {unit.jlpt && (
+                                                                <span className="shrink-0 text-[7px] font-black text-[#5A9E72]/60 bg-[#B7E4C7]/20 px-1.5 py-0.5 rounded-lg uppercase tracking-wider">
+                                                                    N{unit.jlpt}
+                                                                </span>
+                                                            )}
+
+                                                            {/* Status dot */}
+                                                            {state && (
+                                                                <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#5A9E72' }} />
+                                                            )}
+                                                        </Link>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()}
                         </div>
                     ))}
                 </div>
