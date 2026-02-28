@@ -58,6 +58,7 @@ export default function ProfilePage() {
         bio: '',
         native_language: '',
         avatar_color: 'pink',
+        avatar_url: '',
         learning_goals: [] as string[],
     });
     const [saving, setSaving] = useState(false);
@@ -84,6 +85,7 @@ export default function ProfilePage() {
                     bio: profileData.bio || '',
                     native_language: profileData.native_language || '',
                     avatar_color: profileData.avatar_color || 'pink',
+                    avatar_url: profileData.avatar_url || '',
                     learning_goals: profileData.learning_goals || [],
                 });
             }
@@ -156,6 +158,7 @@ export default function ProfilePage() {
                 bio: profile.bio || '',
                 native_language: profile.native_language || '',
                 avatar_color: profile.avatar_color || 'pink',
+                avatar_url: profile.avatar_url || '',
                 learning_goals: profile.learning_goals || [],
             });
         }
@@ -213,12 +216,20 @@ export default function ProfilePage() {
                     <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-8 sm:-mt-10">
                         {/* Avatar */}
                         <div className="relative shrink-0">
-                            <div
-                                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-white font-black text-2xl sm:text-3xl shadow-xl border-4 border-white"
-                                style={{ background: `linear-gradient(135deg, ${avatarColor.from}, ${avatarColor.to})` }}
-                            >
-                                {initials}
-                            </div>
+                            {profile?.avatar_url ? (
+                                <img
+                                    src={profile.avatar_url}
+                                    alt={displayName}
+                                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover shadow-xl border-4 border-white"
+                                />
+                            ) : (
+                                <div
+                                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-white font-black text-2xl sm:text-3xl shadow-xl border-4 border-white"
+                                    style={{ background: `linear-gradient(135deg, ${avatarColor.from}, ${avatarColor.to})` }}
+                                >
+                                    {initials}
+                                </div>
+                            )}
                             <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#48BB78] rounded-full border-2 border-white shadow-sm" />
                         </div>
 
@@ -352,6 +363,7 @@ function EditProfileModal({
         bio: string;
         native_language: string;
         avatar_color: string;
+        avatar_url: string;
         learning_goals: string[];
     };
     setEditForm: React.Dispatch<React.SetStateAction<typeof editForm>>;
@@ -393,12 +405,20 @@ function EditProfileModal({
                 <div className="p-6 space-y-6">
                     {/* Avatar Preview + Color */}
                     <div className="flex flex-col items-center gap-4">
-                        <div
-                            className="w-20 h-20 rounded-2xl flex items-center justify-center text-white font-black text-3xl shadow-xl"
-                            style={{ background: `linear-gradient(135deg, ${selectedColor.from}, ${selectedColor.to})` }}
-                        >
-                            {initials}
-                        </div>
+                        {editForm.avatar_url ? (
+                            <img
+                                src={editForm.avatar_url}
+                                alt="Profile Avatar"
+                                className="w-20 h-20 rounded-2xl object-cover shadow-xl"
+                            />
+                        ) : (
+                            <div
+                                className="w-20 h-20 rounded-2xl flex items-center justify-center text-white font-black text-3xl shadow-xl"
+                                style={{ background: `linear-gradient(135deg, ${selectedColor.from}, ${selectedColor.to})` }}
+                            >
+                                {initials}
+                            </div>
+                        )}
                         <div className="space-y-2 w-full">
                             <label className="text-[9px] font-black text-foreground/40 uppercase tracking-widest flex items-center gap-1.5">
                                 <Palette size={10} /> Avatar Color

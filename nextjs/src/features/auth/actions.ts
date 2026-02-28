@@ -5,9 +5,9 @@ import { redirect } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { provisionUserProfile } from './db'
 
-export async function syncUserAction(userId: string, email: string, displayName?: string) {
+export async function syncUserAction(userId: string, email: string, displayName?: string, avatarUrl?: string) {
     try {
-        await provisionUserProfile(userId, email, displayName);
+        await provisionUserProfile(userId, email, displayName, avatarUrl);
         return { success: true };
     } catch (e: any) {
         console.error("Sync User failed:", e);

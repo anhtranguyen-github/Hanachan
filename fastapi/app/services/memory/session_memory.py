@@ -246,11 +246,15 @@ def _update_session_metadata(
             title = _generate_title(user_msg, assistant_msg)
             update_session_meta(session_id, title=title)
 
-        _updated_summary = _update_summary(
+        updated_summary = _update_summary(
             session.get("summary") or "", user_msg, assistant_msg
         )
-        # Cloud schema doesn't have a summary column, skip for now
-        pass
+        if updated_summary:
+            execute_query(
+                "UPDATE public.chat_sessions SET summary = %s WHERE id = %s",
+                (updated_summary, session_id),
+                fetch=False,
+            )
     except Exception as exc:
         logger.error(
             "session_meta_update_failed",

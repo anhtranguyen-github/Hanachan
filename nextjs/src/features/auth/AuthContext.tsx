@@ -33,7 +33,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const syncProfile = async (u: User | null) => {
             if (u) {
-                await syncUserAction(u.id, u.email, u.user_metadata.display_name);
+                await syncUserAction(
+                    u.id,
+                    u.email,
+                    u.user_metadata.display_name,
+                    u.user_metadata.avatar_url
+                );
             }
         };
 

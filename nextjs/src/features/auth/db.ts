@@ -4,7 +4,7 @@ import { UserProfile, UserSettings } from './types';
 /**
  * Ensures a record exists in the public.users table for a given auth user.
  */
-export async function provisionUserProfile(userId: string, email: string, displayName?: string): Promise<void> {
+export async function provisionUserProfile(userId: string, email: string, displayName?: string, avatarUrl?: string): Promise<void> {
     const { data: existing } = await supabase
         .from('users')
         .select('id')
@@ -15,6 +15,7 @@ export async function provisionUserProfile(userId: string, email: string, displa
         await supabase.from('users').insert({
             id: userId,
             display_name: displayName || email.split('@')[0],
+            avatar_url: avatarUrl || null,
         });
     }
 }
