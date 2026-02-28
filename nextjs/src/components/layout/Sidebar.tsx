@@ -15,7 +15,8 @@ import {
     Menu,
     X,
     User,
-    Mic
+    Mic,
+    BookMarked,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useUser } from '@/features/auth/AuthContext';
@@ -24,6 +25,7 @@ const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, color: '#F4ACB7' },
     { name: 'Learn', href: '/learn', icon: BookOpen, color: '#A2D2FF' },
     { name: 'Review', href: '/review', icon: Swords, color: '#CDB4DB' },
+    { name: 'Reading', href: '/reading', icon: BookMarked, color: '#7BB8F0' },
     { name: 'AI Chat', href: '/immersion/chatbot', icon: MessageSquare, color: '#B7E4C7' },
     { name: 'Speaking', href: '/immersion/speaking', icon: Mic, color: '#FFB5B5' },
     { name: 'Curriculum', href: '/content', icon: Library, color: '#FFD6A5' },
