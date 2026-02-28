@@ -28,8 +28,17 @@ export async function GET(request: Request) {
                 },
             }
         )
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
-        if (!error) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+        if (!error && data.user) {
+            const user = data.user;
+            const email = user.email || '';
+            const displayName = user.user_metadata?.full_name || user.user_metadata?.display_name || user.user_metadata?.name || email.split('@')[0];
+            const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+
+            // Provision the user profile in public.users to avoid FK errors
+            const { provisionUserProfile } = await import('@/features/auth/db');
+            await provisionUserProfile(user.id, email, displayName, avatarUrl);
+
             return NextResponse.redirect(`${origin}${next}`)
         } else {
             console.error('[Auth Callback] Session exchange error:', error)
