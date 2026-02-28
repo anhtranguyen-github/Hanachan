@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rate limit configuration now uses settings instead of hardcoded values
 - **SQL Hardening** - Implemented strict column whitelisting for dynamic SQL updates in reading configuration
 - **Session Cleanup** - Added session status tracking to replace unbounded in-memory storage
+- **Code Quality (Next.js)** - Addressed numerous `eslint` warnings (`react-hooks/exhaustive-deps`, `react/no-unescaped-entities`) ensuring a clean CI build.
+- **Code Quality (FastAPI)** - Resolved `ruff` static analysis warnings (`unused variables`, `syntax errors` in Jupyter scripts) to ensure safe CI execution.
+- **Unit Testing** - Rectified `SUPABASE_SERVICE_KEY` mapping in local unit test mocks, passing role-based JWT validations successfully.
+- **Legacy Compatibility** - Reintroduced `get_db_connection` for backward compatibility across integration unit tests mapping to Legacy PostgreSQL pooling logic.
 
 ### Security
 - **API Schema Hardening** - Implemented strict Pydantic validation (UUIDs, Literal types, and numerical constraints) across Speaking, Reading, Video Dictation, and Sentence Annotation modules.
@@ -39,12 +43,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Input Constraints** - Added length and value range constraints to all practice session inputs to prevent malformed data injection.
 - **Docker Build Security** - Integrated **Docker Scout** vulnerability scanning on Pull Requests.
 - **Supply Chain Security** - Enabled **SLSA Provenance** and **SBOM** generation for all published Docker images.
+- **Static Analysis Fixes** - Eliminated insecure temporary directory usage (S108) by using `tempfile`, explicitly bypassed unnecessary `usedforsecurity` checks for MD5 (S324), and replaced `random` with `secrets` for generation choices (S311).
 
 ### DevOps
 - **Dockerfile Optimization** - Refactored FastAPI Dockerfile for better layer caching and secure non-root operation.
 - **Image Hardening** - Removed unnecessary build artifacts and enforced non-privileged user (appuser/nextjs) across the stack.
 - **Health Monitoring** - Added native Docker healthchecks for both FastAPI and Next.js services.
 - **Build Context Efficiency** - Optimized `.dockerignore` to reduce image build times and context size.
+- **Next.js Static Build Enhancements** - Resolved dynamic route errors causing Docker `next build` failures by enforcing `force-dynamic` across dynamic runtime APIs and App Pages `[slug]`.
+- **Server Component Compatibility** - Swapped `isomorphic-dompurify` for `sanitize-html` to prevent compilation `ENOENT` faults triggered by internal JS dependencies resolving client stylesheets on build server caches.
+- **Docker Registry Coverage** - Enforced `public` directory context in CI mapping for Docker runner builds.
 
 ## [1.0.0] - 2026-02-27
 
