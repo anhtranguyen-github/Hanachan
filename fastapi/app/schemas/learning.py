@@ -17,6 +17,7 @@ class KUStatus(BaseModel):
     difficulty: float = 5.0
     reps: int = 0
     lapses: int = 0
+    notes: Optional[str] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
 

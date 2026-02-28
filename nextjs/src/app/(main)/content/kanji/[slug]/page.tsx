@@ -3,6 +3,7 @@ import { getLocalKU } from '@/features/knowledge/actions';
 import Link from 'next/link';
 import { RichTextRenderer } from '@/components/shared/RichTextRenderer';
 import { ChevronLeft, PlayCircle, BookOpen, Layers, Zap, Sparkles, Target, Info, Hash } from 'lucide-react';
+import { KUInlineChat } from '@/features/chat/components/KUInlineChat';
 
 export default async function KanjiDetailPage({ params }: { params: { slug: string } }) {
     const slug = decodeURIComponent(params.slug);
@@ -169,6 +170,15 @@ export default async function KanjiDetailPage({ params }: { params: { slug: stri
                     </div>
                 </section>
             )}
+
+            {/* Chat Agent */}
+            <KUInlineChat
+                kuId={kanji.id}
+                kuType="kanji"
+                character={kanji.character || '?'}
+                meaning={kanji.meaning}
+                extraContext={`On'yomi: ${onReadings.join(', ') || 'none'}, Kun'yomi: ${kunReadings.join(', ') || 'none'}`}
+            />
         </div>
     );
 }

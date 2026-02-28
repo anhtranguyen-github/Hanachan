@@ -92,6 +92,22 @@ export async function generateReviewCard(
         // return null;
     }
 
+    // Fetch user notes if userId is provided
+    let userNotes: string | undefined = undefined;
+    if (userId) {
+        const { data: stateData } = await supabase
+            .from('user_learning_states')
+            .select('notes')
+            .eq('user_id', userId)
+            .eq('ku_id', ku.id)
+            .limit(1)
+            .maybeSingle();
+
+        if (stateData?.notes) {
+            userNotes = stateData.notes;
+        }
+    }
+
     // Common base
     const baseCard = {
         id: `${ku.id}-${facet}`,
@@ -103,6 +119,7 @@ export async function generateReviewCard(
         prompt_variant: facet,
         prompt: question?.prompt,
         correct_answers: question?.correct_answers,
+        notes: userNotes,
     };
 
     switch (ku.type) {

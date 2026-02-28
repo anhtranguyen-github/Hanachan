@@ -31,6 +31,7 @@ export interface BaseReviewCard {
     prompt_variant: PromptVariant;  // Which recall dimension are we testing?
     prompt?: string;                // Stored prompt from database
     correct_answers?: string[];     // Stored answers from database
+    notes?: string;                 // User/Agent mnemonic notes
 }
 
 /**
@@ -147,4 +148,5 @@ export interface UserLearningState {
     next_review?: string;
     lapses: number;
     reps: number;
+    notes?: string;
 }

@@ -9,11 +9,13 @@ import {
     RadicalReviewCard
 } from '../types/review-cards';
 import { clsx } from 'clsx';
-import { Check, X, ArrowRight, Keyboard, Sparkles } from 'lucide-react';
+import { Check, X, ArrowRight, Keyboard, Sparkles, PencilLine, Loader2 } from 'lucide-react';
 
 import { QuizItem } from '../ReviewSessionController';
 import { Rating } from '../domain/FSRSEngine';
 import { GlassCard } from '@/components/premium/GlassCard';
+import { updateKUNoteAction } from '../actions';
+import { useAuth } from '@/features/auth/AuthContext';
 
 interface ReviewCardDisplayProps {
     card: any;
@@ -28,15 +30,26 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
     const [submitted, setSubmitted] = useState(false);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
     const [shake, setShake] = useState(false);
+
+    // Notes state
+    const { user } = useAuth();
+    const [localNotes, setLocalNotes] = useState(card.notes || '');
+    const [isEditingNote, setIsEditingNote] = useState(false);
+    const [noteInput, setNoteInput] = useState('');
+    const [isSavingNote, setIsSavingNote] = useState(false);
+
     const inputRef = useRef<HTMLInputElement>(null);
+    const noteInputRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
         setUserInput('');
         setSubmitted(false);
         setIsCorrect(null);
         setShake(false);
+        setLocalNotes(card.notes || '');
+        setIsEditingNote(false);
         setTimeout(() => inputRef.current?.focus(), 100);
-    }, [card.id]);
+    }, [card.id, card.notes]);
 
     const validateLocal = (card: QuizItem, input: string) => {
         const normalized = input.trim().toLowerCase();
@@ -61,10 +74,32 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
     };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
+        // Prevent enter from triggering main action if we are editing a note
+        if (isEditingNote && document.activeElement === noteInputRef.current) {
+            // Let the text area handle Enter (or Shift+Enter)
+            return;
+        }
+
         if (e.key === 'Enter') {
             if (submitted) onRate(isCorrect ? 'pass' : 'again', userInput);
             else handleVerify();
         }
+    };
+
+    const handleSaveNote = async () => {
+        if (!noteInput.trim() || !user) {
+            setIsEditingNote(false);
+            return;
+        }
+
+        setIsSavingNote(true);
+        const res = await updateKUNoteAction(user.id, card.ku_id || card.id.split('-')[0], noteInput);
+        if (res.success) {
+            setLocalNotes(res.data);
+            setNoteInput('');
+            setIsEditingNote(false);
+        }
+        setIsSavingNote(false);
     };
 
     const typeConfig: Record<string, { bg: string; text: string; focusBorder: string; buttonGradient: string }> = {
@@ -206,6 +241,67 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
                                     )}
                                 </div>
                             </div>
+
+                            {/* Knowledge Unit Notes Section */}
+                            {(localNotes || submitted) && (
+                                <div className="mt-4 w-full text-left">
+                                    <div className="p-4 sm:p-5 bg-gray-50 rounded-[20px] border-2 border-gray-100 relative">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h4 className="text-xs font-black uppercase tracking-wider text-gray-500 flex items-center gap-2">
+                                                <PencilLine size={14} /> My Notes & Mnemonics
+                                            </h4>
+                                            {!isEditingNote && (
+                                                <button
+                                                    onClick={() => { setIsEditingNote(true); setTimeout(() => noteInputRef.current?.focus(), 50); }}
+                                                    className="text-[10px] font-bold text-blue-500 hover:text-blue-600 uppercase tracking-wide bg-blue-50 px-2 py-1 rounded-md transition-colors"
+                                                >
+                                                    Add Note
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {localNotes && !isEditingNote && (
+                                            <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                                {localNotes}
+                                            </div>
+                                        )}
+
+                                        {!localNotes && !isEditingNote && (
+                                            <p className="text-sm text-gray-400 italic">No notes yet.</p>
+                                        )}
+
+                                        {isEditingNote && (
+                                            <div className="mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                <textarea
+                                                    ref={noteInputRef}
+                                                    value={noteInput}
+                                                    onChange={(e) => setNoteInput(e.target.value)}
+                                                    placeholder="Type a mnemonic, rule, or custom trick here..."
+                                                    className="w-full h-24 p-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none"
+                                                    disabled={isSavingNote}
+                                                />
+                                                <div className="flex justify-end gap-2 mt-2">
+                                                    <button
+                                                        onClick={() => { setIsEditingNote(false); setNoteInput(''); }}
+                                                        className="px-4 py-2 rounded-lg text-xs font-bold text-gray-500 hover:bg-gray-100 transition-colors"
+                                                        disabled={isSavingNote}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={handleSaveNote}
+                                                        className="px-4 py-2 rounded-lg text-xs font-bold bg-gray-900 text-white hover:bg-gray-800 transition-colors flex items-center gap-2"
+                                                        disabled={isSavingNote || !noteInput.trim()}
+                                                    >
+                                                        {isSavingNote && <Loader2 size={12} className="animate-spin" />}
+                                                        Save Note
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Action */}
                             <div className="mt-8 flex flex-col items-center space-y-4">

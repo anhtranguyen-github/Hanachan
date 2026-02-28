@@ -147,7 +147,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
     // Streaming send message
     // ---------------------------------------------------------------------------
 
-    const sendMessageStreaming = useCallback(async (content: string): Promise<void> => {
+    const sendMessageStreaming = useCallback(async (content: string, ttsEnabled?: boolean): Promise<void> => {
         if (!userId) return;
 
         const memSessionId = await ensureMemorySession();
@@ -173,6 +173,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
                     message: content,
                     userId,
                     sessionId: memSessionId,
+                    ttsEnabled,
                 }),
                 signal: abortControllerRef.current.signal,
             });

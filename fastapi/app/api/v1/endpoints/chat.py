@@ -91,6 +91,7 @@ async def chat_stream(
             "thread_context": "",
             "retrieved_episodic": "",
             "retrieved_semantic": "",
+            "tts_enabled": req.tts_enabled,
         }
 
         full_response = ""

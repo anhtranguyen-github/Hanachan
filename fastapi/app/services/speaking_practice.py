@@ -35,7 +35,6 @@ SCORE_THRESHOLD_EXCELLENT = 90  # Above this, jump difficulty
 @dataclass
 class LearnedWord:
     """Represents a word the user has learned."""
-
     id: str
     character: str
     meaning: str
@@ -50,7 +49,6 @@ class LearnedWord:
 @dataclass
 class PracticeSentence:
     """Represents a sentence for speaking practice."""
-
     japanese: str
     reading: str
     english: str
@@ -64,7 +62,6 @@ class PracticeSentence:
 @dataclass
 class SpeakingPracticeSession:
     """Manages a speaking practice session."""
-
     session_id: str
     user_id: str
     sentences: List[PracticeSentence]
@@ -78,11 +75,11 @@ class SpeakingPracticeSession:
 def get_learned_words(user_id: str, min_state: str = "learning") -> List[LearnedWord]:
     """
     Fetch all words the user has learned (learning, review, or burned).
-
+    
     Args:
         user_id: The user's UUID
         min_state: Minimum learning state to consider (default: 'learning')
-
+    
     Returns:
         List of LearnedWord objects with their context sentences
     """
@@ -103,7 +100,7 @@ def get_learned_words(user_id: str, min_state: str = "learning") -> List[Learned
         """,
         (user_id,),
     )
-
+    
     words = []
     for row in vocab_rows:
         # Extract context sentences from JSONB
@@ -115,31 +112,27 @@ def get_learned_words(user_id: str, min_state: str = "learning") -> List[Learned
                 if isinstance(sentences_data, list):
                     for s in sentences_data:
                         if isinstance(s, dict):
-                            context_sentences.append(
-                                {
-                                    "ja": s.get("ja", ""),
-                                    "en": s.get("en", ""),
-                                    "reading": s.get("reading", ""),
-                                    "audio_url": s.get("audio_url"),
-                                }
-                            )
+                            context_sentences.append({
+                                "ja": s.get("ja", ""),
+                                "en": s.get("en", ""),
+                                "reading": s.get("reading", ""),
+                                "audio_url": s.get("audio_url"),
+                            })
             except Exception as e:
                 logger.warning(f"Failed to parse context sentences: {e}")
-
-        words.append(
-            LearnedWord(
-                id=str(row["id"]),
-                character=row.get("character", ""),
-                meaning=row.get("meaning", ""),
-                reading=row.get("reading", ""),
-                level=row.get("level", 1),
-                jlpt=row.get("jlpt"),
-                state=row.get("state", "new"),
-                reps=row.get("reps", 0),
-                context_sentences=context_sentences,
-            )
-        )
-
+        
+        words.append(LearnedWord(
+            id=str(row["id"]),
+            character=row.get("character", ""),
+            meaning=row.get("meaning", ""),
+            reading=row.get("reading", ""),
+            level=row.get("level", 1),
+            jlpt=row.get("jlpt"),
+            state=row.get("state", "new"),
+            reps=row.get("reps", 0),
+            context_sentences=context_sentences,
+        ))
+    
     return words
 
 
@@ -148,41 +141,37 @@ def extract_kana(text: str) -> str:
     kana_chars = []
     for char in text:
         # Check if character is in hiragana or katakana ranges
-        if "\u3040" <= char <= "\u309f":  # Hiragana
+        if '\u3040' <= char <= '\u309F':  # Hiragana
             kana_chars.append(char)
-        elif "\u30a0" <= char <= "\u30ff":  # Katakana
+        elif '\u30A0' <= char <= '\u30FF':  # Katakana
             kana_chars.append(char)
-    return "".join(kana_chars)
+    return ''.join(kana_chars)
 
 
-def count_learned_words_in_sentence(
-    sentence: str, learned_words: List[LearnedWord]
-) -> tuple[int, List[str]]:
+def count_learned_words_in_sentence(sentence: str, learned_words: List[LearnedWord]) -> tuple[int, List[str]]:
     """
     Count how many learned words are in a sentence.
-
+    
     Returns:
         Tuple of (count, list of matched words)
     """
     sentence_lower = sentence.lower()
     matched = []
-
+    
     for word in learned_words:
         # Check if the word's character or reading appears in the sentence
         char = word.character.lower() if word.character else ""
         reading = word.reading.lower() if word.reading else ""
-
+        
         if char and char in sentence_lower:
             matched.append(word.character)
         elif reading and reading in sentence_lower:
             matched.append(word.character)
-
+    
     return len(matched), matched
 
 
-def calculate_sentence_difficulty(
-    sentence: str, learned_words: List[LearnedWord]
-) -> str:
+def calculate_sentence_difficulty(sentence: str, learned_words: List[LearnedWord]) -> str:
     """
     Calculate the difficulty of a sentence based on:
     - Length (character count)
@@ -192,12 +181,12 @@ def calculate_sentence_difficulty(
     # Simple heuristics for Japanese
     total_chars = len(sentence)
     learned_count, _ = count_learned_words_in_sentence(sentence, learned_words)
-
+    
     # Calculate ratio of known words
     words = sentence.split()
     total_words = len(words) if words else 1
     known_ratio = learned_count / total_words if total_words > 0 else 0
-
+    
     # Determine difficulty
     if total_chars <= 10 or known_ratio >= 0.8:
         return DIFFICULTY_BEGINNER
@@ -214,7 +203,7 @@ def select_sentences_for_practice(
 ) -> List[PracticeSentence]:
     """
     Select the best sentences for speaking practice based on learned words.
-
+    
     Selection criteria:
     1. Sentences containing learned words
     2. Match target difficulty
@@ -224,80 +213,72 @@ def select_sentences_for_practice(
     """
     if not learned_words:
         return []
-
+    
     candidate_sentences: List[PracticeSentence] = []
-
+    
     for word in learned_words:
         if not word.context_sentences:
             continue
-
+            
         for sentence_data in word.context_sentences:
             japanese = sentence_data.get("ja", "")
             if not japanese:
                 continue
-
+                
             # Skip if sentence is too long or complex
             if len(japanese) > 50:
                 continue
-
+            
             # Count learned words in this sentence
             learned_count, matched_words = count_learned_words_in_sentence(
                 japanese, learned_words
             )
-
+            
             # Skip sentences with no learned words
             if learned_count == 0:
                 continue
-
+            
             # Calculate difficulty
             difficulty = calculate_sentence_difficulty(japanese, learned_words)
-
+            
             # Filter by target difficulty (allow one level variance)
-            difficulty_order = [
-                DIFFICULTY_BEGINNER,
-                DIFFICULTY_INTERMEDIATE,
-                DIFFICULTY_ADVANCED,
-            ]
-            target_idx = (
-                difficulty_order.index(target_difficulty)
-                if target_difficulty in difficulty_order
-                else 0
-            )
-            sentence_idx = (
-                difficulty_order.index(difficulty)
-                if difficulty in difficulty_order
-                else 0
-            )
-
+            difficulty_order = [DIFFICULTY_BEGINNER, DIFFICULTY_INTERMEDIATE, DIFFICULTY_ADVANCED]
+            target_idx = difficulty_order.index(target_difficulty) if target_difficulty in difficulty_order else 0
+            sentence_idx = difficulty_order.index(difficulty) if difficulty in difficulty_order else 0
+            
             # Include if within one level of target
             if sentence_idx > target_idx + 1:
                 continue
-
-            candidate_sentences.append(
-                PracticeSentence(
-                    japanese=japanese,
-                    reading=sentence_data.get("reading", ""),
-                    english=sentence_data.get("en", ""),
-                    source_word=word.character,
-                    difficulty=difficulty,
-                    learned_words_count=learned_count,
-                    total_words=len(japanese.split()),
-                    audio_url=sentence_data.get("audio_url"),
-                )
-            )
-
+            
+            # Calculate a score for ranking
+            # Prefer: moderate length, 1-2 learned words, matches target difficulty
+            length_score = max(0, 20 - abs(len(japanese) - 15))  # Prefer ~15 chars
+            learned_score = 10 if 1 <= learned_count <= 2 else 5 if learned_count > 2 else 0
+            difficulty_score = 10 if difficulty == target_difficulty else 5
+            
+            total_score = length_score + learned_score + difficulty_score
+            
+            candidate_sentences.append(PracticeSentence(
+                japanese=japanese,
+                reading=sentence_data.get("reading", ""),
+                english=sentence_data.get("en", ""),
+                source_word=word.character,
+                difficulty=difficulty,
+                learned_words_count=learned_count,
+                total_words=len(japanese.split()),
+                audio_url=sentence_data.get("audio_url"),
+            ))
+    
     # Sort by score (descending) and limit
-    candidate_sentences.sort(
-        key=lambda x: (
-            # First: prefer target difficulty
-            x.difficulty != target_difficulty,
-            # Then: prefer sentences with some learned words but not too many
-            -(x.learned_words_count if x.learned_words_count <= 2 else 3),
-            # Then: prefer shorter sentences
-            len(x.japanese),
-        )
-    )
-
+    candidate_sentences.sort(key=lambda x: (
+        # First: prefer target difficulty
+        x.difficulty != target_difficulty,
+        # Then: prefer sentences with some learned words but not too many
+        -(x.learned_words_count if x.learned_words_count <= 2 else 3),
+        # Then: prefer shorter sentences
+        len(x.japanese),
+    ))
+    
     return candidate_sentences[:max_sentences]
 
 
@@ -326,20 +307,20 @@ def create_practice_session(
 ) -> Dict[str, Any]:
     """
     Create a new speaking practice session for a user.
-
+    
     This is the main entry point for starting a speaking practice session.
     It fetches learned words and selects appropriate sentences.
     """
     # Get user's curriculum level
     user_level = get_user_level(user_id)
-
+    
     # Determine difficulty
     if target_difficulty is None:
         target_difficulty = get_difficulty_from_level(user_level)
-
+    
     # Get learned words
     learned_words = get_learned_words(user_id)
-
+    
     if not learned_words:
         return {
             "success": False,
@@ -348,14 +329,14 @@ def create_practice_session(
             "difficulty": target_difficulty,
             "user_level": user_level,
         }
-
+    
     # Select sentences
     sentences = select_sentences_for_practice(
         learned_words,
         target_difficulty=target_difficulty,
         max_sentences=15,
     )
-
+    
     if not sentences:
         # If no sentences from context, generate basic practice
         # Fall back to vocabulary readings themselves
@@ -371,12 +352,12 @@ def create_practice_session(
             )
             for word in learned_words[:10]
         ]
-
+    
     # Shuffle for variety
     random.shuffle(sentences)
-
+    
     session_id = f"sp_{user_id[:8]}_{random.randint(1000, 9999)}"
-
+    
     return {
         "success": True,
         "session_id": session_id,
@@ -405,28 +386,20 @@ def calculate_adaptive_difficulty(
 ) -> Dict[str, Any]:
     """
     Calculate the next difficulty and action based on pronunciation score.
-
+    
     Adaptive logic:
     - If score < 50: Repeat same sentence (needs more practice)
     - If score 50-60: Stay at same difficulty, try simpler sentence
     - If score 60-70: Good progress, stay at current difficulty
     - If score 70-90: Excellent, can advance difficulty
     - If score > 90: Mastered, jump difficulty
-
+    
     Returns:
         Dict with next_action, next_difficulty, and reason
     """
-    difficulty_order = [
-        DIFFICULTY_BEGINNER,
-        DIFFICULTY_INTERMEDIATE,
-        DIFFICULTY_ADVANCED,
-    ]
-    current_idx = (
-        difficulty_order.index(current_difficulty)
-        if current_difficulty in difficulty_order
-        else 0
-    )
-
+    difficulty_order = [DIFFICULTY_BEGINNER, DIFFICULTY_INTERMEDIATE, DIFFICULTY_ADVANCED]
+    current_idx = difficulty_order.index(current_difficulty) if current_difficulty in difficulty_order else 0
+    
     if score < SCORE_THRESHOLD_REPEAT:
         # Needs significant improvement
         return {
@@ -479,49 +452,43 @@ def get_next_practice_item(
 ) -> Dict[str, Any]:
     """
     Get the next practice item based on adaptive logic.
-
+    
     Args:
         session_data: The current session data
         current_index: Current position in sentences
         last_score: Score from last pronunciation attempt
         last_word: The word that was practiced
-
+    
     Returns:
         Dict with next sentence, updated index, and adaptive feedback
     """
     sentences = session_data.get("sentences", [])
     current_difficulty = session_data.get("difficulty", DIFFICULTY_BEGINNER)
-
+    
     if not sentences:
         return {
             "success": False,
             "error": "No sentences in session",
         }
-
+    
     # If no score yet, just return current item
     if last_score is None:
         return {
             "success": True,
-            "sentence": sentences[current_index]
-            if current_index < len(sentences)
-            else sentences[0],
+            "sentence": sentences[current_index] if current_index < len(sentences) else sentences[0],
             "index": current_index,
             "is_complete": current_index >= len(sentences),
             "feedback": None,
         }
-
+    
     # Calculate adaptive response
-    word_attempts = (
-        session_data.get("word_attempts", {}).get(last_word, 0) if last_word else 0
-    )
-    adaptive = calculate_adaptive_difficulty(
-        current_difficulty, last_score, word_attempts
-    )
-
+    word_attempts = session_data.get("word_attempts", {}).get(last_word, 0) if last_word else 0
+    adaptive = calculate_adaptive_difficulty(current_difficulty, last_score, word_attempts)
+    
     # Determine next index
     next_index = current_index
     next_sentence = None
-
+    
     if adaptive["should_repeat"] and current_index < len(sentences):
         # Repeat current sentence
         next_sentence = sentences[current_index]
@@ -540,7 +507,7 @@ def get_next_practice_item(
                 "is_complete": True,
                 "feedback": adaptive,
             }
-
+    
     return {
         "success": True,
         "sentence": next_sentence,
@@ -559,7 +526,7 @@ def record_practice_attempt(
 ) -> Dict[str, Any]:
     """
     Record a practice attempt for analytics and adaptive learning.
-
+    
     This can be used to track progress over time and identify
     words that need more practice.
     """
@@ -569,7 +536,7 @@ def record_practice_attempt(
         f"Practice attempt: user={user_id}, session={session_id}, "
         f"word={word}, sentence={sentence[:30]}, score={score}"
     )
-
+    
     return {
         "success": True,
         "recorded": True,

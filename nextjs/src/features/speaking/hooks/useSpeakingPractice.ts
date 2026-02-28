@@ -61,7 +61,7 @@ export function useSpeakingPractice(): UseSpeakingPracticeReturn {
                 params.append('target_difficulty', targetDifficulty);
             }
             
-            const response = await fetch(`/api/practice/session?${params}`, {
+            const response = await fetch(`/api/v1/practice/session?${params}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -116,7 +116,7 @@ export function useSpeakingPractice(): UseSpeakingPracticeReturn {
             const currentSentence = sentences[currentIndex];
             if (!currentSentence) return;
             
-            const response = await fetch(`/api/practice/session/${sessionId}/record?session_id=${sessionId}`, {
+            const response = await fetch(`/api/v1/practice/session/${sessionId}/record`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

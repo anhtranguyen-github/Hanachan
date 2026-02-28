@@ -15,6 +15,9 @@ from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage
 from langchain_core.tools import tool
 from langgraph.graph import StateGraph, END
 
+import os
+from elevenlabs.client import ElevenLabs
+
 from ..services.memory import episodic_memory as ep_mem
 from ..services.memory import semantic_memory as sem_mem
 from ..services.memory import session_memory as sess_mem
@@ -41,6 +44,8 @@ class AgentState(TypedDict):
     rewritten_query: Optional[str]
     # Final output
     generation: str
+    audio_file: Optional[str]
+    tts_enabled: bool
     # For return compatibility
     thread_context: str
     retrieved_episodic: str
@@ -86,19 +91,24 @@ def get_semantic_facts(keywords: List[str], user_id: str = "INJECTED") -> str:
 
 
 @tool
-def get_user_learning_progress(identifier: str, user_id: str = "INJECTED") -> str:
+def get_user_learning_progress(identifier: str, include_notes: bool = False, user_id: str = "INJECTED") -> str:
     """Retrieve live learning stats for a specific Japanese character or slug.
     Identifiers can be Kanji (e.g. '桜'), Slugs (e.g. 'sakura'), or Words.
+    If include_notes is True, it will also return the user's personal/agent notes for this item.
     (Note: user_id is handled automatically)
     """
-    status = learn_serv.get_ku_status(user_id, identifier)
+    status = learn_serv.get_ku_status(user_id, identifier, include_notes=include_notes)
     if not status:
         return f"No learning record found for '{identifier}'."
+        
+    notes_str = f"Notes:\n{status.notes}\n" if status.notes else "Notes: None\n"
+    
     return (
         f"Item: {status.character} ({status.meaning})\n"
         f"State: {status.state}\n"
         f"Reps: {status.reps}, Difficulty: {status.difficulty}\n"
-        f"Next Review: {status.next_review or 'Not scheduled'}"
+        f"Next Review: {status.next_review or 'Not scheduled'}\n"
+        f"{notes_str}"
     )
 
 
@@ -300,6 +310,62 @@ def generator_node(state: AgentState) -> Dict[str, Any]:
     return {"generation": response.content}
 
 
+def tts_node(state: AgentState) -> Dict[str, Any]:
+    """Generates voice for the final response using ElevenLabs SDK and stores it on Supabase."""
+    if not state.get("tts_enabled", True):
+        return {"audio_file": None}
+        
+    if state.get("generation"):
+        try:
+            import uuid
+            from app.core.config import settings
+            from supabase import create_client
+
+            # Use native ElevenLabs client for reliability on SDK ^2.0
+            client = ElevenLabs(api_key=settings.elevenlabs_api_key)
+            
+            # Fetch audio stream
+            audio_stream = client.text_to_speech.convert(
+                text=state["generation"],
+                voice_id="JBFqnCBsd6RMkjVDRZzb",
+                model_id="eleven_multilingual_v2"
+            )
+            
+            # Write stream to temp file
+            temp_file = f"/tmp/agent_tts_{uuid.uuid4()}.wav"
+            with open(temp_file, "wb") as f:
+                for chunk in audio_stream:
+                    f.write(chunk)
+            
+            if os.path.exists(temp_file):
+                # Initialize supabase client
+                supabase = create_client(settings.supabase_url, settings.supabase_key)
+                
+                # Upload to public tts_audio bucket
+                file_name = f"{uuid.uuid4()}.wav"
+                
+                supabase.storage.from_("tts_audio").upload(
+                    path=file_name,
+                    file=temp_file,
+                    file_options={"content-type": "audio/wav"}
+                )
+                
+                # Retrieve the public URL
+                public_url = supabase.storage.from_("tts_audio").get_public_url(file_name)
+                
+                # Cleanup temporary file
+                try:
+                    os.remove(temp_file)
+                except Exception as e:
+                    logger.warning(f"Failed to delete temp audio file {temp_file}: {e}")
+                    
+                return {"audio_file": public_url}
+        except Exception as e:
+            logger.error(f"ElevenLabs TTS (or Supabase upload) failed: {e}")
+            return {"audio_file": None}
+    return {}
+
+
 def update_memory_node(state: AgentState) -> Dict[str, Any]:
     """Final node to persist the side effects (episodic/semantic update)."""
     user_id = state["user_id"]
@@ -344,6 +410,27 @@ def update_memory_node(state: AgentState) -> Dict[str, Any]:
         kg_data = extraction_llm.invoke(extraction_prompt)
         sem_mem.add_semantic_facts(user_id, kg_data)
 
+        # 3. Check for KU Notes (Agent implicitly saves hints/mnemonics)
+        from pydantic import BaseModel, Field
+        class NoteExtraction(BaseModel):
+            has_note: bool = Field(description="True if the AI provided a specific mnemonic or helpful learning trick about a Japanese character.")
+            character_or_slug: Optional[str] = Field(description="The specific Japanese character or slug the note is about, if any.")
+            note_content: Optional[str] = Field(description="The concise learning trick or mnemonic provided.")
+            
+        note_extractor = make_llm().with_structured_output(NoteExtraction)
+        note_check = note_extractor.invoke(
+            f"Review this AI response carefully.\nDid the AI provide a specific memory trick, mnemonic, or important usage note about a specific Japanese character?\n\nAI Response: {output}"
+        )
+        
+        if note_check and note_check.has_note and note_check.character_or_slug and note_check.note_content:
+            from ..services.learning_service import search_kus, add_ku_note
+            # Find the actual KU ID
+            candidates = search_kus(note_check.character_or_slug, limit=1)
+            if candidates:
+                ku_id = str(candidates[0]["id"])
+                add_ku_note(user_id, ku_id, note_check.note_content)
+                logger.info(f"Saved implicit KU note for {note_check.character_or_slug}")
+
     except Exception as e:
         logger.error(f"Memory persistence failed: {e}")
 
@@ -378,6 +465,7 @@ def _build_graph():
     workflow.add_node("reviewer", reviewer_node)
     workflow.add_node("rewrite", rewriter_node)
     workflow.add_node("generate", generator_node)
+    workflow.add_node("tts", tts_node)
     workflow.add_node("update", update_memory_node)
 
     workflow.set_entry_point("planner")
@@ -398,8 +486,12 @@ def _build_graph():
     # After rewrite go back to planner
     workflow.add_edge("rewrite", "planner")
 
-    # Generation path
+    # Parallel path: Generation branches into TTS and Update simultaneously
+    workflow.add_edge("generate", "tts")
     workflow.add_edge("generate", "update")
+    
+    # Both parallel branches go to END
+    workflow.add_edge("tts", END)
     workflow.add_edge("update", END)
 
     return workflow.compile()
@@ -416,6 +508,7 @@ def run_chat(
     user_id: str,
     message: str,
     session_id: Optional[str] = None,
+    tts_enabled: bool = True,
 ) -> Dict[str, Any]:
     """Invoke the iterative memory-augmented agent."""
 
@@ -427,6 +520,8 @@ def run_chat(
         "messages": [HumanMessage(content=message)],
         "iterations": 0,
         "generation": "",
+        "audio_file": None,
+        "tts_enabled": tts_enabled,
         "thread_context": "",
         "retrieved_episodic": "",
         "retrieved_semantic": "",
@@ -438,6 +533,7 @@ def run_chat(
     # (Note: In this iterative version, we'd need to parse ToolMessages to populate these fields perfectly)
     return {
         "response": result["generation"],
+        "audio_file": result.get("audio_file"),
         "episodic_context": "Retrieved via agentic tools",
         "semantic_context": "Retrieved via agentic tools",
         "thread_context": "Dynamic",

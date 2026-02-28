@@ -6,6 +6,7 @@ import { addSentenceAction, fetchUserSentencesAction } from './actions';
 import { Plus, Search, Loader2, Sparkles, BookOpen } from 'lucide-react';
 import { clsx } from 'clsx';
 import Link from 'next/link';
+import { AnnotatedSentence } from '@/components/shared/AnnotatedSentence';
 
 export default function SentencesPage() {
     const { user } = useUser();
@@ -128,8 +129,11 @@ export default function SentencesPage() {
                             {sentences.map((target) => (
                                 <div key={target.id} className="bg-white p-5 sm:p-6 rounded-3xl border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group">
                                     <div className="space-y-1.5">
-                                        <p className="text-xl sm:text-2xl font-black text-gray-900 jp-text">
-                                            {target.japanese_raw}
+                                        <p className="text-xl sm:text-2xl font-black text-gray-900">
+                                            <AnnotatedSentence
+                                                text={target.japanese_raw}
+                                                annotations={target.annotations}
+                                            />
                                         </p>
                                         <p className="text-sm sm:text-base font-medium text-gray-500">
                                             {target.english_raw}

@@ -8,6 +8,7 @@ import {
     startLessonSession
 } from './service';
 import { lessonRepository } from './lessonRepository';
+import { srsRepository } from './srsRepository';
 import { revalidatePath } from 'next/cache';
 
 export async function initializeSRSAction(userId: string, unitId: string, facets: string[]) {
@@ -74,6 +75,16 @@ export async function completeLessonBatchAction(batchId: string) {
         return { success: true };
     } catch (e: any) {
         console.error("[LearningActions] completeLessonBatch error:", e);
+        return { success: false, error: e.message };
+    }
+}
+
+export async function updateKUNoteAction(userId: string, kuId: string, note: string) {
+    try {
+        const updatedNotes = await srsRepository.updateKUNote(userId, kuId, note);
+        return { success: true, data: updatedNotes };
+    } catch (e: any) {
+        console.error("[LearningActions] updateKUNote error:", e);
         return { success: false, error: e.message };
     }
 }

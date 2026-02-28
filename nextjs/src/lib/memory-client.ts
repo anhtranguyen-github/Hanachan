@@ -168,11 +168,17 @@ export async function memoryChatStream(
     userId: string,
     message: string,
     sessionId?: string,
+    ttsEnabled?: boolean,
 ): Promise<ReadableStream<Uint8Array>> {
     const res = await fetch(`${MEMORY_API_BASE}/memory/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, message, session_id: sessionId ?? null }),
+        body: JSON.stringify({
+            user_id: userId,
+            message,
+            session_id: sessionId ?? null,
+            tts_enabled: ttsEnabled ?? false
+        }),
     });
     if (!res.ok || !res.body) {
         throw new Error(`Memory stream failed [${res.status}]`);

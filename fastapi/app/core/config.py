@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     llm_model: str = "gpt-4o"
     embedding_model: str = "text-embedding-3-small"
     embedding_dimensions: int = 1536  # text-embedding-3-small dimension
+    # ElevenLabs
+    elevenlabs_api_key: str = ""
 
     # Supabase
     supabase_url: str = ""

@@ -21,7 +21,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
-    const { message, userId, sessionId } = await req.json();
+    const { message, userId, sessionId, ttsEnabled } = await req.json();
 
     if (!message || !userId) {
         return new Response(
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-        const upstream = await memoryChatStream(userId, message, resolvedSessionId);
+        const upstream = await memoryChatStream(userId, message, resolvedSessionId, ttsEnabled);
 
         // Pipe the upstream SSE stream directly to the client
         // Inject session_id into the 'done' event via a TransformStream

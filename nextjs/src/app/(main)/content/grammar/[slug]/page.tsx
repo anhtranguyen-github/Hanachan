@@ -3,6 +3,7 @@ import { getLocalKU } from '@/features/knowledge/actions';
 import Link from 'next/link';
 import { RichTextRenderer } from '@/components/shared/RichTextRenderer';
 import { ChevronLeft, Zap, Target, Layers, Info, BookOpen, ExternalLink, Globe, Sparkles, Activity, Bookmark, Flame } from 'lucide-react';
+import { KUInlineChat } from '@/features/chat/components/KUInlineChat';
 
 export default async function GrammarDetailPage({ params }: { params: { slug: string } }) {
     const slug = decodeURIComponent(params.slug);
@@ -203,6 +204,15 @@ export default async function GrammarDetailPage({ params }: { params: { slug: st
                     )}
                 </div>
             </div>
+
+            {/* Chat Agent */}
+            <KUInlineChat
+                kuId={grammar.id}
+                kuType="grammar"
+                character={grammar.character || grammar.meaning}
+                meaning={grammar.meaning}
+                extraContext={grammar.jlpt ? `JLPT N${grammar.jlpt}` : undefined}
+            />
         </div>
     );
 }

@@ -61,6 +61,34 @@ export const srsRepository = {
             }
         }
     },
+    async updateKUNote(userId: string, kuId: string, note: string) {
+        console.log(`[srsRepository] updateKUNote: ${userId}, ${kuId}`);
+        // First get the existing notes to append to them properly
+        const { data: existingState } = await supabase
+            .from('user_learning_states')
+            .select('notes')
+            .eq('user_id', userId)
+            .eq('ku_id', kuId)
+            // Just grab the primary meaning facet or any to attach the note to the KU conceptually
+            .limit(1)
+            .maybeSingle();
+
+        const existingNotes = existingState?.notes || '';
+        const updatedNotes = existingNotes ? `${existingNotes}\n- ${note.trim()}` : `- ${note.trim()}`;
+
+        const { error } = await supabase
+            .from('user_learning_states')
+            .update({ notes: updatedNotes })
+            .eq('user_id', userId)
+            .eq('ku_id', kuId);
+
+        if (error) {
+            console.error("[srsRepository] Error updating KU note:", error);
+            throw error;
+        }
+
+        return updatedNotes;
+    },
 
     // --- Persistent Review Session Tracking ---
 
