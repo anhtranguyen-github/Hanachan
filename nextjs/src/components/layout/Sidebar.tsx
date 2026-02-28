@@ -14,7 +14,8 @@ import {
     Library,
     Menu,
     X,
-    User
+    User,
+    Mic
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useUser } from '@/features/auth/AuthContext';
@@ -24,6 +25,7 @@ const navItems = [
     { name: 'Training', href: '/learn', icon: BookOpen, color: '#A2D2FF' },
     { name: 'Review', href: '/review', icon: Swords, color: '#CDB4DB' },
     { name: 'Chatbot', href: '/immersion/chatbot', icon: MessageSquare, color: '#B7E4C7' },
+    { name: 'Speaking', href: '/immersion/speaking', icon: Mic, color: '#FFB5B5' },
     { name: 'Curriculum', href: '/content', icon: Library, color: '#FFD6A5' },
     { name: 'Profile', href: '/profile', icon: User, color: '#F4ACB7' },
 ];
@@ -35,8 +37,8 @@ export function Sidebar() {
     const [mobileOpen, setMobileOpen] = React.useState(false);
 
     React.useEffect(() => {
-        const isChat = pathname.includes('/chatbot');
-        if (isChat) setIsCollapsed(true);
+        const isImmersive = pathname.includes('/chatbot') || pathname.includes('/speaking');
+        if (isImmersive) setIsCollapsed(true);
         // Close mobile menu on route change
         setMobileOpen(false);
     }, [pathname]);

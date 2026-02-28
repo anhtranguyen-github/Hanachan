@@ -19,7 +19,7 @@ export default function MainLayout({
     const [userLevel, setUserLevel] = useState(1);
 
     const isSession = pathname.startsWith('/learn/session') || pathname.startsWith('/review/session');
-    const isChatbot = pathname.includes('/chatbot');
+    const isChatbot = pathname.includes('/chatbot') || pathname.includes('/speaking');
 
     useEffect(() => {
         if (!loading && !user) {
@@ -63,6 +63,7 @@ export default function MainLayout({
         if (lastPart === 'review') return 'Review Session';
         if (lastPart === 'content') return 'Library';
         if (lastPart === 'chatbot') return 'Hanachan AI';
+        if (lastPart === 'speaking') return 'Speaking Practice';
         if (lastPart === 'progress') return 'Progress';
         if (lastPart === 'profile') return 'Profile';
         try {
