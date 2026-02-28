@@ -17,7 +17,7 @@ Provides:
 import json
 import logging
 from datetime import datetime, timezone, date, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -29,8 +29,6 @@ from ....core.security import require_auth
 from ....agents.reading_creator import (
     ReadingConfig,
     generate_reading_session,
-    generate_reading_exercise,
-    TOPICS,
 )
 
 logger = logging.getLogger(__name__)

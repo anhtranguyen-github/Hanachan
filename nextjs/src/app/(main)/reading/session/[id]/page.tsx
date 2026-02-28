@@ -38,7 +38,7 @@ export default function ReadingSessionPage() {
     const [showTranslation, setShowTranslation] = useState(false);
     const [showFurigana, setShowFurigana] = useState(true);
     const [exerciseAnswers, setExerciseAnswers] = useState<AnswerResult[]>([]);
-    const [sessionScore, setSessionScore] = useState<{ score: number; correct: number; total: number } | null>(null);
+    const [sessionScore, setSessionScore] = useState<{ score: number; correct_answers: number; total_exercises: number } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
 

@@ -11,14 +11,10 @@ from __future__ import annotations
 import json
 import logging
 import random
-from datetime import datetime
 from typing import Any, Dict, List, Optional, TypedDict
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_core.prompts import ChatPromptTemplate
-
 from ..core.llm import make_llm
-from ..services import learning_service as learn_serv
 from ..core.database import execute_query
 
 logger = logging.getLogger(__name__)
