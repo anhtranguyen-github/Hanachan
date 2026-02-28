@@ -48,16 +48,17 @@ def test_missing_bearer_token_raises_401(client):
 def test_invalid_token_raises_401():
     """An invalid JWT token should raise 401."""
     from app.core.security import require_auth
+    from jwt.exceptions import PyJWKClientError
 
     creds = HTTPAuthorizationCredentials(
         scheme="Bearer",
         credentials="invalid.token.here",
     )
 
-    # Mock JWKS client to raise an error
+    # Mock JWKS client to raise PyJWKClientError (what require_auth catches)
     with patch("app.core.security._get_jwks_client") as mock_jwks:
         mock_client = MagicMock()
-        mock_client.get_signing_key_from_jwt.side_effect = Exception("JWKS unavailable")
+        mock_client.get_signing_key_from_jwt.side_effect = PyJWKClientError("JWKS unavailable")
         mock_jwks.return_value = mock_client
 
         with pytest.raises(HTTPException) as exc_info:

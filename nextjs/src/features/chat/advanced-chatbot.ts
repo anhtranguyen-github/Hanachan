@@ -133,4 +133,11 @@ export class HanachanChatService {
     }
 }
 
-export const advancedChatService = new HanachanChatService();
+let _instance: HanachanChatService | null = null;
+
+export const advancedChatService = new Proxy({} as HanachanChatService, {
+    get(_target, prop) {
+        if (!_instance) _instance = new HanachanChatService();
+        return (_instance as any)[prop];
+    },
+});

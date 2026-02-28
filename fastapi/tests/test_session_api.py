@@ -38,7 +38,7 @@ def _make_service_role_headers() -> dict:
 async def test_create_session_requires_auth(client: AsyncClient):
     """POST /session should return 401 without auth."""
     response = await client.post(
-        "/api/v1/session",
+        "/api/v1/memory/session",
         json={"user_id": "user-123"},
     )
     assert response.status_code == 401
@@ -56,7 +56,7 @@ async def test_create_session_success(client: AsyncClient):
         patch("app.services.memory.session_memory.get_session", return_value=session_data),
     ):
         response = await client.post(
-            "/api/v1/session",
+            "/api/v1/memory/session",
             json={"user_id": user_id},
             headers=_make_service_role_headers(),
         )
@@ -72,7 +72,7 @@ async def test_get_session_not_found(client: AsyncClient):
     """GET /session/{id} should return 404 for non-existent sessions."""
     with patch("app.services.memory.session_memory.get_session", return_value=None):
         response = await client.get(
-            "/api/v1/session/nonexistent-session",
+            "/api/v1/memory/session/nonexistent-session",
             headers=_make_service_role_headers(),
         )
     assert response.status_code == 404
@@ -81,7 +81,7 @@ async def test_get_session_not_found(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_list_sessions_requires_auth(client: AsyncClient):
     """GET /sessions/{user_id} should return 401 without auth."""
-    response = await client.get("/api/v1/sessions/user-123")
+    response = await client.get("/api/v1/memory/sessions/user-123")
     assert response.status_code == 401
 
 
@@ -103,7 +103,7 @@ async def test_list_sessions_success(client: AsyncClient):
 
     with patch("app.services.memory.session_memory.list_sessions", return_value=mock_sessions):
         response = await client.get(
-            f"/api/v1/sessions/{user_id}",
+            f"/api/v1/memory/sessions/{user_id}",
             headers=_make_service_role_headers(),
         )
 
@@ -121,7 +121,7 @@ async def test_end_session_not_found(client: AsyncClient):
         patch("app.services.memory.session_memory.get_session", return_value=None),
     ):
         response = await client.delete(
-            "/api/v1/session/nonexistent-session",
+            "/api/v1/memory/session/nonexistent-session",
             headers=_make_service_role_headers(),
         )
     assert response.status_code == 404

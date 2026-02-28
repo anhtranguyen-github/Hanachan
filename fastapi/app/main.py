@@ -156,4 +156,4 @@ app.add_exception_handler(Exception, unhandled_exception_handler)
 # Routes
 # ---------------------------------------------------------------------------
 
-app.include_router(api_router)
+app.include_router(api_router, prefix="/api/v1")
