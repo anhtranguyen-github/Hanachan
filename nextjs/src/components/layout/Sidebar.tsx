@@ -155,16 +155,29 @@ export function Sidebar() {
                 <div className="mx-4 h-px bg-gradient-to-r from-transparent via-[#F0E0E0] to-transparent" />
 
                 <div className="p-3 relative z-10">
-                    <button
-                        onClick={() => signOut()}
-                        className={clsx(
-                            "w-full flex items-center gap-3.5 px-3 py-3 text-[11px] font-black text-[#A0AEC0] hover:text-[#FF6B6B] hover:bg-red-50/50 transition-all duration-300 rounded-2xl uppercase tracking-widest group",
-                            isCollapsed ? "justify-center" : ""
-                        )}
-                    >
-                        <LogOut size={16} className="group-hover:rotate-12 transition-transform duration-300" />
-                        {!isCollapsed && <span>Sign Out</span>}
-                    </button>
+                    {user ? (
+                        <button
+                            onClick={() => signOut()}
+                            className={clsx(
+                                "w-full flex items-center gap-3.5 px-3 py-3 text-[11px] font-black text-[#A0AEC0] hover:text-[#FF6B6B] hover:bg-red-50/50 transition-all duration-300 rounded-2xl uppercase tracking-widest group",
+                                isCollapsed ? "justify-center" : ""
+                            )}
+                        >
+                            <LogOut size={16} className="group-hover:rotate-12 transition-transform duration-300" />
+                            {!isCollapsed && <span>Sign Out</span>}
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => openLoginModal()}
+                            className={clsx(
+                                "w-full flex items-center gap-3.5 px-3 py-3 text-[11px] font-black text-[#A0AEC0] hover:text-[#F4ACB7] hover:bg-[#FFF5F7] transition-all duration-300 rounded-2xl uppercase tracking-widest group",
+                                isCollapsed ? "justify-center" : ""
+                            )}
+                        >
+                            <LogOut size={16} className="rotate-180 group-hover:rotate-0 transition-transform duration-300" />
+                            {!isCollapsed && <span>Sign In</span>}
+                        </button>
+                    )}
                 </div>
             </aside>
 
