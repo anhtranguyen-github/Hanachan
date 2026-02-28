@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import React from 'react';
 import { getLocalKU } from '@/features/knowledge/actions';
 import Link from 'next/link';

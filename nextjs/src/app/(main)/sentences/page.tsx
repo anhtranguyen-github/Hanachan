@@ -40,6 +40,7 @@ export default function SentencesPage() {
 
     useEffect(() => {
         loadSentences();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     const handleAdd = async (e: React.FormEvent) => {

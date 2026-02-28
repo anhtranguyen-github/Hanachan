@@ -35,6 +35,7 @@ export default function ReadingDashboardPage() {
 
     useEffect(() => {
         loadHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [historyDays]);
 
     const loadData = async () => {

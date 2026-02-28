@@ -331,8 +331,9 @@ def tts_node(state: AgentState) -> Dict[str, Any]:
                 model_id="eleven_multilingual_v2"
             )
             
-            # Write stream to temp file
-            temp_file = f"/tmp/agent_tts_{uuid.uuid4()}.wav"
+            import tempfile
+            temp_dir = tempfile.gettempdir()
+            temp_file = f"{temp_dir}/agent_tts_{uuid.uuid4()}.wav"
             with open(temp_file, "wb") as f:
                 for chunk in audio_stream:
                     f.write(chunk)

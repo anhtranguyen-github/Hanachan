@@ -115,10 +115,12 @@ export default function ProfilePage() {
     useEffect(() => {
         setMounted(true);
         if (user) loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     useEffect(() => {
         if (activeTab === 'memories' && user) loadMemories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab, user]);
 
     const handleSaveProfile = async () => {

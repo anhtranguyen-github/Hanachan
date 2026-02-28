@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useUser } from '@/features/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, color: '#F4ACB7' },
@@ -41,6 +42,17 @@ export function Sidebar() {
     const { user, signOut, openLoginModal } = useUser();
     const [isCollapsed, setIsCollapsed] = React.useState(false);
     const [mobileOpen, setMobileOpen] = React.useState(false);
+    const [userLevel, setUserLevel] = React.useState(1);
+
+    React.useEffect(() => {
+        if (user) {
+            supabase.from('users').select('level').eq('id', user.id).maybeSingle()
+                .then(({ data }) => setUserLevel(data?.level || 1));
+        }
+    }, [user]);
+
+    const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Learner';
+    const initials = displayName?.slice(0, 2).toUpperCase() || 'LR';
 
     React.useEffect(() => {
         const isImmersive = pathname.includes('/chatbot') || pathname.includes('/speaking');
@@ -62,8 +74,8 @@ export function Sidebar() {
                 <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#FFF5F7] to-transparent pointer-events-none z-0" />
 
                 {/* Branding */}
-                <div className={clsx(
-                    "px-5 h-16 flex items-center shrink-0 border-b border-[#F0E0E0]/60 relative z-10",
+                <Link href="/dashboard" className={clsx(
+                    "px-5 h-16 flex items-center shrink-0 border-b border-[#F0E0E0]/60 relative z-10 transition-colors hover:bg-white/40",
                     isCollapsed ? "justify-center" : "justify-start"
                 )}>
                     <div className="flex items-center gap-3">
@@ -84,7 +96,7 @@ export function Sidebar() {
                             </div>
                         )}
                     </div>
-                </div>
+                </Link>
 
                 {/* Collapse/Expand Toggle */}
                 <div className={clsx("px-3 pt-2 pb-1 relative z-10", isCollapsed ? "flex justify-center" : "flex justify-end pr-5")}>
@@ -154,7 +166,27 @@ export function Sidebar() {
 
                 <div className="mx-4 h-px bg-gradient-to-r from-transparent via-[#F0E0E0] to-transparent" />
 
-                <div className="p-3 relative z-10">
+                <div className="p-3 relative z-10 space-y-2">
+                    {user && (
+                        <Link href="/profile" className={clsx("flex items-center gap-3 p-2 rounded-2xl hover:bg-[#FFF5F7] transition-all duration-300 group cursor-pointer", isCollapsed ? "justify-center" : "")}>
+                            <div className="relative shrink-0">
+                                <div className="absolute inset-0 bg-primary rounded-xl blur-sm opacity-0 group-hover:opacity-30 transition-opacity duration-300" />
+                                <div className="relative w-8 h-8 rounded-xl bg-gradient-to-br from-[#F4ACB7] to-[#D88C9A] flex items-center justify-center text-[10px] font-black text-white shadow-sm shadow-primary/20">
+                                    {initials}
+                                </div>
+                            </div>
+                            {!isCollapsed && (
+                                <div className="flex flex-col flex-1 min-w-0 leading-none">
+                                    <span className="text-[11px] font-black text-[#3E4A61] uppercase tracking-tight">{displayName}</span>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-[8px] font-bold text-[#CBD5E0] uppercase tracking-[0.15em]">Active</span>
+                                        <div className="w-1 h-1 bg-primary rounded-full" />
+                                        <span className="text-[9px] font-black text-primary uppercase tracking-widest">Level {userLevel}</span>
+                                    </div>
+                                </div>
+                            )}
+                        </Link>
+                    )}
                     {user ? (
                         <button
                             onClick={() => signOut()}
@@ -183,7 +215,7 @@ export function Sidebar() {
 
             {/* ===== MOBILE TOP HEADER ===== */}
             <div className="lg:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-white/90 backdrop-blur-xl border-b border-[#F0E0E0]/60 flex items-center justify-between px-4 shadow-sm">
-                <div className="flex items-center gap-2.5">
+                <Link href="/dashboard" className="flex items-center gap-2.5">
                     <div className="relative">
                         <div className="absolute inset-0 bg-primary rounded-xl blur-md opacity-30" />
                         <div className="relative w-8 h-8 bg-gradient-to-br from-[#F4ACB7] to-[#D88C9A] rounded-xl flex items-center justify-center text-white font-black text-sm shadow-md">
@@ -191,7 +223,7 @@ export function Sidebar() {
                         </div>
                     </div>
                     <span className="text-[11px] font-black tracking-[0.2em] text-[#3E4A61] uppercase">HANACHAN</span>
-                </div>
+                </Link>
                 <button
                     onClick={() => setMobileOpen(!mobileOpen)}
                     className="w-9 h-9 flex items-center justify-center rounded-xl bg-[#F7FAFC] border border-border/40 text-[#A0AEC0] hover:text-primary transition-colors"

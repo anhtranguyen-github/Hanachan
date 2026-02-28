@@ -54,6 +54,7 @@ export default function ReadingSessionPage() {
 
     useEffect(() => {
         loadSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sessionId]);
 
     useEffect(() => {

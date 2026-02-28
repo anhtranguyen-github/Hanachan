@@ -50,6 +50,7 @@ export default function LearnOverviewPage() {
     useEffect(() => {
         setMounted(true);
         refreshData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     if (!mounted || !state) {

@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import logging
 import random
+import secrets
 from typing import Any, Dict, List, Optional, TypedDict
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -360,7 +361,7 @@ def generate_reading_exercise(
     # 3. Determine topic
     if not topic:
         prefs = config.get("topic_preferences", TOPICS)
-        topic = random.choice(prefs) if prefs else random.choice(TOPICS)
+        topic = secrets.choice(prefs) if prefs else secrets.choice(TOPICS)
 
     # 4. Determine difficulty
     difficulty = config.get("difficulty_level", "adaptive")
@@ -499,7 +500,7 @@ def generate_reading_session(
         if prefs:
             topics.append(prefs[i % len(prefs)])
         else:
-            topics.append(random.choice(TOPICS))
+            topics.append(secrets.choice(TOPICS))
 
     for i, topic in enumerate(topics):
         try:

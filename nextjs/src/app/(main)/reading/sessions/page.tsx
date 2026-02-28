@@ -35,6 +35,7 @@ export default function ReadingSessionsPage() {
 
     useEffect(() => {
         loadSessions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [statusFilter, page]);
 
     const loadSessions = async () => {

@@ -158,7 +158,7 @@ async def update_reading_config(
         values = list(update_data.values()) + [user_id]
         
         execute_query(
-            f"UPDATE public.reading_configs SET {set_clauses}, updated_at = NOW() WHERE user_id = %s",
+            f"UPDATE public.reading_configs SET {set_clauses}, updated_at = NOW() WHERE user_id = %s",  # noqa: S608
             values,
             fetch=False,
         )
@@ -190,7 +190,7 @@ async def update_reading_config(
         placeholders = ", ".join(["%s"] * len(final_data))
         
         execute_query(
-            f"INSERT INTO public.reading_configs ({cols}) VALUES ({placeholders})",
+            f"INSERT INTO public.reading_configs ({cols}) VALUES ({placeholders})",  # noqa: S608
             list(final_data.values()),
             fetch=False,
         )
@@ -354,12 +354,12 @@ async def list_reading_sessions(
         WHERE {where_sql}
         ORDER BY created_at DESC
         LIMIT %s OFFSET %s
-        """,
+        """,  # noqa: S608
         params,
     )
 
     total = execute_query(
-        f"SELECT COUNT(*) as count FROM public.reading_sessions WHERE {where_sql}",
+        f"SELECT COUNT(*) as count FROM public.reading_sessions WHERE {where_sql}",  # noqa: S608
         count_params,
     )
 

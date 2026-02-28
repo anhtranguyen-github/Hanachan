@@ -82,6 +82,7 @@ export function VoiceRecorder({ onTranscript, disabled = false, className }: Voi
             setState('error');
             setTimeout(() => setState('idle'), 2500);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // ── Stop recording ───────────────────────────────────────────────────────

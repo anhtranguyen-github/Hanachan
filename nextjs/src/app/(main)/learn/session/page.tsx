@@ -75,6 +75,7 @@ function SessionContent() {
 
     useEffect(() => {
         if (user) loadSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     const handleLessonNext = async () => {

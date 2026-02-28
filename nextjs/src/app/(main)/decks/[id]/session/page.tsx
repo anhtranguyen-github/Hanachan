@@ -40,6 +40,7 @@ export default function LevelReviewSessionPage() {
         if (user && levelId) {
             initSession();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, levelId]);
 
     async function initSession() {

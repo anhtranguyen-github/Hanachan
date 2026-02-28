@@ -54,6 +54,7 @@ function ContentDatabase() {
 
     useEffect(() => {
         loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filterType, selectedLevel]);
 
     const filteredItems = useMemo(() => {

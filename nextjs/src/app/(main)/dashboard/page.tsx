@@ -104,6 +104,7 @@ export default function DashboardPage() {
             if (user && HanaTime.getSpeed() > 1) refreshData();
         }, 5000);
         return () => clearInterval(checkInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     if (!mounted || !stats) {

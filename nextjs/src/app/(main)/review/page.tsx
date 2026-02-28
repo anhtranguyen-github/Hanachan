@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -42,6 +43,7 @@ export default function ReviewPage() {
     useEffect(() => {
         setMounted(true);
         loadRealStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     if (!mounted || !stats) {

@@ -79,7 +79,7 @@ def consolidate_memories(user_id: str) -> ConsolidationResult:
     immediately with a "in progress" message rather than duplicating work.
     """
     # Derive a stable 31-bit integer key from the user_id
-    lock_key = int(hashlib.md5(user_id.encode()).hexdigest(), 16) % (2**31)
+    lock_key = int(hashlib.md5(user_id.encode(), usedforsecurity=False).hexdigest(), 16) % (2**31)
 
     # Use a single connection for both lock acquisition and release
     # so that the lock is held on the same connection for release
