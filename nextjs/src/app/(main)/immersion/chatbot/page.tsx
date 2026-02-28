@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
     Send, Bot, User, Plus, MessageSquare, Menu, Loader2,
     ChevronLeft, Eye, Square, Pencil, Check, X, Trash2,
-    Clock, MoreHorizontal
+    Clock, MoreHorizontal, Mic
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useUser } from '@/features/auth/AuthContext';
@@ -12,6 +12,7 @@ import { mapUnitToQuickView } from '@/features/knowledge/ui-mapper';
 import { getKnowledgeUnit } from '@/features/knowledge/actions';
 import { HanaTime } from '@/lib/time';
 import { useChatSession } from '@/features/chat/hooks/useChatSession';
+import { VoiceRecorder } from '@/components/shared/VoiceRecorder';
 import {
     listMemorySessions,
     endMemorySession,
@@ -28,6 +29,8 @@ type Message = {
     timestamp: string;
     toolsUsed?: string[];
     referencedUnits?: { id: string; slug: string; character: string; type: string }[];
+    /** True when the message was sent via voice recording */
+    isVoice?: boolean;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -196,6 +199,9 @@ export default function ChatbotPage() {
     const chatEndRef = useRef<HTMLDivElement>(null);
     const [mounted, setMounted] = useState(false);
 
+    // Track which message indices were sent via voice (by position in messages array)
+    const voiceMessageIndicesRef = useRef<Set<number>>(new Set());
+
     // Active thread tracking
     const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
 
@@ -226,6 +232,7 @@ export default function ChatbotPage() {
         role: m.role as 'user' | 'assistant',
         content: m.content,
         timestamp: m.timestamp || HanaTime.getNowISO(),
+        isVoice: voiceMessageIndicesRef.current.has(i),
     }));
 
     // Sync threads from hook
@@ -260,14 +267,27 @@ export default function ChatbotPage() {
         if (mounted && user?.id) refreshThreads();
     }, [mounted, user?.id, refreshThreads]);
 
-    const handleSend = async () => {
+    const handleSend = async (isVoice = false) => {
         if (!input.trim() || streaming.isStreaming) return;
         const content = input;
         setInput('');
+        // Mark the next user message index as voice if applicable
+        if (isVoice) {
+            voiceMessageIndicesRef.current.add(hookMessages.length);
+        }
         await sendMessageStreaming(content);
         // Refresh thread list after sending
         setTimeout(() => refreshThreads(), 1500);
     };
+
+    /** Called by VoiceRecorder when transcription completes. */
+    const handleVoiceTranscript = useCallback(async (text: string) => {
+        if (!text.trim() || streaming.isStreaming) return;
+        // Mark the next user message index as voice
+        voiceMessageIndicesRef.current.add(hookMessages.length);
+        await sendMessageStreaming(text);
+        setTimeout(() => refreshThreads(), 1500);
+    }, [streaming.isStreaming, hookMessages.length, sendMessageStreaming, refreshThreads]);
 
     const handleNewThread = async () => {
         await createNewConversation();
@@ -462,8 +482,15 @@ export default function ChatbotPage() {
                                 )}>
                                     {m.role === 'user' ? <User size={12} /> : <Bot size={12} />}
                                 </div>
-                                <span className="text-[8px] font-black uppercase text-[#CBD5E0] tracking-[0.2em]">
-                                    {m.role === 'user' ? 'YOU' : 'HANACHAN'} • {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                <span className="text-[8px] font-black uppercase text-[#CBD5E0] tracking-[0.2em] flex items-center gap-1">
+                                    {m.role === 'user' ? 'YOU' : 'HANACHAN'}
+                                    {m.isVoice && (
+                                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-primary/10 text-primary rounded-full text-[7px] font-black tracking-widest normal-case">
+                                            <Mic size={7} />
+                                            VOICE
+                                        </span>
+                                    )}
+                                    {' '}• {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                             </div>
 
@@ -527,12 +554,20 @@ export default function ChatbotPage() {
                             type="text"
                             data-testid="chat-input"
                             placeholder="Ask about Japanese language, grammar, or culture..."
-                            className="w-full py-4 pl-5 pr-16 bg-[#F7FAFC] border-2 border-[#EDF2F7] rounded-[2rem] outline-none focus:border-[#FFB5B5] focus:bg-white transition-all text-sm font-medium shadow-lg shadow-[#3E4A61]/5"
+                            className="w-full py-4 pl-5 pr-28 bg-[#F7FAFC] border-2 border-[#EDF2F7] rounded-[2rem] outline-none focus:border-[#FFB5B5] focus:bg-white transition-all text-sm font-medium shadow-lg shadow-[#3E4A61]/5"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
                             disabled={isTyping}
                         />
+                        {/* Voice recorder button — auto-sends after transcription */}
+                        <div className="absolute right-14 top-1/2 -translate-y-1/2">
+                            <VoiceRecorder
+                                disabled={isTyping}
+                                onTranscript={handleVoiceTranscript}
+                            />
+                        </div>
+                        {/* Send button */}
                         <button
                             onClick={handleSend}
                             data-testid="chat-send-button"
