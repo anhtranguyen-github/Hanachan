@@ -69,7 +69,7 @@ export default function LoginPage() {
                     </h1>
                     <div className="h-0.5 w-12 bg-gradient-to-r from-transparent via-[#F4ACB7] to-transparent mt-2"></div>
                     <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-medium mt-4">
-                        Advanced Language Synthesis Core
+                        Japanese Learning App
                     </p>
                 </div>
 
@@ -81,7 +81,7 @@ export default function LoginPage() {
                     <form onSubmit={handleLogin} className="space-y-6 relative">
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-[11px] text-gray-400 uppercase font-bold tracking-wider ml-1">Digital Identity</label>
+                                <label className="text-[11px] text-gray-400 uppercase font-bold tracking-wider ml-1">Email</label>
                                 <div className="relative group/input">
                                     <input
                                         type="email"
@@ -97,7 +97,7 @@ export default function LoginPage() {
 
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center ml-1">
-                                    <label className="text-[11px] text-gray-400 uppercase font-bold tracking-wider">Access Protocol</label>
+                                    <label className="text-[11px] text-gray-400 uppercase font-bold tracking-wider">Password</label>
                                     <Link href="#" className="text-[10px] text-[#F4ACB7] uppercase font-bold hover:underline transition-all">Forgot?</Link>
                                 </div>
                                 <div className="relative group/input">
@@ -127,7 +127,7 @@ export default function LoginPage() {
                             className="group/btn relative w-full py-5 rounded-2xl font-black text-xs uppercase tracking-widest text-[#592E38] transition-all duration-500 overflow-hidden active:scale-[0.98] disabled:opacity-50"
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-[#F4ACB7] to-[#CDB4DB] transition-all duration-500 group-hover/btn:scale-105"></div>
-                            <span className="relative z-10">{loading ? 'Processing...' : 'Authorize Session'}</span>
+                            <span className="relative z-10">{loading ? 'Signing in...' : 'Sign in'}</span>
                         </button>
 
                         <button
@@ -164,7 +164,7 @@ export default function LoginPage() {
                     </form>
 
                     <div className="mt-8 flex flex-col items-center gap-4">
-                        <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">Third-Party Verification</p>
+                        <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">Continue with</p>
                         <div className="flex gap-4 w-full">
                             <button className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 group/social">
                                 <svg className="w-5 h-5 text-white/50 group-hover/social:text-white transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" /></svg>
@@ -179,9 +179,9 @@ export default function LoginPage() {
                 {/* Footer Link */}
                 <div className="mt-8 text-center transition-all duration-700 delay-300 opacity-100">
                     <p className="text-gray-500 text-[11px] font-bold uppercase tracking-widest leading-loose">
-                        Initial Enrollment? {' '}
+                        New here? {' '}
                         <Link href="/signup" className="text-white hover:text-[#F4ACB7] underline decoration-[#F4ACB7]/30 hover:decoration-[#F4ACB7] transition-all ml-1">
-                            Register Core
+                            Create account
                         </Link>
                     </p>
                 </div>

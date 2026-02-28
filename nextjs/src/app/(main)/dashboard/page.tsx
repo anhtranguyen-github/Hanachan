@@ -197,7 +197,7 @@ export default function DashboardPage() {
                 <div className="flex justify-between items-center">
                     <div>
                         <h3 className="text-base sm:text-xl font-black text-[#3E4A61] tracking-tighter">Level {userLevel} Progress</h3>
-                        <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0] mt-0.5">Mastery by type</p>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0] mt-0.5">By type</p>
                     </div>
                     <span className="text-xl sm:text-2xl font-black gradient-text-sakura">{stats.progression.percentage}%</span>
                 </div>
@@ -280,7 +280,7 @@ export default function DashboardPage() {
                         </div>
                         <div>
                             <h3 className="text-base sm:text-lg font-black text-white/95 tracking-tight text-left">Domain Mastery</h3>
-                            <p className="text-[8px] font-black uppercase tracking-widest text-white/30 text-left">Global proficiency level</p>
+                            <p className="text-[8px] font-black uppercase tracking-widest text-white/30 text-left">Overall proficiency</p>
                         </div>
                     </div>
 
@@ -307,7 +307,7 @@ export default function DashboardPage() {
                     <div className="pt-3 border-t border-white/8 flex items-center justify-between relative z-10">
                         <div className="flex items-center gap-2">
                             <Activity size={12} className="text-[#F4ACB7]" />
-                            <span className="text-[8px] font-black uppercase tracking-widest text-white/25">Global Retention</span>
+                            <span className="text-[8px] font-black uppercase tracking-widest text-white/25">Retention Rate</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-[#48BB78] shadow-[0_0_8px_rgba(72,187,120,0.5)]" />
@@ -324,7 +324,7 @@ export default function DashboardPage() {
                     <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#FF7EB9]/30 to-transparent" />
                     <div>
                         <h3 className="text-base sm:text-lg font-black text-[#3E4A61] tracking-tight text-left">Learning Balance</h3>
-                        <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0] mt-0.5 text-left">SRS stage distribution</p>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0] mt-0.5 text-left">By SRS stage</p>
                     </div>
                     <div className="space-y-3">
                         {[
@@ -414,8 +414,8 @@ export default function DashboardPage() {
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
                 <div className="flex justify-between items-start">
                     <div>
-                        <h3 className="text-base sm:text-lg font-black text-[#3E4A61] tracking-tight text-left">Consistency Map</h3>
-                        <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0] mt-0.5 text-left">52-week activity</p>
+                        <h3 className="text-base sm:text-lg font-black text-[#3E4A61] tracking-tight text-left">Activity</h3>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0] mt-0.5 text-left">52-week history</p>
                     </div>
                     <div className="flex items-center gap-1.5 text-primary">
                         <TrendingUp size={12} />
@@ -464,7 +464,7 @@ export default function DashboardPage() {
                             )} />
                         ))}
                     </div>
-                    <span className="text-[7px] font-black text-[#CBD5E0] uppercase tracking-widest leading-none">Master Level</span>
+                    <span className="text-[7px] font-black text-[#CBD5E0] uppercase tracking-widest leading-none">Most Active</span>
                 </div>
             </div>
         </main>

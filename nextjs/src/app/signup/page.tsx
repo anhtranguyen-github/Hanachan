@@ -35,7 +35,7 @@ export default function SignupPage() {
             if (error) {
                 setMessage({ text: error.message, success: false });
             } else {
-                setMessage({ text: 'Core initialization successful. Check for confirmation.', success: true });
+                setMessage({ text: 'Account created! Check your email for a confirmation link.', success: true });
             }
         } catch (err: any) {
             setMessage({ text: err.message || 'An unexpected error occurred', success: false });
@@ -65,10 +65,10 @@ export default function SignupPage() {
                         </div>
                     </div>
                     <h1 className="text-3xl font-extrabold text-white mt-6 tracking-tight">
-                        Create <span className="text-[#B7E4C7]">Identity</span>
+                        Create <span className="text-[#B7E4C7]">Account</span>
                     </h1>
                     <p className="text-[10px] text-gray-500 uppercase tracking-[0.3em] font-bold mt-3">
-                        Initial Enrollment Protocol
+                        Start learning Japanese
                     </p>
                 </div>
 
@@ -79,7 +79,7 @@ export default function SignupPage() {
                     <form onSubmit={handleSignup} className="space-y-6">
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-[11px] text-gray-400 uppercase font-bold tracking-wider ml-1">Candidate Name</label>
+                                <label className="text-[11px] text-gray-400 uppercase font-bold tracking-wider ml-1">Full Name</label>
                                 <input
                                     type="text"
                                     placeholder="your chosen name"
@@ -91,7 +91,7 @@ export default function SignupPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[11px] text-gray-400 uppercase font-bold tracking-wider ml-1">Digital Address</label>
+                                <label className="text-[11px] text-gray-400 uppercase font-bold tracking-wider ml-1">Email</label>
                                 <input
                                     type="email"
                                     placeholder="name@domain.com"
@@ -103,7 +103,7 @@ export default function SignupPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[11px] text-gray-400 uppercase font-bold tracking-wider ml-1">Access Secret</label>
+                                <label className="text-[11px] text-gray-400 uppercase font-bold tracking-wider ml-1">Password</label>
                                 <input
                                     type="password"
                                     placeholder="••••••••"
@@ -128,7 +128,7 @@ export default function SignupPage() {
                             className="group/btn relative w-full py-5 rounded-2xl font-black text-xs uppercase tracking-widest text-[#1a2f23] transition-all duration-500 overflow-hidden active:scale-[0.98] disabled:opacity-50"
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-[#B7E4C7] to-[#A2D2FF] transition-all duration-500 group-hover/btn:scale-105"></div>
-                            <span className="relative z-10">{loading ? 'Initializing...' : 'Enroll into Core'}</span>
+                            <span className="relative z-10">{loading ? 'Creating account...' : 'Create account'}</span>
                         </button>
                     </form>
                 </div>
@@ -136,9 +136,9 @@ export default function SignupPage() {
                 {/* Footer Link */}
                 <div className="mt-8 text-center">
                     <p className="text-gray-500 text-[11px] font-bold uppercase tracking-widest leading-loose">
-                        Already Initialized? {' '}
+                        Already have an account? {' '}
                         <Link href="/login" className="text-white hover:text-[#B7E4C7] underline decoration-[#B7E4C7]/30 hover:decoration-[#B7E4C7] transition-all ml-1">
-                            Continue Protocol
+                            Sign in
                         </Link>
                     </p>
                 </div>

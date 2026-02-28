@@ -62,8 +62,8 @@ export default function ReviewPage() {
                         <div className="relative w-8 h-8 bg-gradient-to-br from-[#CDB4DB] to-[#B09AC5] rounded-xl flex items-center justify-center text-white font-black text-sm shadow-md">復</div>
                     </div>
                     <div>
-                        <h2 className="text-lg font-black text-[#3E4A61] tracking-tight uppercase">Review Lab</h2>
-                        <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0]">Memory reinforcement</p>
+                        <h2 className="text-lg font-black text-[#3E4A61] tracking-tight uppercase">Review</h2>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0]">Reinforce what you've learned</p>
                     </div>
                 </div>
                 <Link href="/dashboard" className="p-2 bg-white/80 border border-border/40 rounded-xl text-[#A0AEC0] hover:text-[#3E4A61] hover:border-primary/20 shadow-sm transition-all group backdrop-blur-sm">
@@ -103,7 +103,7 @@ export default function ReviewPage() {
                         className="w-full py-4 bg-gradient-to-r from-[#9B7DB5] to-[#7B5D95] text-white rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] hover:shadow-xl hover:shadow-[#9B7DB5]/25 hover:scale-[1.02] transition-all duration-300 group/btn relative z-10"
                     >
                         <Zap size={13} />
-                        Begin Session
+                        Start Review
                         <ChevronRight size={13} className="group-hover/btn:translate-x-1 transition-transform" />
                     </Link>
                 ) : (

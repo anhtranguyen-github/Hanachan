@@ -21,10 +21,10 @@ import { useUser } from '@/features/auth/AuthContext';
 
 const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, color: '#F4ACB7' },
-    { name: 'Training', href: '/learn', icon: BookOpen, color: '#A2D2FF' },
+    { name: 'Learn', href: '/learn', icon: BookOpen, color: '#A2D2FF' },
     { name: 'Review', href: '/review', icon: Swords, color: '#CDB4DB' },
-    { name: 'Chatbot', href: '/immersion/chatbot', icon: MessageSquare, color: '#B7E4C7' },
-    { name: 'Curriculum', href: '/content', icon: Library, color: '#FFD6A5' },
+    { name: 'AI Chat', href: '/immersion/chatbot', icon: MessageSquare, color: '#B7E4C7' },
+    { name: 'Content', href: '/content', icon: Library, color: '#FFD6A5' },
     { name: 'Profile', href: '/profile', icon: User, color: '#F4ACB7' },
 ];
 
@@ -71,7 +71,7 @@ export function Sidebar() {
                                     HANACHAN
                                 </h1>
                                 <p className="text-[8px] font-bold text-[#CBD5E0] tracking-[0.15em] uppercase mt-0.5">
-                                    Language Core
+                                    Japanese Learning
                                 </p>
                             </div>
                         )}

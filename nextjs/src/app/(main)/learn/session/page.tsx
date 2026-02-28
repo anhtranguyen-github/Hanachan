@@ -143,7 +143,7 @@ function SessionContent() {
                     >
                         Back to Dashboard
                     </button>
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">Rest is part of the training</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">Come back tomorrow to continue</p>
                 </div>
             );
         }
@@ -341,8 +341,8 @@ function LessonSlide({ item, onNext, isLastLesson }: { item: any, onNext: () => 
             {/* Footer */}
             <footer className="p-4 sm:p-5 border-t border-gray-100 flex justify-between items-center bg-gray-50/50">
                 <p className="text-[9px] font-bold text-gray-300 hidden sm:block">
-                    Acknowledge all items to proceed.
-                </p>
+                        Review each item to continue.
+                    </p>
                 <button
                     onClick={onNext}
                     data-testid="lesson-next-button"
