@@ -31,9 +31,19 @@ export async function GET(request: Request) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (!error) {
             return NextResponse.redirect(`${origin}${next}`)
+        } else {
+            console.error('[Auth Callback] Session exchange error:', error)
         }
+    } else {
+        console.error('[Auth Callback] No code provided in URL')
     }
 
     // return the user to an error page with instructions
     return NextResponse.redirect(`${origin}/auth/auth-code-error`)
+}
+
+export async function POST(request: Request) {
+    // If we get a POST, redirect to GET with the same parameters
+    const { origin } = new URL(request.url)
+    return NextResponse.redirect(`${origin}/auth/callback`, { status: 303 })
 }
