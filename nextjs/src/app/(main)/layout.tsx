@@ -66,6 +66,7 @@ export default function MainLayout({
         if (lastPart === 'speaking') return 'Speaking Practice';
         if (lastPart === 'progress') return 'Progress';
         if (lastPart === 'profile') return 'Profile';
+        if (lastPart === 'videos') return 'Video Library';
         try {
             return decodeURIComponent(lastPart)
                 .replace(/^(vocab|kanji|radical|grammar)_/, '')

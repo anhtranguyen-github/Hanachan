@@ -54,7 +54,7 @@
   --font-size-body: 14px;
   --font-size-metadata: 10px;
 
-  /* Spacing Tokens - Tightened Scale */
+  /* Spacing Tokens - Consistent 8px scale */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;
@@ -67,6 +67,27 @@
   --card-vocab-height: 120px;
   --card-kanji-size: 400px;
   --header-v-rhythm: 2px;
+
+  /* Sidebar width tokens */
+  --sidebar-width: 256px;
+  --sidebar-collapsed-width: 72px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+[data-theme="dark"] {
+  --background: #1A1A2E;
+  --foreground: #E2E8F0;
+  --surface: #16213E;
+  --surface-muted: #0F3460;
+  --border: #2D3748;
+  --primary: #F4ACB7;
+  --primary-dark: #D88C9A;
 }
 
 @layer base {
@@ -209,3 +230,167 @@
 .animate-page-entrance {
   animation: fadeInPage 1.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ==========================================
+   VIDEO LEARNING FEATURE STYLES
+   ========================================== */
+
+/* Subtitle overlay text */
+.subtitle-text {
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.5);
+  font-family: var(--font-noto-sans), 'Noto Sans JP', sans-serif;
+}
+
+/* Word cloud container */
+.word-cloud-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+}
+
+/* JLPT badge animations */
+.jlpt-badge-enter {
+  animation: jlptBadgeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes jlptBadgeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Video progress bar */
+.video-progress-bar {
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Tooltip animation */
+.word-tooltip {
+  animation: tooltipIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes tooltipIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+/* Sidebar glass effect */
+.sidebar-glass {
+  background: rgba(253, 248, 248, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Mesh background */
+.mesh-bg {
+  background-color: #FDF8F8;
+  background-image:
+    radial-gradient(at 20% 20%, rgba(244, 172, 183, 0.08) 0px, transparent 50%),
+    radial-gradient(at 80% 80%, rgba(205, 180, 219, 0.06) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(162, 210, 255, 0.04) 0px, transparent 50%);
+}
+
+/* Gradient text */
+.gradient-text-sakura {
+  background: linear-gradient(135deg, #F4ACB7, #D88C9A);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* No scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom scrollbar for panels */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Animate in utilities */
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideInFromBottom 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Pulse slow animation */
+@keyframes pulseSlow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-pulse-slow {
+  animation: pulseSlow 3s ease-in-out infinite;
+}
+
+/* Scale in animation */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Spacing utilities using 8px scale */
+.p-xs { padding: var(--spacing-xs); }
+.p-sm { padding: var(--spacing-sm); }
+.p-md { padding: var(--spacing-md); }
+.p-lg { padding: var(--spacing-lg); }
+.p-xl { padding: var(--spacing-xl); }
+
+.px-xs { padding-left: var(--spacing-xs); padding-right: var(--spacing-xs); }
+.px-sm { padding-left: var(--spacing-sm); padding-right: var(--spacing-sm); }
+.px-md { padding-left: var(--spacing-md); padding-right: var(--spacing-md); }
+.px-lg { padding-left: var(--spacing-lg); padding-right: var(--spacing-lg); }
+
+.gap-xs { gap: var(--spacing-xs); }
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
+.gap-lg { gap: var(--spacing-lg); }

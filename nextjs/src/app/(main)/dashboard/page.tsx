@@ -15,6 +15,7 @@ import {
     Zap,
     Activity,
     BookMarked,
+    Video,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { fetchUserDashboardStats, fetchCurriculumStats, fetchLevelStats } from '@/features/learning/service';
@@ -176,21 +177,40 @@ export default function DashboardPage() {
                 </Link>
             </div>
 
-            {/* Reading Practice Quick Access */}
-            <Link
-                href="/reading"
-                className="glass-card p-4 flex items-center gap-4 group transition-all duration-300 hover:border-[#7BB8F0]/30 border-2 border-transparent relative overflow-hidden"
-            >
-                <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#7BB8F0]/20 to-transparent" />
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-[18px] flex items-center justify-center bg-gradient-to-br from-[#7BB8F0]/15 to-[#7BB8F0]/5 text-[#3A6EA5] group-hover:scale-110 transition-all duration-500 shrink-0">
-                    <BookMarked size={20} strokeWidth={2} />
-                </div>
-                <div className="flex-1">
-                    <h3 className="text-sm sm:text-base font-black text-[#3E4A61] tracking-tight">Reading Practice</h3>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-[#A0AEC0]">AI-generated passages • Personalized for your level</p>
-                </div>
-                <ChevronRight size={16} className="text-[#CBD5E0] group-hover:text-[#3A6EA5] transition-colors shrink-0" />
-            </Link>
+            {/* Quick Access Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Reading Practice Quick Access */}
+                <Link
+                    href="/reading"
+                    className="glass-card p-4 flex items-center gap-4 group transition-all duration-300 hover:border-[#7BB8F0]/30 border-2 border-transparent relative overflow-hidden"
+                >
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#7BB8F0]/20 to-transparent" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-[18px] flex items-center justify-center bg-gradient-to-br from-[#7BB8F0]/15 to-[#7BB8F0]/5 text-[#3A6EA5] group-hover:scale-110 transition-all duration-500 shrink-0">
+                        <BookMarked size={20} strokeWidth={2} />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="text-sm sm:text-base font-black text-[#3E4A61] tracking-tight">Reading Practice</h3>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-[#A0AEC0]">AI-generated passages • Personalized</p>
+                    </div>
+                    <ChevronRight size={16} className="text-[#CBD5E0] group-hover:text-[#3A6EA5] transition-colors shrink-0" />
+                </Link>
+
+                {/* Video Library Quick Access */}
+                <Link
+                    href="/videos"
+                    className="glass-card p-4 flex items-center gap-4 group transition-all duration-300 hover:border-[#FF9F9F]/30 border-2 border-transparent relative overflow-hidden"
+                >
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#FF9F9F]/20 to-transparent" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-[18px] flex items-center justify-center bg-gradient-to-br from-[#FF9F9F]/15 to-[#FF9F9F]/5 text-[#C0392B] group-hover:scale-110 transition-all duration-500 shrink-0">
+                        <Video size={20} strokeWidth={2} />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="text-sm sm:text-base font-black text-[#3E4A61] tracking-tight">Video Library</h3>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-[#A0AEC0]">Interactive subtitles • JLPT analysis</p>
+                    </div>
+                    <ChevronRight size={16} className="text-[#CBD5E0] group-hover:text-[#C0392B] transition-colors shrink-0" />
+                </Link>
+            </div>
 
             {/* Stats Row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
