@@ -8,7 +8,6 @@ import logging
 from typing import Optional
 
 import jwt  # PyJWT
-import httpx
 from fastapi import Depends, HTTPException, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jwt import PyJWKClient, PyJWKClientError

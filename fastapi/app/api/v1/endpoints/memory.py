@@ -23,7 +23,6 @@ from ....schemas.memory import (
     AddSemanticRequest,
     AddSemanticResponse,
     ClearResponse,
-    EpisodicMemory,
 )
 from ....schemas.session import SessionMessage
 from ....schemas.memory import UserProfile as UserProfileSchema

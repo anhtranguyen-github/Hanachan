@@ -5,14 +5,12 @@ from __future__ import annotations
 
 import logging
 import uuid
-import json
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from langchain_core.prompts import ChatPromptTemplate
 
-from ...core.config import settings
 from ...core.llm import make_llm
 from ...schemas.session import SessionInfo, SessionMessage, SessionSummary
 from ...core.database import execute_query, execute_single
@@ -242,7 +240,7 @@ def _update_session_metadata(
             title = _generate_title(user_msg, assistant_msg)
             update_session_meta(session_id, title=title)
 
-        updated_summary = _update_summary(
+        _updated_summary = _update_summary(
             session.get("summary") or "", user_msg, assistant_msg
         )
         # Cloud schema doesn't have a summary column, skip for now

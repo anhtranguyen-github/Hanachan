@@ -11,7 +11,7 @@ Fixes:
 """
 from __future__ import annotations
 
-import asyncio
+
 import json
 import logging
 from typing import AsyncGenerator
@@ -21,10 +21,9 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
 from ....schemas.chat import ChatRequest, ChatResponse
-from ....agents.memory_agent import run_chat, memory_agent, AgentState
+from ....agents.memory_agent import run_chat, memory_agent
 from ....core.security import require_auth
 from ....core.rate_limit import limiter
-from ....core.llm import make_llm
 from ....core.config import settings
 from langchain_core.messages import HumanMessage
 

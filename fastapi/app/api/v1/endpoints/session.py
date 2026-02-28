@@ -17,7 +17,6 @@ import uuid
 from ....schemas.session import (
     CreateSessionRequest,
     CreateSessionResponse,
-    SessionInfo,
     UpdateSessionRequest,
     EndSessionResponse,
     SessionSummary,

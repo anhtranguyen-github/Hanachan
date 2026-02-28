@@ -5,16 +5,14 @@ Graph: planning -> tools -> reviewer -> decide -> (rewrite -> planning) or (gene
 from __future__ import annotations
 
 import logging
-import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Literal, Annotated
+from typing import Any, Dict, List, Optional, Annotated
 from typing_extensions import TypedDict
 
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, ToolMessage
+from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage
 from langchain_core.tools import tool
 from langgraph.graph import StateGraph, END
-from langgraph.prebuilt import ToolNode
 
 from ..services.memory import episodic_memory as ep_mem
 from ..services.memory import semantic_memory as sem_mem
@@ -106,7 +104,7 @@ def search_knowledge_units(query: str) -> str:
 # Tool list for the Planner
 TOOLS = [get_episodic_memory, get_semantic_facts, get_user_learning_progress, search_knowledge_units]
 
-from langchain_core.messages import ToolMessage
+
 
 def tools_node(state: AgentState) -> Dict[str, Any]:
     """Custom tool node that injects the actual user_id from state into tool calls."""
