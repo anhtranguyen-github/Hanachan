@@ -390,7 +390,7 @@ function PracticePanel({
 
     const currentDifficulty = mode === 'dynamic' && dynamicSentence
         ? dynamicSentence.difficulty
-        : selectedPrompt?.difficulty || 'beginner';
+        : selectedPrompt?.difficulty || 'N5';
 
     const diff = DIFFICULTY_LABELS[currentDifficulty];
 
@@ -773,7 +773,7 @@ export default function SpeakingPracticePage() {
                                 <div>
                                     <p className="text-[8px] font-black uppercase tracking-widest text-foreground/25 mb-1.5">Difficulty</p>
                                     <div className="flex gap-1">
-                                        {(['all', 'beginner', 'intermediate', 'advanced'] as const).map(d => (
+                                        {(['all', 'N5', 'N4', 'N3', 'N2', 'N1'] as const).map(d => (
                                             <button
                                                 key={d}
                                                 onClick={() => setActiveDifficulty(d)}
@@ -784,7 +784,7 @@ export default function SpeakingPracticePage() {
                                                         : 'bg-[#F7FAFC] text-foreground/40 hover:bg-primary/10 hover:text-primary'
                                                 )}
                                             >
-                                                {d === 'all' ? 'All' : d.slice(0, 3)}
+                                                {d === 'all' ? 'All' : d}
                                             </button>
                                         ))}
                                     </div>

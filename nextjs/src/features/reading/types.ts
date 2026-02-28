@@ -1,6 +1,6 @@
 // Reading Practice Feature Types
 
-export type DifficultyLevel = 'beginner' | 'elementary' | 'intermediate' | 'advanced' | 'adaptive';
+export type DifficultyLevel = 'N5' | 'N4' | 'N3' | 'N2' | 'N1' | 'adaptive';
 export type PassageLength = 'short' | 'medium' | 'long';
 export type SessionStatus = 'pending' | 'active' | 'completed' | 'abandoned';
 export type ExerciseStatus = 'pending' | 'active' | 'completed' | 'skipped';
@@ -157,17 +157,19 @@ export const TOPIC_EMOJIS: Record<string, string> = {
 export const ALL_TOPICS = Object.keys(TOPIC_LABELS);
 
 export const DIFFICULTY_LABELS: Record<DifficultyLevel, string> = {
-    beginner: 'Beginner',
-    elementary: 'Elementary',
-    intermediate: 'Intermediate',
-    advanced: 'Advanced',
+    N5: 'N5 (Beginner)',
+    N4: 'N4 (Elementary)',
+    N3: 'N3 (Intermediate)',
+    N2: 'N2 (Advanced)',
+    N1: 'N1 (Mastery)',
     adaptive: 'Adaptive (Auto)',
 };
 
 export const DIFFICULTY_COLORS: Record<DifficultyLevel, string> = {
-    beginner: '#48BB78',
-    elementary: '#4DABF7',
-    intermediate: '#F4ACB7',
-    advanced: '#CDB4DB',
+    N5: '#48BB78',
+    N4: '#4DABF7',
+    N3: '#F4ACB7',
+    N2: '#CDB4DB',
+    N1: '#9B5DE5',
     adaptive: '#FFD6A5',
 };

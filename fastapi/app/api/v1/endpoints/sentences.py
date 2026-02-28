@@ -6,11 +6,13 @@ from __future__ import annotations
 
 import logging
 from typing import Optional, List
+from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 
 from ...services.sentence_annotator import annotate_sentence, get_sentence_annotations
+from ....core.security import require_auth
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +24,8 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 
 class AnnotateRequest(BaseModel):
-    sentence_id: str = Field(..., description="UUID of the sentence to annotate")
-    japanese_raw: str = Field(..., description="The raw Japanese text to annotate")
+    sentence_id: UUID = Field(..., description="UUID of the sentence to annotate")
+    japanese_raw: str = Field(..., description="The raw Japanese text to annotate", min_length=1, max_length=1000)
 
 
 class AnnotationResponse(BaseModel):
@@ -40,7 +42,7 @@ class AnnotationResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 @router.post("/annotate", response_model=List[AnnotationResponse], tags=["Sentences"])
-async def annotate(req: AnnotateRequest):
+async def annotate(req: AnnotateRequest, token: dict = Depends(require_auth)):
     """Annotate a sentence: match vocab + kanji and save to sentence_knowledge."""
     try:
         from fastapi.concurrency import run_in_threadpool
@@ -54,7 +56,7 @@ async def annotate(req: AnnotateRequest):
 
 
 @router.get("/{sentence_id}/annotations", response_model=List[AnnotationResponse], tags=["Sentences"])
-async def get_annotations(sentence_id: str):
+async def get_annotations(sentence_id: UUID, token: dict = Depends(require_auth)):
     """Get existing annotations for a sentence."""
     try:
         from fastapi.concurrency import run_in_threadpool

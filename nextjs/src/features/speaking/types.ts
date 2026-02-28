@@ -44,7 +44,7 @@ export interface PronunciationAssessmentResult {
 
 // ─── Practice Prompt ──────────────────────────────────────────────────────────
 
-export type PromptDifficulty = 'beginner' | 'intermediate' | 'advanced';
+export type PromptDifficulty = 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
 export type PromptCategory =
     | 'greetings'
     | 'numbers'

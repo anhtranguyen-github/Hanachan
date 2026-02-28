@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import logging
 import random
+import json
+import uuid
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
 
@@ -21,9 +23,11 @@ logger = logging.getLogger(__name__)
 
 
 # Difficulty thresholds
-DIFFICULTY_BEGINNER = "beginner"
-DIFFICULTY_INTERMEDIATE = "intermediate"
-DIFFICULTY_ADVANCED = "advanced"
+DIFFICULTY_N5 = "N5"
+DIFFICULTY_N4 = "N4"
+DIFFICULTY_N3 = "N3"
+DIFFICULTY_N2 = "N2"
+DIFFICULTY_N1 = "N1"
 
 # Score thresholds for adaptive logic
 SCORE_THRESHOLD_REPEAT = 50  # Below this, repeat the sentence
@@ -188,17 +192,21 @@ def calculate_sentence_difficulty(sentence: str, learned_words: List[LearnedWord
     known_ratio = learned_count / total_words if total_words > 0 else 0
     
     # Determine difficulty
-    if total_chars <= 10 or known_ratio >= 0.8:
-        return DIFFICULTY_BEGINNER
+    if total_chars <= 8 or known_ratio >= 0.9:
+        return DIFFICULTY_N5
+    elif total_chars <= 15 or known_ratio >= 0.7:
+        return DIFFICULTY_N4
     elif total_chars <= 25 or known_ratio >= 0.5:
-        return DIFFICULTY_INTERMEDIATE
+        return DIFFICULTY_N3
+    elif total_chars <= 40 or known_ratio >= 0.3:
+        return DIFFICULTY_N2
     else:
-        return DIFFICULTY_ADVANCED
+        return DIFFICULTY_N1
 
 
 def select_sentences_for_practice(
     learned_words: List[LearnedWord],
-    target_difficulty: str = DIFFICULTY_BEGINNER,
+    target_difficulty: str = DIFFICULTY_N5,
     max_sentences: int = 20,
 ) -> List[PracticeSentence]:
     """
@@ -242,7 +250,7 @@ def select_sentences_for_practice(
             difficulty = calculate_sentence_difficulty(japanese, learned_words)
             
             # Filter by target difficulty (allow one level variance)
-            difficulty_order = [DIFFICULTY_BEGINNER, DIFFICULTY_INTERMEDIATE, DIFFICULTY_ADVANCED]
+            difficulty_order = [DIFFICULTY_N5, DIFFICULTY_N4, DIFFICULTY_N3, DIFFICULTY_N2, DIFFICULTY_N1]
             target_idx = difficulty_order.index(target_difficulty) if target_difficulty in difficulty_order else 0
             sentence_idx = difficulty_order.index(difficulty) if difficulty in difficulty_order else 0
             
@@ -292,91 +300,20 @@ def get_user_level(user_id: str) -> int:
 
 
 def get_difficulty_from_level(level: int) -> str:
-    """Convert user level (1-60) to difficulty string."""
-    if level <= 15:
-        return DIFFICULTY_BEGINNER
+    """Convert user level (1-60) to JLPT difficulty string."""
+    if level <= 10:
+        return DIFFICULTY_N5
+    elif level <= 20:
+        return DIFFICULTY_N4
     elif level <= 35:
-        return DIFFICULTY_INTERMEDIATE
+        return DIFFICULTY_N3
+    elif level <= 50:
+        return DIFFICULTY_N2
     else:
-        return DIFFICULTY_ADVANCED
+        return DIFFICULTY_N1
 
 
-def create_practice_session(
-    user_id: str,
-    target_difficulty: Optional[str] = None,
-) -> Dict[str, Any]:
-    """
-    Create a new speaking practice session for a user.
-    
-    This is the main entry point for starting a speaking practice session.
-    It fetches learned words and selects appropriate sentences.
-    """
-    # Get user's curriculum level
-    user_level = get_user_level(user_id)
-    
-    # Determine difficulty
-    if target_difficulty is None:
-        target_difficulty = get_difficulty_from_level(user_level)
-    
-    # Get learned words
-    learned_words = get_learned_words(user_id)
-    
-    if not learned_words:
-        return {
-            "success": False,
-            "error": "No learned words found. Start learning vocabulary first!",
-            "sentences": [],
-            "difficulty": target_difficulty,
-            "user_level": user_level,
-        }
-    
-    # Select sentences
-    sentences = select_sentences_for_practice(
-        learned_words,
-        target_difficulty=target_difficulty,
-        max_sentences=15,
-    )
-    
-    if not sentences:
-        # If no sentences from context, generate basic practice
-        # Fall back to vocabulary readings themselves
-        sentences = [
-            PracticeSentence(
-                japanese=word.character,
-                reading=word.reading,
-                english=word.meaning,
-                source_word=word.character,
-                difficulty=DIFFICULTY_BEGINNER,
-                learned_words_count=1,
-                total_words=1,
-            )
-            for word in learned_words[:10]
-        ]
-    
-    # Shuffle for variety
-    random.shuffle(sentences)
-    
-    session_id = f"sp_{user_id[:8]}_{random.randint(1000, 9999)}"
-    
-    return {
-        "success": True,
-        "session_id": session_id,
-        "sentences": [
-            {
-                "japanese": s.japanese,
-                "reading": s.reading,
-                "english": s.english,
-                "source_word": s.source_word,
-                "difficulty": s.difficulty,
-                "learned_words_count": s.learned_words_count,
-                "audio_url": s.audio_url,
-            }
-            for s in sentences
-        ],
-        "difficulty": target_difficulty,
-        "user_level": user_level,
-        "total_sentences": len(sentences),
-    }
+
 
 
 def calculate_adaptive_difficulty(
@@ -397,7 +334,7 @@ def calculate_adaptive_difficulty(
     Returns:
         Dict with next_action, next_difficulty, and reason
     """
-    difficulty_order = [DIFFICULTY_BEGINNER, DIFFICULTY_INTERMEDIATE, DIFFICULTY_ADVANCED]
+    difficulty_order = [DIFFICULTY_N5, DIFFICULTY_N4, DIFFICULTY_N3, DIFFICULTY_N2, DIFFICULTY_N1]
     current_idx = difficulty_order.index(current_difficulty) if current_difficulty in difficulty_order else 0
     
     if score < SCORE_THRESHOLD_REPEAT:
@@ -463,7 +400,7 @@ def get_next_practice_item(
         Dict with next sentence, updated index, and adaptive feedback
     """
     sentences = session_data.get("sentences", [])
-    current_difficulty = session_data.get("difficulty", DIFFICULTY_BEGINNER)
+    current_difficulty = session_data.get("difficulty", DIFFICULTY_N5)
     
     if not sentences:
         return {
@@ -517,6 +454,38 @@ def get_next_practice_item(
     }
 
 
+
+
+
+def get_session(session_id: str) -> Optional[Dict[str, Any]]:
+    """Fetch speaking session from database."""
+    row = execute_single(
+        "SELECT * FROM public.speaking_sessions WHERE id = %s",
+        (session_id,),
+    )
+    if not row:
+        return None
+        
+    # Parse sentences from JSONB
+    if isinstance(row.get("sentences"), str):
+        row["sentences"] = json.loads(row["sentences"])
+    return row
+
+
+def update_session_state(session_id: str, current_index: int, difficulty: str) -> bool:
+    """Update session progress in database."""
+    execute_query(
+        """
+        UPDATE public.speaking_sessions 
+        SET current_index = %s, difficulty = %s, updated_at = NOW()
+        WHERE id = %s
+        """,
+        (current_index, difficulty, session_id),
+        fetch=False,
+    )
+    return True
+
+
 def record_practice_attempt(
     user_id: str,
     session_id: str,
@@ -525,19 +494,168 @@ def record_practice_attempt(
     word: str,
 ) -> Dict[str, Any]:
     """
-    Record a practice attempt for analytics and adaptive learning.
-    
-    This can be used to track progress over time and identify
-    words that need more practice.
+    Record a practice attempt for analytics and adaptive learning in the database.
     """
-    # In a full implementation, this would store to a database
-    # For now, we log it
+    execute_query(
+        """
+        INSERT INTO public.speaking_attempts (user_id, session_id, sentence, score, word)
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        (user_id, session_id, sentence, score, word),
+        fetch=False,
+    )
+    
     logger.info(
-        f"Practice attempt: user={user_id}, session={session_id}, "
-        f"word={word}, sentence={sentence[:30]}, score={score}"
+        f"Practice attempt recorded: user={user_id}, session={session_id}, "
+        f"word={word}, score={score}"
     )
     
     return {
         "success": True,
         "recorded": True,
+    }
+
+
+def end_session_db(session_id: str, status: str = "completed") -> bool:
+    """Mark session as ended in database."""
+    execute_query(
+        "UPDATE public.speaking_sessions SET status = %s, updated_at = NOW() WHERE id = %s",
+        (status, session_id),
+        fetch=False,
+    )
+    return True
+
+
+def create_practice_session(
+    user_id: str,
+    target_difficulty: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Create a new speaking practice session for a user in the database.
+    """
+    # Get user's curriculum level
+    user_level = get_user_level(user_id)
+    
+    # Determine difficulty
+    if target_difficulty is None:
+        target_difficulty = get_difficulty_from_level(user_level)
+    
+    # Get learned words
+    learned_words = get_learned_words(user_id)
+    
+    if not learned_words:
+        return {
+            "success": False,
+            "error": "No learned words found. Start learning vocabulary first!",
+            "sentences": [],
+            "difficulty": target_difficulty,
+            "user_level": user_level,
+        }
+    
+    # Select sentences
+    sentences = select_sentences_for_practice(
+        learned_words,
+        target_difficulty=target_difficulty,
+        max_sentences=15,
+    )
+    
+    if not sentences:
+        # Fallback
+        sentences = [
+            PracticeSentence(
+                japanese=word.character,
+                reading=word.reading,
+                english=word.meaning,
+                source_word=word.character,
+                difficulty=DIFFICULTY_BEGINNER,
+                learned_words_count=1,
+                total_words=1,
+            )
+            for word in learned_words[:10]
+        ]
+    
+    # Shuffle for variety
+    random.shuffle(sentences)
+    
+    # Prepare sentences for JSON storage
+    sentences_data = [
+        {
+            "japanese": s.japanese,
+            "reading": s.reading,
+            "english": s.english,
+            "source_word": s.source_word,
+            "difficulty": s.difficulty,
+            "learned_words_count": s.learned_words_count,
+            "audio_url": s.audio_url,
+        }
+        for s in sentences
+    ]
+    
+    # Insert into database
+
+
+    session_id = str(uuid.uuid4())
+    
+    execute_query(
+        """
+        INSERT INTO public.speaking_sessions (id, user_id, sentences, difficulty, total_sentences)
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        (session_id, user_id, json.dumps(sentences_data), target_difficulty, len(sentences_data)),
+        fetch=False,
+    )
+    
+    return {
+        "success": True,
+        "session_id": session_id,
+        "sentences": sentences_data,
+        "difficulty": target_difficulty,
+        "user_level": user_level,
+        "total_sentences": len(sentences_data),
+    }
+
+def get_speaking_stats(user_id: str) -> Dict[str, Any]:
+    """Calculate aggregate speaking stats from the database."""
+    stats = execute_single(
+        """
+        SELECT 
+            COUNT(DISTINCT session_id) as total_sessions,
+            COUNT(*) as total_attempts,
+            AVG(score) as average_score,
+            COUNT(DISTINCT word) as words_practiced
+        FROM public.speaking_attempts
+        WHERE user_id = %s
+        """,
+        (user_id,),
+    )
+    
+    if not stats or stats["total_sessions"] == 0:
+        return {
+            "total_sessions": 0,
+            "total_attempts": 0,
+            "average_score": 0.0,
+            "words_practiced": 0,
+            "current_streak": 0,
+        }
+    
+    # Simple streak calculation
+    streak_row = execute_single(
+        """
+        WITH daily_practice AS (
+            SELECT DISTINCT date_trunc('day', created_at) as day
+            FROM public.speaking_attempts
+            WHERE user_id = %s
+            ORDER BY day DESC
+        )
+        SELECT COUNT(*) as streak FROM daily_practice
+        """,
+        (user_id,),
+    )
+    
+    return {
+        "total_sessions": stats["total_sessions"],
+        "total_attempts": stats["total_attempts"],
+        "average_score": round(float(stats["average_score"]), 1) if stats["average_score"] else 0.0,
+        "words_practiced": stats["words_practiced"],
+        "current_streak": streak_row["streak"] if streak_row else 0,
     }

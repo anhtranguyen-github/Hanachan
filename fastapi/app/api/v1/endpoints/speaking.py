@@ -11,9 +11,13 @@ from __future__ import annotations
 
 import logging
 from typing import Optional
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
+
+from ....core.rate_limit import limiter
+from ....core.config import settings
 
 from ....schemas.speaking import (
     CreatePracticeSessionRequest,
@@ -26,6 +30,7 @@ from ....schemas.speaking import (
     AdaptiveFeedback,
 )
 from ....services import speaking_practice as sp_service
+from ....core.database import execute_query, execute_single
 from ....core.security import require_auth, require_own_user
 
 logger = logging.getLogger(__name__)
@@ -33,24 +38,15 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# In-memory session storage (in production, use Redis or database)
-# Key: session_id, Value: session data dict
-_practice_sessions: dict = {}
-
-
-@router.post("/practice/session", response_model=PracticeSessionResponse, tags=["Speaking"])
+@router.post("/session", response_model=PracticeSessionResponse, tags=["Speaking"])
+@limiter.limit("5/minute")
 async def create_practice_session(
+    request: Request,
     req: CreatePracticeSessionRequest,
     token: dict = Depends(require_auth),
 ):
     """
-    Create a new speaking practice session.
-    
-    This endpoint:
-    1. Fetches the user's learned vocabulary
-    2. Selects sentences containing those words
-    3. Orders them by difficulty progression
-    4. Returns a session with adaptive practice sentences
+    Create a new speaking practice session in the database.
     """
     user_id = token.get("sub")
     
@@ -66,26 +62,15 @@ async def create_practice_session(
             success=False,
             session_id=None,
             sentences=[],
-            difficulty=result.get("difficulty", "beginner"),
+            difficulty=result.get("difficulty", "N5"),
             user_level=result.get("user_level", 1),
             total_sentences=0,
             error=result.get("error", "Failed to create session"),
         )
     
-    # Store session data for later reference
-    session_id = result["session_id"]
-    _practice_sessions[session_id] = {
-        "user_id": user_id,
-        "sentences": result["sentences"],
-        "difficulty": result["difficulty"],
-        "current_index": 0,
-        "word_attempts": {},
-        "word_scores": {},
-    }
-    
     return PracticeSessionResponse(
         success=True,
-        session_id=session_id,
+        session_id=result["session_id"],
         sentences=[
             PracticeSentenceSchema(**s) for s in result["sentences"]
         ],
@@ -95,34 +80,27 @@ async def create_practice_session(
     )
 
 
-@router.get("/practice/session/{session_id}/next", response_model=NextPracticeItemResponse, tags=["Speaking"])
+@router.get("/session/{session_id}/next", response_model=NextPracticeItemResponse, tags=["Speaking"])
+@limiter.limit("10/minute")
 async def get_next_practice_item(
-    session_id: str,
+    request: Request,
+    session_id: UUID,
     token: dict = Depends(require_auth),
 ):
     """
-    Get the next sentence in the practice session.
-    
-    Query parameters:
-    - score: Optional score from last pronunciation (for adaptive logic)
-    - word: Optional word that was just practiced
+    Get the next sentence in the practice session from the database.
     """
     user_id = token.get("sub")
     
-    # Get session
-    session_data = _practice_sessions.get(session_id)
-    if not session_data:
-        raise HTTPException(status_code=404, detail="Session not found")
+    # Get session from DB
+    session_data = await run_in_threadpool(sp_service.get_session, session_id)
+    if not session_data or session_data.get("status") != "active":
+        raise HTTPException(status_code=404, detail="Active session not found")
     
     # Verify ownership
-    if session_data.get("user_id") != user_id:
+    if str(session_data.get("user_id")) != user_id:
         raise HTTPException(status_code=403, detail="Forbidden")
     
-    # Get query parameters for adaptive feedback
-    # Note: FastAPI will handle the query params below
-    # But we'll get them from the request in the endpoint
-    
-    # For now, just return current item (adaptive logic handled separately)
     sentences = session_data.get("sentences", [])
     current_index = session_data.get("current_index", 0)
     
@@ -144,32 +122,29 @@ async def get_next_practice_item(
     )
 
 
-@router.post("/practice/session/{session_id}/record", response_model=RecordAttemptResponse, tags=["Speaking"])
+@router.post("/session/{session_id}/record", response_model=RecordAttemptResponse, tags=["Speaking"])
+@limiter.limit(f"{settings.rate_limit_per_minute}/minute")
 async def record_attempt(
-    session_id: str,
+    request: Request,
+    session_id: UUID,
     req: RecordAttemptRequest,
     token: dict = Depends(require_auth),
 ):
     """
-    Record a pronunciation attempt and get adaptive feedback.
-    
-    This endpoint:
-    1. Records the attempt for analytics
-    2. Calculates adaptive feedback based on score
-    3. Returns next action (repeat, next, advance difficulty)
+    Record a pronunciation attempt and update session state in the database.
     """
     user_id = token.get("sub")
     
     # Get session
-    session_data = _practice_sessions.get(session_id)
-    if not session_data:
-        raise HTTPException(status_code=404, detail="Session not found")
+    session_data = await run_in_threadpool(sp_service.get_session, session_id)
+    if not session_data or session_data.get("status") != "active":
+        raise HTTPException(status_code=404, detail="Active session not found")
     
     # Verify ownership
-    if session_data.get("user_id") != user_id:
+    if str(session_data.get("user_id")) != user_id:
         raise HTTPException(status_code=403, detail="Forbidden")
     
-    # Record the attempt
+    # Record the attempt in DB
     await run_in_threadpool(
         sp_service.record_practice_attempt,
         user_id,
@@ -179,35 +154,41 @@ async def record_attempt(
         req.word,
     )
     
-    # Update session state
-    word = req.word
-    word_attempts = session_data.get("word_attempts", {})
-    word_attempts[word] = word_attempts.get(word, 0) + 1
-    session_data["word_attempts"] = word_attempts
+    # Fetch word attempts for adaptive logic (from attempts table)
+    # Simple count for this session
+    attempts_count = execute_single(
+        "SELECT COUNT(*) as count FROM public.speaking_attempts WHERE session_id = %s AND word = %s",
+        (session_id, req.word)
+    )
+    word_attempts = attempts_count["count"] if attempts_count else 1
     
     # Calculate adaptive feedback
     current_index = session_data.get("current_index", 0)
-    current_difficulty = session_data.get("difficulty", "beginner")
+    current_difficulty = session_data.get("difficulty", "N5")
     
     adaptive = sp_service.calculate_adaptive_difficulty(
         current_difficulty,
         req.score,
-        word_attempts.get(word, 0),
+        word_attempts,
     )
     
     # Update index based on adaptive logic
-    if adaptive["should_repeat"]:
-        # Stay on current sentence
-        pass
-    else:
-        # Move to next
-        session_data["current_index"] = current_index + 1
+    next_index = current_index
+    if not adaptive["should_repeat"]:
+        next_index = current_index + 1
     
     # Update difficulty if advancing
+    next_difficulty = current_difficulty
     if adaptive["next_action"] in ["advance", "mastered"]:
-        session_data["difficulty"] = adaptive["next_difficulty"]
+        next_difficulty = adaptive["next_difficulty"]
     
-    _practice_sessions[session_id] = session_data
+    # Persist state back to DB
+    await run_in_threadpool(
+        sp_service.update_session_state,
+        session_id,
+        next_index,
+        next_difficulty
+    )
     
     return RecordAttemptResponse(
         success=True,
@@ -215,50 +196,45 @@ async def record_attempt(
     )
 
 
-@router.get("/practice/stats", response_model=PracticeStatsResponse, tags=["Speaking"])
+@router.get("/stats", response_model=PracticeStatsResponse, tags=["Speaking"])
+@limiter.limit("5/minute")
 async def get_practice_stats(
-    token: dict = Depends(require_own_user),
-):
-    """
-    Get the user's speaking practice statistics.
-    
-    Returns aggregate statistics about the user's practice history.
-    """
-    # TODO: Implement with actual database queries
-    # For now, return empty stats
-    return PracticeStatsResponse(
-        total_sessions=0,
-        total_attempts=0,
-        average_score=0.0,
-        words_practiced=0,
-        current_streak=0,
-    )
-
-
-@router.delete("/practice/session/{session_id}", tags=["Speaking"])
-async def end_practice_session(
-    session_id: str,
+    request: Request,
     token: dict = Depends(require_auth),
 ):
-    """End a speaking practice session."""
+    """
+    Get the user's speaking practice statistics from the database.
+    """
+    user_id = token.get("sub")
+    stats = await run_in_threadpool(sp_service.get_speaking_stats, user_id)
+    return PracticeStatsResponse(**stats)
+
+
+@router.delete("/session/{session_id}", tags=["Speaking"])
+async def end_practice_session(
+    session_id: UUID,
+    token: dict = Depends(require_auth),
+):
+    """End a speaking practice session in the database."""
     user_id = token.get("sub")
     
-    session_data = _practice_sessions.get(session_id)
+    session_data = await run_in_threadpool(sp_service.get_session, session_id)
     if not session_data:
         raise HTTPException(status_code=404, detail="Session not found")
     
-    if session_data.get("user_id") != user_id:
+    if str(session_data.get("user_id")) != user_id:
         raise HTTPException(status_code=403, detail="Forbidden")
     
-    # Clean up session
-    completed_index = session_data.get("current_index", 0)
-    total_sentences = len(session_data.get("sentences", []))
+    # Mark as abandoned or completed based on progress
+    current_index = session_data.get("current_index", 0)
+    total_sentences = session_data.get("total_sentences", 0)
+    status = "completed" if current_index >= total_sentences else "abandoned"
     
-    del _practice_sessions[session_id]
+    await run_in_threadpool(sp_service.end_session_db, session_id, status)
     
     return {
         "success": True,
-        "message": "Session ended",
-        "sentences_completed": completed_index,
+        "message": f"Session {status}",
+        "sentences_completed": current_index,
         "total_sentences": total_sentences,
     }

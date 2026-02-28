@@ -28,7 +28,7 @@ class ReadingConfig(TypedDict):
     exercises_per_session: int
     time_limit_minutes: int
     difficulty_level: (
-        str  # 'beginner' | 'elementary' | 'intermediate' | 'advanced' | 'adaptive'
+        str  # 'N5' | 'N4' | 'N3' | 'N2' | 'N1' | 'adaptive'
     )
     jlpt_target: Optional[int]
     vocab_weight: int
@@ -366,14 +366,16 @@ def generate_reading_exercise(
     difficulty = config.get("difficulty_level", "adaptive")
     if difficulty == "adaptive":
         level = context["user_level"]
-        if level <= 5:
-            difficulty = "beginner"
-        elif level <= 15:
-            difficulty = "elementary"
-        elif level <= 30:
-            difficulty = "intermediate"
+        if level <= 10:
+            difficulty = "N5"
+        elif level <= 20:
+            difficulty = "N4"
+        elif level <= 35:
+            difficulty = "N3"
+        elif level <= 50:
+            difficulty = "N2"
         else:
-            difficulty = "advanced"
+            difficulty = "N1"
 
     # 5. Determine JLPT target
     jlpt_target = config.get("jlpt_target") or _level_to_jlpt(context["user_level"])
@@ -510,7 +512,7 @@ def generate_reading_session(
             logger.error(f"Failed to generate exercise {i + 1}: {e}")
             # Add fallback
             jlpt = config.get("jlpt_target") or 5
-            exercises.append(_create_fallback_exercise(topic, "intermediate", jlpt))
+            exercises.append(_create_fallback_exercise(topic, "N3", jlpt))
 
     return exercises
 

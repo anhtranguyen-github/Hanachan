@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS public.reading_configs (
   exercises_per_session integer DEFAULT 5 CHECK (exercises_per_session BETWEEN 1 AND 20),
   time_limit_minutes integer DEFAULT 15 CHECK (time_limit_minutes BETWEEN 1 AND 60),
   -- Content settings
-  difficulty_level text DEFAULT 'adaptive' CHECK (difficulty_level IN ('beginner', 'elementary', 'intermediate', 'advanced', 'adaptive')),
+  difficulty_level text DEFAULT 'adaptive' CHECK (difficulty_level IN ('N5', 'N4', 'N3', 'N2', 'N1', 'adaptive')),
   jlpt_target integer CHECK (jlpt_target BETWEEN 1 AND 5),
   -- Distribution settings (must sum to 100)
   vocab_weight integer DEFAULT 40 CHECK (vocab_weight BETWEEN 0 AND 100),
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS public.reading_exercises (
   passage_en text, -- English translation
   passage_title text,
   -- Metadata
-  difficulty_level text DEFAULT 'intermediate',
+  difficulty_level text DEFAULT 'N3',
   jlpt_level integer,
   topic text,
   word_count integer DEFAULT 0,

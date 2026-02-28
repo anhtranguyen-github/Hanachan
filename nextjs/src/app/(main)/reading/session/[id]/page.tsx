@@ -22,6 +22,8 @@ import { getReadingSession, startReadingSession, submitAnswer, completeReadingSe
 import type { ReadingSession, ReadingExercise, ReadingQuestion, AnswerResult } from '@/features/reading/types';
 import { TOPIC_LABELS, TOPIC_EMOJIS } from '@/features/reading/types';
 
+import DOMPurify from 'isomorphic-dompurify';
+
 type SessionPhase = 'loading' | 'intro' | 'reading' | 'questions' | 'exercise_result' | 'session_complete';
 
 export default function ReadingSessionPage() {
@@ -324,7 +326,7 @@ export default function ReadingSessionPage() {
                         {showFurigana && currentExercise.passage_furigana ? (
                             <div
                                 className="text-lg leading-loose text-[#3E4A61] font-medium"
-                                dangerouslySetInnerHTML={{ __html: currentExercise.passage_furigana }}
+                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentExercise.passage_furigana, { ALLOWED_TAGS: ['ruby', 'rt', 'rp', 'mark', 'span', 'br', 'p', 'strong', 'em'], ALLOWED_ATTR: ['class'] }) }}
                             />
                         ) : (
                             <p className="text-lg leading-loose text-[#3E4A61] font-medium">

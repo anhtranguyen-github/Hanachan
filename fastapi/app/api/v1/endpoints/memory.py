@@ -32,6 +32,8 @@ from ....services.memory import semantic_memory as sem_mem
 from ....services.memory import session_memory as sess_mem
 from ....agents.user_profile import build_user_profile, profile_to_system_prompt
 from ....core.security import require_auth, require_own_user
+from ....core.rate_limit import limiter
+from ....core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +41,9 @@ router = APIRouter()
 
 
 @router.post("/context", response_model=ContextResponse, tags=["Context"])
+@limiter.limit(f"{settings.rate_limit_per_minute}/minute")
 async def get_chat_context(
+    request: Request,
     req: ContextRequest,
     token: dict = Depends(require_auth),
 ):
@@ -119,7 +123,9 @@ async def get_chat_context(
 @router.post(
     "/episodic/search", response_model=EpisodicSearchResponse, tags=["Episodic"]
 )
+@limiter.limit(f"{settings.rate_limit_per_minute}/minute")
 async def search_episodic(
+    request: Request,
     req: EpisodicSearchRequest,
     token: dict = Depends(require_auth),
 ):
@@ -132,7 +138,9 @@ async def search_episodic(
 
 
 @router.post("/episodic/add", response_model=AddEpisodicResponse, tags=["Episodic"])
+@limiter.limit(f"{settings.rate_limit_per_minute}/minute")
 async def add_episodic(
+    request: Request,
     req: AddEpisodicRequest,
     token: dict = Depends(require_auth),
 ):

@@ -1,29 +1,26 @@
-"""
-Schemas for Speaking Practice API
-"""
-
 from __future__ import annotations
 
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from typing import Optional, List, Dict, Any, Literal
+from uuid import UUID
+from pydantic import BaseModel, Field, conint, constr
 
 
 class PracticeSentenceSchema(BaseModel):
     """Schema for a single practice sentence."""
-    japanese: str = Field(..., description="Japanese sentence")
-    reading: str = Field(..., description="Reading/romaji")
-    english: str = Field(..., description="English translation")
+    japanese: str = Field(..., description="Japanese sentence", min_length=1)
+    reading: str = Field(..., description="Reading/romaji", min_length=1)
+    english: str = Field(..., description="English translation", min_length=1)
     source_word: str = Field(..., description="The word this sentence is based on")
-    difficulty: str = Field(..., description="Difficulty level: beginner, intermediate, advanced")
-    learned_words_count: int = Field(..., description="Number of learned words in sentence")
+    difficulty: Literal["N1", "N2", "N3", "N4", "N5"] = Field(..., description="Difficulty level")
+    learned_words_count: int = Field(..., description="Number of learned words in sentence", ge=0)
     audio_url: Optional[str] = Field(None, description="Audio URL for native pronunciation")
 
 
 class CreatePracticeSessionRequest(BaseModel):
     """Request to create a new speaking practice session."""
-    target_difficulty: Optional[str] = Field(
+    target_difficulty: Optional[Literal["N1", "N2", "N3", "N4", "N5"]] = Field(
         None, 
-        description="Target difficulty: beginner, intermediate, advanced (auto-detected if not provided)"
+        description="Target difficulty level (auto-detected if not provided)"
     )
 
 
@@ -38,7 +35,7 @@ class AdaptiveFeedback(BaseModel):
 class PracticeSessionResponse(BaseModel):
     """Response for a speaking practice session."""
     success: bool = Field(..., description="Whether the session was created successfully")
-    session_id: Optional[str] = Field(None, description="Unique session identifier")
+    session_id: Optional[UUID] = Field(None, description="Unique session identifier")
     sentences: List[PracticeSentenceSchema] = Field(default_factory=list, description="Selected sentences for practice")
     difficulty: str = Field(..., description="Current difficulty level")
     user_level: int = Field(..., description="User's curriculum level")
@@ -57,10 +54,10 @@ class NextPracticeItemResponse(BaseModel):
 
 class RecordAttemptRequest(BaseModel):
     """Request to record a pronunciation attempt."""
-    session_id: str = Field(..., description="Session identifier")
-    sentence: str = Field(..., description="The sentence that was practiced")
-    score: int = Field(..., description="Pronunciation score (0-100)")
-    word: str = Field(..., description="The word being practiced")
+    session_id: UUID = Field(..., description="Session identifier")
+    sentence: str = Field(..., description="The sentence that was practiced", min_length=1, max_length=1000)
+    score: int = Field(..., description="Pronunciation score (0-100)", ge=0, le=100)
+    word: str = Field(..., description="The word being practiced", min_length=1, max_length=100)
 
 
 class RecordAttemptResponse(BaseModel):

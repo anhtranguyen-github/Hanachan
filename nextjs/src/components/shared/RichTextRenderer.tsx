@@ -1,6 +1,15 @@
-
 import React from 'react';
 import { clsx } from 'clsx';
+import DOMPurify from 'isomorphic-dompurify';
+
+const SANITIZE_CONFIG = {
+    ALLOWED_TAGS: [
+        'span', 'strong', 'em', 'br', 'p', 'div', 'mark',
+        'ruby', 'rt', 'rp', // For Furigana support
+        'code', 'pre', 'ul', 'ol', 'li'
+    ],
+    ALLOWED_ATTR: ['class', 'style']
+};
 
 interface RichTextRendererProps {
     content: string | any[];
@@ -43,10 +52,13 @@ export function RichTextRenderer({ content, className }: RichTextRendererProps) 
         return <span className="text-primary-dark/20 italic">No content available</span>;
     }
 
+    // Sanitize HTML with allowed tags (especially ruby/mark for Japanese)
+    const sanitizedHtml = DOMPurify.sanitize(content, SANITIZE_CONFIG);
+
     return (
         <div
             className={clsx("hanachan-rich-text leading-relaxed", className)}
-            dangerouslySetInnerHTML={{ __html: content }}
+            dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />
     );
 }

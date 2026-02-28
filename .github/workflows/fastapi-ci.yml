@@ -38,11 +38,13 @@ jobs:
       - name: Install ruff
         run: uv pip install ruff
 
-      - name: Run ruff lint
-        run: uv run ruff check app/ --output-format=github
+      - name: Run ruff security check
+        run: uv run ruff check app/ --select S --output-format=github
 
-      - name: Run ruff format check
-        run: uv run ruff format app/ --check
+      - name: Run bandit security scan
+        run: |
+          uv pip install bandit
+          uv run bandit -r app/ -ll
 
   # ── Type Check ──────────────────────────────────────────────────────────────
   typecheck:

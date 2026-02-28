@@ -24,6 +24,13 @@ This document tracks all issues addressed in the codebase refactoring.
 | #18 | Single OR query instead of N+1 loop | `semantic_memory.py` |
 | #19 | Streaming timeouts | `chat.py` |
 | #20 | Structured JSON logging + RequestIdMiddleware | `logging.py`, `main.py` |
+| #21 | CSP hardening (removed unsafe-eval) | `nextjs/next.config.js` |
+| #22 | Speaking Practice Session Persistence | `fastapi/app/services/speaking_practice.py`, `fastapi/app/api/v1/endpoints/speaking.py` |
+| #23 | SQL Injection mitigation (column whitelisting) | `fastapi/app/api/v1/endpoints/reading.py` |
+| #24 | Authentication Bypass Fix (SUPABASE_SERVICE_KEY) | `fastapi/app/core/security.py`, `config.py` |
+| #25 | XSS Protection via HTML Sanitization | `nextjs/src/components/shared/RichTextRenderer.tsx`, `reading/session/[id]/page.tsx`, `grammar/[slug]/page.tsx` |
+| #26 | Learning Modules Authentication Hardening | `fastapi/app/api/v1/endpoints/sentences.py`, `reading.py` |
+| #27 | Rate Limiting Expansion across learning APIs | `fastapi/app/api/v1/endpoints/speaking.py`, `video_dictation.py`, `reading.py` |
 
 ## Detailed Fixes
 
@@ -70,3 +77,31 @@ This document tracks all issues addressed in the codebase refactoring.
 ### Issue #20 — Structured Logging
 - **Problem:** Plain text logs, no request correlation
 - **Solution:** JSON formatter with request-ID middleware
+
+### Issue #21 — CSP Hardening
+- **Problem:** Next.js CSP used `'unsafe-eval'`
+- **Solution:** Removed `'unsafe-eval'` to improve XSS safety
+
+### Issue #22 — Persistent Speaking Practice
+- **Problem:** Speaking sessions were only store in-memory (unbounded)
+- **Solution:** SQL-backed session persistence with aggregate statistics
+
+### Issue #23 — SQL Injection Mitigation
+- **Problem:** Dynamic SQL in reading config lacked validation
+- **Solution:** Strict column whitelisting for dynamic UPDATE/INSERT queries
+
+### Issue #24 — Authentication Bypass
+- **Problem:** Public `SUPABASE_ANON_KEY` could be used for `service_role` access
+- **Solution:** Introduced dedicated `SUPABASE_SERVICE_KEY` and restricted bypass to this secret only
+
+### Issue #25 — XSS Protection
+- **Problem:** `dangerouslySetInnerHTML` used on untrusted content without sanitization
+- **Solution:** Integrated `isomorphic-dompurify` to sanitize HTML across all dynamic UI components
+
+### Issue #26 — API Auth Hardening
+- **Problem:** Sentence endpoints were public; some metrics allowed user_id spoofing
+- **Solution:** Applied `require_auth` to all learning endpoints and enforced JWT subject validation
+
+### Issue #27 — Rate Limiting Expansion
+- **Problem:** Stateful operations (session creation, records) lacked protection against abuse
+- **Solution:** Applied SlowAPI limits (5-20/min) across Speaking, Reading, and Video Dictation modules

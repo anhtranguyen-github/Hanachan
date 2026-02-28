@@ -11,8 +11,12 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
+from uuid import UUID
+
+from ....core.rate_limit import limiter
+from ....core.config import settings
 
 from ....schemas.video_dictation import (
     CreateDictationSessionRequest,
@@ -33,11 +37,13 @@ router = APIRouter()
 
 
 @router.post(
-    "/dictation/session",
+    "/session",
     response_model=DictationSessionResponse,
     tags=["Video Dictation"],
 )
+@limiter.limit("5/minute")
 async def create_dictation_session(
+    request: Request,
     req: CreateDictationSessionRequest,
     token: dict = Depends(require_auth),
 ):
@@ -89,12 +95,14 @@ async def create_dictation_session(
 
 
 @router.post(
-    "/dictation/session/{session_id}/attempt",
+    "/session/{session_id}/attempt",
     response_model=SubmitDictationAttemptResponse,
     tags=["Video Dictation"],
 )
+@limiter.limit(f"{settings.rate_limit_per_minute}/minute")
 async def submit_dictation_attempt(
-    session_id: str,
+    request: Request,
+    session_id: UUID,
     req: SubmitDictationAttemptRequest,
     token: dict = Depends(require_auth),
 ):
@@ -148,12 +156,14 @@ async def submit_dictation_attempt(
 
 
 @router.get(
-    "/dictation/session/{session_id}/status",
+    "/session/{session_id}/status",
     response_model=DictationSessionStatusResponse,
     tags=["Video Dictation"],
 )
+@limiter.limit("10/minute")
 async def get_session_status(
-    session_id: str,
+    request: Request,
+    session_id: UUID,
     token: dict = Depends(require_auth),
 ):
     """
@@ -178,12 +188,14 @@ async def get_session_status(
 
 
 @router.get(
-    "/dictation/stats",
+    "/stats",
     response_model=DictationStatsResponse,
     tags=["Video Dictation"],
 )
+@limiter.limit("5/minute")
 async def get_dictation_stats(
-    token: dict = Depends(require_own_user),
+    request: Request,
+    token: dict = Depends(require_auth),
 ):
     """
     Get the user's dictation practice statistics.
@@ -206,11 +218,11 @@ async def get_dictation_stats(
 
 
 @router.delete(
-    "/dictation/session/{session_id}",
+    "/session/{session_id}",
     tags=["Video Dictation"],
 )
 async def end_dictation_session(
-    session_id: str,
+    session_id: UUID,
     token: dict = Depends(require_auth),
 ):
     """

@@ -24,6 +24,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
@@ -52,6 +53,7 @@ jobs:
             type=sha,prefix=sha-
 
       - name: Build and push FastAPI image
+        id: build-fastapi-image
         uses: docker/build-push-action@v5
         with:
           context: ./fastapi
@@ -59,8 +61,19 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta-fastapi.outputs.tags }}
           labels: ${{ steps.meta-fastapi.outputs.labels }}
+          provenance: true
+          sbom: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Docker Scout Scan (FastAPI)
+        if: github.event_name == 'pull_request'
+        uses: docker/scout-action@v1
+        with:
+          command: cves,quickview
+          image: ${{ steps.meta-fastapi.outputs.tags }}
+          only-severities: critical,high
+          exit-code: true
 
   # ── Build & Push Next.js Image ───────────────────────────────────────────────
   build-nextjs:
@@ -69,6 +82,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      pull-requests: write # Need for scout comments
 
     steps:
       - uses: actions/checkout@v4
@@ -97,6 +111,7 @@ jobs:
             type=sha,prefix=sha-
 
       - name: Build and push Next.js image
+        id: build-nextjs-image
         uses: docker/build-push-action@v5
         with:
           context: ./nextjs
@@ -104,9 +119,20 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta-nextjs.outputs.tags }}
           labels: ${{ steps.meta-nextjs.outputs.labels }}
+          provenance: true
+          sbom: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
             NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
             NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
+
+      - name: Docker Scout Scan (Next.js)
+        if: github.event_name == 'pull_request'
+        uses: docker/scout-action@v1
+        with:
+          command: cves,quickview
+          image: ${{ steps.meta-nextjs.outputs.tags }}
+          only-severities: critical,high
+          exit-code: true

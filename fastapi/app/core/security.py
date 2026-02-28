@@ -57,7 +57,8 @@ def require_auth(
     token = creds.credentials
 
     # 1. Allow Service Role Key (Server-to-Server)
-    if token == settings.supabase_key:
+    # MUST be a dedicated secret, not the public anon 'supabase_key'.
+    if settings.supabase_service_key and token == settings.supabase_service_key:
         return {"sub": "service_role", "role": "service_role"}
 
     # 2. RS256 (User JWT)

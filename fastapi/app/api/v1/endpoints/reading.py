@@ -17,8 +17,8 @@ Provides:
 import json
 import logging
 from datetime import datetime, timezone, date, timedelta
-from typing import Any, List, Optional
-from uuid import uuid4
+from typing import Any, List, Optional, Literal
+from uuid import uuid4, UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
@@ -30,6 +30,10 @@ from ....agents.reading_creator import (
     ReadingConfig,
     generate_reading_session,
 )
+
+from ....core.rate_limit import limiter
+from ....core.config import settings
+from fastapi import Request
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/reading", tags=["Reading"])
@@ -51,14 +55,14 @@ def get_user_id(token: dict = Depends(require_auth)) -> str:
 class ReadingConfigUpdate(BaseModel):
     exercises_per_session: Optional[int] = Field(None, ge=1, le=20)
     time_limit_minutes: Optional[int] = Field(None, ge=1, le=60)
-    difficulty_level: Optional[str] = None
+    difficulty_level: Optional[Literal["N1", "N2", "N3", "N4", "N5", "adaptive"]] = None
     jlpt_target: Optional[int] = Field(None, ge=1, le=5)
     vocab_weight: Optional[int] = Field(None, ge=0, le=100)
     grammar_weight: Optional[int] = Field(None, ge=0, le=100)
     kanji_weight: Optional[int] = Field(None, ge=0, le=100)
     include_furigana: Optional[bool] = None
     include_translation: Optional[bool] = None
-    passage_length: Optional[str] = None
+    passage_length: Optional[Literal["short", "medium", "long"]] = None
     topic_preferences: Optional[List[str]] = None
     auto_generate: Optional[bool] = None
 
@@ -134,14 +138,26 @@ async def update_reading_config(
         (user_id,),
     )
 
-    update_data = {k: v for k, v in body.model_dump().items() if v is not None}
+    ALLOWED_CONFIG_COLUMNS = {
+        "exercises_per_session", "time_limit_minutes", "difficulty_level",
+        "jlpt_target", "vocab_weight", "grammar_weight", "kanji_weight",
+        "include_furigana", "include_translation", "passage_length",
+        "topic_preferences", "auto_generate"
+    }
+    
+    update_data = {
+        k: v for k, v in body.model_dump().items() 
+        if v is not None and k in ALLOWED_CONFIG_COLUMNS
+    }
 
     if existing:
         # Update
         if not update_data:
             return {"message": "No changes"}
+            
         set_clauses = ", ".join([f"{k} = %s" for k in update_data.keys()])
         values = list(update_data.values()) + [user_id]
+        
         execute_query(
             f"UPDATE public.reading_configs SET {set_clauses}, updated_at = NOW() WHERE user_id = %s",
             values,
@@ -162,14 +178,21 @@ async def update_reading_config(
             "topic_preferences": ["daily_life", "culture", "nature"],
             "auto_generate": True,
         }
+        
+        # Merge update_data into defaults
         defaults.update(update_data)
         defaults["user_id"] = user_id
+        
+        # Whitelist columns for INSERT
+        allowed_insert = ALLOWED_CONFIG_COLUMNS | {"user_id"}
+        final_data = {k: v for k, v in defaults.items() if k in allowed_insert}
 
-        cols = ", ".join(defaults.keys())
-        placeholders = ", ".join(["%s"] * len(defaults))
+        cols = ", ".join(final_data.keys())
+        placeholders = ", ".join(["%s"] * len(final_data))
+        
         execute_query(
             f"INSERT INTO public.reading_configs ({cols}) VALUES ({placeholders})",
-            list(defaults.values()),
+            list(final_data.values()),
             fetch=False,
         )
 
@@ -182,7 +205,9 @@ async def update_reading_config(
 
 
 @router.post("/sessions")
+@limiter.limit("5/minute")  # Generation is expensive
 async def create_reading_session(
+    request: Request,
     body: CreateSessionRequest,
     user_id: str = Depends(get_user_id),
 ):
@@ -349,7 +374,7 @@ async def list_reading_sessions(
 
 @router.get("/sessions/{session_id}")
 async def get_session_detail(
-    session_id: str,
+    session_id: UUID,
     user_id: str = Depends(get_user_id),
 ):
     """Get session details with all exercises."""
@@ -405,7 +430,7 @@ async def get_session_detail(
 
 @router.post("/sessions/{session_id}/start")
 async def start_session(
-    session_id: str,
+    session_id: UUID,
     user_id: str = Depends(get_user_id),
 ):
     """Mark a session as active/started."""
@@ -441,8 +466,10 @@ async def start_session(
 
 
 @router.post("/sessions/{session_id}/complete")
+@limiter.limit("10/minute")
 async def complete_session(
-    session_id: str,
+    request: Request,
+    session_id: UUID,
     body: CompleteSessionRequest,
     user_id: str = Depends(get_user_id),
 ):
@@ -520,7 +547,7 @@ async def complete_session(
 
 @router.post("/exercises/{exercise_id}/answer")
 async def submit_answer(
-    exercise_id: str,
+    exercise_id: UUID,
     body: SubmitAnswerRequest,
     user_id: str = Depends(get_user_id),
 ):
@@ -741,15 +768,15 @@ async def get_metrics_history(
 ):
     """Get historical reading metrics."""
     rows = execute_query(
-        f"""
+        """
         SELECT date, sessions_completed, exercises_completed,
                total_time_seconds, correct_answers, total_answers,
                avg_score, words_read
         FROM public.reading_metrics
-        WHERE user_id = %s AND date >= CURRENT_DATE - INTERVAL '{days} days'
+        WHERE user_id = %s AND date >= CURRENT_DATE - (%s || ' days')::INTERVAL
         ORDER BY date ASC
         """,
-        (user_id,),
+        (user_id, str(days)),
     )
     return {"history": rows or [], "days": days}
 

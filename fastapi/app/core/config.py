@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     # Supabase
     supabase_url: str = ""
     supabase_key: str = ""
+    supabase_service_key: str = ""  # New: dedicated secret for service_role access
     supabase_jwt_secret: str = ""  # Required for JWT validation — no default
 
     # PostgreSQL (direct connection for memory modules)
