@@ -569,7 +569,7 @@ export default function ChatbotPage() {
                         </div>
                         {/* Send button */}
                         <button
-                            onClick={handleSend}
+                            onClick={() => handleSend()}
                             data-testid="chat-send-button"
                             disabled={!input.trim() || isTyping}
                             className="absolute right-2.5 top-1/2 -translate-y-1/2 w-10 h-10 bg-[#3E4A61] disabled:bg-[#CBD5E0] text-white rounded-full flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-all"
