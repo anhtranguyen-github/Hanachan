@@ -272,7 +272,7 @@ function DynamicSentenceCard({
     return (
         <div className="glass-card p-4 space-y-3 relative overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-            
+
             {/* Progress */}
             <div className="flex items-center justify-between">
                 <span className="text-[8px] font-black uppercase tracking-widest text-foreground/30">
@@ -348,7 +348,7 @@ interface PracticePanelProps {
     onReset: () => void;
 }
 
-export function PracticePanel({
+function PracticePanel({
     mode,
     // Static
     selectedPrompt,
@@ -376,18 +376,18 @@ export function PracticePanel({
     const [showFilters, setShowFilters] = useState(false);
 
     // Determine which sentence to show
-    const currentJapanese = mode === 'dynamic' && dynamicSentence 
-        ? dynamicSentence.japanese 
+    const currentJapanese = mode === 'dynamic' && dynamicSentence
+        ? dynamicSentence.japanese
         : selectedPrompt?.japanese || '';
-    
-    const currentReading = mode === 'dynamic' && dynamicSentence 
-        ? dynamicSentence.reading 
+
+    const currentReading = mode === 'dynamic' && dynamicSentence
+        ? dynamicSentence.reading
         : selectedPrompt?.reading || '';
-    
-    const currentEnglish = mode === 'dynamic' && dynamicSentence 
-        ? dynamicSentence.english 
+
+    const currentEnglish = mode === 'dynamic' && dynamicSentence
+        ? dynamicSentence.english
         : selectedPrompt?.english || '';
-    
+
     const currentDifficulty = mode === 'dynamic' && dynamicSentence
         ? dynamicSentence.difficulty
         : selectedPrompt?.difficulty || 'beginner';
@@ -419,7 +419,7 @@ export function PracticePanel({
                             Progress:
                         </span>
                         <div className="w-20 h-2 bg-[#F7FAFC] rounded-full overflow-hidden border border-border/20">
-                            <div 
+                            <div
                                 className="h-full bg-gradient-to-r from-[#F4ACB7] to-[#D88C9A] rounded-full transition-all duration-500"
                                 style={{ width: `${((dynamicIndex || 0) / (dynamicTotal || 1)) * 100}%` }}
                             />
@@ -436,7 +436,7 @@ export function PracticePanel({
                 <div className="p-6 space-y-6 max-w-2xl mx-auto">
                     {/* Prompt Display */}
                     {mode === 'dynamic' && dynamicSentence ? (
-                        <DynamicSentenceCard 
+                        <DynamicSentenceCard
                             sentence={dynamicSentence}
                             index={dynamicIndex || 0}
                             total={dynamicTotal || 0}
@@ -652,17 +652,17 @@ export default function SpeakingPracticePage() {
     // Handle recording complete - integrate with dynamic session
     const handleRecordingComplete = useCallback(async (assessmentResult: PronunciationAssessmentResult) => {
         // Add to history
-        const prompt = practiceMode === 'dynamic' && dynamicSentence 
-            ? { 
-                id: 'dynamic', 
-                japanese: dynamicSentence.japanese, 
-                reading: dynamicSentence.reading, 
-                english: dynamicSentence.english, 
-                difficulty: dynamicSentence.difficulty, 
-                category: 'daily-life' as PromptCategory 
-              }
+        const prompt = practiceMode === 'dynamic' && dynamicSentence
+            ? {
+                id: 'dynamic',
+                japanese: dynamicSentence.japanese,
+                reading: dynamicSentence.reading,
+                english: dynamicSentence.english,
+                difficulty: dynamicSentence.difficulty,
+                category: 'daily-life' as PromptCategory
+            }
             : selectedPrompt;
-        
+
         setSessionHistory(prev => {
             const entry = { prompt, result: assessmentResult };
             return [entry, ...prev].slice(0, 20);
@@ -679,7 +679,7 @@ export default function SpeakingPracticePage() {
         const text = practiceMode === 'dynamic' && dynamicSentence
             ? dynamicSentence.japanese
             : selectedPrompt?.japanese;
-        
+
         if (text) {
             await startAssessment(text);
         }
