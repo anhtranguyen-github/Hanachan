@@ -5,18 +5,20 @@ from pydantic import BaseModel, Field
 # Session / Thread models
 # ---------------------------------------------------------------------------
 
+
 class SessionMessage(BaseModel):
-    role: str                         # 'user' | 'assistant' | 'system'
+    role: str  # 'user' | 'assistant' | 'system'
     content: str
     timestamp: Optional[str] = None
 
 
 class SessionInfo(BaseModel):
     """Full session data including message history."""
+
     session_id: str
     user_id: str
-    title: Optional[str] = None       # auto-generated after first exchange
-    summary: Optional[str] = None     # rolling summary, updated each turn
+    title: Optional[str] = None  # auto-generated after first exchange
+    summary: Optional[str] = None  # rolling summary, updated each turn
     created_at: str
     updated_at: str
     message_count: int
@@ -26,6 +28,7 @@ class SessionInfo(BaseModel):
 
 class SessionSummary(BaseModel):
     """Lightweight session listing item (no messages)."""
+
     session_id: str
     user_id: str
     title: Optional[str] = None

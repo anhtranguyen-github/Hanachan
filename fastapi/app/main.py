@@ -3,6 +3,7 @@ FastAPI Memory Modules Backend
 ==============================
 Main entrypoint for the refactored modular backend.
 """
+
 from __future__ import annotations
 
 import logging
@@ -35,6 +36,7 @@ logger = logging.getLogger(__name__)
 # Request body size limit (Issue #15)
 # ---------------------------------------------------------------------------
 
+
 class MaxBodySizeMiddleware(BaseHTTPMiddleware):
     MAX_BODY_BYTES = 64 * 1024  # 64 KB
 
@@ -56,6 +58,7 @@ class MaxBodySizeMiddleware(BaseHTTPMiddleware):
 # ---------------------------------------------------------------------------
 # Lifespan (Issue #16)
 # ---------------------------------------------------------------------------
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

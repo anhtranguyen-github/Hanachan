@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from .session import SessionMessage, SessionSummary
 from .memory import EpisodicMemory
 
+
 class ContextRequest(BaseModel):
     user_id: str
     query: str
@@ -15,6 +16,7 @@ class ContextResponse(BaseModel):
     Ready-to-inject context block for a chatbot system prompt.
     Concatenate `system_prompt_block` before your system message.
     """
+
     user_id: str
     query: str
     system_prompt_block: str

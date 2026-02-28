@@ -5,21 +5,29 @@ from pydantic import BaseModel, ConfigDict, Field
 # Internal / LLM-structured-output models
 # ---------------------------------------------------------------------------
 
+
 class Node(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    id: str = Field(description="Unique identifier — a person's name, company ticker, or concept.")
-    type: str = Field(description="Node type, e.g. 'User', 'Company', 'InvestmentPhilosophy'.")
+    id: str = Field(
+        description="Unique identifier — a person's name, company ticker, or concept."
+    )
+    type: str = Field(
+        description="Node type, e.g. 'User', 'Company', 'InvestmentPhilosophy'."
+    )
 
 
 class Relationship(BaseModel):
     model_config = ConfigDict(extra="forbid")
     source: Node = Field(description="Source node.")
     target: Node = Field(description="Target node.")
-    type: str = Field(description="Relationship type, e.g. 'INTERESTED_IN', 'HAS_GOAL'.")
+    type: str = Field(
+        description="Relationship type, e.g. 'INTERESTED_IN', 'HAS_GOAL'."
+    )
 
 
 class KnowledgeGraph(BaseModel):
     """Structured knowledge extracted from a conversation by the LLM."""
+
     model_config = ConfigDict(extra="forbid")
     relationships: List[Relationship] = Field(
         description="Relationships to add to the knowledge graph."
@@ -29,6 +37,7 @@ class KnowledgeGraph(BaseModel):
 # ---------------------------------------------------------------------------
 # Episodic memory
 # ---------------------------------------------------------------------------
+
 
 class EpisodicMemory(BaseModel):
     id: str
@@ -69,6 +78,7 @@ class ForgetEpisodicRequest(BaseModel):
 # Semantic memory
 # ---------------------------------------------------------------------------
 
+
 class SemanticFact(BaseModel):
     source_id: str
     source_type: str
@@ -104,6 +114,7 @@ class AddSemanticResponse(BaseModel):
 # User Profile
 # ---------------------------------------------------------------------------
 
+
 class UserProfile(BaseModel):
     user_id: str
     name: Optional[str] = None
@@ -118,6 +129,7 @@ class UserProfile(BaseModel):
 # Consolidation
 # ---------------------------------------------------------------------------
 
+
 class ConsolidationResult(BaseModel):
     user_id: str
     memories_before: int
@@ -129,6 +141,7 @@ class ConsolidationResult(BaseModel):
 # ---------------------------------------------------------------------------
 # Inspect & Clear
 # ---------------------------------------------------------------------------
+
 
 class ClearResponse(BaseModel):
     user_id: str

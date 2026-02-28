@@ -1,6 +1,7 @@
 """
 Semantic Memory Module — backed by Neo4j (cloud).
 """
+
 from __future__ import annotations
 
 import logging
@@ -34,6 +35,7 @@ def _get_driver() -> Driver:
 # ---------------------------------------------------------------------------
 # Initialisation & health
 # ---------------------------------------------------------------------------
+
 
 def init_neo4j() -> None:
     """Verify connectivity and ensure the fulltext index exists."""
@@ -90,6 +92,7 @@ def _safe_rel_type(raw: str) -> str:
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def add_semantic_facts(user_id: str, kg: KnowledgeGraph) -> int:
     """Write KnowledgeGraph relationships to Neo4j in a single transaction.
 
@@ -99,6 +102,7 @@ def add_semantic_facts(user_id: str, kg: KnowledgeGraph) -> int:
         return 0
     driver = _get_driver()
     with driver.session() as session:
+
         def _write_tx(tx):
             for rel in kg.relationships:
                 # Ensure both endpoint nodes exist
@@ -136,6 +140,7 @@ def add_nodes_and_relationships(
     """Manually add nodes and relationships in a single atomic transaction."""
     driver = _get_driver()
     with driver.session() as session:
+
         def _write_tx(tx):
             for node in nodes:
                 tx.run(
@@ -167,13 +172,26 @@ def search_semantic_memory(user_id: str, keywords: List[str]) -> List[Dict[str, 
         return []
 
     # 1. Clean and enhance keywords
-    noise = {"ABOUT", "ME", "THE", "IS", "WHAT", "DO", "YOU", "KNOW", "FOR", "AND", "MY", "FACTS"}
+    noise = {
+        "ABOUT",
+        "ME",
+        "THE",
+        "IS",
+        "WHAT",
+        "DO",
+        "YOU",
+        "KNOW",
+        "FOR",
+        "AND",
+        "MY",
+        "FACTS",
+    }
     clean_kws = [k.strip().upper() for k in keywords if k.strip().upper() not in noise]
-    
+
     # If all keywords were noise, use original keywords but at least we tried
     if not clean_kws:
         clean_kws = [k.upper() for k in keywords]
-    
+
     logger.info(f"search_semantic_memory clean_kws: {clean_kws}")
 
     # Build Lucene query with fuzzy matching (~) for each term, quoting terms with spaces
@@ -218,10 +236,27 @@ def search_semantic_memory(user_id: str, keywords: List[str]) -> List[Dict[str, 
                     )
 
             # 2. Fallback: If nothing found or query is general, pull all persona relationships
-            is_general = any(k.upper() in {"ME", "MY", "INFO", "FACTS", "INTERESTS", "GOALS", "ABOUT", "PROFILE"} for k in clean_kws)
-            logger.info(f"search_semantic_memory results_len: {len(results)}, is_general: {is_general}")
+            is_general = any(
+                k.upper()
+                in {
+                    "ME",
+                    "MY",
+                    "INFO",
+                    "FACTS",
+                    "INTERESTS",
+                    "GOALS",
+                    "ABOUT",
+                    "PROFILE",
+                }
+                for k in clean_kws
+            )
+            logger.info(
+                f"search_semantic_memory results_len: {len(results)}, is_general: {is_general}"
+            )
             if (not results or is_general) and len(results) < 10:
-                logger.info(f"search_semantic_memory entering fallback for user: {user_id}")
+                logger.info(
+                    f"search_semantic_memory entering fallback for user: {user_id}"
+                )
                 extra_records = session.run(
                     """
                     MATCH (n:Entity {user_id: $user_id})-[r]-(m)
@@ -241,7 +276,10 @@ def search_semantic_memory(user_id: str, keywords: List[str]) -> List[Dict[str, 
                         }
                     )
         except Exception as exc:
-            logger.warning("semantic_search_failed", extra={"error": str(exc), "kw_query": kw_query})
+            logger.warning(
+                "semantic_search_failed",
+                extra={"error": str(exc), "kw_query": kw_query},
+            )
             return []
 
     return _deduplicate(results)
@@ -289,7 +327,9 @@ def get_graph_schema() -> Dict[str, Any]:
     driver = _get_driver()
     with driver.session() as session:
         labels = [r["label"] for r in session.run("CALL db.labels()")]
-        rel_types = [r["relationshipType"] for r in session.run("CALL db.relationshipTypes()")]
+        rel_types = [
+            r["relationshipType"] for r in session.run("CALL db.relationshipTypes()")
+        ]
     return {"node_labels": labels, "relationship_types": rel_types}
 
 

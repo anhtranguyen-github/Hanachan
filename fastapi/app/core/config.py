@@ -1,6 +1,7 @@
 """
 Configuration — loads from .env in the project root.
 """
+
 import os
 from pathlib import Path
 from typing import List, Optional
@@ -65,6 +66,7 @@ class Settings(BaseSettings):
         """Parse allowed_origins from string or list."""
         if isinstance(v, str):
             import json
+
             try:
                 return json.loads(v)
             except json.JSONDecodeError:
@@ -77,6 +79,7 @@ class Settings(BaseSettings):
         """Parse trusted_proxies from string or list."""
         if isinstance(v, str):
             import json
+
             try:
                 return json.loads(v)
             except json.JSONDecodeError:

@@ -7,6 +7,7 @@ Fixes:
   Issue #12 — nuclear delete requires auth + ownership + confirmation + audit log
   Issue #16 — health endpoint reflects real-time service status
 """
+
 from __future__ import annotations
 
 import logging
@@ -15,7 +16,13 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 
-from ....schemas.memory import ClearResponse, HealthResponse, ConsolidationResult, Node, Relationship
+from ....schemas.memory import (
+    ClearResponse,
+    HealthResponse,
+    ConsolidationResult,
+    Node,
+    Relationship,
+)
 from ....services.memory import episodic_memory as ep_mem
 from ....services.memory import semantic_memory as sem_mem
 from ....services.memory import session_memory as sess_mem
@@ -38,7 +45,7 @@ async def health_live():
 @router.get("/health/detailed", response_model=HealthResponse, tags=["System"])
 async def health_detailed(request: Request, token: dict = Depends(require_auth)):
     """Check connectivity to all backend services (real-time, not cached startup state).
-    
+
     Requires authentication to prevent unauthorized access to internal service status.
     """
     degraded = getattr(request.app.state, "degraded_services", [])
@@ -76,7 +83,9 @@ async def run_consolidation(
     try:
         return await run_in_threadpool(consolidate_memories, user_id)
     except Exception as exc:
-        logger.error("consolidation_error", extra={"user_id": user_id, "error": str(exc)})
+        logger.error(
+            "consolidation_error", extra={"user_id": user_id, "error": str(exc)}
+        )
         raise HTTPException(status_code=500, detail="Consolidation failed")
 
 

@@ -1,6 +1,7 @@
 """
 Session / Working Memory — backed by PostgreSQL (Supabase).
 """
+
 from __future__ import annotations
 
 import logging
@@ -29,33 +30,38 @@ def shutdown_bg_executor() -> None:
         _bg_executor = None
         logger.info("session_memory_bg_executor_shutdown")
 
+
 # ---------------------------------------------------------------------------
 # LLM prompts
 # ---------------------------------------------------------------------------
 
-_TITLE_PROMPT = ChatPromptTemplate.from_messages([
-    (
-        "system",
-        "Generate a concise, descriptive title (5 words max) for the following "
-        "conversation snippet. Return ONLY the title, no punctuation or quotes.",
-    ),
-    ("human", "{snippet}"),
-])
+_TITLE_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "Generate a concise, descriptive title (5 words max) for the following "
+            "conversation snippet. Return ONLY the title, no punctuation or quotes.",
+        ),
+        ("human", "{snippet}"),
+    ]
+)
 
-_SUMMARY_PROMPT = ChatPromptTemplate.from_messages([
-    (
-        "system",
-        "You are updating a rolling conversation summary. "
-        "Given the EXISTING summary and the LATEST exchange, produce an updated summary "
-        "that captures all important context in ≤3 sentences. "
-        "Return ONLY the updated summary.",
-    ),
-    (
-        "human",
-        "Existing summary:\n{existing_summary}\n\n"
-        "Latest exchange:\nUser: {user_msg}\nAssistant: {assistant_msg}",
-    ),
-])
+_SUMMARY_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are updating a rolling conversation summary. "
+            "Given the EXISTING summary and the LATEST exchange, produce an updated summary "
+            "that captures all important context in ≤3 sentences. "
+            "Return ONLY the updated summary.",
+        ),
+        (
+            "human",
+            "Existing summary:\n{existing_summary}\n\n"
+            "Latest exchange:\nUser: {user_msg}\nAssistant: {assistant_msg}",
+        ),
+    ]
+)
 
 
 def _generate_title(user_msg: str, assistant_msg: str) -> str:
@@ -84,6 +90,7 @@ def _update_summary(existing: str, user_msg: str, assistant_msg: str) -> str:
 # ---------------------------------------------------------------------------
 # Session lifecycle
 # ---------------------------------------------------------------------------
+
 
 def create_session(user_id: str, metadata: Optional[Dict[str, Any]] = None) -> str:
     session_id = str(uuid.uuid4())
@@ -142,8 +149,7 @@ def update_session_meta(
     now = datetime.now(timezone.utc)
     if title and metadata:
         execute_query(
-            "UPDATE public.chat_sessions SET title = %s, "
-            "updated_at = %s WHERE id = %s",
+            "UPDATE public.chat_sessions SET title = %s, updated_at = %s WHERE id = %s",
             (title, now, session_id),
             fetch=False,
         )
@@ -155,8 +161,7 @@ def update_session_meta(
         )
     elif metadata:
         execute_query(
-            "UPDATE public.chat_sessions SET updated_at = %s "
-            "WHERE id = %s",
+            "UPDATE public.chat_sessions SET updated_at = %s WHERE id = %s",
             (now, session_id),
             fetch=False,
         )
@@ -191,6 +196,7 @@ def delete_all_sessions(user_id: str) -> int:
 # ---------------------------------------------------------------------------
 # Message management + async title/summary (fire-and-forget)
 # ---------------------------------------------------------------------------
+
 
 def add_message(session_id: str, role: str, content: str) -> bool:
     now = datetime.now(timezone.utc)

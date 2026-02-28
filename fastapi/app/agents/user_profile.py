@@ -1,6 +1,7 @@
 """
 User Profile Module.
 """
+
 from __future__ import annotations
 
 import json
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Raw graph queries
 # ---------------------------------------------------------------------------
+
 
 def _get_raw_facts(user_id: str) -> List[Dict[str, Any]]:
     """Return all semantic triples for this user."""
@@ -45,21 +47,23 @@ def _facts_to_text(facts: List[Dict[str, Any]]) -> str:
 # Profile generation
 # ---------------------------------------------------------------------------
 
-_PROFILE_PROMPT = ChatPromptTemplate.from_messages([
-    (
-        "system",
-        "You are a user profiling expert. Given a set of facts extracted from "
-        "conversations with a user, synthesise a concise structured profile.\n"
-        "Return a JSON object with these keys:\n"
-        "  name (str|null), preferences (list[str]), goals (list[str]), "
-        "interests (list[str]), facts (list[str]).\n"
-        "Keep each list to at most 10 items. Return ONLY valid JSON, no markdown.",
-    ),
-    (
-        "human",
-        "Facts about user '{user_id}':\n{facts_text}",
-    ),
-])
+_PROFILE_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are a user profiling expert. Given a set of facts extracted from "
+            "conversations with a user, synthesise a concise structured profile.\n"
+            "Return a JSON object with these keys:\n"
+            "  name (str|null), preferences (list[str]), goals (list[str]), "
+            "interests (list[str]), facts (list[str]).\n"
+            "Keep each list to at most 10 items. Return ONLY valid JSON, no markdown.",
+        ),
+        (
+            "human",
+            "Facts about user '{user_id}':\n{facts_text}",
+        ),
+    ]
+)
 
 
 def build_user_profile(user_id: str) -> UserProfile:
@@ -95,14 +99,19 @@ def build_user_profile(user_id: str) -> UserProfile:
             raw_triples=facts,
         )
     except Exception as exc:
-        logger.error("user_profile_llm_error", extra={"user_id": user_id, "error": str(exc)})
+        logger.error(
+            "user_profile_llm_error", extra={"user_id": user_id, "error": str(exc)}
+        )
         return UserProfile(
             user_id=user_id,
             name=None,
             preferences=[],
             goals=[],
             interests=[],
-            facts=[f"{f.get('source',{}).get('id','?')} {f.get('relationship','?')} {f.get('target',{}).get('id','?')}" for f in facts[:20]],
+            facts=[
+                f"{f.get('source', {}).get('id', '?')} {f.get('relationship', '?')} {f.get('target', {}).get('id', '?')}"
+                for f in facts[:20]
+            ],
             raw_triples=facts,
         )
 

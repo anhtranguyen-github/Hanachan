@@ -2,6 +2,7 @@ from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field
 from datetime import datetime
 
+
 class KUStatus(BaseModel):
     ku_id: str
     slug: str
@@ -17,6 +18,7 @@ class KUStatus(BaseModel):
     reps: int = 0
     lapses: int = 0
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
 
 class UserLearningSummary(BaseModel):
     user_id: str

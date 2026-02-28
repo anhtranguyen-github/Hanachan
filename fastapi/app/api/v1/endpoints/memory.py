@@ -5,6 +5,7 @@ Fixes:
   Issue #6  — run_in_threadpool for sync code
   Issue #14 — no raw exception strings in responses
 """
+
 from __future__ import annotations
 
 import logging
@@ -107,18 +108,26 @@ async def get_chat_context(
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("context_error", extra={"user_id": req.user_id, "error": str(exc)}, exc_info=True)
+        logger.error(
+            "context_error",
+            extra={"user_id": req.user_id, "error": str(exc)},
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail="Context retrieval failed")
 
 
-@router.post("/episodic/search", response_model=EpisodicSearchResponse, tags=["Episodic"])
+@router.post(
+    "/episodic/search", response_model=EpisodicSearchResponse, tags=["Episodic"]
+)
 async def search_episodic(
     req: EpisodicSearchRequest,
     token: dict = Depends(require_auth),
 ):
     if req.user_id != token.get("sub") and token.get("role") != "service_role":
         raise HTTPException(status_code=403, detail="Forbidden")
-    results = await run_in_threadpool(ep_mem.search_episodic_memory, req.user_id, req.query, req.k)
+    results = await run_in_threadpool(
+        ep_mem.search_episodic_memory, req.user_id, req.query, req.k
+    )
     return EpisodicSearchResponse(user_id=req.user_id, query=req.query, results=results)
 
 
@@ -142,11 +151,11 @@ async def forget_episodic(
     if user_id != token.get("sub") and token.get("role") != "service_role":
         raise HTTPException(status_code=403, detail="Forbidden")
     try:
-        await run_in_threadpool(
-            ep_mem.delete_episodic_memory_by_id, memory_id
-        )
+        await run_in_threadpool(ep_mem.delete_episodic_memory_by_id, memory_id)
     except Exception as exc:
-        logger.error("forget_episodic_error", extra={"memory_id": memory_id, "error": str(exc)})
+        logger.error(
+            "forget_episodic_error", extra={"memory_id": memory_id, "error": str(exc)}
+        )
         raise HTTPException(status_code=500, detail="Failed to delete memory")
     return ClearResponse(user_id=user_id, message=f"Memory '{memory_id}' deleted.")
 
@@ -156,10 +165,14 @@ async def clear_episodic(
     user_id: str = Depends(require_own_user),
 ):
     await run_in_threadpool(ep_mem.clear_episodic_memory, user_id)
-    return ClearResponse(user_id=user_id, message=f"All episodic memories cleared for '{user_id}'.")
+    return ClearResponse(
+        user_id=user_id, message=f"All episodic memories cleared for '{user_id}'."
+    )
 
 
-@router.post("/semantic/search", response_model=SemanticSearchResponse, tags=["Semantic"])
+@router.post(
+    "/semantic/search", response_model=SemanticSearchResponse, tags=["Semantic"]
+)
 async def search_semantic(
     req: SemanticSearchRequest,
     token: dict = Depends(require_auth),
@@ -167,7 +180,9 @@ async def search_semantic(
     if req.user_id != token.get("sub") and token.get("role") != "service_role":
         raise HTTPException(status_code=403, detail="Forbidden")
     keywords = [w for w in req.query.split() if len(w) > 2]
-    results = await run_in_threadpool(sem_mem.search_semantic_memory, req.user_id, keywords)
+    results = await run_in_threadpool(
+        sem_mem.search_semantic_memory, req.user_id, keywords
+    )
     return SemanticSearchResponse(user_id=req.user_id, query=req.query, results=results)
 
 
@@ -181,7 +196,9 @@ async def add_semantic(
     n, r = await run_in_threadpool(
         sem_mem.add_nodes_and_relationships, req.user_id, req.nodes, req.relationships
     )
-    return AddSemanticResponse(user_id=req.user_id, nodes_added=n, relationships_added=r)
+    return AddSemanticResponse(
+        user_id=req.user_id, nodes_added=n, relationships_added=r
+    )
 
 
 @router.delete("/semantic/clear", response_model=ClearResponse, tags=["Semantic"])
@@ -189,7 +206,9 @@ async def clear_semantic(
     user_id: str = Depends(require_own_user),
 ):
     await run_in_threadpool(sem_mem.clear_semantic_memory, user_id)
-    return ClearResponse(user_id=user_id, message=f"Semantic graph cleared for '{user_id}'.")
+    return ClearResponse(
+        user_id=user_id, message=f"Semantic graph cleared for '{user_id}'."
+    )
 
 
 @router.get("/profile/{user_id}", response_model=UserProfileSchema, tags=["Profile"])

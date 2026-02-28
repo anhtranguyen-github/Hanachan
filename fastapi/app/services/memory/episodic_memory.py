@@ -1,6 +1,7 @@
 """
 Episodic Memory Module — backed by Qdrant (cloud).
 """
+
 from __future__ import annotations
 
 import uuid
@@ -46,6 +47,7 @@ def _get_embedder() -> OpenAIEmbeddings:
 # Initialisation
 # ---------------------------------------------------------------------------
 
+
 def init_qdrant() -> None:
     """Create the `episodic_memory` collection if it does not already exist."""
     client = _get_client()
@@ -79,6 +81,7 @@ def health_check() -> str:
 # CRUD helpers
 # ---------------------------------------------------------------------------
 
+
 def add_episodic_memory(user_id: str, text: str) -> str:
     """Embed *text* and upsert it into Qdrant. Returns the point id."""
     client = _get_client()
@@ -105,7 +108,9 @@ def add_episodic_memory(user_id: str, text: str) -> str:
     return point_id
 
 
-def search_episodic_memory(user_id: str, query: str, k: int = 3) -> List[EpisodicMemory]:
+def search_episodic_memory(
+    user_id: str, query: str, k: int = 3
+) -> List[EpisodicMemory]:
     """Similarity search restricted to *user_id*; returns top-k results."""
     client = _get_client()
     embedder = _get_embedder()

@@ -1,6 +1,7 @@
 """
 Error handling — safe public messages, no internal detail leakage.
 """
+
 from __future__ import annotations
 
 import logging

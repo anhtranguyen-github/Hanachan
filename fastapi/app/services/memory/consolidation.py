@@ -1,6 +1,7 @@
 """
 Memory Consolidation Module.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -19,30 +20,33 @@ from ...schemas.memory import ConsolidationResult, EpisodicMemory
 
 logger = logging.getLogger(__name__)
 
-CONSOLIDATION_THRESHOLD = 10   # consolidate when user has > N memories
-BATCH_SIZE = 5                  # merge N memories at a time
+CONSOLIDATION_THRESHOLD = 10  # consolidate when user has > N memories
+BATCH_SIZE = 5  # merge N memories at a time
 
 # ---------------------------------------------------------------------------
 # LLM (created fresh per call so timeout is always applied)
 # ---------------------------------------------------------------------------
 
-_CONSOLIDATION_PROMPT = ChatPromptTemplate.from_messages([
-    (
-        "system",
-        "You are an expert at consolidating memories. Given a list of short memory "
-        "summaries about a user's interactions, synthesise them into a single, richer, "
-        "concise summary that preserves all important facts without redundancy. "
-        "Write in third person. Keep it under 3 sentences.",
-    ),
-    (
-        "human",
-        "Memories to consolidate:\n{memories}",
-    ),
-])
+_CONSOLIDATION_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are an expert at consolidating memories. Given a list of short memory "
+            "summaries about a user's interactions, synthesise them into a single, richer, "
+            "concise summary that preserves all important facts without redundancy. "
+            "Write in third person. Keep it under 3 sentences.",
+        ),
+        (
+            "human",
+            "Memories to consolidate:\n{memories}",
+        ),
+    ]
+)
 
 # ---------------------------------------------------------------------------
 # Core consolidation logic
 # ---------------------------------------------------------------------------
+
 
 def _consolidate_batch(
     user_id: str,
@@ -75,7 +79,7 @@ def consolidate_memories(user_id: str) -> ConsolidationResult:
     immediately with a "in progress" message rather than duplicating work.
     """
     # Derive a stable 31-bit integer key from the user_id
-    lock_key = int(hashlib.md5(user_id.encode()).hexdigest(), 16) % (2 ** 31)
+    lock_key = int(hashlib.md5(user_id.encode()).hexdigest(), 16) % (2**31)
 
     # Use a single connection for both lock acquisition and release
     # so that the lock is held on the same connection for release
@@ -111,7 +115,9 @@ def _do_consolidate(user_id: str) -> ConsolidationResult:
     total_before = len(all_memories)
 
     # Filter out already-consolidated memories to avoid over-compression
-    non_consolidated = [m for m in all_memories if not m.text.startswith("[Consolidated]")]
+    non_consolidated = [
+        m for m in all_memories if not m.text.startswith("[Consolidated]")
+    ]
 
     if len(non_consolidated) <= CONSOLIDATION_THRESHOLD:
         return ConsolidationResult(
@@ -133,7 +139,7 @@ def _do_consolidate(user_id: str) -> ConsolidationResult:
     consolidated_summaries: List[str] = []
 
     for i in range(0, len(sorted_memories), BATCH_SIZE):
-        batch = sorted_memories[i: i + BATCH_SIZE]
+        batch = sorted_memories[i : i + BATCH_SIZE]
         if len(batch) < 2:
             break
         try:

@@ -9,6 +9,7 @@ Fixes:
   Issue #14 — no raw exception strings in responses
   Issue #19 — streaming timeouts
 """
+
 from __future__ import annotations
 
 
@@ -89,16 +90,16 @@ async def chat_stream(
             "generation": "",
             "thread_context": "",
             "retrieved_episodic": "",
-            "retrieved_semantic": ""
+            "retrieved_semantic": "",
         }
 
         full_response = ""
-        
+
         try:
             # We use astream to yield updates from the graph
             async for event in memory_agent.astream(
-                initial_state, 
-                config={"configurable": {"thread_id": req.session_id or req.user_id}}
+                initial_state,
+                config={"configurable": {"thread_id": req.session_id or req.user_id}},
             ):
                 # We can yield "meta" events for planning/tools
                 for node_name, state_update in event.items():
@@ -108,10 +109,10 @@ async def chat_stream(
                         if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
                             tool_names = [tc["name"] for tc in last_msg.tool_calls]
                             yield f"data: {json.dumps({'type': 'status', 'content': f'Planning tools: {tool_names}'})}\n\n"
-                    
+
                     elif node_name == "tools":
                         yield f"data: {json.dumps({'type': 'status', 'content': 'Retrieving knowledge...'})}\n\n"
-                    
+
                     elif node_name == "generate":
                         # The final generation
                         full_response = state_update["generation"]
@@ -120,9 +121,11 @@ async def chat_stream(
                         yield f"data: {json.dumps({'type': 'token', 'content': full_response})}\n\n"
 
             yield f"data: {json.dumps({'type': 'done', 'session_id': req.session_id})}\n\n"
-            
+
         except Exception as exc:
-            logger.error("stream_graph_error", extra={"user_id": req.user_id, "error": str(exc)})
+            logger.error(
+                "stream_graph_error", extra={"user_id": req.user_id, "error": str(exc)}
+            )
             yield f"data: {json.dumps({'type': 'error', 'message': f'Processing failed: {str(exc)}'})}\n\n"
 
     return StreamingResponse(

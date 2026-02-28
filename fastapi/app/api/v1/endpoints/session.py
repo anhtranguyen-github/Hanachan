@@ -5,6 +5,7 @@ Fixes:
   Issue #6  — run_in_threadpool for sync code
   Issue #17 — ownership checks on session resources
 """
+
 from __future__ import annotations
 
 import logging
@@ -32,7 +33,7 @@ router = APIRouter()
 
 def _normalize_user_id(value: str) -> str:
     """Normalize user_id to a consistent string format for comparison.
-    
+
     Handles UUID formats (with/without dashes) and string user IDs uniformly.
     """
     try:
@@ -52,16 +53,18 @@ async def _assert_session_owner(
     try:
         s = sess_mem.get_session(session_id)
     except Exception as exc:
-        logger.error("session_fetch_error", extra={"session_id": session_id, "error": str(exc)})
+        logger.error(
+            "session_fetch_error", extra={"session_id": session_id, "error": str(exc)}
+        )
         raise HTTPException(status_code=500, detail="Failed to fetch session")
-    
+
     if s is None:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     # Normalize both IDs for comparison
     session_user_id = _normalize_user_id(str(s["user_id"]))
     token_sub = _normalize_user_id(token.get("sub", ""))
-    
+
     if session_user_id != token_sub:
         raise HTTPException(status_code=403, detail="Forbidden")
     return s
@@ -70,6 +73,7 @@ async def _assert_session_owner(
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
+
 
 @router.post("/session", response_model=CreateSessionResponse, tags=["Session"])
 async def create_session(
@@ -81,7 +85,9 @@ async def create_session(
     if req.user_id != token.get("sub"):
         raise HTTPException(status_code=403, detail="Forbidden")
 
-    session_id = await run_in_threadpool(sess_mem.create_session, req.user_id, req.metadata)
+    session_id = await run_in_threadpool(
+        sess_mem.create_session, req.user_id, req.metadata
+    )
     s = await run_in_threadpool(sess_mem.get_session, session_id)
     return CreateSessionResponse(
         session_id=session_id,
@@ -106,7 +112,9 @@ async def get_session(
     return info
 
 
-@router.get("/sessions/{user_id}", response_model=List[SessionSummary], tags=["Session"])
+@router.get(
+    "/sessions/{user_id}", response_model=List[SessionSummary], tags=["Session"]
+)
 async def list_sessions(
     user_id: str = Depends(require_own_user),
 ):
@@ -132,7 +140,9 @@ async def update_session(
     return info
 
 
-@router.delete("/session/{session_id}", response_model=EndSessionResponse, tags=["Session"])
+@router.delete(
+    "/session/{session_id}", response_model=EndSessionResponse, tags=["Session"]
+)
 async def end_session(
     session_id: str,
     s: dict = Depends(_assert_session_owner),

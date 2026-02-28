@@ -1,6 +1,7 @@
 """
 Structured JSON logging with request-ID propagation.
 """
+
 from __future__ import annotations
 
 import json
@@ -17,10 +18,27 @@ request_id_var: ContextVar[str] = ContextVar("request_id", default="")
 # Fields that are part of the standard LogRecord and should not be duplicated
 _STANDARD_FIELDS = frozenset(
     {
-        "message", "msg", "args", "levelname", "name", "pathname", "filename",
-        "module", "exc_info", "exc_text", "stack_info", "lineno", "funcName",
-        "created", "msecs", "relativeCreated", "thread", "threadName",
-        "processName", "process", "taskName",
+        "message",
+        "msg",
+        "args",
+        "levelname",
+        "name",
+        "pathname",
+        "filename",
+        "module",
+        "exc_info",
+        "exc_text",
+        "stack_info",
+        "lineno",
+        "funcName",
+        "created",
+        "msecs",
+        "relativeCreated",
+        "thread",
+        "threadName",
+        "processName",
+        "process",
+        "taskName",
     }
 )
 
@@ -38,9 +56,7 @@ class StructuredFormatter(logging.Formatter):
         extras = {
             k: v
             for k, v in record.__dict__.items()
-            if k not in _STANDARD_FIELDS
-            and not k.startswith("_")
-            and k not in log
+            if k not in _STANDARD_FIELDS and not k.startswith("_") and k not in log
         }
         log.update(extras)
         if record.exc_info:

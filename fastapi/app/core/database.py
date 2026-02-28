@@ -2,6 +2,7 @@
 Database — ThreadedConnectionPool for PostgreSQL.
 Fixes Issues #2 (no pool), #3 (hardcoded credentials), #4 (silent write failures).
 """
+
 from __future__ import annotations
 
 import logging

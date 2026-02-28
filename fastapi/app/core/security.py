@@ -2,6 +2,7 @@
 JWT Authentication — validates Supabase-issued tokens.
 Uses RS256 (asymmetric) for token verification.
 """
+
 from __future__ import annotations
 
 import logging
@@ -50,7 +51,7 @@ def require_auth(
     creds: HTTPAuthorizationCredentials = Security(_bearer),
 ) -> dict:
     """Validate the Bearer JWT and return the decoded payload.
-    
+
     Uses RS256 (asymmetric) with JWKS for token verification.
     """
     token = creds.credentials
@@ -58,7 +59,7 @@ def require_auth(
     # 1. Allow Service Role Key (Server-to-Server)
     if token == settings.supabase_key:
         return {"sub": "service_role", "role": "service_role"}
-    
+
     # 2. RS256 (User JWT)
     try:
         return _decode_token_rs256(token)
@@ -67,10 +68,15 @@ def require_auth(
         logger.error("rs256_jwks_unavailable", extra={"error": str(e)})
         raise HTTPException(status_code=401, detail="Token verification unavailable")
     except jwt.InvalidSignatureError:
-        logger.warning("rs256_signature_invalid", extra={"token_prefix": token[:20] if token else ""})
+        logger.warning(
+            "rs256_signature_invalid",
+            extra={"token_prefix": token[:20] if token else ""},
+        )
         raise HTTPException(status_code=401, detail="Invalid token")
     except jwt.ExpiredSignatureError:
-        logger.warning("rs256_token_expired", extra={"token_prefix": token[:20] if token else ""})
+        logger.warning(
+            "rs256_token_expired", extra={"token_prefix": token[:20] if token else ""}
+        )
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError as e:
         logger.warning("rs256_invalid_token", extra={"error": str(e)})

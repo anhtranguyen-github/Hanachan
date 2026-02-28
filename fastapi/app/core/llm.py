@@ -1,6 +1,7 @@
 """
 Centralised LLM factory — all clients get timeouts and retry config.
 """
+
 from __future__ import annotations
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -16,7 +17,7 @@ def make_llm(temperature: float = 0, streaming: bool = False) -> ChatOpenAI:
         openai_api_key=settings.openai_api_key,
         streaming=streaming,
         request_timeout=25,  # fail fast — don't block workers
-        max_retries=2,       # built-in retry with exponential backoff
+        max_retries=2,  # built-in retry with exponential backoff
     )
 
 
