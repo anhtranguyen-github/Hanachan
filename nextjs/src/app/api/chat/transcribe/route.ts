@@ -16,7 +16,14 @@ import OpenAI from 'openai';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Lazy-load OpenAI to avoid build-time errors when the API key is missing
+let _openai: OpenAI | null = null;
+function getOpenAI() {
+    if (!_openai) {
+        _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || 'placeholder_for_build' });
+    }
+    return _openai;
+}
 
 export async function POST(req: NextRequest) {
     try {
@@ -37,6 +44,7 @@ export async function POST(req: NextRequest) {
             { type: audioFile.type || 'audio/webm' },
         );
 
+        const openai = getOpenAI();
         const transcription = await openai.audio.transcriptions.create({
             file,
             model: 'whisper-1',
