@@ -584,7 +584,7 @@ function CreateCategoryModal({
                     'w-7 h-7 rounded-full transition-all',
                     color === c ? 'ring-2 ring-offset-2 scale-110' : 'hover:scale-105'
                   )}
-                  style={{ backgroundColor: c, ringColor: c }}
+                  style={{ backgroundColor: c, '--tw-ring-color': c } as React.CSSProperties}
                 />
               ))}
             </div>

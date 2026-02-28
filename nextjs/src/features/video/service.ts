@@ -216,7 +216,7 @@ export async function analyzeVideoJLPT(videoId: string): Promise<JLPTDistributio
     const dominantLevelNum = dominantLevel ? parseInt(dominantLevel.replace('N', '')) : null;
 
     if (dominantLevelNum) {
-      await db.updateVideoJLPT(videoId, dominantLevelNum, distribution);
+      await db.updateVideoJLPT(videoId, dominantLevelNum, distribution as Record<string, number>);
     }
 
     return distribution;
