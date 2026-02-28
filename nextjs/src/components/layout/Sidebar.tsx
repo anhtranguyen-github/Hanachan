@@ -38,7 +38,7 @@ const navItems = [
 
 export function Sidebar() {
     const pathname = usePathname();
-    const { signOut } = useUser();
+    const { user, signOut, openLoginModal } = useUser();
     const [isCollapsed, setIsCollapsed] = React.useState(false);
     const [mobileOpen, setMobileOpen] = React.useState(false);
 

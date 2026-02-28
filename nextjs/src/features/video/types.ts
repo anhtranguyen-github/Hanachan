@@ -217,3 +217,80 @@ export const JLPT_LEVEL_NAMES: Record<number, string> = {
   2: 'N2 — Upper Intermediate',
   1: 'N1 — Advanced',
 };
+
+// ==========================================
+// DICTATION TYPES
+// ==========================================
+
+export interface DictationSettings {
+  included_jlpt_levels: number[];
+  min_subtitle_length: number;
+  max_subtitle_length: number;
+  enable_reading_hint: boolean;
+  playback_speed: number;
+  auto_advance: boolean;
+}
+
+export interface DictationSubtitle {
+  id: string;
+  text: string;
+  reading?: string;
+  start_time_ms: number;
+  end_time_ms: number;
+}
+
+export interface DictationSession {
+  success: boolean;
+  session_id?: string;
+  video_id: string;
+  subtitles: DictationSubtitle[];
+  total_subtitles: number;
+  error?: string;
+}
+
+export interface DictationAttemptResult {
+  subtitle_id: string;
+  target_text: string;
+  user_input: string;
+  is_correct: boolean;
+  accuracy_score: number;
+  correct_chars: number;
+  total_chars: number;
+}
+
+export interface DictationAttemptResponse {
+  success: boolean;
+  result?: DictationAttemptResult;
+  is_complete: boolean;
+  remaining: number;
+  error?: string;
+}
+
+export interface DictationSessionStatus {
+  session_id: string;
+  video_id: string;
+  total_subtitles: number;
+  completed_count: number;
+  correct_count: number;
+  accuracy_percent: number;
+  status: 'in_progress' | 'completed' | 'abandoned';
+}
+
+export interface DictationStats {
+  total_sessions: number;
+  total_attempts: number;
+  average_accuracy: number;
+  videos_practiced: number;
+  current_streak: number;
+  best_accuracy: number;
+}
+
+// Default dictation settings
+export const DEFAULT_DICTATION_SETTINGS: DictationSettings = {
+  included_jlpt_levels: [5, 4, 3, 2, 1],
+  min_subtitle_length: 1,
+  max_subtitle_length: 100,
+  enable_reading_hint: false,
+  playback_speed: 1.0,
+  auto_advance: true,
+};

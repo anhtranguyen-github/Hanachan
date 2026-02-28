@@ -22,9 +22,8 @@ export default function MainLayout({
     const isChatbot = pathname.includes('/chatbot') || pathname.includes('/speaking');
 
     useEffect(() => {
-        if (!loading && !user) {
-            router.push('/login');
-        }
+        // No longer redirecting to login - guests can view public content
+        // Auth-required actions will show a modal instead
     }, [user, loading, router]);
 
     useEffect(() => {
@@ -54,7 +53,8 @@ export default function MainLayout({
         );
     }
 
-    if (!user) return null;
+    // Allow guests to view content - no redirect to login anymore
+    // Auth-required features will show a modal instead
 
     const getPageTitle = (path: string) => {
         const lastPart = path.split('/').pop() || '';

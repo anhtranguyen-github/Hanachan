@@ -20,6 +20,11 @@ import type {
   CreateCategoryRequest,
   SaveWordRequest,
   LibraryFilters,
+  DictationSettings,
+  DictationSession,
+  DictationAttemptResponse,
+  DictationSessionStatus,
+  DictationStats,
 } from './types';
 
 // ==========================================
@@ -423,4 +428,127 @@ export async function removeGrammarBookmark(userId: string, kuId: string): Promi
 
 export async function getUserGrammarBookmarks(userId: string) {
   return db.getUserGrammarBookmarks(userId);
+}
+
+// ==========================================
+// DICTATION PRACTICE
+// ==========================================
+
+/**
+ * Create a new dictation session for a video
+ */
+export async function createDictationSession(
+  videoId: string,
+  settings?: DictationSettings
+): Promise<DictationSession> {
+  try {
+    const response = await fetch('/api/dictation/session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        video_id: videoId,
+        settings,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Failed to create session' }));
+      return {
+        success: false,
+        video_id: videoId,
+        subtitles: [],
+        total_subtitles: 0,
+        error: error.error || 'Failed to create session',
+      };
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('Error creating dictation session:', error);
+    return {
+      success: false,
+      video_id: videoId,
+      subtitles: [],
+      total_subtitles: 0,
+      error: error.message || 'Network error',
+    };
+  }
+}
+
+/**
+ * Submit a dictation attempt
+ */
+export async function submitDictationAttempt(
+  sessionId: string,
+  subtitleId: string,
+  userInput: string,
+  timeTakenMs: number = 0
+): Promise<DictationAttemptResponse> {
+  try {
+    const response = await fetch(`/api/dictation/session/${sessionId}/attempt`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        subtitle_id: subtitleId,
+        user_input: userInput,
+        time_taken_ms: timeTakenMs,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Failed to submit attempt' }));
+      return {
+        success: false,
+        is_complete: false,
+        remaining: 0,
+        error: error.error || 'Failed to submit attempt',
+      };
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('Error submitting dictation attempt:', error);
+    return {
+      success: false,
+      is_complete: false,
+      remaining: 0,
+      error: error.message || 'Network error',
+    };
+  }
+}
+
+/**
+ * Get dictation stats for the current user
+ */
+export async function getDictationStats(): Promise<DictationStats> {
+  try {
+    const response = await fetch('/api/dictation/stats');
+
+    if (!response.ok) {
+      return {
+        total_sessions: 0,
+        total_attempts: 0,
+        average_accuracy: 0,
+        videos_practiced: 0,
+        current_streak: 0,
+        best_accuracy: 0,
+      };
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('Error getting dictation stats:', error);
+    return {
+      total_sessions: 0,
+      total_attempts: 0,
+      average_accuracy: 0,
+      videos_practiced: 0,
+      current_streak: 0,
+      best_accuracy: 0,
+    };
+  }
 }

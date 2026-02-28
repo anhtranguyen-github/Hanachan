@@ -10,3 +10,4 @@ export { VideoCard } from './components/VideoCard';
 export { JLPTBadge, JLPTDistributionBar, JLPTChart } from './components/JLPTBadge';
 export { InteractiveSubtitles } from './components/InteractiveSubtitles';
 export { VocabWordCloud, VocabFrequencyTable } from './components/VocabWordCloud';
+export { DictationPractice, DictationPanel } from './components/DictationPractice';

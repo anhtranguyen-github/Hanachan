@@ -23,6 +23,7 @@ import { supabase } from '@/lib/supabase';
 import { InteractiveSubtitles } from '@/features/video/components/InteractiveSubtitles';
 import { JLPTBadge, JLPTChart } from '@/features/video/components/JLPTBadge';
 import { VocabWordCloud, VocabFrequencyTable } from '@/features/video/components/VocabWordCloud';
+import { DictationPanel } from '@/features/video/components/DictationPractice';
 import { useVideoProgress } from '@/features/video/hooks/useVideoProgress';
 import * as videoService from '@/features/video/service';
 import type { Video, VideoSubtitle, VideoVocabStat, WordLookupResult } from '@/features/video/types';
@@ -311,6 +312,11 @@ export default function VideoPlayerPage() {
               </div>
             </div>
           </div>
+
+          {/* Dictation Practice Button */}
+          {subtitles.length > 0 && (
+            <DictationPanel videoId={id} videoTitle={video?.title || ''} />
+          )}
 
           {/* Video info */}
           <div className="glass-card p-4 space-y-2">
