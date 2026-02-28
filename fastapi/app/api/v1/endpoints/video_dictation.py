@@ -29,7 +29,7 @@ from ....schemas.video_dictation import (
     DictationAttemptResult,
 )
 from ....services import video_dictation as vd_service
-from ....core.security import require_auth, require_own_user
+from ....core.security import require_auth
 
 logger = logging.getLogger(__name__)
 
@@ -228,7 +228,7 @@ async def end_dictation_session(
     """
     End/abandon a dictation session.
     """
-    user_id = token.get("sub")
+    # user_id unused for now
     
     # For now, just acknowledge the request
     # In production, would update session status in database

@@ -10,7 +10,7 @@ Grammar detection is intentionally left as a TODO for a future dedicated service
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any
 
 from ..core.database import execute_query, get_db
 

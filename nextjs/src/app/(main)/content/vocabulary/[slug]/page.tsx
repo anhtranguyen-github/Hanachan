@@ -6,6 +6,9 @@ import { AudioPlayer } from '@/components/shared/AudioPlayer';
 import { ChevronLeft, Zap, Target, Layers, PlayCircle, Info, Languages, Sparkles, Volume2, Bookmark, Activity } from 'lucide-react';
 import { KUInlineChat } from '@/features/chat/components/KUInlineChat';
 
+export const dynamic = "force-dynamic";
+
+
 export default async function VocabularyDetailPage({ params }: { params: { slug: string } }) {
     const slug = decodeURIComponent(params.slug);
     const vocab: any = await getLocalKU('vocabulary', slug);

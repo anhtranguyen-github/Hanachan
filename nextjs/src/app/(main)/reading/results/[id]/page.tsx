@@ -21,6 +21,9 @@ import { getReadingSession } from '@/features/reading/actions';
 import type { ReadingSession, ReadingExercise } from '@/features/reading/types';
 import { TOPIC_LABELS, TOPIC_EMOJIS } from '@/features/reading/types';
 
+export const dynamic = "force-dynamic";
+
+
 export default function ReadingResultsPage() {
     const params = useParams();
     const router = useRouter();

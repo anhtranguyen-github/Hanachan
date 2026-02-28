@@ -24,16 +24,45 @@ import { supabase } from '@/lib/supabase';
 import { HanaTime } from '@/lib/time';
 
 export default function DashboardPage() {
-    const { user } = useUser();
+    const { user, openLoginModal } = useUser();
     const [userLevel, setUserLevel] = useState(1);
     const [stats, setStats] = useState<any>(null);
     const [mounted, setMounted] = useState(false);
     const [forecastType, setForecastType] = useState<'hourly' | 'daily'>('hourly');
 
     const refreshData = async () => {
-        if (!user) return;
         try {
-            const userId = user.id;
+            const userId = user?.id;
+
+            // If no user, show preview stats
+            if (!userId) {
+                const curriculumStats = await fetchCurriculumStats();
+                setStats({
+                    due: 12, new: 5, retention: 94, streak: 0, reviewsToday: 0,
+                    minutesSpent: 0, totalLearned: 24, totalBurned: 5,
+                    progression: { percentage: 15, passed: 12, total: 80 },
+                    curriculum: curriculumStats,
+                    levelStats: {
+                        total: 80, learned: 12, mastered: 5, typeStats: {
+                            radical: { total: 10, mastered: 5 },
+                            kanji: { total: 30, mastered: 0 },
+                            vocabulary: { total: 40, mastered: 0 },
+                            grammar: { total: 5, mastered: 0 }
+                        }
+                    },
+                    forecast: {
+                        hourly: Array.from({ length: 24 }, (_, i) => ({ time: new Date(Date.now() + i * 3600000).toISOString(), count: Math.floor(Math.random() * 5) })),
+                        daily: Array.from({ length: 14 }, (_, i) => ({ date: new Date(Date.now() + i * 86400000).toISOString().split('T')[0], count: Math.floor(Math.random() * 20) })),
+                        total: 45
+                    },
+                    heatmap: {},
+                    typeMastery: { radical: 40, kanji: 10, vocabulary: 5, grammar: 0 },
+                    srsSpread: { apprentice: 12, guru: 8, master: 4, enlightened: 0, burned: 5 },
+                    totalKUCoverage: 2
+                });
+                return;
+            }
+
             const { data: profile } = await supabase.from('users').select('level').eq('id', userId).single();
             const currentLevel = profile?.level || 1;
             setUserLevel(currentLevel);
@@ -58,6 +87,7 @@ export default function DashboardPage() {
             });
         } catch (error) {
             console.error("Failed to refresh dashboard data:", error);
+            // Default fallback stats
             setStats({
                 due: 0, new: 0, retention: 0, streak: 0, reviewsToday: 0, mistakes: 0,
                 progression: { percentage: 0, passed: 0, total: 100 },
@@ -69,9 +99,9 @@ export default function DashboardPage() {
 
     useEffect(() => {
         setMounted(true);
-        if (user) refreshData();
+        refreshData();
         const checkInterval = setInterval(() => {
-            if (HanaTime.getSpeed() > 1) refreshData();
+            if (user && HanaTime.getSpeed() > 1) refreshData();
         }, 5000);
         return () => clearInterval(checkInterval);
     }, [user]);
@@ -96,16 +126,51 @@ export default function DashboardPage() {
         );
     }
 
-    const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Learner';
+    const isGuest = !user;
+    const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Guest Learner';
     const today = HanaTime.getNow().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
     return (
         <main data-testid="dashboard-root" className="max-w-[1400px] mx-auto space-y-4 animate-page-entrance">
 
+            {/* Guest Banner */}
+            {isGuest && (
+                <div className="relative p-6 rounded-3xl bg-gradient-to-r from-primary/10 via-[#CDB4DB]/10 to-[#A2D2FF]/10 border border-primary/20 overflow-hidden group">
+                    <div className="absolute inset-0 bg-white/40 backdrop-blur-md" />
+                    <div className="absolute -right-12 -top-12 w-48 h-48 bg-primary/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-700" />
+
+                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 bg-gradient-to-br from-[#F4ACB7] to-[#D88C9A] rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg border border-white/20">
+                                ✨
+                            </div>
+                            <div className="text-left">
+                                <h2 className="text-xl font-black text-[#3E4A61] tracking-tight leading-tight">Guest Mode Active</h2>
+                                <p className="text-sm text-[#A0AEC0] font-bold mt-0.5">Progress tracking and AI tutors are only available for members.</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3 w-full md:w-auto">
+                            <button
+                                onClick={() => openLoginModal()}
+                                className="flex-1 md:flex-none px-8 py-3 bg-white text-[#F4ACB7] font-black text-xs uppercase tracking-widest rounded-xl shadow-sm hover:shadow-md transition-all border border-white"
+                            >
+                                Sign In
+                            </button>
+                            <Link
+                                href="/signup"
+                                className="flex-1 md:flex-none px-8 py-3 bg-gradient-to-r from-[#F4ACB7] to-[#D88C9A] text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            >
+                                Join Now
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Hero Header */}
             <header className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 overflow-hidden">
                 <div className="absolute -top-8 -right-8 w-48 h-48 bg-gradient-to-br from-primary/8 to-[#CDB4DB]/5 rounded-full blur-3xl pointer-events-none" />
-                <div className="flex items-center gap-3 relative z-10">
+                <div className="flex items-center gap-3 relative z-10 text-left">
                     <div className="relative">
                         <div className="absolute inset-0 bg-gradient-to-br from-primary to-[#D88C9A] rounded-2xl blur-lg opacity-20 animate-pulse-slow" />
                         <div className="relative w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#F4ACB7] to-[#D88C9A] rounded-2xl flex items-center justify-center text-white font-black text-lg sm:text-xl shadow-lg shadow-primary/25">
@@ -114,12 +179,12 @@ export default function DashboardPage() {
                     </div>
                     <div>
                         <h1 className="text-xl sm:text-3xl font-black text-[#3E4A61] tracking-tighter leading-none">
-                            Konnichiwa, <span className="gradient-text-sakura">{displayName}</span>!
+                            {isGuest ? 'Welcome to ' : 'Konnichiwa, '}<span className="gradient-text-sakura">{isGuest ? 'HanaChan' : displayName}</span>!
                         </h1>
                         <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-[#CBD5E0] mt-1 flex items-center gap-1.5">
                             <span className="w-1 h-1 bg-primary rounded-full inline-block" />
                             <span className="hidden sm:inline">{today} •</span>
-                            Level {userLevel}
+                            {isGuest ? 'Public Preview' : `Level ${userLevel}`}
                         </p>
                     </div>
                 </div>

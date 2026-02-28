@@ -9,7 +9,10 @@ if (!supabaseUrl || !supabaseKey) {
     console.error("❌ Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
 }
 
-export const supabase = createClient(supabaseUrl || '', supabaseKey || '');
+export const supabase = createClient(
+    supabaseUrl || 'https://dummy.supabase.co',
+    supabaseKey || 'dummy-key'
+);
 
 // Only initialize service client if key is available (server-side only)
 export const supabaseService = (supabaseUrl && supabaseServiceKey)

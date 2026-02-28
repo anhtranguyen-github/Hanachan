@@ -1,6 +1,7 @@
 // GET /api/videos/lookup?word=xxx - Look up a word from subtitle click
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import { createClient } from '@supabase/supabase-js';
 import { lookupWord } from '@/features/video/service';
 

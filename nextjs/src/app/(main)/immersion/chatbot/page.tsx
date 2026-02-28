@@ -193,7 +193,7 @@ function ThreadItem({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ChatbotPage() {
-    const { user } = useUser();
+    const { user, openLoginModal } = useUser();
     const [input, setInput] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const chatEndRef = useRef<HTMLDivElement>(null);
@@ -549,34 +549,48 @@ export default function ChatbotPage() {
 
                 {/* Input Area */}
                 <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none">
-                    <div className="max-w-2xl mx-auto relative group pointer-events-auto">
-                        <input
-                            type="text"
-                            data-testid="chat-input"
-                            placeholder="Ask about Japanese language, grammar, or culture..."
-                            className="w-full py-4 pl-5 pr-28 bg-[#F7FAFC] border-2 border-[#EDF2F7] rounded-[2rem] outline-none focus:border-[#FFB5B5] focus:bg-white transition-all text-sm font-medium shadow-lg shadow-[#3E4A61]/5"
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                            disabled={isTyping}
-                        />
-                        {/* Voice recorder button — auto-sends after transcription */}
-                        <div className="absolute right-14 top-1/2 -translate-y-1/2">
-                            <VoiceRecorder
+                    {user ? (
+                        <div className="max-w-2xl mx-auto relative group pointer-events-auto">
+                            <input
+                                type="text"
+                                data-testid="chat-input"
+                                placeholder="Ask about Japanese language, grammar, or culture..."
+                                className="w-full py-4 pl-5 pr-28 bg-[#F7FAFC] border-2 border-[#EDF2F7] rounded-[2rem] outline-none focus:border-[#FFB5B5] focus:bg-white transition-all text-sm font-medium shadow-lg shadow-[#3E4A61]/5"
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
                                 disabled={isTyping}
-                                onTranscript={handleVoiceTranscript}
                             />
+                            {/* Voice recorder button — auto-sends after transcription */}
+                            <div className="absolute right-14 top-1/2 -translate-y-1/2">
+                                <VoiceRecorder
+                                    disabled={isTyping}
+                                    onTranscript={handleVoiceTranscript}
+                                />
+                            </div>
+                            {/* Send button */}
+                            <button
+                                onClick={() => handleSend()}
+                                data-testid="chat-send-button"
+                                disabled={!input.trim() || isTyping}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-10 h-10 bg-[#3E4A61] disabled:bg-[#CBD5E0] text-white rounded-full flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-all"
+                            >
+                                <Send size={16} />
+                            </button>
                         </div>
-                        {/* Send button */}
-                        <button
-                            onClick={() => handleSend()}
-                            data-testid="chat-send-button"
-                            disabled={!input.trim() || isTyping}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-10 h-10 bg-[#3E4A61] disabled:bg-[#CBD5E0] text-white rounded-full flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-all"
-                        >
-                            <Send size={16} />
-                        </button>
-                    </div>
+                    ) : (
+                        <div className="max-w-2xl mx-auto relative group pointer-events-auto">
+                            <div className="w-full py-4 pl-6 pr-6 bg-white border-2 border-[#FFEBEE] rounded-[2rem] flex items-center justify-between shadow-xl shadow-primary/5">
+                                <span className="text-sm font-medium text-foreground/40 italic">Sign in to chat with Hanachan and save history</span>
+                                <button
+                                    onClick={() => openLoginModal()}
+                                    className="px-6 py-2.5 bg-gradient-to-r from-primary to-[#D88C9A] text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                                >
+                                    Sign In
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </main>
 

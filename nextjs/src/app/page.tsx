@@ -37,7 +37,7 @@ export default function HomePage() {
 
     // If user is logged in, they're redirected to dashboard above
     // This is the landing page for non-authenticated users
-    
+
     return (
         <div className="min-h-screen relative overflow-hidden bg-[#0a0a0c]">
             {/* Dynamic Background */}
@@ -62,14 +62,14 @@ export default function HomePage() {
                     </span>
                 </div>
                 <div className="flex items-center gap-4">
-                    <Link 
-                        href="/login" 
+                    <Link
+                        href="/login"
                         className="px-5 py-2.5 text-white hover:text-[#F4ACB7] font-medium transition-colors"
                     >
                         Sign In
                     </Link>
-                    <Link 
-                        href="/signup" 
+                    <Link
+                        href="/signup"
                         className="px-5 py-2.5 bg-gradient-to-r from-[#F4ACB7] to-[#CDB4DB] hover:from-[#F4ACB7]/90 hover:to-[#CDB4DB]/90 text-white font-bold rounded-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]"
                     >
                         Get Started
@@ -86,29 +86,35 @@ export default function HomePage() {
                             <span className="w-2 h-2 bg-[#F4ACB7] rounded-full animate-pulse"></span>
                             <span className="text-sm text-gray-300">Advanced Japanese Learning Platform</span>
                         </div>
-                        
+
                         <h1 className="text-5xl lg:text-7xl font-black text-white leading-tight mb-6">
                             Master Japanese{' '}
                             <span className="bg-gradient-to-r from-[#F4ACB7] to-[#CDB4DB] bg-clip-text text-transparent">
                                 Your Way
                             </span>
                         </h1>
-                        
+
                         <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-                            Experience a revolutionary learning system that combines spaced repetition, 
+                            Experience a revolutionary learning system that combines spaced repetition,
                             immersive AI chat, and personalized video dictation to accelerate your journey to fluency.
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <Link 
-                                href="/signup" 
+                            <Link
+                                href="/signup"
                                 className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-[#F4ACB7] to-[#CDB4DB] hover:from-[#F4ACB7]/90 hover:to-[#CDB4DB]/90 text-white font-bold rounded-2xl transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[#F4ACB7]/20"
                             >
                                 Start Learning Free
                             </Link>
-                            <Link 
-                                href="/login" 
+                            <Link
+                                href="/dashboard"
                                 className="w-full sm:w-auto px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-2xl transition-all"
+                            >
+                                Browse as Guest
+                            </Link>
+                            <Link
+                                href="/login"
+                                className="w-full sm:w-auto px-8 py-4 text-gray-400 hover:text-white font-bold transition-all"
                             >
                                 Sign In
                             </Link>
@@ -204,8 +210,8 @@ export default function HomePage() {
                                 <p className="text-gray-400 mb-8 max-w-md mx-auto">
                                     Join thousands of learners mastering Japanese with our innovative platform.
                                 </p>
-                                <Link 
-                                    href="/signup" 
+                                <Link
+                                    href="/signup"
                                     className="inline-block px-10 py-4 bg-gradient-to-r from-[#F4ACB7] to-[#CDB4DB] hover:from-[#F4ACB7]/90 hover:to-[#CDB4DB]/90 text-white font-bold rounded-2xl transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[#F4ACB7]/20"
                                 >
                                     Create Free Account

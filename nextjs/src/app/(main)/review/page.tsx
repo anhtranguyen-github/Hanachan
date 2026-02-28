@@ -8,14 +8,26 @@ import { useUser } from '@/features/auth/AuthContext';
 import { clsx } from 'clsx';
 
 export default function ReviewPage() {
-    const { user } = useUser();
+    const { user, openLoginModal } = useUser();
     const [stats, setStats] = useState<any>(null);
     const [mounted, setMounted] = useState(false);
 
     const loadRealStats = async () => {
-        if (!user) return;
         try {
-            const dashboardStats = await fetchUserDashboardStats(user.id);
+            const userId = user?.id;
+
+            if (!userId) {
+                // Preview stats for guests
+                setStats({
+                    due: 8,
+                    breakdown: { learning: 3, review: 5 },
+                    estimatedTime: 4,
+                    retention: 92
+                });
+                return;
+            }
+
+            const dashboardStats = await fetchUserDashboardStats(userId);
             setStats({
                 due: dashboardStats.reviewsDue,
                 breakdown: dashboardStats.dueBreakdown,
@@ -29,7 +41,7 @@ export default function ReviewPage() {
 
     useEffect(() => {
         setMounted(true);
-        if (user) loadRealStats();
+        loadRealStats();
     }, [user]);
 
     if (!mounted || !stats) {
@@ -98,14 +110,14 @@ export default function ReviewPage() {
                 </div>
 
                 {hasReviews ? (
-                    <Link
-                        href="/review/session"
+                    <button
+                        onClick={() => !user ? openLoginModal() : (window.location.href = '/review/session')}
                         className="w-full py-4 bg-gradient-to-r from-[#9B7DB5] to-[#7B5D95] text-white rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] hover:shadow-xl hover:shadow-[#9B7DB5]/25 hover:scale-[1.02] transition-all duration-300 group/btn relative z-10"
                     >
                         <Zap size={13} />
-                        Start Review
+                        Start Review {!user && '(Sign In)'}
                         <ChevronRight size={13} className="group-hover/btn:translate-x-1 transition-transform" />
-                    </Link>
+                    </button>
                 ) : (
                     <Link href="/dashboard" className="w-full py-4 border border-border/30 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#A0AEC0] hover:bg-[#F7FAFC] transition-all relative z-10">
                         Back to Dashboard

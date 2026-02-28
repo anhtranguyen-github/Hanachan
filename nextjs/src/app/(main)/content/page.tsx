@@ -23,21 +23,28 @@ function ContentDatabase() {
     const [loading, setLoading] = useState(true);
 
     const loadData = async () => {
-        if (!user) return;
         setLoading(true);
         try {
-            const userId = user.id;
+            const userId = user?.id;
             let query = supabase.from('knowledge_units').select('*');
             if (selectedLevel !== 'all') query = query.eq('level', selectedLevel);
             if (filterType !== 'all') query = query.eq('type', filterType);
             const { data: queryItems } = await query.order('level', { ascending: true }).order('type', { ascending: true }).limit(300);
-            const { data: userStates } = await supabase.from('user_learning_states').select('*').eq('user_id', userId);
-            const stateMap: Record<string, any> = {};
-            userStates?.forEach((s: any) => { stateMap[s.ku_id] = s; });
+
+            let stateMap: Record<string, any> = {};
+            if (userId) {
+                const { data: userStates } = await supabase.from('user_learning_states').select('*').eq('user_id', userId);
+                userStates?.forEach((s: any) => { stateMap[s.ku_id] = s; });
+
+                const { data: userData } = await supabase.from('users').select('level').eq('id', userId).maybeSingle();
+                setUserLevel(userData?.level || 1);
+            } else {
+                // Guests see level 1 content unlocked by default, others locked
+                setUserLevel(1);
+            }
+
             setItems(queryItems || []);
             setStates(stateMap);
-            const { data: userData } = await supabase.from('users').select('level').eq('id', userId).maybeSingle();
-            setUserLevel(userData?.level || 1);
         } catch (error) {
             console.error("Failed to load library data:", error);
         } finally {
@@ -46,8 +53,8 @@ function ContentDatabase() {
     };
 
     useEffect(() => {
-        if (user) loadData();
-    }, [user, filterType, selectedLevel]);
+        loadData();
+    }, [filterType, selectedLevel]);
 
     const filteredItems = useMemo(() => {
         return items.filter(unit => {

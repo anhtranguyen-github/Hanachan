@@ -1,14 +1,16 @@
 import React from 'react';
 import { clsx } from 'clsx';
-import DOMPurify from 'isomorphic-dompurify';
+import sanitizeHtml from 'sanitize-html';
 
 const SANITIZE_CONFIG = {
-    ALLOWED_TAGS: [
+    allowedTags: [
         'span', 'strong', 'em', 'br', 'p', 'div', 'mark',
         'ruby', 'rt', 'rp', // For Furigana support
         'code', 'pre', 'ul', 'ol', 'li'
     ],
-    ALLOWED_ATTR: ['class', 'style']
+    allowedAttributes: {
+        '*': ['class', 'style', 'color', 'background', 'background-color', 'font-size', 'font-weight', 'text-align']
+    }
 };
 
 interface RichTextRendererProps {
@@ -53,7 +55,7 @@ export function RichTextRenderer({ content, className }: RichTextRendererProps) 
     }
 
     // Sanitize HTML with allowed tags (especially ruby/mark for Japanese)
-    const sanitizedHtml = DOMPurify.sanitize(content, SANITIZE_CONFIG);
+    const sanitizedHtml = sanitizeHtml(content, SANITIZE_CONFIG);
 
     return (
         <div

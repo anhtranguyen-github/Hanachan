@@ -10,10 +10,9 @@ These endpoints manage speaking practice sessions:
 from __future__ import annotations
 
 import logging
-from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 
 from ....core.rate_limit import limiter
@@ -27,11 +26,10 @@ from ....schemas.speaking import (
     RecordAttemptResponse,
     PracticeStatsResponse,
     PracticeSentenceSchema,
-    AdaptiveFeedback,
 )
 from ....services import speaking_practice as sp_service
-from ....core.database import execute_query, execute_single
-from ....core.security import require_auth, require_own_user
+from ....core.database import execute_single
+from ....core.security import require_auth
 
 logger = logging.getLogger(__name__)
 

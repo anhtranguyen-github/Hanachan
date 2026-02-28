@@ -5,6 +5,9 @@ import { RichTextRenderer } from '@/components/shared/RichTextRenderer';
 import { ChevronLeft, Zap, Layers, Info, Target, Sparkles, BookOpen } from 'lucide-react';
 import { KUInlineChat } from '@/features/chat/components/KUInlineChat';
 
+export const dynamic = "force-dynamic";
+
+
 export default async function RadicalDetailPage({ params }: { params: { slug: string } }) {
     const slug = decodeURIComponent(params.slug);
     const radical: any = await getLocalKU('radical', slug);

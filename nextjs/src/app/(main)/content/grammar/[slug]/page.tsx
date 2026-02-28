@@ -4,11 +4,15 @@ import Link from 'next/link';
 import { RichTextRenderer } from '@/components/shared/RichTextRenderer';
 import { ChevronLeft, Zap, Target, Layers, Info, BookOpen, ExternalLink, Globe, Sparkles, Activity, Bookmark, Flame } from 'lucide-react';
 import { KUInlineChat } from '@/features/chat/components/KUInlineChat';
-import DOMPurify from 'isomorphic-dompurify';
+import sanitizeHtml from 'sanitize-html';
+
+export const dynamic = "force-dynamic";
 
 const SANITIZE_CONFIG = {
-    ALLOWED_TAGS: ['ruby', 'rt', 'rp', 'mark', 'span', 'br', 'p', 'strong', 'em', 'b', 'i'],
-    ALLOWED_ATTR: ['class']
+    allowedTags: ['ruby', 'rt', 'rp', 'mark', 'span', 'br', 'p', 'strong', 'em', 'b', 'i'],
+    allowedAttributes: {
+        '*': ['class']
+    }
 };
 
 export default async function GrammarDetailPage({ params }: { params: { slug: string } }) {
@@ -73,7 +77,7 @@ export default async function GrammarDetailPage({ params }: { params: { slug: st
                                 <div className="flex flex-wrap gap-2">
                                     {Object.entries(structure.variants).filter(([, v]) => v).slice(0, 2).map(([name, code]: [string, any]) => (
                                         <div key={name} className="px-3 py-1.5 bg-[#B7E4C7]/10 border border-[#B7E4C7]/20 rounded-xl">
-                                            <span className="text-xs font-black text-[#5A9E72] jp-text" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(typeof code === 'string' ? code : JSON.stringify(code), SANITIZE_CONFIG) }} />
+                                            <span className="text-xs font-black text-[#5A9E72] jp-text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(typeof code === 'string' ? code : JSON.stringify(code), SANITIZE_CONFIG) }} />
                                         </div>
                                     ))}
                                 </div>
@@ -116,7 +120,7 @@ export default async function GrammarDetailPage({ params }: { params: { slug: st
                                         <div className="pl-3 space-y-1.5">
                                             <p
                                                 className="text-base font-black text-foreground jp-text leading-relaxed"
-                                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(s.ja, SANITIZE_CONFIG) }}
+                                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(s.ja, SANITIZE_CONFIG) }}
                                             />
                                             <p className="text-sm text-foreground/40 font-medium leading-snug">"{s.en}"</p>
                                         </div>
@@ -147,7 +151,7 @@ export default async function GrammarDetailPage({ params }: { params: { slug: st
                                             <span className="text-[8px] font-black uppercase tracking-widest text-foreground/20">{subName}</span>
                                             <div
                                                 className="p-2.5 bg-surface-muted/40 rounded-xl border border-border text-xs font-black text-foreground/60 jp-text leading-relaxed"
-                                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html, SANITIZE_CONFIG) }}
+                                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(html, SANITIZE_CONFIG) }}
                                             />
                                         </div>
                                     ));

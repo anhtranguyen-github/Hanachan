@@ -17,7 +17,7 @@ def test_service_role_key_bypasses_jwt():
 
     creds = HTTPAuthorizationCredentials(
         scheme="Bearer",
-        credentials=settings.supabase_key,
+        credentials=settings.supabase_service_key,
     )
     result = require_auth(creds)
     assert result["role"] == "service_role"

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 from typing import AsyncGenerator
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
@@ -19,6 +19,7 @@ from httpx import ASGITransport, AsyncClient
 os.environ.setdefault("OPENAI_API_KEY", "sk-test-key")
 os.environ.setdefault("SUPABASE_URL", "https://test.supabase.co")
 os.environ.setdefault("SUPABASE_KEY", "test-anon-key")
+os.environ.setdefault("SUPABASE_SERVICE_KEY", "test-service-key-32-chars-at-least-wow")
 os.environ.setdefault("SUPABASE_JWT_SECRET", "test-jwt-secret-32-chars-minimum!!")
 os.environ.setdefault("DB_HOST", "localhost")
 os.environ.setdefault("DB_PORT", "5432")

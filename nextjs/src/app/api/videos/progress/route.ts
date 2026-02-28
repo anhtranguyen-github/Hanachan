@@ -5,6 +5,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getVideoProgress, updateVideoProgress } from '@/features/video/service';
 
+export const dynamic = "force-dynamic";
+
+
 async function getUserId(req: NextRequest): Promise<string | null> {
   const authHeader = req.headers.get('authorization');
   const token = authHeader?.replace('Bearer ', '');

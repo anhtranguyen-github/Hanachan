@@ -1,9 +1,7 @@
 
 import os
 import sys
-import uuid
 import logging
-from datetime import datetime, timezone
 
 # Add the project root to sys.path so we can import from app
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -12,7 +10,7 @@ from app.core.config import settings
 from app.core.database import init_pool, execute_query, close_pool
 from app.services.memory import episodic_memory as ep_mem
 from app.services.memory import semantic_memory as sem_mem
-from app.schemas.memory import KnowledgeGraph, Relationship, Node
+from app.schemas.memory import Relationship, Node
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -82,7 +80,7 @@ def seed():
             logger.info(f"Seeding data for {data['name']} ({user_id})...")
 
             # 1. Seed Semantic Memory (Neo4j)
-            nodes = [Node(id=n[0], type=n[1]) for n in data["facts"]]
+            # 1. Seed Semantic Memory (Neo4j)
             # To avoid duplicates and ensure connectivity, we'll build a proper KG
             relationships = []
             for s, st, r, t, tt in data["facts"]:

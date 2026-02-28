@@ -5,6 +5,9 @@ import { RichTextRenderer } from '@/components/shared/RichTextRenderer';
 import { ChevronLeft, PlayCircle, BookOpen, Layers, Zap, Sparkles, Target, Info, Hash } from 'lucide-react';
 import { KUInlineChat } from '@/features/chat/components/KUInlineChat';
 
+export const dynamic = "force-dynamic";
+
+
 export default async function KanjiDetailPage({ params }: { params: { slug: string } }) {
     const slug = decodeURIComponent(params.slug);
     const kanji: any = await getLocalKU('kanji', slug);

@@ -258,14 +258,6 @@ def select_sentences_for_practice(
             if sentence_idx > target_idx + 1:
                 continue
             
-            # Calculate a score for ranking
-            # Prefer: moderate length, 1-2 learned words, matches target difficulty
-            length_score = max(0, 20 - abs(len(japanese) - 15))  # Prefer ~15 chars
-            learned_score = 10 if 1 <= learned_count <= 2 else 5 if learned_count > 2 else 0
-            difficulty_score = 10 if difficulty == target_difficulty else 5
-            
-            total_score = length_score + learned_score + difficulty_score
-            
             candidate_sentences.append(PracticeSentence(
                 japanese=japanese,
                 reading=sentence_data.get("reading", ""),
@@ -567,7 +559,7 @@ def create_practice_session(
                 reading=word.reading,
                 english=word.meaning,
                 source_word=word.character,
-                difficulty=DIFFICULTY_BEGINNER,
+                difficulty=DIFFICULTY_N5,
                 learned_words_count=1,
                 total_words=1,
             )

@@ -4,7 +4,7 @@ All session_memory calls are mocked to avoid DB dependencies.
 """
 from __future__ import annotations
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from datetime import datetime, timezone
 
 import pytest
@@ -29,7 +29,7 @@ def _make_session(session_id: str, user_id: str) -> dict:
 def _make_service_role_headers() -> dict:
     """Use the Supabase key as service role auth."""
     from app.core.config import settings
-    return {"Authorization": f"Bearer {settings.supabase_key}"}
+    return {"Authorization": f"Bearer {settings.supabase_service_key}"}
 
 
 # ── Tests ─────────────────────────────────────────────────────────────────────

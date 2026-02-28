@@ -2,6 +2,7 @@
 // POST /api/videos - Add a new video (by YouTube ID)
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import { createClient } from '@supabase/supabase-js';
 import { searchVideos, getOrCreateVideo } from '@/features/video/service';
 

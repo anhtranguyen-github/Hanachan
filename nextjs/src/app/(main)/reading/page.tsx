@@ -28,7 +28,7 @@ import { TOPIC_LABELS, TOPIC_EMOJIS } from '@/features/reading/types';
 
 export default function ReadingPage() {
     const router = useRouter();
-    const { user } = useUser();
+    const { user, openLoginModal } = useUser();
     const [metrics, setMetrics] = useState<ReadingMetrics | null>(null);
     const [pendingSessions, setPendingSessions] = useState<ReadingSession[]>([]);
     const [loading, setLoading] = useState(true);
@@ -36,15 +36,19 @@ export default function ReadingPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (user) loadData();
+        loadData();
     }, [user]);
 
     const loadData = async () => {
+        if (!user) {
+            setLoading(false);
+            return;
+        }
         try {
             setLoading(true);
             const [metricsData, sessionsData] = await Promise.all([
-                getReadingMetrics(),
-                listReadingSessions({ status: 'pending', limit: 5 }),
+                getReadingMetrics().catch(() => null),
+                listReadingSessions({ status: 'pending', limit: 5 }).catch(() => ({ sessions: [], total: 0 })),
             ]);
             setMetrics(metricsData);
             setPendingSessions(sessionsData.sessions);
@@ -57,6 +61,10 @@ export default function ReadingPage() {
     };
 
     const handleCreateSession = async () => {
+        if (!user) {
+            openLoginModal();
+            return;
+        }
         try {
             setCreating(true);
             setError(null);

@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = "force-dynamic";
+
+
 /**
  * GET /api/speech-token
  * Returns an Azure Cognitive Services Speech token for client-side use.

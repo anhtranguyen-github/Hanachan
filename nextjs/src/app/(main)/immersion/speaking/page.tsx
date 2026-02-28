@@ -8,6 +8,7 @@ import {
     Filter, Play, Square, Zap, Brain, RefreshCw
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useUser } from '@/features/auth/AuthContext';
 import { usePronunciationAssessment } from '@/features/speaking/hooks/usePronunciationAssessment';
 import { useSpeakingPractice, usePracticeWithAssessment } from '@/features/speaking/hooks/useSpeakingPractice';
 import {
@@ -589,6 +590,7 @@ function PracticePanel({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function SpeakingPracticePage() {
+    const { user, openLoginModal } = useUser();
     const [practiceMode, setPracticeMode] = useState<PracticeMode>('static');
     const [activeTab, setActiveTab] = useState<'practice' | 'history'>('practice');
     const [selectedPrompt, setSelectedPrompt] = useState<SpeakingPrompt>(SPEAKING_PROMPTS[0]);
@@ -694,9 +696,13 @@ export default function SpeakingPracticePage() {
 
     // Start dynamic session when mode changes
     const handleStartSmartPractice = useCallback(async () => {
+        if (!user) {
+            openLoginModal();
+            return;
+        }
         setPracticeMode('dynamic');
         await startDynamicSession();
-    }, [startDynamicSession]);
+    }, [user, openLoginModal, startDynamicSession]);
 
     const handleSwitchToStatic = useCallback(() => {
         endDynamicSession();

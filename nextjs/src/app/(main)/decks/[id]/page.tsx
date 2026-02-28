@@ -8,6 +8,9 @@ import { getUserLevelsAction } from '@/features/levels/actions';
 import Link from 'next/link';
 import { clsx } from 'clsx';
 
+export const dynamic = "force-dynamic";
+
+
 export default function LevelDetailsPage() {
     const params = useParams();
     const levelId = params.id as string;

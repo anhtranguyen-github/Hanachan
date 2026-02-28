@@ -28,6 +28,9 @@ import { useVideoProgress } from '@/features/video/hooks/useVideoProgress';
 import * as videoService from '@/features/video/service';
 import type { Video, VideoSubtitle, VideoVocabStat, WordLookupResult } from '@/features/video/types';
 
+export const dynamic = "force-dynamic";
+
+
 type SidePanelTab = 'subtitles' | 'jlpt' | 'vocab' | 'grammar';
 
 export default function VideoPlayerPage() {

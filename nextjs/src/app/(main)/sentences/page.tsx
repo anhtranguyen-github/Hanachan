@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { AnnotatedSentence } from '@/components/shared/AnnotatedSentence';
 
 export default function SentencesPage() {
-    const { user } = useUser();
+    const { user, openLoginModal } = useUser();
     const [japaneseInput, setJapaneseInput] = useState('');
     const [englishInput, setEnglishInput] = useState('');
     const [sentences, setSentences] = useState<any[]>([]);
@@ -19,17 +19,27 @@ export default function SentencesPage() {
 
     const loadSentences = async () => {
         setLoading(true);
-        const result = await fetchUserSentencesAction();
-        if (result.success && result.data) {
-            setSentences(result.data);
+        try {
+            if (!user) {
+                // Example sentences for guests
+                setSentences([
+                    { id: 'ex1', japanese_raw: '猫が好きです。', english_raw: 'I like cats.', annotations: [] },
+                    { id: 'ex2', japanese_raw: '天気がいいですね。', english_raw: 'The weather is nice, isn\'t it?', annotations: [] },
+                    { id: 'ex3', japanese_raw: '日本語を勉強しています。', english_raw: 'I am studying Japanese.', annotations: [] },
+                ]);
+            } else {
+                const result = await fetchUserSentencesAction();
+                if (result.success && result.data) {
+                    setSentences(result.data);
+                }
+            }
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     useEffect(() => {
-        if (user) {
-            loadSentences();
-        }
+        loadSentences();
     }, [user]);
 
     const handleAdd = async (e: React.FormEvent) => {
@@ -101,12 +111,13 @@ export default function SentencesPage() {
                         {error && <p className="text-rose-500 text-xs font-bold px-2">{error}</p>}
 
                         <button
-                            type="submit"
-                            disabled={submitting || !japaneseInput.trim() || !englishInput.trim()}
+                            type={user ? "submit" : "button"}
+                            onClick={!user ? () => openLoginModal() : undefined}
+                            disabled={user ? (submitting || !japaneseInput.trim() || !englishInput.trim()) : false}
                             className="w-full mt-4 flex items-center justify-center gap-2 py-4 bg-gray-900 text-white rounded-2xl font-black shadow-lg disabled:opacity-50 disabled:scale-100 hover:scale-[1.02] active:scale-95 transition-all group"
                         >
                             {submitting ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} className="group-hover:rotate-90 transition-transform" />}
-                            Save Sentence
+                            {user ? 'Save Sentence' : 'Sign In to Save'}
                         </button>
                     </form>
                 </div>

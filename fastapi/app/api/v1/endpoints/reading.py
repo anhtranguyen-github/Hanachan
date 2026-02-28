@@ -32,7 +32,6 @@ from ....agents.reading_creator import (
 )
 
 from ....core.rate_limit import limiter
-from ....core.config import settings
 from fastapi import Request
 
 logger = logging.getLogger(__name__)

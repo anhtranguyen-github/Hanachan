@@ -12,6 +12,9 @@ import { ReviewSession, ReviewCard } from '@/features/learning/types/review-card
 import { Loader2, CheckCircle, ArrowRight, X } from 'lucide-react';
 import Link from 'next/link';
 
+export const dynamic = "force-dynamic";
+
+
 export default function LevelReviewSessionPage() {
     const { user } = useUser();
     const router = useRouter();

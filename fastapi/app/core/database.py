@@ -97,3 +97,14 @@ def check_db_health() -> str:
         return "ok"
     except Exception as exc:
         return f"error: {exc}"
+
+
+def get_db_connection():
+    """DEPRECATED: Use get_db() context manager instead.
+    Returns a raw connection from the pool.
+    """
+    if _pool is None:
+        raise RuntimeError(
+            "Database pool not initialized. Call init_pool() at application startup."
+        )
+    return _pool.getconn()

@@ -4,7 +4,6 @@ Validates that settings load correctly and validation logic works.
 """
 from __future__ import annotations
 
-import pytest
 
 
 def test_settings_load_from_env():

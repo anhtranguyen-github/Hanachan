@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Optional, List, Dict, Any, Literal
+from typing import Optional, List, Literal
 from uuid import UUID
-from pydantic import BaseModel, Field, conint, constr
+from pydantic import BaseModel, Field
 
 
 class PracticeSentenceSchema(BaseModel):

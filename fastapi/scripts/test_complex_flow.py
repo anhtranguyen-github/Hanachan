@@ -13,7 +13,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.agents.memory_agent import run_chat
 from app.core.database import init_pool, execute_query, close_pool
-from app.services.memory import session_memory as sess_mem
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)

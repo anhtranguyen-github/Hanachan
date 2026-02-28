@@ -11,7 +11,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 
-from ...services.sentence_annotator import annotate_sentence, get_sentence_annotations
+from ....services.sentence_annotator import annotate_sentence, get_sentence_annotations
 from ....core.security import require_auth
 
 logger = logging.getLogger(__name__)
