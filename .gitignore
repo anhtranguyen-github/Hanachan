@@ -77,7 +77,7 @@ services/**/*.py[cod]
 services/**/.venv/
 services/**/venv/
 services/**/.uv/
-services/**/uv.lock
+
 services/**/*.egg-info/
 services/**/.pytest_cache/
 services/**/.ipynb_checkpoints/
