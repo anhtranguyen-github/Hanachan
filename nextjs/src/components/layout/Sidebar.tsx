@@ -18,6 +18,7 @@ import {
     Mic,
     BookMarked,
     Video,
+    PenTool,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useUser } from '@/features/auth/AuthContext';
@@ -31,6 +32,7 @@ const navItems = [
     { name: 'AI Chat', href: '/immersion/chatbot', icon: MessageSquare, color: '#B7E4C7' },
     { name: 'Speaking', href: '/immersion/speaking', icon: Mic, color: '#FFB5B5' },
     { name: 'Curriculum', href: '/content', icon: Library, color: '#FFD6A5' },
+    { name: 'Sentences', href: '/sentences', icon: PenTool, color: '#A2D2FF' },
     { name: 'Profile', href: '/profile', icon: User, color: '#F4ACB7' },
 ];
 

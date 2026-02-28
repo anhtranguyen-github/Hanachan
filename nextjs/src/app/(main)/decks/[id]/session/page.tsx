@@ -9,7 +9,7 @@ import {
 } from '@/features/learning/review-actions';
 import { ReviewCardDisplay } from '@/features/learning/components/ReviewCardDisplay';
 import { ReviewSession, ReviewCard } from '@/features/learning/types/review-cards';
-import { Loader2, CheckCircle, ArrowRight } from 'lucide-react';
+import { Loader2, CheckCircle, ArrowRight, X } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LevelReviewSessionPage() {
@@ -174,25 +174,29 @@ export default function LevelReviewSessionPage() {
     if (!currentCard) return null;
 
     return (
-        <div className="min-h-screen bg-gray-50 py-12 px-4">
-            <div className="max-w-4xl mx-auto">
-                {/* Header / Progress */}
-                <div className="flex justify-between items-center mb-8">
-                    <button
-                        onClick={() => {
-                            router.push('/levels');
-                            router.refresh();
-                        }}
-                        className="text-gray-400 font-bold hover:text-primary-dark transition"
-                    >
-                        Exit Level
-                    </button>
-                    <div className="text-primary-dark font-black">
-                        {session?.current_index! + 1} <span className="text-gray-300">/</span> {session?.cards.length}
+        <div className="w-full h-[100dvh] flex flex-col overflow-hidden bg-white">
+            {/* Header / Progress */}
+            <header className="flex justify-between items-center shrink-0 px-6 py-4 border-b border-gray-100 bg-white relative z-20">
+                <div className="flex items-center gap-4">
+                    <div className="text-gray-800 font-black tracking-widest text-[10px] uppercase">
+                        {session?.current_index! + 1} <span className="text-gray-300 mx-1">/</span> {session?.cards.length}
                     </div>
                 </div>
+                <button
+                    onClick={() => {
+                        router.push('/levels');
+                        router.refresh();
+                    }}
+                    className="group flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-xl transition-all duration-300 border border-transparent hover:border-gray-200"
+                    title="Exit Session"
+                >
+                    <X size={16} className="text-gray-400 group-hover:text-gray-600 group-hover:rotate-90 transition-transform duration-300" />
+                    <span className="text-[10px] font-bold text-gray-400 group-hover:text-gray-600 tracking-widest uppercase hidden sm:inline">Exit</span>
+                </button>
+            </header>
 
-                {/* Card Display */}
+            {/* Card Display */}
+            <div className="flex-1 flex flex-col relative z-10 w-full">
                 <ReviewCardDisplay
                     card={currentCard}
                     mode="review"
