@@ -14,6 +14,9 @@ from unittest.mock import patch
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from faker import Faker
+
+fake = Faker()
 
 # ── Set test environment variables BEFORE importing the app ──────────────────
 os.environ.setdefault("OPENAI_API_KEY", "sk-test-key")
@@ -94,3 +97,88 @@ def auth_headers() -> dict:
 def service_role_headers() -> dict:
     """Authorization headers with service_role JWT token."""
     return {"Authorization": f"Bearer {make_test_token(role='service_role')}"}
+
+
+# ── Test data factories ───────────────────────────────────────────────────────
+
+@pytest.fixture
+def sample_user_id() -> str:
+    """Generate a random test user ID."""
+    return f"test-user-{fake.uuid4()[:8]}"
+
+
+@pytest.fixture
+def sample_user_id_short() -> str:
+    """Generate a short test user ID."""
+    return f"user-{fake.random_number(digits=6)}"
+
+
+@pytest.fixture
+def sample_session_id() -> str:
+    """Generate a random session ID."""
+    return f"session-{fake.uuid4()}"
+
+
+@pytest.fixture
+def auth_headers_for_user(sample_user_id: str) -> dict:
+    """Authorization headers with a specific test user ID."""
+    return {"Authorization": f"Bearer {make_test_token(user_id=sample_user_id)}"}
+
+
+# ── Async helpers ─────────────────────────────────────────────────────────────
+
+@pytest.fixture
+async def authenticated_client(app, auth_headers_for_user: dict) -> AsyncGenerator[AsyncClient, None]:
+    """An authenticated HTTP client with test user headers."""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+        headers=auth_headers_for_user,
+    ) as ac:
+        yield ac
+
+
+# ── Test database helpers ────────────────────────────────────────────────────
+
+class MockDatabaseResponse:
+    """Mock database response for testing."""
+    
+    def __init__(self, data: list | dict | None = None, error: str | None = None):
+        self._data = data
+        self._error = error
+    
+    @property
+    def data(self):
+        if self._error:
+            raise Exception(self._error)
+        return self._data
+    
+    @property
+    def error(self):
+        return self._error
+
+
+@pytest.fixture
+def mock_db_response():
+    """Factory for creating mock database responses."""
+    return lambda data=None, error=None: MockDatabaseResponse(data, error)
+
+
+# ── Test assertion helpers ───────────────────────────────────────────────────
+
+def assert_error_response(response, expected_status: int, expected_message: str | None = None):
+    """Assert that a response is an error with the given status and optional message."""
+    assert response.status_code == expected_status
+    data = response.json()
+    assert "detail" in data or "error" in data
+    if expected_message:
+        error_msg = data.get("detail") or data.get("error", "")
+        assert expected_message.lower() in error_msg.lower()
+
+
+def assert_success_response(response, expected_status: int = 200):
+    """Assert that a response is successful."""
+    assert response.status_code == expected_status
+    # Should not be an error response
+    data = response.json()
+    assert "detail" not in data or response.status_code != 400
