@@ -75,7 +75,7 @@ function SessionContent() {
 
     useEffect(() => {
         if (user) loadSession();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     const handleLessonNext = async () => {
@@ -114,9 +114,21 @@ function SessionContent() {
         }
     };
 
+    useEffect(() => {
+        // Hard-lock the viewport for session layouts
+        document.documentElement.classList.add('screen-locked');
+        document.body.classList.add('screen-locked');
+
+        // Cleanup: restore normal scrolling when leaving the session
+        return () => {
+            document.documentElement.classList.remove('screen-locked');
+            document.body.classList.remove('screen-locked');
+        };
+    }, []);
+
     if (phase === 'init') {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center p-8 gap-8 bg-[#FDF8F8]">
+            <div className="h-[100dvh] flex flex-col items-center justify-center p-8 gap-8 bg-[#FDF8F8] overflow-hidden">
                 <Loader2 className="animate-spin text-primary" size={48} />
                 <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">Loading...</p>
             </div>
@@ -128,7 +140,7 @@ function SessionContent() {
 
         if (error) {
             return (
-                <div className="min-h-screen bg-[#FDF8F8] flex flex-col items-center justify-center p-8 max-w-2xl mx-auto space-y-12 animate-in fade-in duration-700">
+                <div className="h-[100dvh] bg-[#FDF8F8] flex flex-col items-center justify-center p-8 max-w-2xl mx-auto space-y-12 animate-in fade-in duration-700 overflow-hidden">
                     <div className="w-32 h-32 bg-rose-100 rounded-[48px] flex items-center justify-center text-rose-500 mb-4 animate-bounce">
                         <Zap size={64} fill="currentColor" />
                     </div>
@@ -150,7 +162,7 @@ function SessionContent() {
         }
 
         return (
-            <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 max-w-2xl mx-auto space-y-16 animate-in fade-in duration-1000">
+            <div className="h-[100dvh] bg-background flex flex-col items-center justify-center p-8 max-w-2xl mx-auto space-y-16 animate-in fade-in duration-1000 overflow-hidden">
                 <div className="space-y-4 text-center">
                     <h1 className="text-6xl font-black text-gray-900 tracking-tighter" data-testid="review-complete-header">Excellent Work!</h1>
                     <p className="text-gray-400 font-medium">{stats.totalItems} items learned. Growth in progress.</p>

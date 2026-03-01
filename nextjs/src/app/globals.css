@@ -394,3 +394,14 @@
 .gap-sm { gap: var(--spacing-sm); }
 .gap-md { gap: var(--spacing-md); }
 .gap-lg { gap: var(--spacing-lg); }
+
+/* Screen-lock utilities for fixed, non-scrollable pages */
+html.screen-locked,
+body.screen-locked {
+  overflow: hidden !important;
+  height: 100dvh !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overscroll-behavior: none;
+}

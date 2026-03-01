@@ -70,105 +70,96 @@ export default function LoginPage() {
 
     return (
         <ScreenLayout background="pink">
-            {/* Branding Layer - always visible at top */}
-            <div className="flex flex-col items-center pt-4 sm:pt-0 mb-6 sm:mb-8 transition-all duration-700">
+            {/* Branding Layer - compact */}
+            <div className="flex flex-col items-center mb-3 sm:mb-4">
                 <div className="relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-[#F4ACB7] to-[#CDB4DB] rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-                    <div className="relative text-4xl sm:text-5xl font-black bg-[#16161a] border border-[#F4ACB733] p-4 sm:p-5 rounded-2xl text-white shadow-2xl">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-[#F4ACB7] to-[#CDB4DB] rounded-xl blur opacity-25"></div>
+                    <div className="relative text-2xl sm:text-3xl font-black bg-[#16161a] border border-[#F4ACB733] p-3 rounded-xl text-white shadow-2xl">
                         花
                     </div>
                 </div>
-                <h1 className="text-3xl sm:text-4xl font-extrabold text-white mt-5 sm:mt-6 tracking-tight">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-white mt-3 tracking-tight">
                     HanaChan <span className="text-[#F4ACB7]">V2</span>
                 </h1>
-                <div className="h-0.5 w-12 bg-gradient-to-r from-transparent via-[#F4ACB7] to-transparent mt-2"></div>
-                <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-medium mt-3 sm:mt-4">
+                <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-bold mt-1">
                     Japanese Learning App
                 </p>
             </div>
 
-            {/* Auth Card Layer - centered in remaining space */}
-            <div className="flex-1 flex flex-col items-center justify-start w-full">
-                <div className="bg-[#16161aB3] backdrop-blur-xl border border-white/10 rounded-[32px] p-8 sm:p-10 shadow-2xl overflow-hidden relative group w-full">
-                    {/* Inner edge light */}
+            {/* Auth Card Layer - compact */}
+            <div className="flex flex-col items-center w-full">
+                <div className="bg-[#16161aB3] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 shadow-2xl relative w-full">
                     <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
 
-                    <form onSubmit={handleLogin} className="space-y-5 sm:space-y-6 relative">
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-[11px] text-gray-400 uppercase font-bold tracking-wider ml-1">Email</label>
-                                <div className="relative group/input">
-                                    <input
-                                        type="email"
-                                        placeholder="user@hanachan.app"
-                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 sm:py-4 text-white placeholder:text-white/20 outline-none focus:border-[#F4ACB7] focus:ring-4 focus:ring-[#F4ACB710] transition-all duration-300"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        required
-                                    />
-                                    <div className="absolute inset-0 rounded-2xl bg-[#F4ACB705] opacity-0 group-hover/input:opacity-100 pointer-events-none transition-opacity"></div>
-                                </div>
+                    <form onSubmit={handleLogin} className="space-y-3">
+                        <div className="space-y-2">
+                            <div className="space-y-1">
+                                <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider ml-1">Email</label>
+                                <input
+                                    type="email"
+                                    placeholder="user@hanachan.app"
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder:text-white/20 outline-none focus:border-[#F4ACB7] focus:ring-2 focus:ring-[#F4ACB710] transition-all duration-300 text-sm"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-1">
                                 <div className="flex justify-between items-center ml-1">
-                                    <label className="text-[11px] text-gray-400 uppercase font-bold tracking-wider">Password</label>
+                                    <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Password</label>
                                     <Link href="#" className="text-[10px] text-[#F4ACB7] uppercase font-bold hover:underline transition-all">Forgot?</Link>
                                 </div>
-                                <div className="relative group/input">
-                                    <input
-                                        type="password"
-                                        placeholder="••••••••"
-                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 sm:py-4 text-white placeholder:text-white/20 outline-none focus:border-[#F4ACB7] focus:ring-4 focus:ring-[#F4ACB710] transition-all duration-300"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        required
-                                    />
-                                    <div className="absolute inset-0 rounded-2xl bg-[#F4ACB705] opacity-0 group-hover/input:opacity-100 pointer-events-none transition-opacity"></div>
-                                </div>
+                                <input
+                                    type="password"
+                                    placeholder="••••••••"
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder:text-white/20 outline-none focus:border-[#F4ACB7] focus:ring-2 focus:ring-[#F4ACB710] transition-all duration-300 text-sm"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
                             </div>
                         </div>
 
                         {error && (
-                            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 animate-shake">
+                            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 animate-shake">
                                 <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
-                                <p className="text-[11px] text-red-500 font-bold uppercase leading-none">{error}</p>
+                                <p className="text-[10px] text-red-500 font-bold uppercase leading-none">{error}</p>
                             </div>
                         )}
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="group/btn relative w-full py-4 sm:py-5 rounded-2xl font-black text-xs uppercase tracking-widest text-[#592E38] transition-all duration-500 overflow-hidden active:scale-[0.98] disabled:opacity-50"
+                            className="group/btn relative w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-[#592E38] transition-all duration-500 overflow-hidden active:scale-[0.98] disabled:opacity-50"
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-[#F4ACB7] to-[#CDB4DB] transition-all duration-500 group-hover/btn:scale-105"></div>
                             <span className="relative z-10">{loading ? 'Signing in...' : 'Sign in'}</span>
                         </button>
                     </form>
 
-                    <div className="mt-6 sm:mt-8 flex flex-col items-center gap-4">
-                        <div className="flex items-center gap-4 w-full">
+                    <div className="mt-4 flex flex-col items-center gap-3">
+                        <div className="flex items-center gap-3 w-full">
                             <div className="h-[1px] bg-white/10 flex-1" />
-                            <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Continue with</p>
+                            <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Or</p>
                             <div className="h-[1px] bg-white/10 flex-1" />
                         </div>
-                        <div className="flex gap-3 w-full">
+                        <div className="flex gap-2 w-full justify-center">
                             <button
                                 type="button"
                                 disabled={loading}
                                 onClick={() => handleOAuthLogin('github')}
-                                className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 h-12 sm:h-14 rounded-2xl flex items-center justify-center transition-all duration-300 group/social hover:scale-105 active:scale-95 disabled:opacity-50"
+                                className="bg-white/5 hover:bg-white/10 border border-white/10 h-10 w-10 rounded-xl flex items-center justify-center transition-all duration-300 group/social hover:scale-105 active:scale-95 disabled:opacity-50"
                                 title="Login with GitHub"
                             >
-                                <svg className="w-5 h-5 text-white/50 group-hover/social:text-white transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" /></svg>
+                                <svg className="w-4 h-4 text-white/50 group-hover/social:text-white transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" /></svg>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                {/* Footer Link */}
-                <div className="mt-6 sm:mt-8 text-center transition-all duration-700 delay-300 opacity-100">
-                    <p className="text-gray-500 text-[11px] font-bold uppercase tracking-widest leading-loose">
+                <div className="mt-4 text-center">
+                    <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">
                         New here? {' '}
                         <Link href="/signup" className="text-white hover:text-[#F4ACB7] underline decoration-[#F4ACB7]/30 hover:decoration-[#F4ACB7] transition-all ml-1">
                             Create account

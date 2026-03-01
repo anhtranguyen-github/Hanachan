@@ -51,7 +51,7 @@ function SessionContent() {
         if (user) {
             loadSession();
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     const handleAnswer = async (rating: Rating, userInput: string) => {
@@ -72,9 +72,21 @@ function SessionContent() {
         }
     };
 
+    useEffect(() => {
+        // Hard-lock the viewport for session layouts
+        document.documentElement.classList.add('screen-locked');
+        document.body.classList.add('screen-locked');
+
+        // Cleanup: restore normal scrolling when leaving the session
+        return () => {
+            document.documentElement.classList.remove('screen-locked');
+            document.body.classList.remove('screen-locked');
+        };
+    }, []);
+
     if (phase === 'init') {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center p-8 gap-8">
+            <div className="h-[100dvh] flex flex-col items-center justify-center p-8 gap-8 overflow-hidden">
                 <Loader2 className="animate-spin text-primary" size={48} />
                 <p className="text-xs font-bold uppercase tracking-widest text-foreground/40">Loading...</p>
             </div>
@@ -85,7 +97,7 @@ function SessionContent() {
         const accuracy = stats.totalItems > 0 ? Math.round(((stats.totalItems - stats.mistakes) / stats.totalItems) * 100) : 100;
 
         return (
-            <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 max-w-2xl mx-auto space-y-16 animate-in fade-in duration-1000">
+            <div className="h-[100dvh] bg-background flex flex-col items-center justify-center p-8 max-w-2xl mx-auto space-y-16 animate-in fade-in duration-1000 overflow-hidden">
                 <div className="space-y-4 text-center">
                     <h1 className="text-6xl font-black text-gray-900 tracking-tighter" data-testid="review-complete-header">Excellent Work!</h1>
                     <p className="text-gray-400 font-medium">{stats.totalItems} items reviewed. Everything is up to date.</p>

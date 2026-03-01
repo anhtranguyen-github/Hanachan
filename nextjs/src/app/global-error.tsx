@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import "./globals.css";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 
 export default function GlobalError({
