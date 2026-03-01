@@ -39,7 +39,6 @@ function ContentDatabase() {
                 const { data: userData } = await supabase.from('users').select('level').eq('id', userId).maybeSingle();
                 setUserLevel(userData?.level || 1);
             } else {
-                // Guests see level 1 content unlocked by default, others locked
                 setUserLevel(1);
             }
 
@@ -54,7 +53,7 @@ function ContentDatabase() {
 
     useEffect(() => {
         loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filterType, selectedLevel]);
 
     const filteredItems = useMemo(() => {

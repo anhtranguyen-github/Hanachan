@@ -106,12 +106,6 @@ export default function HomePage() {
                         >
                             Start Your Journey
                         </Link>
-                        <Link
-                            href="/dashboard"
-                            className="w-full sm:w-auto px-10 py-5 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold text-lg rounded-2xl transition-all"
-                        >
-                            Browse as Guest
-                        </Link>
                     </div>
                 </div>
 

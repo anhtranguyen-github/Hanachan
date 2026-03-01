@@ -16,17 +16,7 @@ export default function ReviewPage() {
     const loadRealStats = async () => {
         try {
             const userId = user?.id;
-
-            if (!userId) {
-                // Preview stats for guests
-                setStats({
-                    due: 8,
-                    breakdown: { learning: 3, review: 5 },
-                    estimatedTime: 4,
-                    retention: 92
-                });
-                return;
-            }
+            if (!userId) return;
 
             const dashboardStats = await fetchUserDashboardStats(userId);
             setStats({
@@ -43,7 +33,7 @@ export default function ReviewPage() {
     useEffect(() => {
         setMounted(true);
         loadRealStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     if (!mounted || !stats) {
@@ -113,11 +103,11 @@ export default function ReviewPage() {
 
                 {hasReviews ? (
                     <button
-                        onClick={() => !user ? openLoginModal() : (window.location.href = '/review/session')}
+                        onClick={() => window.location.href = '/review/session'}
                         className="w-full py-4 bg-gradient-to-r from-[#9B7DB5] to-[#7B5D95] text-white rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] hover:shadow-xl hover:shadow-[#9B7DB5]/25 hover:scale-[1.02] transition-all duration-300 group/btn relative z-10"
                     >
                         <Zap size={13} />
-                        Start Review {!user && '(Sign In)'}
+                        Start Review
                         <ChevronRight size={13} className="group-hover/btn:translate-x-1 transition-transform" />
                     </button>
                 ) : (

@@ -18,20 +18,12 @@ export default function SentencesPage() {
     const [error, setError] = useState<string | null>(null);
 
     const loadSentences = async () => {
+        if (!user) return;
         setLoading(true);
         try {
-            if (!user) {
-                // Example sentences for guests
-                setSentences([
-                    { id: 'ex1', japanese_raw: '猫が好きです。', english_raw: 'I like cats.', annotations: [] },
-                    { id: 'ex2', japanese_raw: '天気がいいですね。', english_raw: 'The weather is nice, isn\'t it?', annotations: [] },
-                    { id: 'ex3', japanese_raw: '日本語を勉強しています。', english_raw: 'I am studying Japanese.', annotations: [] },
-                ]);
-            } else {
-                const result = await fetchUserSentencesAction();
-                if (result.success && result.data) {
-                    setSentences(result.data);
-                }
+            const result = await fetchUserSentencesAction();
+            if (result.success && result.data) {
+                setSentences(result.data);
             }
         } finally {
             setLoading(false);
@@ -40,7 +32,7 @@ export default function SentencesPage() {
 
     useEffect(() => {
         loadSentences();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     const handleAdd = async (e: React.FormEvent) => {
@@ -112,13 +104,12 @@ export default function SentencesPage() {
                         {error && <p className="text-rose-500 text-xs font-bold px-2">{error}</p>}
 
                         <button
-                            type={user ? "submit" : "button"}
-                            onClick={!user ? () => openLoginModal() : undefined}
-                            disabled={user ? (submitting || !japaneseInput.trim() || !englishInput.trim()) : false}
+                            type="submit"
+                            disabled={submitting || !japaneseInput.trim() || !englishInput.trim()}
                             className="w-full mt-4 flex items-center justify-center gap-2 py-4 bg-gray-900 text-white rounded-2xl font-black shadow-lg disabled:opacity-50 disabled:scale-100 hover:scale-[1.02] active:scale-95 transition-all group"
                         >
                             {submitting ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} className="group-hover:rotate-90 transition-transform" />}
-                            {user ? 'Save Sentence' : 'Sign In to Save'}
+                            Save Sentence
                         </button>
                     </form>
                 </div>
