@@ -687,6 +687,17 @@ export default function SpeakingPracticePage() {
         }
     }, [practiceMode, dynamicSentence, selectedPrompt, startAssessment]);
 
+    useEffect(() => {
+        // Hard-lock the viewport for app-like layouts
+        document.documentElement.classList.add('screen-locked');
+        document.body.classList.add('screen-locked');
+
+        return () => {
+            document.documentElement.classList.remove('screen-locked');
+            document.body.classList.remove('screen-locked');
+        };
+    }, []);
+
     // Auto-handle result changes
     useEffect(() => {
         if (result && status === 'done') {
@@ -719,7 +730,7 @@ export default function SpeakingPracticePage() {
         : null;
 
     return (
-        <div className="flex h-full bg-[#FFFDFD] overflow-hidden rounded-[32px] border border-[#F0E0E0] shadow-sm">
+        <div className="flex h-[100dvh] bg-[#FFFDFD] overflow-hidden rounded-[32px] border border-[#F0E0E0] shadow-sm">
             {/* ── Left Panel: Prompt List (Static Mode) ── */}
             {practiceMode === 'static' && activeTab === 'practice' && (
                 <aside className="w-72 border-r border-[#F0E0E0] flex flex-col shrink-0 bg-white/50 backdrop-blur-sm">

@@ -48,14 +48,15 @@ export default function MainLayout({
     // Auth-required features will show a modal instead
 
     return (
-        <div className="flex h-screen overflow-hidden font-sans relative mesh-bg">
+        <div className="flex h-[100dvh] overflow-hidden font-sans relative mesh-bg">
             {/* Desktop sidebar - hidden on mobile */}
             {!isSession && <Sidebar />}
 
             <div className="flex-1 flex flex-col overflow-hidden relative min-w-0">
 
                 <main className={clsx(
-                    "flex-1 overflow-auto custom-scrollbar relative",
+                    "flex-1 relative",
+                    (isSession || isChatbot) ? "overflow-hidden" : "overflow-auto custom-scrollbar",
                     isSession
                         ? "z-50"
                         : isChatbot
