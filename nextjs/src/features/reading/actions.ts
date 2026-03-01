@@ -1,6 +1,7 @@
 'use server';
 
-import { supabase } from '@/lib/supabase';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import type {
     ReadingConfig,
     ReadingSession,
@@ -11,7 +12,19 @@ import type {
 const FASTAPI_URL = process.env.FASTAPI_URL || 'http://localhost:8000';
 
 async function getAuthHeaders() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const cookieStore = cookies();
+    const supabaseClient = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                get(name: string) {
+                    return cookieStore.get(name)?.value;
+                },
+            },
+        }
+    );
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session?.access_token) throw new Error('Not authenticated');
     return {
         'Authorization': `Bearer ${session.access_token}`,

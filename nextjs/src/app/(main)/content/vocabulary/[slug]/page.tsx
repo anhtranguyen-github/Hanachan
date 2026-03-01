@@ -7,6 +7,9 @@ import { AudioPlayer } from '@/components/shared/AudioPlayer';
 import { ChevronLeft, Zap, Target, Layers, PlayCircle, Info, Languages, Sparkles, Volume2, Bookmark, Activity } from 'lucide-react';
 import { KUInlineChat } from '@/features/chat/components/KUInlineChat';
 
+import { KUUserNotes } from '@/components/shared/KUUserNotes';
+import { KUUserSentences } from '@/components/shared/KUUserSentences';
+
 export const dynamic = "force-dynamic";
 
 
@@ -175,6 +178,19 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                     </div>
                 </section>
             )}
+
+            {/* Custom Sentences */}
+            <KUUserSentences
+                kuId={vocab.id}
+                kuType="vocabulary"
+                character={vocab.character || vocab.slug}
+            />
+
+            {/* Personal Notes */}
+            <KUUserNotes
+                kuId={vocab.id}
+                kuType="vocabulary"
+            />
 
             {/* Chat Agent */}
             <KUInlineChat

@@ -16,7 +16,6 @@ export default function MainLayout({
     const router = useRouter();
     const pathname = usePathname();
 
-    const isSession = pathname.startsWith('/learn/session') || pathname.startsWith('/review/session');
     const isChatbot = pathname.includes('/chatbot') || pathname.includes('/speaking');
 
     useEffect(() => {
@@ -55,20 +54,16 @@ export default function MainLayout({
     return (
         <div className="flex h-[100dvh] overflow-hidden font-sans relative mesh-bg">
             {/* Desktop sidebar - hidden on mobile */}
-            {!isSession && <Sidebar />}
+            <Sidebar />
 
             <div className="flex-1 flex flex-col overflow-hidden relative min-w-0">
 
                 <main className={clsx(
                     "flex-1 relative",
-                    (isSession || isChatbot) ? "overflow-hidden" : "overflow-auto custom-scrollbar",
-                    isSession
-                        ? "z-50"
-                        : isChatbot
-                            ? "p-0"
-                            : "p-3 lg:p-4 pt-3 lg:pt-4",
+                    isChatbot ? "overflow-hidden" : "overflow-auto custom-scrollbar",
+                    isChatbot ? "p-0" : "p-3 lg:p-4 pt-3 lg:pt-4",
                     // Mobile: add top padding for fixed header, bottom padding for bottom nav
-                    !isSession && "pt-[calc(3.5rem+0.75rem)] lg:pt-3 pb-[calc(4rem+0.75rem)] lg:pb-3"
+                    "pt-[calc(3.5rem+0.75rem)] lg:pt-3 pb-[calc(4rem+0.75rem)] lg:pb-3"
                 )}>
                     {children}
                 </main>

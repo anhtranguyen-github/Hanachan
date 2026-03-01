@@ -591,14 +591,8 @@ function PracticePanel({
 
 export default function SpeakingPracticePage() {
     const { user, openLoginModal } = useUser();
-    const [practiceMode, setPracticeMode] = useState<PracticeMode>('static');
-    const [activeTab, setActiveTab] = useState<'practice' | 'history'>('practice');
-    const [selectedPrompt, setSelectedPrompt] = useState<SpeakingPrompt>(SPEAKING_PROMPTS[0]);
-    const [activeCategory, setActiveCategory] = useState<string>('all');
-    const [activeDifficulty, setActiveDifficulty] = useState<string>('all');
-    const [showFilters, setShowFilters] = useState(false);
     const [sessionHistory, setSessionHistory] = useState<Array<{
-        prompt: SpeakingPrompt;
+        prompt: any;
         result: PronunciationAssessmentResult;
     }>>([]);
 
@@ -630,62 +624,35 @@ export default function SpeakingPracticePage() {
         isRecording,
     } = usePronunciationAssessment();
 
-    // Filter prompts
-    const filteredPrompts = useCallback(() => {
-        return SPEAKING_PROMPTS.filter(p => {
-            const catMatch = activeCategory === 'all' || p.category === activeCategory;
-            const diffMatch = activeDifficulty === 'all' || p.difficulty === activeDifficulty;
-            return catMatch && diffMatch;
-        });
-    }, [activeCategory, activeDifficulty])();
-
-    const handleSelectPrompt = useCallback((prompt: SpeakingPrompt) => {
-        setSelectedPrompt(prompt);
-        resetAssessment();
-    }, [resetAssessment]);
-
-    const handleRandomPrompt = useCallback(() => {
-        const pool = filteredPrompts.filter(p => p.id !== selectedPrompt.id);
-        if (pool.length === 0) return;
-        const random = pool[Math.floor(Math.random() * pool.length)];
-        handleSelectPrompt(random);
-    }, [filteredPrompts, selectedPrompt.id, handleSelectPrompt]);
-
     // Handle recording complete - integrate with dynamic session
     const handleRecordingComplete = useCallback(async (assessmentResult: PronunciationAssessmentResult) => {
+        if (!dynamicSentence) return;
+
         // Add to history
-        const prompt = practiceMode === 'dynamic' && dynamicSentence
-            ? {
-                id: 'dynamic',
-                japanese: dynamicSentence.japanese,
-                reading: dynamicSentence.reading,
-                english: dynamicSentence.english,
-                difficulty: dynamicSentence.difficulty,
-                category: 'daily-life' as PromptCategory
-            }
-            : selectedPrompt;
+        const prompt = {
+            id: 'dynamic',
+            japanese: dynamicSentence.japanese,
+            reading: dynamicSentence.reading,
+            english: dynamicSentence.english,
+            difficulty: dynamicSentence.difficulty,
+            category: 'daily-life'
+        };
 
         setSessionHistory(prev => {
             const entry = { prompt, result: assessmentResult };
             return [entry, ...prev].slice(0, 20);
         });
 
-        // If in dynamic mode, record the attempt
-        if (practiceMode === 'dynamic' && dynamicSentence) {
-            await recordAttempt(assessmentResult.pronunciationScore, dynamicSentence.source_word);
-        }
-    }, [practiceMode, dynamicSentence, selectedPrompt, recordAttempt]);
+        // Record the attempt
+        await recordAttempt(assessmentResult.pronunciationScore, dynamicSentence.source_word);
+    }, [dynamicSentence, recordAttempt]);
 
     // Handle start recording
     const handleStartRecording = useCallback(async () => {
-        const text = practiceMode === 'dynamic' && dynamicSentence
-            ? dynamicSentence.japanese
-            : selectedPrompt?.japanese;
-
-        if (text) {
-            await startAssessment(text);
+        if (dynamicSentence) {
+            await startAssessment(dynamicSentence.japanese);
         }
-    }, [practiceMode, dynamicSentence, selectedPrompt, startAssessment]);
+    }, [dynamicSentence, startAssessment]);
 
     useEffect(() => {
         // Hard-lock the viewport for app-like layouts
@@ -705,150 +672,105 @@ export default function SpeakingPracticePage() {
         }
     }, [result, status, handleRecordingComplete]);
 
-    // Start dynamic session when mode changes
+    // Start dynamic session
     const handleStartSmartPractice = useCallback(async () => {
         if (!user) {
             openLoginModal();
             return;
         }
-        setPracticeMode('dynamic');
         await startDynamicSession();
     }, [user, openLoginModal, startDynamicSession]);
 
-    const handleSwitchToStatic = useCallback(() => {
-        endDynamicSession();
-        setPracticeMode('static');
-    }, [endDynamicSession]);
 
     // Reset
     const handleReset = useCallback(() => {
         resetAssessment();
     }, [resetAssessment]);
 
-    const avgScore = sessionHistory.length > 0
-        ? Math.round(sessionHistory.reduce((sum, h) => sum + h.result.pronunciationScore, 0) / sessionHistory.length)
-        : null;
+    // Render Welcome Screen if not started
+    if (!sessionId && !isDynamicLoading) {
+        return (
+            <div className="flex h-[100dvh] bg-[#FFF8F8] overflow-hidden relative mesh-bg items-center justify-center p-8">
+                <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
+                    <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-gradient-to-br from-[#F4ACB7]/40 to-[#D88C9A]/20 rounded-full blur-3xl animate-pulse-slow"></div>
+                    <div className="absolute top-[20%] -right-[10%] w-[35%] h-[35%] bg-gradient-to-br from-[#9BF6FF]/30 to-[#BDE0FE]/20 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
+                </div>
 
-    return (
-        <div className="flex h-[100dvh] bg-[#FFFDFD] overflow-hidden rounded-[32px] border border-[#F0E0E0] shadow-sm">
-            {/* ── Left Panel: Prompt List (Static Mode) ── */}
-            {practiceMode === 'static' && activeTab === 'practice' && (
-                <aside className="w-72 border-r border-[#F0E0E0] flex flex-col shrink-0 bg-white/50 backdrop-blur-sm">
-                    {/* Header */}
-                    <div className="p-4 border-b border-[#F0E0E0] space-y-3 shrink-0">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#CBD5E0]">
-                                Phrases
-                            </span>
-                            <div className="flex items-center gap-1.5">
-                                <button
-                                    onClick={handleRandomPrompt}
-                                    className="p-1.5 hover:bg-[#F7FAFC] rounded-lg transition-colors text-foreground/30 hover:text-primary"
-                                    title="Random phrase"
-                                >
-                                    <Shuffle size={13} />
-                                </button>
-                                <button
-                                    onClick={() => setShowFilters(v => !v)}
-                                    className={clsx(
-                                        'p-1.5 rounded-lg transition-colors',
-                                        showFilters
-                                            ? 'bg-primary/10 text-primary'
-                                            : 'hover:bg-[#F7FAFC] text-foreground/30 hover:text-primary'
-                                    )}
-                                    title="Filter"
-                                >
-                                    <Filter size={13} />
-                                </button>
-                            </div>
-                        </div>
+                <div className="relative z-10 glass-card p-12 max-w-2xl w-full text-center space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                    <div className="w-32 h-32 bg-gradient-to-br from-[#F4ACB7] to-[#D88C9A] rounded-[48px] mx-auto flex items-center justify-center shadow-2xl shadow-primary/30 transform transition-transform hover:scale-105 hover:rotate-3">
+                        <Mic size={56} className="text-white drop-shadow-md" />
+                    </div>
 
-                        {/* Filters */}
-                        {showFilters && (
-                            <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
-                                {/* Category filter */}
-                                <div>
-                                    <p className="text-[8px] font-black uppercase tracking-widest text-foreground/25 mb-1.5">Category</p>
-                                    <div className="flex flex-wrap gap-1">
-                                        {PROMPT_CATEGORIES.map(cat => (
-                                            <button
-                                                key={cat.id}
-                                                onClick={() => setActiveCategory(cat.id)}
-                                                className={clsx(
-                                                    'px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all',
-                                                    activeCategory === cat.id
-                                                        ? 'bg-primary text-white'
-                                                        : 'bg-[#F7FAFC] text-foreground/40 hover:bg-primary/10 hover:text-primary'
-                                                )}
-                                            >
-                                                {cat.emoji} {cat.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                                {/* Difficulty filter */}
-                                <div>
-                                    <p className="text-[8px] font-black uppercase tracking-widest text-foreground/25 mb-1.5">Difficulty</p>
-                                    <div className="flex gap-1">
-                                        {(['all', 'N5', 'N4', 'N3', 'N2', 'N1'] as const).map(d => (
-                                            <button
-                                                key={d}
-                                                onClick={() => setActiveDifficulty(d)}
-                                                className={clsx(
-                                                    'px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all',
-                                                    activeDifficulty === d
-                                                        ? 'bg-primary text-white'
-                                                        : 'bg-[#F7FAFC] text-foreground/40 hover:bg-primary/10 hover:text-primary'
-                                                )}
-                                            >
-                                                {d === 'all' ? 'All' : d}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Count */}
-                        <p className="text-[8px] font-black uppercase tracking-widest text-foreground/20">
-                            {filteredPrompts.length} phrase{filteredPrompts.length !== 1 ? 's' : ''}
+                    <div className="space-y-4">
+                        <h1 className="text-5xl font-black text-[#3E4A61] tracking-tighter">Speaking Practice</h1>
+                        <p className="text-[#A0AEC0] text-xl font-medium leading-relaxed max-w-lg mx-auto">
+                            Practice your pronunciation with AI feedback. Every sentence is generated dynamically using only the vocabulary you&apos;ve learned.
                         </p>
                     </div>
 
-                    {/* Prompt List */}
-                    <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-                        {filteredPrompts.map(prompt => (
-                            <PromptCard
-                                key={prompt.id}
-                                prompt={prompt}
-                                isActive={selectedPrompt.id === prompt.id}
-                                onClick={() => handleSelectPrompt(prompt)}
-                            />
-                        ))}
+                    <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto mt-8 mb-10">
+                        <div className="bg-white/60 p-4 rounded-3xl border border-white">
+                            <Brain size={24} className="text-[#F4ACB7] mx-auto mb-2" />
+                            <div className="text-[10px] font-black uppercase text-[#3E4A61] tracking-widest">Smart Adaptive</div>
+                        </div>
+                        <div className="bg-white/60 p-4 rounded-3xl border border-white">
+                            <Target size={24} className="text-[#9BF6FF] mx-auto mb-2" />
+                            <div className="text-[10px] font-black uppercase text-[#3E4A61] tracking-widest">Pinpoint Feedback</div>
+                        </div>
                     </div>
-                </aside>
-            )}
 
-            {/* ── Main Practice Area ── */}
+                    <button
+                        onClick={handleStartSmartPractice}
+                        className="w-full sm:w-auto px-12 py-5 bg-gray-900 text-white font-black text-xl rounded-full tracking-wide hover:bg-gray-800 transition-all shadow-2xl hover:shadow-gray-900/40 hover:-translate-y-1 active:scale-95"
+                    >
+                        Start Session
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (isDynamicComplete) {
+        return (
+            <div className="flex h-[100dvh] bg-[#FFF8F8] overflow-hidden items-center justify-center p-8">
+                <div className="text-center space-y-8 animate-in fade-in duration-700">
+                    <div className="w-32 h-32 bg-gradient-to-br from-[#48BB78] to-[#38A169] rounded-[48px] mx-auto flex items-center justify-center shadow-2xl shadow-[#48BB78]/30">
+                        <CheckCircle2 size={56} className="text-white" />
+                    </div>
+                    <h1 className="text-5xl font-black text-[#3E4A61] tracking-tighter">Session Complete!</h1>
+                    <p className="text-[#A0AEC0] text-xl font-medium">Great job practicing your pronunciation!</p>
+                    <div className="pt-8">
+                        <button
+                            onClick={endDynamicSession}
+                            className="px-10 py-4 bg-gray-900 text-white font-black text-lg rounded-full tracking-wide hover:bg-gray-800 transition-all active:scale-95 shadow-xl"
+                        >
+                            Return Home
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="flex bg-white h-full relative">
+            <button
+                onClick={endDynamicSession}
+                className="absolute top-4 left-4 z-50 p-2 bg-white/50 backdrop-blur-md rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all border border-gray-100"
+                title="Exit Session"
+            >
+                <XCircle size={20} />
+            </button>
+
             <PracticePanel
-                mode={practiceMode}
-                // Static
-                selectedPrompt={selectedPrompt}
-                filteredPrompts={filteredPrompts}
-                activeCategory={activeCategory}
-                activeDifficulty={activeDifficulty}
-                onSelectPrompt={handleSelectPrompt}
-                onRandomPrompt={handleRandomPrompt}
-                // Dynamic
+                mode="dynamic"
                 dynamicSentence={dynamicSentence}
                 dynamicIndex={dynamicIndex}
-                dynamicTotal={dynamicSentences.length}
+                dynamicTotal={dynamicSentences?.length || 0}
                 feedback={lastFeedback}
-                onStartDynamic={handleStartSmartPractice}
-                // Shared
                 status={status}
                 result={result}
-                error={error}
+                error={error || dynamicError}
                 isRecording={isRecording}
                 onStartRecording={handleStartRecording}
                 onStopRecording={stopAssessment}
