@@ -6,6 +6,8 @@ import { RichTextRenderer } from '@/components/shared/RichTextRenderer';
 import { ChevronLeft, Zap, Target, Layers, Info, BookOpen, ExternalLink, Globe, Sparkles, Activity, Bookmark, Flame } from 'lucide-react';
 import { KUInlineChat } from '@/features/chat/components/KUInlineChat';
 import sanitizeHtml from 'sanitize-html';
+import { KUUserNotes } from '@/components/shared/KUUserNotes';
+import { KUUserSentences } from '@/components/shared/KUUserSentences';
 
 export const dynamic = "force-dynamic";
 
@@ -215,6 +217,19 @@ export default async function GrammarDetailPage({ params }: { params: { slug: st
                     )}
                 </div>
             </div>
+
+            {/* Custom Sentences */}
+            <KUUserSentences
+                kuId={grammar.id}
+                kuType="grammar"
+                character={grammar.character || grammar.meaning}
+            />
+
+            {/* Personal Notes */}
+            <KUUserNotes
+                kuId={grammar.id}
+                kuType="grammar"
+            />
 
             {/* Chat Agent */}
             <KUInlineChat

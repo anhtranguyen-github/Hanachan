@@ -1,20 +1,20 @@
+import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!supabaseUrl || !supabaseKey) {
-    console.error("❌ Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
+    console.error("❌ Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY")
 }
 
-export const supabase = createClient(
-    supabaseUrl || 'https://dummy.supabase.co',
-    supabaseKey || 'dummy-key'
-);
+// Browser client for cookie-syncing with @supabase/ssr middleware
+export const supabase = typeof window !== 'undefined'
+    ? createBrowserClient(supabaseUrl, supabaseKey)
+    : createClient(supabaseUrl, supabaseKey)
 
-// Only initialize service client if key is available (server-side only)
+// Service client for server-side only operations
 export const supabaseService = (supabaseUrl && supabaseServiceKey)
     ? createClient(supabaseUrl, supabaseServiceKey)
-    : null as any;
+    : null as any

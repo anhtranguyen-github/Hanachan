@@ -86,7 +86,7 @@ function SessionContent() {
 
     if (phase === 'init') {
         return (
-            <div className="h-[100dvh] flex flex-col items-center justify-center p-8 gap-8 overflow-hidden">
+            <div className="h-full flex flex-col items-center justify-center p-8 gap-8 overflow-hidden bg-[#FDF8F8]">
                 <Loader2 className="animate-spin text-primary" size={48} />
                 <p className="text-xs font-bold uppercase tracking-widest text-foreground/40">Loading...</p>
             </div>
@@ -97,7 +97,7 @@ function SessionContent() {
         const accuracy = stats.totalItems > 0 ? Math.round(((stats.totalItems - stats.mistakes) / stats.totalItems) * 100) : 100;
 
         return (
-            <div className="h-[100dvh] bg-background flex flex-col items-center justify-center p-8 max-w-2xl mx-auto space-y-16 animate-in fade-in duration-1000 overflow-hidden">
+            <div className="h-full bg-background flex flex-col items-center justify-center p-8 max-w-2xl mx-auto space-y-16 animate-in fade-in duration-1000 overflow-hidden">
                 <div className="space-y-4 text-center">
                     <h1 className="text-6xl font-black text-gray-900 tracking-tighter" data-testid="review-complete-header">Excellent Work!</h1>
                     <p className="text-gray-400 font-medium">{stats.totalItems} items reviewed. Everything is up to date.</p>
@@ -131,7 +131,7 @@ function SessionContent() {
     const progress = (stats.completed / Math.max(stats.totalItems * 2, 1)) * 100;
 
     return (
-        <div className="w-full h-[100dvh] flex flex-col overflow-hidden bg-white" data-testid="review-session-root">
+        <div className="w-full h-full flex flex-col overflow-hidden bg-white" data-testid="review-session-root">
             <header className="flex justify-between items-center shrink-0 px-6 py-4 border-b border-gray-100 bg-white relative z-20">
                 <div className="flex items-center gap-4">
                     <div className="w-32 sm:w-64 h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -146,11 +146,11 @@ function SessionContent() {
                 </div>
                 <button
                     onClick={() => router.push('/review')}
-                    className="group flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-xl transition-all duration-300 border border-transparent hover:border-gray-200"
-                    title="Exit Review"
+                    className="group flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-xl transition-all duration-300 border border-gray-200 hover:border-gray-300"
+                    title="Close Review"
                 >
-                    <X size={16} className="text-gray-400 group-hover:text-gray-600 group-hover:rotate-90 transition-transform duration-300" />
-                    <span className="text-[10px] font-bold text-gray-400 group-hover:text-gray-600 tracking-widest uppercase hidden sm:inline">Exit</span>
+                    <X size={16} className="text-gray-400 group-hover:text-red-500 transition-colors duration-300" />
+                    <span className="text-[10px] font-bold text-gray-400 group-hover:text-red-500 tracking-widest uppercase hidden sm:inline">Close</span>
                 </button>
             </header>
 
@@ -168,8 +168,12 @@ function SessionContent() {
 
 export default function ReviewSessionPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary" size={48} /></div>}>
-            <SessionContent />
-        </Suspense>
+        <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-300">
+            <div className="w-full max-w-5xl h-full max-h-[85vh] bg-white rounded-[32px] sm:rounded-[40px] shadow-2xl overflow-hidden flex flex-col relative ring-1 ring-black/5">
+                <Suspense fallback={<div className="h-full flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary" size={48} /></div>}>
+                    <SessionContent />
+                </Suspense>
+            </div>
+        </div>
     );
 }

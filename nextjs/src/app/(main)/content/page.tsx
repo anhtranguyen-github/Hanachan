@@ -59,7 +59,7 @@ function ContentDatabase() {
     const filteredItems = useMemo(() => {
         return items.filter(unit => {
             const state = states[unit.id];
-            const status = unit.level > userLevel ? 'locked' : (!state ? 'new' : state.state);
+            const status = !state ? 'new' : state.state;
             const matchesStatus = filterStatus === 'all' || status === filterStatus;
             const matchesSearch = unit.meaning.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 unit.character?.includes(searchQuery) ||
@@ -181,7 +181,6 @@ function ContentDatabase() {
                                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                                                 {nonGrammarItems.map((unit) => {
                                                     const state = states[unit.id];
-                                                    const status = unit.level > userLevel ? 'locked' : (!state ? 'new' : state.state);
                                                     const typeTextColor: Record<string, string> = { radical: 'text-[#3A6EA5]', kanji: 'text-[#D88C9A]', vocabulary: 'text-[#9B7DB5]' };
                                                     const typeBorderColor: Record<string, string> = { radical: '#A2D2FF', kanji: '#F4ACB7', vocabulary: '#CDB4DB' };
                                                     return (
@@ -189,8 +188,7 @@ function ContentDatabase() {
                                                             href={`/content/${unit.type === 'vocabulary' ? 'vocabulary' : unit.type === 'radical' ? 'radicals' : unit.type}/${unit.slug}`}
                                                             key={unit.id}
                                                             className={clsx(
-                                                                "group relative flex flex-col items-center bg-white border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg aspect-square justify-center gap-1 p-2",
-                                                                status === 'locked' && "opacity-40 grayscale pointer-events-none"
+                                                                "group relative flex flex-col items-center bg-white border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg aspect-square justify-center gap-1 p-2"
                                                             )}
                                                             style={{ borderColor: `${typeBorderColor[unit.type]}40` }}
                                                         >
@@ -215,14 +213,12 @@ function ContentDatabase() {
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                                 {grammarItems.map((unit) => {
                                                     const state = states[unit.id];
-                                                    const status = unit.level > userLevel ? 'locked' : (!state ? 'new' : state.state);
                                                     return (
                                                         <Link
                                                             href={`/content/grammar/${unit.slug}`}
                                                             key={unit.id}
                                                             className={clsx(
-                                                                "group relative flex items-center gap-3 bg-white border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg px-4 py-3",
-                                                                status === 'locked' && "opacity-40 grayscale pointer-events-none"
+                                                                "group relative flex items-center gap-3 bg-white border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg px-4 py-3"
                                                             )}
                                                             style={{ borderColor: '#B7E4C740' }}
                                                         >

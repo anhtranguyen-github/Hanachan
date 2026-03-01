@@ -104,11 +104,21 @@ export default function LearnOverviewPage() {
                                 <span className="text-[8px] font-black uppercase tracking-widest text-[#A0AEC0] block mt-0.5">Items Ready</span>
                             </div>
                             <div className="flex -space-x-2">
-                                {state.batch.items.slice(0, 4).map((item: any, i: number) => (
-                                    <div key={i} className="w-8 h-8 rounded-full bg-white border-2 border-[#EDF2F7] flex items-center justify-center text-[10px] font-black text-[#3A6EA5] shadow-sm">
-                                        {item.knowledge_units?.character?.[0] || '?'}
-                                    </div>
-                                ))}
+                                {state.batch.items.slice(0, 4).map((item: any, i: number) => {
+                                    const ku = item.knowledge_units;
+                                    const type = ku?.type || 'kanji';
+                                    const pathType = type === 'vocabulary' ? 'vocabulary' : type === 'radical' ? 'radicals' : type;
+                                    return (
+                                        <Link
+                                            key={i}
+                                            href={`/content/${pathType}/${ku?.slug}`}
+                                            className="w-8 h-8 rounded-full bg-white border-2 border-[#EDF2F7] flex items-center justify-center text-[10px] font-black text-[#3A6EA5] shadow-sm hover:scale-110 hover:z-20 transition-all cursor-pointer"
+                                            title={ku?.meaning}
+                                        >
+                                            {ku?.character?.[0] || '?'}
+                                        </Link>
+                                    );
+                                })}
                                 {state.batch.items.length > 4 && (
                                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#A2D2FF] to-[#7BB8F0] border-2 border-white flex items-center justify-center text-[9px] text-white font-black shadow-sm">
                                         +{state.batch.items.length - 4}

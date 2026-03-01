@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@/features/auth/AuthContext';
 import { addSentenceAction, fetchUserSentencesAction } from './actions';
-import { Plus, Search, Loader2, Sparkles, BookOpen } from 'lucide-react';
+import { Plus, Search, Loader2, Sparkles, BookOpen, AlertCircle } from 'lucide-react';
 import { clsx } from 'clsx';
 import Link from 'next/link';
 import { AnnotatedSentence } from '@/components/shared/AnnotatedSentence';
@@ -56,95 +56,115 @@ export default function SentencesPage() {
     };
 
     return (
-        <div className="max-w-[1200px] mx-auto p-4 sm:p-8 space-y-8 animate-in fade-in duration-700">
-            <header className="flex flex-col gap-2">
-                <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
-                        <BookOpen size={24} className="text-primary" />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tighter">My Sentences</h1>
-                        <p className="text-gray-500 font-medium">Create and manage your own raw examples.</p>
+        <div className="max-w-[1400px] mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-page-entrance pb-12">
+            {/* Header / Hero */}
+            <header className="relative bg-white border border-border rounded-3xl overflow-hidden shadow-sm">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#A2D2FF]/20 via-[#CDB4DB]/10 to-transparent pointer-events-none" />
+                <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#CDB4DB]/20 rounded-full blur-3xl mix-blend-multiply pointer-events-none" />
+                <div className="absolute -left-10 -bottom-10 w-48 h-48 bg-[#A2D2FF]/20 rounded-full blur-3xl mix-blend-multiply pointer-events-none" />
+
+                <div className="relative p-6 sm:p-10 flex flex-col sm:flex-row items-center sm:items-end justify-between gap-6">
+                    <div className="flex items-center gap-5 w-full sm:w-auto">
+                        <div className="relative shrink-0">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-primary to-[#CDB4DB] rounded-2xl flex items-center justify-center shadow-xl border-4 border-white rotate-3">
+                                <BookOpen size={32} className="text-white drop-shadow-md" />
+                            </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h1 className="text-2xl sm:text-4xl font-black text-[#3E4A61] tracking-tight">Sentence Mining</h1>
+                            <p className="text-sm font-bold text-foreground/40 mt-1">Collect, organize, and study your own raw Japanese sentences.</p>
+                        </div>
                     </div>
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8 items-start">
                 {/* Add Sentence Form */}
-                <div className="lg:col-span-1 bg-white border border-gray-100 p-6 rounded-[32px] shadow-sm sticky top-8">
-                    <h2 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
-                        <Sparkles size={16} className="text-primary" />
-                        Add New
+                <div className="xl:col-span-1 bg-white border border-border rounded-3xl p-6 sm:p-8 shadow-sm lg:sticky lg:top-8 relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/20 via-primary to-primary/20" />
+
+                    <h2 className="text-sm font-black uppercase tracking-widest text-[#3E4A61] mb-6 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                            <Sparkles size={14} className="text-primary-dark" />
+                        </div>
+                        Mine New
                     </h2>
 
-                    <form onSubmit={handleAdd} className="space-y-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] uppercase font-bold text-gray-400 tracking-widest px-2">Japanese</label>
-                            <input
-                                type="text"
+                    <form onSubmit={handleAdd} className="space-y-5">
+                        <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-black text-foreground/40 tracking-widest px-1">Japanese Text</label>
+                            <textarea
                                 value={japaneseInput}
                                 onChange={e => setJapaneseInput(e.target.value)}
-                                placeholder="綺麗な絵。"
-                                className="w-full bg-gray-50/50 border-2 border-transparent focus:border-primary/30 rounded-2xl px-4 py-3 text-lg font-black outline-none transition-all jp-text"
+                                placeholder="例：綺麗な絵ですね。"
+                                rows={2}
+                                className="w-full bg-[#F7FAFC] border border-border focus:border-primary/50 rounded-2xl p-4 text-base sm:text-lg font-black outline-none transition-all jp-text resize-none shadow-inner"
                             />
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] uppercase font-bold text-gray-400 tracking-widest px-2">English</label>
-                            <input
-                                type="text"
+                        <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-black text-foreground/40 tracking-widest px-1">English Translation (Optional)</label>
+                            <textarea
                                 value={englishInput}
                                 onChange={e => setEnglishInput(e.target.value)}
-                                placeholder="A pretty painting."
-                                className="w-full bg-gray-50/50 border-2 border-transparent focus:border-primary/30 rounded-2xl px-4 py-3 text-base font-bold outline-none transition-all"
+                                placeholder="Ex: That's a beautiful painting, isn't it?"
+                                rows={2}
+                                className="w-full bg-[#F7FAFC] border border-border focus:border-primary/50 rounded-2xl p-4 text-sm sm:text-base font-bold outline-none transition-all resize-none shadow-inner"
                             />
                         </div>
 
-                        {error && <p className="text-rose-500 text-xs font-bold px-2">{error}</p>}
+                        {error && (
+                            <div className="flex items-center gap-2 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold border border-red-100">
+                                <AlertCircle size={14} /> {error}
+                            </div>
+                        )}
 
                         <button
                             type="submit"
-                            disabled={submitting || !japaneseInput.trim() || !englishInput.trim()}
-                            className="w-full mt-4 flex items-center justify-center gap-2 py-4 bg-gray-900 text-white rounded-2xl font-black shadow-lg disabled:opacity-50 disabled:scale-100 hover:scale-[1.02] active:scale-95 transition-all group"
+                            disabled={submitting || !japaneseInput.trim()}
+                            className="w-full mt-2 flex items-center justify-center gap-2 py-4 bg-[#3E4A61] text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-lg disabled:opacity-50 disabled:scale-100 hover:scale-[1.02] active:scale-95 transition-all group"
                         >
-                            {submitting ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} className="group-hover:rotate-90 transition-transform" />}
+                            {submitting ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} className="group-hover:rotate-90 transition-transform" />}
                             Save Sentence
                         </button>
                     </form>
                 </div>
 
                 {/* Sentences List */}
-                <div className="lg:col-span-2 space-y-4">
+                <div className="xl:col-span-2 space-y-4">
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center py-24 gap-4 opacity-50">
+                        <div className="flex flex-col items-center justify-center py-32 gap-4">
                             <Loader2 className="animate-spin text-primary" size={32} />
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Loading your entries...</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/30">Loading your collection...</p>
                         </div>
                     ) : sentences.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed border-gray-100 rounded-[32px] bg-white/50">
-                            <BookOpen size={48} className="text-gray-200 mb-4" />
-                            <h3 className="text-xl font-black text-gray-400">No Sentences Yet</h3>
-                            <p className="text-gray-400 font-medium text-sm mt-1">Start by adding your first Japanese example!</p>
+                        <div className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed border-border rounded-3xl bg-surface-muted/30">
+                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-border mb-4">
+                                <BookOpen size={24} className="text-foreground/20" />
+                            </div>
+                            <h3 className="text-lg font-black text-foreground/40">No Sentences Yet</h3>
+                            <p className="text-foreground/30 font-bold text-sm mt-1">Start by typing your first Japanese example on the left.</p>
                         </div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2 gap-4">
                             {sentences.map((target) => (
-                                <div key={target.id} className="bg-white p-5 sm:p-6 rounded-3xl border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group">
-                                    <div className="space-y-1.5">
-                                        <p className="text-xl sm:text-2xl font-black text-gray-900">
+                                <div key={target.id} className="bg-white p-5 sm:p-6 rounded-3xl border border-border flex flex-col justify-between gap-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-primary/30 group relative overflow-hidden">
+                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary/10 to-primary/5 group-hover:from-primary/40 group-hover:to-primary/20 transition-colors" />
+                                    <div className="space-y-3 relative z-10 pl-2">
+                                        <p className="text-xl sm:text-2xl font-black text-[#3E4A61] leading-relaxed break-words">
                                             <AnnotatedSentence
                                                 text={target.japanese_raw}
                                                 annotations={target.annotations}
                                             />
                                         </p>
-                                        <p className="text-sm sm:text-base font-medium text-gray-500">
-                                            {target.english_raw}
-                                        </p>
+                                        {(target.english_raw || target.text_en) && (
+                                            <p className="text-sm font-bold text-foreground/50 border-t border-border/40 pt-3">
+                                                {target.english_raw || target.text_en}
+                                            </p>
+                                        )}
                                     </div>
-                                    <div className="shrink-0 flex items-center gap-3">
-                                        {/* Future space for tags or actions */}
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-300 px-3 py-1 bg-gray-50 rounded-lg">Raw</span>
+                                    <div className="flex items-center gap-2 mt-auto pt-2 pl-2">
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-foreground/30 px-2.5 py-1 bg-surface-muted rounded-lg border border-border/50">Manual</span>
                                     </div>
                                 </div>
                             ))}
