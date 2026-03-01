@@ -1,7 +1,7 @@
 
 
 /**
- * Hanachan V2 Design Tokens - boring-deterministic variant
+ * Hanachan Design Tokens - boring-deterministic variant
  * Follows Phase 1 of ui_development_for_code_agent.md
  * Constraints: Minimal colors (2-3), system font, flat layout.
  */
