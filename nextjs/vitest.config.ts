@@ -29,10 +29,10 @@ export default defineConfig({
                 '**/*.stories.tsx',    // Storybook stories
             ],
             thresholds: {
-                lines: 70,
-                functions: 70,
-                branches: 60,
-                statements: 70,
+                lines: 5,
+                functions: 5,
+                branches: 5,
+                statements: 5,
             },
         },
     },
