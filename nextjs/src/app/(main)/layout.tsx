@@ -20,9 +20,17 @@ export default function MainLayout({
     const isChatbot = pathname.includes('/chatbot') || pathname.includes('/speaking');
 
     useEffect(() => {
-        // No longer redirecting to login - guests can view public content
-        // Auth-required actions will show a modal instead
-    }, [user, loading, router]);
+        // Enforce guest access restrictions manually as well
+        if (!loading && !user) {
+            const protectedRoutes = ['/learn', '/dashboard', '/review', '/immersion', '/reading', '/videos', '/decks', '/sentences', '/profile'];
+            const isProtected = protectedRoutes.some(path => pathname.startsWith(path));
+
+            // Note: /content stays accessible as static-content
+            if (isProtected) {
+                router.replace('/');
+            }
+        }
+    }, [user, loading, router, pathname]);
 
     if (loading) {
         return (
@@ -43,9 +51,6 @@ export default function MainLayout({
             </div>
         );
     }
-
-    // Allow guests to view content - no redirect to login anymore
-    // Auth-required features will show a modal instead
 
     return (
         <div className="flex h-[100dvh] overflow-hidden font-sans relative mesh-bg">

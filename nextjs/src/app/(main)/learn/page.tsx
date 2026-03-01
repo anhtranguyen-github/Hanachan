@@ -17,19 +17,7 @@ export default function LearnOverviewPage() {
     const refreshData = async () => {
         try {
             const userId = user?.id;
-
-            if (!userId) {
-                // Guests see a preview of level 1
-                const levelStats = await fetchLevelStats('guest', 'level-1');
-                const newItems = await fetchNewItems('guest', 'level-1', 5);
-                setState({
-                    level: 1,
-                    batch: { id: 1, items: newItems, status: 'available' },
-                    batches: [{ id: 1, items: newItems, status: 'available' }],
-                    totalNew: levelStats.new
-                });
-                return;
-            }
+            if (!userId) return;
 
             const { data: profile } = await supabase.from('users').select('level').eq('id', userId).single();
             const currentLevel = profile?.level || 1;
@@ -50,7 +38,7 @@ export default function LearnOverviewPage() {
     useEffect(() => {
         setMounted(true);
         refreshData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     if (!mounted || !state) {
@@ -137,12 +125,12 @@ export default function LearnOverviewPage() {
 
                 {hasActiveBatch && (
                     <button
-                        onClick={() => !user ? openLoginModal() : (window.location.href = '/learn/session')}
+                        onClick={() => window.location.href = '/learn/session'}
                         data-testid="begin-session-link"
                         className="relative z-10 mt-5 w-full py-4 bg-gradient-to-r from-[#3A6EA5] to-[#2D5A8A] text-white rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] hover:shadow-xl hover:shadow-[#3A6EA5]/25 hover:scale-[1.02] transition-all duration-300 group/btn"
                     >
                         <Sparkles size={13} />
-                        Start Lesson {!user && '(Sign In)'}
+                        Start Lesson
                         <ChevronRight size={13} className="group-hover/btn:translate-x-1 transition-transform" />
                     </button>
                 )}

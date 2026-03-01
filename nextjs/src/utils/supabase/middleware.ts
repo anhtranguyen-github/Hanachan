@@ -56,9 +56,19 @@ export async function updateSession(request: NextRequest) {
 
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Protect internal routes if not authenticated
-    // Note: Dashboard and Content are now partially accessible to guests
-    const protectedRoutes = ['/profile', '/api/proxy']
+    // Protect internal app features - Guests are NOT allowed
+    const protectedRoutes = [
+        '/dashboard',
+        '/learn',
+        '/review',
+        '/immersion',
+        '/reading',
+        '/videos',
+        '/decks',
+        '/sentences',
+        '/profile',
+        '/api/proxy'
+    ]
     const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))
 
     if (isProtectedRoute && !user) {
