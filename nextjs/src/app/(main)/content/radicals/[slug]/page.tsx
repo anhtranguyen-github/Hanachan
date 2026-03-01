@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { RichTextRenderer } from '@/components/shared/RichTextRenderer';
 import { ChevronLeft, Zap, Layers, Info, Target, Sparkles, BookOpen } from 'lucide-react';
 import { KUInlineChat } from '@/features/chat/components/KUInlineChat';
+import { KUUserNotes } from '@/components/shared/KUUserNotes';
+import { KUUserSentences } from '@/components/shared/KUUserSentences';
 
 export const dynamic = "force-dynamic";
 
@@ -121,6 +123,19 @@ export default async function RadicalDetailPage({ params }: { params: { slug: st
                     </div>
                 </section>
             )}
+
+            {/* Custom Sentences */}
+            <KUUserSentences
+                kuId={radical.id}
+                kuType="radical"
+                character={radical.character || '?'}
+            />
+
+            {/* Personal Notes */}
+            <KUUserNotes
+                kuId={radical.id}
+                kuType="radical"
+            />
 
             {/* Chat Agent */}
             <KUInlineChat

@@ -73,12 +73,16 @@ export default function ProfilePage() {
         if (!user) return;
         setLoading(true);
         try {
-            const [profileData, statsData] = await Promise.all([
-                getUserProfile(user.id),
-                fetchUserDashboardStats(user.id)
+            const profileData = await getUserProfile(user.id);
+            const userLevel = profileData?.level || 1;
+
+            const [statsData, levelStatsData] = await Promise.all([
+                fetchUserDashboardStats(user.id),
+                import('@/features/learning/service').then(m => m.fetchLevelStats(user.id, `level-${userLevel}`))
             ]);
+
             setProfile(profileData);
-            setStats(statsData);
+            setStats({ ...statsData, levelStats: levelStatsData });
             if (profileData) {
                 setEditForm({
                     display_name: profileData.display_name || user?.user_metadata?.display_name || '',
@@ -115,12 +119,12 @@ export default function ProfilePage() {
     useEffect(() => {
         setMounted(true);
         if (user) loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     useEffect(() => {
         if (activeTab === 'memories' && user) loadMemories();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab, user]);
 
     const handleSaveProfile = async () => {

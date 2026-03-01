@@ -49,7 +49,7 @@ trap "echo 'Stopping...'; kill 0" SIGINT SIGTERM
 echo "[Backend] Starting on port $BACKEND_PORT..."
 cd "$ROOT_DIR/fastapi"
 # Use uv to run the backend
-uv run uvicorn app.main:app --host 0.0.0.0 --port $BACKEND_PORT > "$ROOT_DIR/fastapi/server.log" 2>&1 &
+uv run python -m uvicorn app.main:app --host 0.0.0.0 --port $BACKEND_PORT > "$ROOT_DIR/fastapi/server.log" 2>&1 &
 BACKEND_PID=$!
 
 # Wait for backend health

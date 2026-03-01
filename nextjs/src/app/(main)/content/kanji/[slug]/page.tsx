@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { RichTextRenderer } from '@/components/shared/RichTextRenderer';
 import { ChevronLeft, PlayCircle, BookOpen, Layers, Zap, Sparkles, Target, Info, Hash } from 'lucide-react';
 import { KUInlineChat } from '@/features/chat/components/KUInlineChat';
+import { KUUserNotes } from '@/components/shared/KUUserNotes';
+import { KUUserSentences } from '@/components/shared/KUUserSentences';
 
 export const dynamic = "force-dynamic";
 
@@ -174,6 +176,19 @@ export default async function KanjiDetailPage({ params }: { params: { slug: stri
                     </div>
                 </section>
             )}
+
+            {/* Custom Sentences */}
+            <KUUserSentences
+                kuId={kanji.id}
+                kuType="kanji"
+                character={kanji.character || kanji.slug}
+            />
+
+            {/* Personal Notes */}
+            <KUUserNotes
+                kuId={kanji.id}
+                kuType="kanji"
+            />
 
             {/* Chat Agent */}
             <KUInlineChat

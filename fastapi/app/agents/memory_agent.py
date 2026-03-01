@@ -128,12 +128,27 @@ def search_knowledge_units(query: str) -> str:
     )
 
 
+@tool
+def append_to_learning_notes(identifier: str, note_content: str, user_id: str = "INJECTED") -> str:
+    """Appends a personal note, trick, or mnemonic to the user's learning record for a specific Japanese character, slug, or word.
+    Use this if the user explicitly asks you to save a note or remember a rule for a specific item.
+    """
+    results = learn_serv.search_kus(identifier, limit=1)
+    if not results:
+        return f"Could not find any knowledge unit matching '{identifier}' to save the note to."
+    
+    ku_id = str(results[0]["id"])
+    learn_serv.add_ku_note(user_id, ku_id, note_content)
+    return f"Successfully added note to {results[0]['character']} ({results[0]['meaning']})."
+
+
 # Tool list for the Planner
 TOOLS = [
     get_episodic_memory,
     get_semantic_facts,
     get_user_learning_progress,
     search_knowledge_units,
+    append_to_learning_notes,
 ]
 
 
@@ -155,6 +170,7 @@ def tools_node(state: AgentState) -> Dict[str, Any]:
             "get_episodic_memory",
             "get_semantic_facts",
             "get_user_learning_progress",
+            "append_to_learning_notes",
         ]:
             args["user_id"] = user_id
 
@@ -189,7 +205,8 @@ PLANNER_PROMPT = ChatPromptTemplate.from_messages(
             "4. If it's about Japanese grammar/vocab, use 'search_knowledge_units'.\n"
             "5. If it refers to past conversations, use 'get_episodic_memory'.\n"
             "6. If it's about their personal facts, interests, or goals, use 'get_semantic_facts'.\n"
-            "7. If you have already gathered info, decide if you need more or if you can proceed to answer.\n\n"
+            "7. If the user explicitly asks you to save or remember a note for a specific kanji/vocab/grammar, use 'append_to_learning_notes'.\n"
+            "8. If you have already gathered info, decide if you need more or if you can proceed to answer.\n\n"
             "Current Date: {date}",
         ),
         ("placeholder", "{messages}"),
