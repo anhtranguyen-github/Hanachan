@@ -2,11 +2,12 @@
 'use client';
 
 import Link from 'next/link';
+import { ScreenLayout } from '@/components/layout/ScreenLayout';
 
 export default function AuthCodeError() {
     return (
-        <div className="min-h-screen bg-[#0a0a0c] flex items-center justify-center p-6 text-center">
-            <div className="max-w-md w-full space-y-8">
+        <ScreenLayout background="pink">
+            <div className="w-full">
                 <div className="bg-[#16161a] border border-red-500/20 rounded-[32px] p-10 shadow-2xl">
                     <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center text-red-500 text-3xl mx-auto mb-6">
                         ⚠️
@@ -23,6 +24,6 @@ export default function AuthCodeError() {
                     </Link>
                 </div>
             </div>
-        </div>
+        </ScreenLayout>
     );
 }

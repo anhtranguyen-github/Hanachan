@@ -31,6 +31,9 @@ This document tracks all issues addressed in the codebase refactoring.
 | #25 | XSS Protection via HTML Sanitization | `nextjs/src/components/shared/RichTextRenderer.tsx`, `reading/session/[id]/page.tsx`, `grammar/[slug]/page.tsx` |
 | #26 | Learning Modules Authentication Hardening | `fastapi/app/api/v1/endpoints/sentences.py`, `reading.py` |
 | #27 | Rate Limiting Expansion across learning APIs | `fastapi/app/api/v1/endpoints/speaking.py`, `video_dictation.py`, `reading.py` |
+| #28 | Next.js Server Segmentation Fault on Japanese Tokenization | `nextjs/src/features/video/service.ts`, `fastapi/app/api/v1/endpoints/videos.py` |
+| #29 | Video Transcript YouTube Anti-bot Blocks | `fastapi/app/api/v1/endpoints/videos.py` |
+| #30 | English Transcript Pollution | `fastapi/app/api/v1/endpoints/videos.py` |
 
 ## Detailed Fixes
 
@@ -105,3 +108,15 @@ This document tracks all issues addressed in the codebase refactoring.
 ### Issue #27 — Rate Limiting Expansion
 - **Problem:** Stateful operations (session creation, records) lacked protection against abuse
 - **Solution:** Applied SlowAPI limits (5-20/min) across Speaking, Reading, and Video Dictation modules
+
+### Issue #28 — Next.js Server Segmentation Fault
+- **Problem:** `kuromoji` running on Next.js Edge functions caused memory exhaustion and segmentation faults during video seeding.
+- **Solution:** Migrated tokenization logic to the Python backend using `janome`.
+
+### Issue #29 — YouTube Anti-bot Blocks
+- **Problem:** `youtube-transcript-api` requests were blocked by YouTube returning "Video unavailable" or 500 errors.
+- **Solution:** Replaced with `yt-dlp` to reliably extract JSON3 subtitle manifests without relying on unsupported JS runtimes.
+
+### Issue #30 — English Transcript Pollution
+- **Problem:** Video transcripts defaulted to downloading english/auto-translated transcripts if a manual Japanese one was missing.
+- **Solution:** Hardcoded specific `['ja', 'ja-JP']` validation checks prior to parsing and failing securely via 404 response.

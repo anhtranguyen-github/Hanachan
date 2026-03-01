@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 
 export default function Error({
     error,
@@ -15,7 +16,7 @@ export default function Error({
     }, [error]);
 
     return (
-        <div className="flex h-full flex-col items-center justify-center bg-brand-cream p-4 text-center">
+        <ScreenLayout background="none" theme="light">
             <div className="max-w-md rounded-xl border-2 border-brand-dark bg-white p-8 ">
                 <h2 className="mb-4 text-2xl font-black text-brand-dark">Something went wrong!</h2>
                 <p className="mb-6 font-medium text-brand-dark/70">
@@ -28,6 +29,6 @@ export default function Error({
                     Try again
                 </button>
             </div>
-        </div>
+        </ScreenLayout>
     );
 }

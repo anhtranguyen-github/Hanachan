@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { ScreenLayout } from '@/components/layout/ScreenLayout';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -68,16 +69,8 @@ export default function LoginPage() {
     if (!mounted) return null;
 
     return (
-        <div className="min-h-screen relative flex items-center justify-center p-6 overflow-hidden bg-[#0a0a0c]">
-            {/* Dynamic Background */}
-            <div className="absolute inset-0 z-0">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#F4ACB74D] blur-[120px] rounded-full animate-pulse"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#CDB4DB33] blur-[150px] rounded-full animate-pulse" style={{ animationDelay: '2s' }}></div>
-                <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-[#A2D2FF22] blur-[100px] rounded-full"></div>
-            </div>
-
-            {/* Content Container */}
-            <div className="relative z-10 w-full max-w-[440px]">
+        <ScreenLayout background="pink">
+            <div className="w-full">
                 {/* Branding */}
                 <div className="flex flex-col items-center mb-10 transition-all duration-700 transform translate-y-0 opacity-100">
                     <div className="relative group">
@@ -214,6 +207,6 @@ export default function LoginPage() {
                     animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
                 }
             `}</style>
-        </div>
+        </ScreenLayout>
     );
 }

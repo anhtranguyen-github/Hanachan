@@ -11,15 +11,8 @@ MODE=${1:-dev}
 # Root directory
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "--- � Phase 1: Supabase Infrastructure ---"
-cd "$ROOT_DIR"
-if ! docker ps | grep -q "supabase_db"; then
-  echo "Starting Supabase local stack..."
-  # Only start essential core services for faster boot
-  pnpm dlx supabase start
-else
-  echo "Supabase containers are already active."
-fi
+echo "--- ☁️ Phase 1: Using Cloud Supabase ---"
+echo "Local Supabase stack removed. Connecting directly to Cloud DB."
 
 echo "--- 🛠️  Phase 2: Cleanup ---"
 

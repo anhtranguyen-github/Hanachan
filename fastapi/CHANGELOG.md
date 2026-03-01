@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Authentication Bypass Fix** - Introduced `SUPABASE_SERVICE_KEY` to prevent administrative access via public anon keys
 - **XSS Protection** - Integrated `isomorphic-dompurify` in Next.js to sanitize dynamic HTML in Reading, Grammar, and Rich Text components
 - **API Auth Hardening** - Secured `sentences` endpoints and ensured all learning modules require authentication
+- **Video Subtitle Processing** - Integrated `yt-dlp` into FastAPI to robustly bypass YouTube anti-bot protections and extract structured JSON3 transcripts.
 
 ### Changed
 - Consolidated issue fix comments from source files to ISSUES.md
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Speaking API** - Refactored endpoints to use persistent database storage instead of in-memory dictionaries
 - **CSP Headers** - Strict Content-Security-Policy implemented in next.config.js (removed `'unsafe-eval'`)
 - **Rate Limiting** - Expanded rate limiting to Reading, Speaking, and Video Dictation stateful endpoints
+- **Japanese Tokenization Engine** - Migrated Japanese text tokenization from Next.js (`kuromoji`) to FastAPI (`janome`) to resolve server-side memory "Segmentation fault" crashes in Edge environments.
 
 ### Fixed
 - Environment file path resolution for Docker/container deployments
@@ -35,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Code Quality (FastAPI)** - Resolved `ruff` static analysis warnings (`unused variables`, `syntax errors` in Jupyter scripts) to ensure safe CI execution.
 - **Unit Testing** - Rectified `SUPABASE_SERVICE_KEY` mapping in local unit test mocks, passing role-based JWT validations successfully.
 - **Legacy Compatibility** - Reintroduced `get_db_connection` for backward compatibility across integration unit tests mapping to Legacy PostgreSQL pooling logic.
+- **Language Subtitle Filtering** - Fixed automatic subtitle fetching to strictly enforce Japanese language tracks (`ja` or `ja-JP`) and prevent silent ingestion of fallback languages like English.
+- **Transcript Connection Pooling** - Removed invalid `youtube-transcript-api` calls due to broken internal `js_runtimes` and legacy unauthenticated blocking.
 
 ### Security
 - **API Schema Hardening** - Implemented strict Pydantic validation (UUIDs, Literal types, and numerical constraints) across Speaking, Reading, Video Dictation, and Sentence Annotation modules.
