@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-import json
+from urllib.parse import urlparse
 import yt_dlp
 
 router = APIRouter()
@@ -38,8 +38,15 @@ async def get_video_transcript(youtube_id: str):
                 
             import urllib.request
             import json
-            req = urllib.request.Request(json3_sub['url'])
-            with urllib.request.urlopen(req) as response:
+            
+            # Validate URL scheme to prevent security issues (S310)
+            url = json3_sub['url']
+            parsed = urlparse(url)
+            if parsed.scheme not in ('http', 'https'):
+                raise HTTPException(status_code=400, detail="Only HTTP/HTTPS URLs are allowed")
+            
+            req = urllib.request.Request(url)  # noqa: S310
+            with urllib.request.urlopen(req) as response:  # noqa: S310  # nosec B310
                 if response.status != 200:
                     raise HTTPException(status_code=500, detail="Failed to download transcript data")
                 json_data = json.loads(response.read().decode('utf-8'))
