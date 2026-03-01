@@ -56,24 +56,30 @@ export default function SentencesPage() {
     };
 
     return (
-        <div className="max-w-[1400px] mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-page-entrance pb-12">
-            {/* Header / Hero */}
-            <header className="relative bg-white border border-border rounded-3xl overflow-hidden shadow-sm">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#A2D2FF]/20 via-[#CDB4DB]/10 to-transparent pointer-events-none" />
-                <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#CDB4DB]/20 rounded-full blur-3xl mix-blend-multiply pointer-events-none" />
-                <div className="absolute -left-10 -bottom-10 w-48 h-48 bg-[#A2D2FF]/20 rounded-full blur-3xl mix-blend-multiply pointer-events-none" />
-
-                <div className="relative p-6 sm:p-10 flex flex-col sm:flex-row items-center sm:items-end justify-between gap-6">
-                    <div className="flex items-center gap-5 w-full sm:w-auto">
-                        <div className="relative shrink-0">
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-primary to-[#CDB4DB] rounded-2xl flex items-center justify-center shadow-xl border-4 border-white rotate-3">
-                                <BookOpen size={32} className="text-white drop-shadow-md" />
-                            </div>
+        <main className="max-w-[1400px] mx-auto space-y-4 animate-page-entrance">
+            {/* Header */}
+            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-2 px-1">
+                <div className="flex items-center gap-4">
+                    <div className="relative shrink-0">
+                        <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl animate-pulse-slow" />
+                        <div className="relative w-12 h-12 bg-gradient-to-br from-primary to-[#CDB4DB] rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg border-2 border-white/50 rotate-2">
+                            <BookOpen size={24} />
                         </div>
-                        <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl sm:text-4xl font-black text-[#3E4A61] tracking-tight">Sentence Mining</h1>
-                            <p className="text-sm font-bold text-foreground/40 mt-1">Collect, organize, and study your own raw Japanese sentences.</p>
-                        </div>
+                    </div>
+                    <div className="flex flex-col justify-center py-1">
+                        <h1 className="text-xl sm:text-2xl font-black text-[#3E4A61] tracking-tight leading-tight">
+                            Sentence <span className="text-primary-dark">Mining</span>
+                        </h1>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#A0AEC0] mt-1 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 bg-primary/40 rounded-full" />
+                            <span>{sentences.length} Sentences Collected</span>
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="px-4 py-2 bg-white/60 backdrop-blur-md border border-primary/10 rounded-2xl shadow-sm text-[10px] font-black text-[#3E4A61] uppercase tracking-widest flex items-center gap-2">
+                        <Sparkles size={14} className="text-primary" />
+                        Custom Discovery
                     </div>
                 </div>
             </header>
@@ -172,6 +178,6 @@ export default function SentencesPage() {
                     )}
                 </div>
             </div>
-        </div>
+        </main>
     );
 }

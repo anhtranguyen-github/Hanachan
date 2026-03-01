@@ -2,8 +2,6 @@ import os
 import psycopg2
 from dotenv import load_dotenv
 
-import os
-
 # Get project root from current file location
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv(os.path.join(PROJECT_ROOT, "nextjs", ".env"))

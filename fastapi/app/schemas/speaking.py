@@ -8,8 +8,8 @@ from pydantic import BaseModel, Field
 class PracticeSentenceSchema(BaseModel):
     """Schema for a single practice sentence."""
     japanese: str = Field(..., description="Japanese sentence", min_length=1)
-    reading: str = Field(..., description="Reading/romaji", min_length=1)
-    english: str = Field(..., description="English translation", min_length=1)
+    reading: str = Field(..., description="Reading/romaji")
+    english: str = Field(..., description="English translation")
     source_word: str = Field(..., description="The word this sentence is based on")
     difficulty: Literal["N1", "N2", "N3", "N4", "N5"] = Field(..., description="Difficulty level")
     learned_words_count: int = Field(..., description="Number of learned words in sentence", ge=0)

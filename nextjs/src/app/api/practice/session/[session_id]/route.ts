@@ -5,21 +5,23 @@ const FASTAPI_URL = process.env.NEXT_PUBLIC_FASTAPI_URL || 'http://localhost:800
 
 export const dynamic = 'force-dynamic';
 
-// Get next practice item or record an attempt
-export async function GET(req: NextRequest) {
+// Get Next practice item
+export async function GET(
+    req: NextRequest,
+    { params }: { params: { session_id: string } }
+) {
     try {
-        const { searchParams } = new URL(req.url);
-        const sessionId = searchParams.get('session_id');
-        
-        if (!sessionId) {
+        const { session_id } = params;
+
+        if (!session_id) {
             return NextResponse.json(
                 { success: false, error: 'session_id is required' },
                 { status: 400 }
             );
         }
-        
+
         // Forward to FastAPI backend
-        const response = await fetch(`${FASTAPI_URL}/api/v1/practice/session/${sessionId}/next`, {
+        const response = await fetch(`${FASTAPI_URL}/api/v1/practice/session/${session_id}/next`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -28,7 +30,7 @@ export async function GET(req: NextRequest) {
                 }),
             },
         });
-        
+
         if (!response.ok) {
             const error = await response.json().catch(() => ({ detail: 'Failed to get next item' }));
             return NextResponse.json(
@@ -36,10 +38,10 @@ export async function GET(req: NextRequest) {
                 { status: response.status }
             );
         }
-        
+
         const data = await response.json();
         return NextResponse.json(data);
-        
+
     } catch (e: any) {
         console.error('[Practice Next API]', e);
         return NextResponse.json(
@@ -50,22 +52,24 @@ export async function GET(req: NextRequest) {
 }
 
 // Record an attempt
-export async function POST(req: NextRequest) {
+export async function POST(
+    req: NextRequest,
+    { params }: { params: { session_id: string } }
+) {
     try {
-        const { searchParams } = new URL(req.url);
-        const sessionId = searchParams.get('session_id');
-        
-        if (!sessionId) {
+        const { session_id } = params;
+
+        if (!session_id) {
             return NextResponse.json(
                 { success: false, error: 'session_id is required' },
                 { status: 400 }
             );
         }
-        
+
         const body = await req.json();
-        
+
         // Forward to FastAPI backend
-        const response = await fetch(`${FASTAPI_URL}/api/v1/practice/session/${sessionId}/record`, {
+        const response = await fetch(`${FASTAPI_URL}/api/v1/practice/session/${session_id}/record`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -75,10 +79,10 @@ export async function POST(req: NextRequest) {
             },
             body: JSON.stringify({
                 ...body,
-                session_id: sessionId,
+                session_id: session_id,
             }),
         });
-        
+
         if (!response.ok) {
             const error = await response.json().catch(() => ({ detail: 'Failed to record attempt' }));
             return NextResponse.json(
@@ -86,10 +90,10 @@ export async function POST(req: NextRequest) {
                 { status: response.status }
             );
         }
-        
+
         const data = await response.json();
         return NextResponse.json(data);
-        
+
     } catch (e: any) {
         console.error('[Practice Record API]', e);
         return NextResponse.json(
@@ -100,20 +104,22 @@ export async function POST(req: NextRequest) {
 }
 
 // Delete/end a session
-export async function DELETE(req: NextRequest) {
+export async function DELETE(
+    req: NextRequest,
+    { params }: { params: { session_id: string } }
+) {
     try {
-        const { searchParams } = new URL(req.url);
-        const sessionId = searchParams.get('session_id');
-        
-        if (!sessionId) {
+        const { session_id } = params;
+
+        if (!session_id) {
             return NextResponse.json(
                 { success: false, error: 'session_id is required' },
                 { status: 400 }
             );
         }
-        
+
         // Forward to FastAPI backend
-        const response = await fetch(`${FASTAPI_URL}/api/v1/practice/session/${sessionId}`, {
+        const response = await fetch(`${FASTAPI_URL}/api/v1/practice/session/${session_id}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -122,7 +128,7 @@ export async function DELETE(req: NextRequest) {
                 }),
             },
         });
-        
+
         if (!response.ok) {
             const error = await response.json().catch(() => ({ detail: 'Failed to end session' }));
             return NextResponse.json(
@@ -130,10 +136,10 @@ export async function DELETE(req: NextRequest) {
                 { status: response.status }
             );
         }
-        
+
         const data = await response.json();
         return NextResponse.json(data);
-        
+
     } catch (e: any) {
         console.error('[Practice End Session API]', e);
         return NextResponse.json(

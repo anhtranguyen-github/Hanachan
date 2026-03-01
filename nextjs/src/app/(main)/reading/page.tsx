@@ -37,7 +37,7 @@ export default function ReadingPage() {
 
     useEffect(() => {
         loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     const loadData = async () => {
@@ -107,39 +107,38 @@ export default function ReadingPage() {
     return (
         <main className="max-w-[1400px] mx-auto space-y-4 animate-page-entrance">
             {/* Header */}
-            <header className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 overflow-hidden">
-                <div className="absolute -top-8 -right-8 w-48 h-48 bg-gradient-to-br from-[#A2D2FF]/8 to-[#CDB4DB]/5 rounded-full blur-3xl pointer-events-none" />
-                <div className="flex items-center gap-3 relative z-10">
-                    <div className="relative">
-                        <div className="absolute inset-0 bg-gradient-to-br from-[#A2D2FF] to-[#7BB8F0] rounded-2xl blur-lg opacity-20 animate-pulse-slow" />
-                        <div className="relative w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#A2D2FF] to-[#7BB8F0] rounded-2xl flex items-center justify-center text-white font-black text-lg sm:text-xl shadow-lg">
+            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-2 px-1">
+                <div className="flex items-center gap-4">
+                    <div className="relative shrink-0">
+                        <div className="absolute inset-0 bg-[#A2D2FF]/20 rounded-2xl blur-xl animate-pulse-slow" />
+                        <div className="relative w-12 h-12 bg-gradient-to-br from-[#A2D2FF] to-[#7BB8F0] rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg border-2 border-white/50">
                             読
                         </div>
                     </div>
-                    <div>
-                        <h1 className="text-xl sm:text-3xl font-black text-[#3E4A61] tracking-tighter leading-none">
+                    <div className="flex flex-col justify-center py-1">
+                        <h1 className="text-xl sm:text-2xl font-black text-[#3E4A61] tracking-tight leading-tight">
                             Reading <span className="text-[#3A6EA5]">Practice</span>
                         </h1>
-                        <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-[#CBD5E0] mt-1 flex items-center gap-1.5">
-                            <span className="w-1 h-1 bg-[#A2D2FF] rounded-full inline-block" />
-                            AI-Powered Reading Sessions
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#A0AEC0] mt-1 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 bg-[#A2D2FF]/40 rounded-full" />
+                            <span>AI-Powered Reading Sessions</span>
                         </p>
                     </div>
                 </div>
-                <div className="flex gap-2 relative z-10">
+                <div className="flex items-center gap-2">
                     <Link
                         href="/reading/settings"
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-sm border border-[#A2D2FF]/20 rounded-2xl shadow-sm hover:border-[#A2D2FF]/40 transition-all"
+                        className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-md border border-[#A2D2FF]/10 rounded-2xl shadow-sm hover:shadow-md transition-all group"
                     >
-                        <Settings size={11} className="text-[#3A6EA5]" />
-                        <span className="text-[9px] font-black text-[#3E4A61] uppercase tracking-widest">Settings</span>
+                        <Settings size={14} className="text-[#3A6EA5] group-hover:rotate-45 transition-transform duration-500" />
+                        <span className="text-[10px] font-black text-[#3E4A61] uppercase tracking-widest">Settings</span>
                     </Link>
                     <Link
                         href="/reading/dashboard"
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-sm border border-[#CDB4DB]/20 rounded-2xl shadow-sm hover:border-[#CDB4DB]/40 transition-all"
+                        className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-md border border-[#CDB4DB]/10 rounded-2xl shadow-sm hover:shadow-md transition-all group"
                     >
-                        <BarChart3 size={11} className="text-[#9B7EC8]" />
-                        <span className="text-[9px] font-black text-[#3E4A61] uppercase tracking-widest">Dashboard</span>
+                        <BarChart3 size={14} className="text-[#9B7EC8] group-hover:scale-110 transition-transform" />
+                        <span className="text-[10px] font-black text-[#3E4A61] uppercase tracking-widest">Insights</span>
                     </Link>
                 </div>
             </header>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 import type {
     DynamicPracticeSentence,
     PracticeSessionData,
@@ -56,15 +57,19 @@ export function useSpeakingPractice(): UseSpeakingPracticeReturn {
         setError(null);
 
         try {
+            const { data: { session } } = await supabase.auth.getSession();
             const params = new URLSearchParams();
             if (targetDifficulty) {
                 params.append('target_difficulty', targetDifficulty);
             }
 
-            const response = await fetch(`/api/v1/practice/session?${params}`, {
+            const response = await fetch(`/api/practice/session?${params}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    ...(session?.access_token && {
+                        'Authorization': `Bearer ${session.access_token}`,
+                    }),
                 },
                 body: JSON.stringify({
                     target_difficulty: targetDifficulty,
@@ -113,13 +118,17 @@ export function useSpeakingPractice(): UseSpeakingPracticeReturn {
         if (!sessionId) return;
 
         try {
+            const { data: { session } } = await supabase.auth.getSession();
             const currentSentence = sentences[currentIndex];
             if (!currentSentence) return;
 
-            const response = await fetch(`/api/v1/practice/session/${sessionId}/record`, {
+            const response = await fetch(`/api/practice/session/${sessionId}/record`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    ...(session?.access_token && {
+                        'Authorization': `Bearer ${session.access_token}`,
+                    }),
                 },
                 body: JSON.stringify({
                     session_id: sessionId,
@@ -164,8 +173,14 @@ export function useSpeakingPractice(): UseSpeakingPracticeReturn {
     const endSession = useCallback(async () => {
         if (sessionId) {
             try {
-                await fetch(`/api/v1/practice/session/${sessionId}`, {
+                const { data: { session } } = await supabase.auth.getSession();
+                await fetch(`/api/practice/session/${sessionId}`, {
                     method: 'DELETE',
+                    headers: {
+                        ...(session?.access_token && {
+                            'Authorization': `Bearer ${session.access_token}`,
+                        }),
+                    },
                 });
             } catch (err) {
                 console.error('Failed to end session:', err);

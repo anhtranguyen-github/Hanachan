@@ -38,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Environment file path resolution for Docker/container deployments
 - Rate limit configuration now uses settings instead of hardcoded values
+- **Linting (FastAPI)** - Fixed `F811` (Redefinition of unused `os`) in `migrate_sentences.py`
+- **Project Structure** - Fixed `uv` package manager warnings by explicitly defining `requires-python` in `pyproject.toml`
 - **SQL Hardening** - Implemented strict column whitelisting for dynamic SQL updates in reading configuration
 - **Session Cleanup** - Added session status tracking to replace unbounded in-memory storage
 - **Code Quality (Next.js)** - Addressed numerous `eslint` warnings (`react-hooks/exhaustive-deps`, `react/no-unescaped-entities`) ensuring a clean CI build.

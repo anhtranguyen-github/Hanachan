@@ -271,7 +271,7 @@ function DynamicSentenceCard({
     const diff = DIFFICULTY_LABELS[sentence.difficulty];
 
     return (
-        <div className="glass-card p-4 space-y-3 relative overflow-hidden">
+        <div className="glass-card p-4 sm:p-5 space-y-3 relative overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
             {/* Progress */}
@@ -291,29 +291,29 @@ function DynamicSentenceCard({
             </div>
 
             {/* Sentence */}
-            <div className="text-center py-3">
-                <p className="text-3xl font-black text-[#3E4A61] leading-relaxed tracking-wide">
+            <div className="text-center py-2 sm:py-3 px-2">
+                <p className="text-2xl sm:text-3xl font-black text-[#3E4A61] leading-relaxed tracking-wide jp-text break-words">
                     {sentence.japanese}
                 </p>
                 {sentence.reading && (
-                    <p className="text-sm text-foreground/40 font-medium mt-2">
+                    <p className="text-xs sm:text-sm text-foreground/40 font-medium mt-2">
                         {sentence.reading}
                     </p>
                 )}
-                <p className="text-xs text-foreground/30 font-medium mt-1">
+                <p className="text-[10px] sm:text-xs text-foreground/30 font-medium mt-1">
                     {sentence.english}
                 </p>
             </div>
 
             {/* Source word indicator */}
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-2 border-t border-border/10">
                 <span className="text-[8px] font-black uppercase tracking-widest text-foreground/30">
-                    Based on:
+                    Focus Word:
                 </span>
                 <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-bold rounded-lg">
                     {sentence.source_word}
                 </span>
-                <span className="text-[8px] text-foreground/30">
+                <span className="hidden sm:inline text-[8px] text-foreground/30">
                     ({sentence.learned_words_count} learned word{sentence.learned_words_count !== 1 ? 's' : ''})
                 </span>
             </div>
@@ -405,21 +405,21 @@ function PracticePanel({
     };
 
     return (
-        <div className="flex-1 flex flex-col min-w-0 bg-white">
+        <div className="flex-1 flex flex-col min-w-0 bg-white min-h-0">
             {/* Header */}
-            <header className="h-14 border-b border-border flex items-center justify-between px-5 shrink-0 bg-surface/80 backdrop-blur-md">
+            <header className="h-14 border-b border-border flex items-center justify-between px-4 sm:px-5 shrink-0 bg-surface/80 backdrop-blur-md sticky top-0 z-20">
                 <div className="flex items-center gap-3">
                     <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-                    <h2 className="text-sm font-black text-foreground tracking-tighter uppercase">
+                    <h2 className="text-xs sm:text-sm font-black text-foreground tracking-tighter uppercase">
                         {mode === 'dynamic' ? '🎯 Smart Practice' : 'Speaking Practice'}
                     </h2>
                 </div>
                 {mode === 'dynamic' && (
                     <div className="flex items-center gap-2">
-                        <span className="text-[8px] font-black uppercase tracking-widest text-foreground/30">
+                        <span className="hidden sm:inline text-[8px] font-black uppercase tracking-widest text-foreground/30">
                             Progress:
                         </span>
-                        <div className="w-20 h-2 bg-[#F7FAFC] rounded-full overflow-hidden border border-border/20">
+                        <div className="w-16 sm:w-20 h-2 bg-[#F7FAFC] rounded-full overflow-hidden border border-border/20">
                             <div
                                 className="h-full bg-gradient-to-r from-[#F4ACB7] to-[#D88C9A] rounded-full transition-all duration-500"
                                 style={{ width: `${((dynamicIndex || 0) / (dynamicTotal || 1)) * 100}%` }}
@@ -434,7 +434,7 @@ function PracticePanel({
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto custom-scrollbar">
-                <div className="p-6 space-y-6 max-w-2xl mx-auto">
+                <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-2xl mx-auto pb-24 sm:pb-6">
                     {/* Prompt Display */}
                     {mode === 'dynamic' && dynamicSentence ? (
                         <DynamicSentenceCard
@@ -443,7 +443,7 @@ function PracticePanel({
                             total={dynamicTotal || 0}
                         />
                     ) : selectedPrompt ? (
-                        <div className="glass-card p-6 space-y-4 relative overflow-hidden">
+                        <div className="glass-card p-4 sm:p-6 space-y-4 relative overflow-hidden">
                             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
                             {/* Difficulty + Category badges */}
@@ -465,14 +465,14 @@ function PracticePanel({
                             </div>
 
                             {/* Japanese text */}
-                            <div className="text-center py-4">
-                                <p className="text-4xl font-black text-[#3E4A61] leading-relaxed tracking-wide">
+                            <div className="text-center py-2 sm:py-4">
+                                <p className="text-2xl sm:text-4xl font-black text-[#3E4A61] leading-relaxed tracking-wide jp-text break-words">
                                     {selectedPrompt.japanese}
                                 </p>
-                                <p className="text-sm text-foreground/40 font-medium mt-2">
+                                <p className="text-xs sm:text-sm text-foreground/40 font-medium mt-2">
                                     {selectedPrompt.reading}
                                 </p>
-                                <p className="text-xs text-foreground/30 font-medium mt-1">
+                                <p className="text-[10px] sm:text-xs text-foreground/30 font-medium mt-1">
                                     {selectedPrompt.english}
                                 </p>
                             </div>
@@ -499,7 +499,7 @@ function PracticePanel({
                     )}
 
                     {/* Recording Controls */}
-                    <div className="flex flex-col items-center gap-4">
+                    <div className="flex flex-col items-center gap-4 sm:gap-6 py-4">
                         {/* Status indicator */}
                         <div className={clsx(
                             'text-[9px] font-black uppercase tracking-widest transition-all duration-300',
@@ -521,7 +521,7 @@ function PracticePanel({
                                 onClick={isRecording ? onStopRecording : handleStartRecording}
                                 disabled={status === 'processing' || (!selectedPrompt && !dynamicSentence)}
                                 className={clsx(
-                                    'relative w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg active:scale-95',
+                                    'relative w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg active:scale-95',
                                     isRecording
                                         ? 'bg-red-400 hover:bg-red-500 shadow-red-200'
                                         : status === 'processing'
@@ -530,11 +530,11 @@ function PracticePanel({
                                 )}
                             >
                                 {status === 'processing' ? (
-                                    <div className="w-6 h-6 border-2 border-foreground/20 border-t-primary rounded-full animate-spin" />
+                                    <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-foreground/20 border-t-primary rounded-full animate-spin" />
                                 ) : isRecording ? (
-                                    <Square size={24} className="text-white" fill="white" />
+                                    <Square size={24} className="text-white transform transition-transform sm:scale-110" fill="white" />
                                 ) : (
-                                    <Mic size={28} className="text-white" />
+                                    <Mic size={24} className="text-white transform transition-transform sm:scale-125" />
                                 )}
                             </button>
                         </div>
@@ -544,7 +544,7 @@ function PracticePanel({
                             {result && (
                                 <button
                                     onClick={onReset}
-                                    className="flex items-center gap-1.5 px-4 py-2 bg-[#F7FAFC] border border-border/40 rounded-xl text-[9px] font-black uppercase tracking-widest text-foreground/40 hover:text-foreground/70 hover:border-border transition-all"
+                                    className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-[#F7FAFC] border border-border/40 rounded-xl text-[9px] font-black uppercase tracking-widest text-foreground/40 hover:text-foreground/70 hover:border-border transition-all"
                                 >
                                     <RotateCcw size={11} />
                                     Try Again
@@ -553,7 +553,7 @@ function PracticePanel({
                             {mode === 'static' && onRandomPrompt && (
                                 <button
                                     onClick={onRandomPrompt}
-                                    className="flex items-center gap-1.5 px-4 py-2 bg-[#F7FAFC] border border-border/40 rounded-xl text-[9px] font-black uppercase tracking-widest text-foreground/40 hover:text-foreground/70 hover:border-border transition-all"
+                                    className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-[#F7FAFC] border border-border/40 rounded-xl text-[9px] font-black uppercase tracking-widest text-foreground/40 hover:text-foreground/70 hover:border-border transition-all"
                                 >
                                     <Shuffle size={11} />
                                     Next Phrase
@@ -690,38 +690,38 @@ export default function SpeakingPracticePage() {
     // Render Welcome Screen if not started
     if (!sessionId && !isDynamicLoading) {
         return (
-            <div className="flex h-[100dvh] bg-[#FFF8F8] overflow-hidden relative mesh-bg items-center justify-center p-8">
+            <div className="flex min-h-[100dvh] bg-[#FFF8F8] overflow-hidden relative mesh-bg items-center justify-center p-4 sm:p-8">
                 <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
                     <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-gradient-to-br from-[#F4ACB7]/40 to-[#D88C9A]/20 rounded-full blur-3xl animate-pulse-slow"></div>
                     <div className="absolute top-[20%] -right-[10%] w-[35%] h-[35%] bg-gradient-to-br from-[#9BF6FF]/30 to-[#BDE0FE]/20 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
                 </div>
 
-                <div className="relative z-10 glass-card p-12 max-w-2xl w-full text-center space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
-                    <div className="w-32 h-32 bg-gradient-to-br from-[#F4ACB7] to-[#D88C9A] rounded-[48px] mx-auto flex items-center justify-center shadow-2xl shadow-primary/30 transform transition-transform hover:scale-105 hover:rotate-3">
-                        <Mic size={56} className="text-white drop-shadow-md" />
+                <div className="relative z-10 glass-card p-6 sm:p-12 max-w-2xl w-full text-center space-y-6 sm:space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                    <div className="w-20 h-20 sm:w-32 sm:h-32 bg-gradient-to-br from-[#F4ACB7] to-[#D88C9A] rounded-[24px] sm:rounded-[48px] mx-auto flex items-center justify-center shadow-2xl shadow-primary/30 transform transition-transform hover:scale-105 hover:rotate-3">
+                        <Mic size={32} className="sm:size-[56px] text-white drop-shadow-md" />
                     </div>
 
-                    <div className="space-y-4">
-                        <h1 className="text-5xl font-black text-[#3E4A61] tracking-tighter">Speaking Practice</h1>
-                        <p className="text-[#A0AEC0] text-xl font-medium leading-relaxed max-w-lg mx-auto">
+                    <div className="space-y-2 sm:space-y-4">
+                        <h1 className="text-3xl sm:text-5xl font-black text-[#3E4A61] tracking-tighter">Speaking Practice</h1>
+                        <p className="text-[#A0AEC0] text-sm sm:text-xl font-medium leading-relaxed max-w-lg mx-auto">
                             Practice your pronunciation with AI feedback. Every sentence is generated dynamically using only the vocabulary you&apos;ve learned.
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto mt-8 mb-10">
-                        <div className="bg-white/60 p-4 rounded-3xl border border-white">
-                            <Brain size={24} className="text-[#F4ACB7] mx-auto mb-2" />
-                            <div className="text-[10px] font-black uppercase text-[#3E4A61] tracking-widest">Smart Adaptive</div>
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-sm mx-auto mt-4 sm:mt-8 mb-6 sm:mb-10">
+                        <div className="bg-white/60 p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-white">
+                            <Brain size={20} className="sm:size-6 text-[#F4ACB7] mx-auto mb-2" />
+                            <div className="text-[8px] sm:text-[10px] font-black uppercase text-[#3E4A61] tracking-widest leading-none">Smart Adaptive</div>
                         </div>
-                        <div className="bg-white/60 p-4 rounded-3xl border border-white">
-                            <Target size={24} className="text-[#9BF6FF] mx-auto mb-2" />
-                            <div className="text-[10px] font-black uppercase text-[#3E4A61] tracking-widest">Pinpoint Feedback</div>
+                        <div className="bg-white/60 p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-white">
+                            <Target size={20} className="sm:size-6 text-[#9BF6FF] mx-auto mb-2" />
+                            <div className="text-[8px] sm:text-[10px] font-black uppercase text-[#3E4A61] tracking-widest leading-none">Pinpoint Feedback</div>
                         </div>
                     </div>
 
                     <button
                         onClick={handleStartSmartPractice}
-                        className="w-full sm:w-auto px-12 py-5 bg-gray-900 text-white font-black text-xl rounded-full tracking-wide hover:bg-gray-800 transition-all shadow-2xl hover:shadow-gray-900/40 hover:-translate-y-1 active:scale-95"
+                        className="w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-5 bg-gray-900 text-white font-black text-lg sm:text-xl rounded-full tracking-wide hover:bg-gray-800 transition-all shadow-2xl hover:shadow-gray-900/40 hover:-translate-y-1 active:scale-95"
                     >
                         Start Session
                     </button>
@@ -732,17 +732,19 @@ export default function SpeakingPracticePage() {
 
     if (isDynamicComplete) {
         return (
-            <div className="flex h-[100dvh] bg-[#FFF8F8] overflow-hidden items-center justify-center p-8">
-                <div className="text-center space-y-8 animate-in fade-in duration-700">
-                    <div className="w-32 h-32 bg-gradient-to-br from-[#48BB78] to-[#38A169] rounded-[48px] mx-auto flex items-center justify-center shadow-2xl shadow-[#48BB78]/30">
-                        <CheckCircle2 size={56} className="text-white" />
+            <div className="flex min-h-[100dvh] bg-[#FFF8F8] overflow-hidden items-center justify-center p-4 sm:p-8 text-center">
+                <div className="relative z-10 glass-card p-8 sm:p-12 max-w-md w-full space-y-6 sm:space-y-8 animate-in fade-in duration-700">
+                    <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-[#48BB78] to-[#38A169] rounded-[32px] sm:rounded-[48px] mx-auto flex items-center justify-center shadow-2xl shadow-[#48BB78]/30">
+                        <CheckCircle2 size={48} className="sm:size-[56px] text-white" />
                     </div>
-                    <h1 className="text-5xl font-black text-[#3E4A61] tracking-tighter">Session Complete!</h1>
-                    <p className="text-[#A0AEC0] text-xl font-medium">Great job practicing your pronunciation!</p>
-                    <div className="pt-8">
+                    <div className="space-y-2">
+                        <h1 className="text-3xl sm:text-5xl font-black text-[#3E4A61] tracking-tighter">Session Complete!</h1>
+                        <p className="text-[#A0AEC0] text-lg sm:text-xl font-medium">Great job practicing your pronunciation!</p>
+                    </div>
+                    <div className="pt-4 sm:pt-8">
                         <button
                             onClick={endDynamicSession}
-                            className="px-10 py-4 bg-gray-900 text-white font-black text-lg rounded-full tracking-wide hover:bg-gray-800 transition-all active:scale-95 shadow-xl"
+                            className="w-full sm:w-auto px-10 py-4 bg-gray-900 text-white font-black text-lg rounded-full tracking-wide hover:bg-gray-800 transition-all active:scale-95 shadow-xl"
                         >
                             Return Home
                         </button>

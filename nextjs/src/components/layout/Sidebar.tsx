@@ -19,23 +19,46 @@ import {
     BookMarked,
     Video,
     PenTool,
+    Layers,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useUser } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
 
-const navItems = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, color: '#F4ACB7' },
-    { name: 'Learn', href: '/learn', icon: BookOpen, color: '#A2D2FF' },
-    { name: 'Review', href: '/review', icon: Swords, color: '#CDB4DB' },
-    { name: 'Videos', href: '/videos', icon: Video, color: '#FF9F9F' },
-    { name: 'Reading', href: '/reading', icon: BookMarked, color: '#7BB8F0' },
-    { name: 'AI Chat', href: '/immersion/chatbot', icon: MessageSquare, color: '#B7E4C7' },
-    { name: 'Speaking', href: '/immersion/speaking', icon: Mic, color: '#FFB5B5' },
-    { name: 'Curriculum', href: '/content', icon: Library, color: '#FFD6A5' },
-    { name: 'Sentences', href: '/sentences', icon: PenTool, color: '#A2D2FF' },
-    { name: 'Profile', href: '/profile', icon: User, color: '#F4ACB7' },
+const navSections = [
+    {
+        title: 'General',
+        items: [
+            { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, color: '#F4ACB7' },
+            { name: 'Profile', href: '/profile', icon: User, color: '#F4ACB7' },
+        ]
+    },
+    {
+        title: 'Decks',
+        items: [
+            { name: 'Learn', href: '/learn', icon: BookOpen, color: '#A2D2FF' },
+            { name: 'Review', href: '/review', icon: Swords, color: '#CDB4DB' },
+            { name: 'All Decks', href: '/content', icon: Layers, color: '#FFD6A5' },
+        ]
+    },
+    {
+        title: 'Immersion',
+        items: [
+            { name: 'Videos', href: '/videos', icon: Video, color: '#FF9F9F' },
+            { name: 'Reading', href: '/reading', icon: BookMarked, color: '#7BB8F0' },
+            { name: 'AI Chat', href: '/immersion/chatbot', icon: MessageSquare, color: '#B7E4C7' },
+            { name: 'Speaking', href: '/immersion/speaking', icon: Mic, color: '#FFB5B5' },
+        ]
+    },
+    {
+        title: 'Tools',
+        items: [
+            { name: 'Sentences', href: '/sentences', icon: PenTool, color: '#A2D2FF' },
+        ]
+    }
 ];
+
+const navItems = navSections.flatMap(s => s.items);
 
 export function Sidebar() {
     const pathname = usePathname();
@@ -110,58 +133,66 @@ export function Sidebar() {
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 px-3 space-y-1 overflow-y-auto no-scrollbar pt-4 relative z-10">
-                    {navItems.map((item, idx) => {
-                        const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                title={isCollapsed ? item.name : ''}
-                                style={{ animationDelay: `${idx * 0.05}s` }}
-                                className={clsx(
-                                    "flex items-center gap-3.5 px-3 py-3 text-[12px] font-black transition-all duration-300 rounded-2xl relative group overflow-hidden",
-                                    isActive ? "text-[#3E4A61]" : "text-[#A0AEC0] hover:text-[#3E4A61]"
-                                )}
-                            >
-                                {isActive && (
-                                    <div
-                                        className="absolute inset-0 rounded-2xl opacity-100 transition-all duration-300"
-                                        style={{
-                                            background: `linear-gradient(135deg, ${item.color}22, ${item.color}11)`,
-                                            border: `1px solid ${item.color}33`,
-                                        }}
-                                    />
-                                )}
-                                {!isActive && (
-                                    <div className="absolute inset-0 rounded-2xl bg-[#F7FAFC] opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                                )}
-                                <span
-                                    className={clsx("shrink-0 transition-all duration-300 relative z-10", isActive ? "scale-110" : "group-hover:scale-105")}
-                                    style={{ color: isActive ? item.color : undefined }}
-                                >
-                                    <item.icon size={18} strokeWidth={isActive ? 2.5 : 2} />
-                                </span>
-                                {!isCollapsed && (
-                                    <span className="animate-in fade-in duration-500 truncate relative z-10 tracking-wide">
-                                        {item.name}
-                                    </span>
-                                )}
-                                {isActive && !isCollapsed && (
-                                    <div
-                                        className="absolute right-3 w-1.5 h-1.5 rounded-full z-10"
-                                        style={{ backgroundColor: item.color, boxShadow: `0 0 8px ${item.color}` }}
-                                    />
-                                )}
-                                {isActive && isCollapsed && (
-                                    <div
-                                        className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-r-full"
-                                        style={{ backgroundColor: item.color }}
-                                    />
-                                )}
-                            </Link>
-                        );
-                    })}
+                <nav className="flex-1 px-3 space-y-4 overflow-y-auto no-scrollbar pt-4 relative z-10">
+                    {navSections.map((section, sIdx) => (
+                        <div key={section.title} className="space-y-0.5">
+                            {!isCollapsed && (
+                                <h3 className="px-5 text-[9px] font-black text-[#A0AEC0] uppercase tracking-[0.2em] mb-2 mt-4 first:mt-0 opacity-70">
+                                    {section.title}
+                                </h3>
+                            )}
+                            {section.items.map((item, idx) => {
+                                const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        title={isCollapsed ? item.name : ''}
+                                        className={clsx(
+                                            "flex items-center gap-3.5 px-3 py-3 text-[12px] font-black transition-all duration-300 rounded-2xl relative group overflow-hidden",
+                                            isActive ? "text-[#3E4A61]" : "text-[#A0AEC0] hover:text-[#3E4A61]"
+                                        )}
+                                    >
+                                        {isActive && (
+                                            <div
+                                                className="absolute inset-0 rounded-2xl opacity-100 transition-all duration-300"
+                                                style={{
+                                                    background: `linear-gradient(135deg, ${item.color}22, ${item.color}11)`,
+                                                    border: `1px solid ${item.color}33`,
+                                                }}
+                                            />
+                                        )}
+                                        {!isActive && (
+                                            <div className="absolute inset-0 rounded-2xl bg-[#F7FAFC] opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                                        )}
+                                        <span
+                                            className={clsx("shrink-0 transition-all duration-300 relative z-10", isActive ? "scale-110" : "group-hover:scale-105")}
+                                            style={{ color: isActive ? item.color : undefined }}
+                                        >
+                                            <item.icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                                        </span>
+                                        {!isCollapsed && (
+                                            <span className="animate-in fade-in duration-500 truncate relative z-10 tracking-wide">
+                                                {item.name}
+                                            </span>
+                                        )}
+                                        {isActive && !isCollapsed && (
+                                            <div
+                                                className="absolute right-3 w-1.5 h-1.5 rounded-full z-10"
+                                                style={{ backgroundColor: item.color, boxShadow: `0 0 8px ${item.color}` }}
+                                            />
+                                        )}
+                                        {isActive && isCollapsed && (
+                                            <div
+                                                className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-r-full"
+                                                style={{ backgroundColor: item.color }}
+                                            />
+                                        )}
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    ))}
                 </nav>
 
                 <div className="mx-4 h-px bg-gradient-to-r from-transparent via-[#F0E0E0] to-transparent" />
