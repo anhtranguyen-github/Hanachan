@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Hanachan V2 Startup Script (Optimized)
+# Hanachan Startup Script (Optimized)
 # This script starts Supabase, cleans up ports, kills zombie processes, and starts services.
 
 FRONTEND_PORT=3000

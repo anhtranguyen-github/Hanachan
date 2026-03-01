@@ -18,7 +18,7 @@ const notoSerif = Noto_Serif_JP({
 
 
 export const metadata: Metadata = {
-  title: "Hanachan V2 | Advanced Japanese Learning",
+  title: "Hanachan | Advanced Japanese Learning",
   description: "Advanced Japanese Learning Platform with SRS and Immersion",
 };
 

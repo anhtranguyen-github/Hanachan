@@ -2,7 +2,11 @@ import os
 import psycopg2
 from dotenv import load_dotenv
 
-load_dotenv("/home/tra01/project/hanachan_v2_final/nextjs/.env")
+import os
+
+# Get project root from current file location
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+load_dotenv(os.path.join(PROJECT_ROOT, "nextjs", ".env"))
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 def get_db():
