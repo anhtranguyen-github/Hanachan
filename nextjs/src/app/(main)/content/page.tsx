@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Book, Search, Loader2, Lock, Zap, Clock, Flame, ChevronRight, Hash, Layers, Library } from 'lucide-react';
+import { Book, Search, Loader2, Lock, Zap, Clock, Flame, ChevronRight, Hash, Layers, Library, ChevronDown } from 'lucide-react';
 import { clsx } from 'clsx';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/features/auth/AuthContext';
@@ -79,10 +79,11 @@ function ContentDatabase() {
     return (
         <div className="max-w-[1400px] mx-auto space-y-3 animate-in fade-in duration-700">
             {/* Filter Bar */}
-            <div className="flex flex-col gap-2 p-2 bg-white/80 backdrop-blur-xl border border-border/40 rounded-3xl shadow-sm">
-                {/* Type tabs + search row */}
-                <div className="flex items-center gap-2">
-                    <div className="flex p-0.5 bg-[#F7FAFC] border border-border/30 rounded-2xl gap-0.5 shrink-0">
+            <div className="bg-white/95 backdrop-blur-xl rounded-[24px] sm:rounded-3xl p-3 shadow-sm border border-border/40 flex flex-col gap-3">
+                {/* Top Row: Categories and Search */}
+                <div className="flex flex-col md:flex-row gap-3">
+                    {/* Categories */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 md:pb-0 shrink-0">
                         {tabs.map((tab) => {
                             const Icon = tab.icon;
                             const active = filterType === tab.id;
@@ -91,52 +92,67 @@ function ContentDatabase() {
                                     key={tab.id}
                                     onClick={() => setFilterType(tab.id)}
                                     className={clsx(
-                                        "flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-xl text-[8px] sm:text-[9px] font-black tracking-widest transition-all duration-300 uppercase",
-                                        active ? "bg-white shadow-sm border border-border/20" : "text-foreground/30 hover:text-foreground/60"
+                                        "flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-[10px] sm:text-xs font-black tracking-wide transition-all whitespace-nowrap shrink-0",
+                                        active
+                                            ? "bg-primary text-white shadow-md shadow-primary/20"
+                                            : "bg-[#F7FAFC] text-foreground/50 hover:bg-gray-100 hover:text-foreground/80 border border-border/20"
                                     )}
-                                    style={active ? { color: tab.color } : {}}
                                 >
-                                    <Icon size={9} />
-                                    <span className="hidden sm:inline">{tab.label}</span>
+                                    <Icon size={14} />
+                                    <span>{tab.label}</span>
                                 </button>
                             );
                         })}
                     </div>
 
-                    <div className="flex-1 relative group">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/20 transition-colors group-focus-within:text-primary" size={13} />
+                    {/* Search */}
+                    <div className="flex-1 relative group bg-[#F7FAFC] rounded-2xl border border-border/20 focus-within:border-primary/30 focus-within:bg-white transition-all shadow-sm">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/30 group-focus-within:text-primary transition-colors" size={16} />
                         <input
                             type="text"
                             placeholder="Search..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full py-2 pl-8 pr-3 bg-transparent text-sm font-bold placeholder:text-foreground/20 outline-none"
+                            className="w-full h-full min-h-[40px] pl-10 pr-4 bg-transparent text-sm font-semibold text-[#3E4A61] placeholder:text-foreground/30 outline-none rounded-2xl"
                         />
                     </div>
                 </div>
 
-                {/* Filter selects */}
-                <div className="flex gap-2 border-t border-border/20 pt-2">
-                    <select
-                        className="flex-1 bg-[#F7FAFC] border border-border/30 rounded-xl px-2 py-1.5 text-[9px] font-black uppercase tracking-widest text-foreground/60 outline-none cursor-pointer"
-                        value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value)}
-                    >
-                        <option value="all">All Status</option>
-                        <option value="new">New</option>
-                        <option value="learning">Learning</option>
-                        <option value="burned">Mastered</option>
-                    </select>
-                    <select
-                        className="flex-1 bg-[#F7FAFC] border border-border/30 rounded-xl px-2 py-1.5 text-[9px] font-black uppercase tracking-widest text-foreground/60 outline-none cursor-pointer"
-                        value={selectedLevel}
-                        onChange={(e) => setSelectedLevel(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-                    >
-                        <option value="all">All Levels</option>
-                        {Array.from({ length: 60 }, (_, i) => i + 1).map(l => (
-                            <option key={l} value={l}>Level {l}</option>
-                        ))}
-                    </select>
+                {/* Bottom Row: Filters */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                    {/* Status Filter */}
+                    <div className="flex-1 relative group">
+                        <select
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            className="w-full appearance-none bg-[#F7FAFC] group-hover:bg-gray-50 border border-border/20 rounded-2xl px-4 py-2.5 text-xs font-black text-[#3E4A61] outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer shadow-sm"
+                        >
+                            <option value="all">ALL STATUS</option>
+                            <option value="new">NEW</option>
+                            <option value="learning">LEARNING</option>
+                            <option value="burned">MASTERED</option>
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-foreground/40 group-hover:text-primary transition-colors">
+                            <ChevronDown size={14} />
+                        </div>
+                    </div>
+
+                    {/* Level Filter */}
+                    <div className="flex-1 relative group">
+                        <select
+                            value={selectedLevel}
+                            onChange={(e) => setSelectedLevel(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+                            className="w-full appearance-none bg-[#F7FAFC] group-hover:bg-gray-50 border border-border/20 rounded-2xl px-4 py-2.5 text-xs font-black text-[#3E4A61] outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer shadow-sm"
+                        >
+                            <option value="all">ALL LEVELS</option>
+                            {Array.from({ length: 60 }, (_, i) => i + 1).map(l => (
+                                <option key={l} value={l}>LEVEL {l}</option>
+                            ))}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-foreground/40 group-hover:text-primary transition-colors">
+                            <ChevronDown size={14} />
+                        </div>
+                    </div>
                 </div>
             </div>
 
