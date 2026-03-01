@@ -55,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Docker Build Security** - Integrated **Docker Scout** vulnerability scanning on Pull Requests.
 - **Supply Chain Security** - Enabled **SLSA Provenance** and **SBOM** generation for all published Docker images.
 - **Static Analysis Fixes** - Eliminated insecure temporary directory usage (S108) by using `tempfile`, explicitly bypassed unnecessary `usedforsecurity` checks for MD5 (S324), and replaced `random` with `secrets` for generation choices (S311).
+- **URL Open Security** - Added runtime URL scheme validation in video transcript endpoint to prevent `file://` and arbitrary scheme access (S310).
 - **Scanner Bypass Exceptions** - Marked intentionally dynamic but internally synthesized SQL strings with `nosec B608` to satisfy Bandit without sacrificing required runtime query formatting.
 
 ### DevOps
