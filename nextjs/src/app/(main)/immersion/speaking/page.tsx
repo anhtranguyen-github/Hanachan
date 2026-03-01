@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useUser } from '@/features/auth/AuthContext';
+import { BaseModal } from '@/components/shared/BaseModal';
 import { usePronunciationAssessment } from '@/features/speaking/hooks/usePronunciationAssessment';
 import { useSpeakingPractice, usePracticeWithAssessment } from '@/features/speaking/hooks/useSpeakingPractice';
 import {
@@ -375,6 +376,15 @@ function PracticePanel({
     onReset,
 }: PracticePanelProps) {
     const [showFilters, setShowFilters] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+
+    useEffect(() => {
+        if (error) {
+            setShowErrorModal(true);
+        } else {
+            setShowErrorModal(false);
+        }
+    }, [error]);
 
     // Determine which sentence to show
     const currentJapanese = mode === 'dynamic' && dynamicSentence
@@ -563,17 +573,27 @@ function PracticePanel({
                     </div>
 
                     {/* Error display */}
-                    {error && (
-                        <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 border border-red-100">
-                            <AlertCircle size={16} className="text-red-400 shrink-0 mt-0.5" />
-                            <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-red-400 mb-1">
-                                    Error
-                                </p>
-                                <p className="text-xs text-red-400/80 font-medium">{error}</p>
+                    <BaseModal
+                        isOpen={showErrorModal}
+                        onClose={() => setShowErrorModal(false)}
+                        title="Action Failed"
+                    >
+                        <div className="flex flex-col items-center gap-4 py-4 text-center">
+                            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center">
+                                <AlertCircle size={32} className="text-red-400" />
                             </div>
+                            <div>
+                                <p className="text-[#3E4A61] font-bold text-lg mb-2">Something went wrong</p>
+                                <p className="text-foreground/60 text-sm max-w-[280px] mx-auto leading-relaxed">{error}</p>
+                            </div>
+                            <button
+                                onClick={() => setShowErrorModal(false)}
+                                className="w-full mt-4 px-6 py-3 bg-gray-900 text-white font-black text-sm rounded-xl tracking-wide hover:bg-gray-800 transition-all active:scale-95"
+                            >
+                                Dismiss
+                            </button>
                         </div>
-                    )}
+                    </BaseModal>
 
                     {/* Assessment Result */}
                     {result && status === 'done' && (
@@ -654,18 +674,7 @@ export default function SpeakingPracticePage() {
         }
     }, [dynamicSentence, startAssessment]);
 
-    useEffect(() => {
-        // Hard-lock the viewport for app-like layouts
-        document.documentElement.classList.add('screen-locked');
-        document.body.classList.add('screen-locked');
-
-        return () => {
-            document.documentElement.classList.remove('screen-locked');
-            document.body.classList.remove('screen-locked');
-        };
-    }, []);
-
-    // Auto-handle result changes
+    // Handle start recording
     useEffect(() => {
         if (result && status === 'done') {
             handleRecordingComplete(result);
