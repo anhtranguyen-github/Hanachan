@@ -29,7 +29,10 @@ export function useVideoLibrary(userId: string | undefined) {
   });
 
   const loadLibrary = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);

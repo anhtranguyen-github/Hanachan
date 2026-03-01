@@ -2,7 +2,7 @@
 // VIDEO LEARNING FEATURE - SERVICE LAYER
 // ==========================================
 
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseService } from '@/lib/supabase';
 import * as db from './db';
 import type {
   Video,
@@ -31,6 +31,7 @@ import type {
 // VIDEO MANAGEMENT
 // ==========================================
 
+
 /**
  * Fetch or create a video from YouTube ID.
  * Fetches metadata from YouTube if not cached.
@@ -45,7 +46,67 @@ export async function getOrCreateVideo(youtubeId: string): Promise<Video> {
     youtube_id: youtubeId,
     title: `Video ${youtubeId}`,
     thumbnail_url: `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`,
+    language: 'ja',
   });
+
+  // Try to process subtitles
+  try {
+    const backendUrl = process.env.MEMORY_API_URL || 'http://127.0.0.1:8765';
+    console.log(`[VideoService] Fetching transcripts from ${backendUrl}/api/v1/videos/transcript/${youtubeId}`);
+    const res = await fetch(`${backendUrl}/api/v1/videos/transcript/${youtubeId}`);
+    if (res.ok) {
+      const { transcript } = await res.json();
+
+      const subtitleEntries = [];
+      const wordFrequencies = new Map<string, any>();
+
+      for (const segment of transcript) {
+        // Tokens are already processed by FastAPI using Janome
+        const tokens = segment.tokens || [];
+
+        tokens.forEach((t: any) => {
+          if (['助詞', '助動詞', '記号', '補助記号'].includes(t.pos)) return;
+          const entry = wordFrequencies.get(t.surface) || { count: 0, reading: t.reading };
+          entry.count++;
+          wordFrequencies.set(t.surface, entry);
+        });
+
+        subtitleEntries.push({
+          video_id: video.id,
+          start_time_ms: Math.round(segment.start * 1000),
+          end_time_ms: Math.round((segment.start + segment.duration) * 1000),
+          text: segment.text,
+          tokens: tokens
+        });
+      }
+
+      // Save subtitles
+      console.log(`[VideoService] Saving ${subtitleEntries.length} subtitles...`);
+      const client = supabaseService || supabase;
+      // db.ts doesn't expose raw insert, so we do it here via the service key exported in db.ts
+      for (let i = 0; i < subtitleEntries.length; i += 100) {
+        await client.from('video_subtitles').insert(subtitleEntries.slice(i, i + 100));
+      }
+
+      // Save vocab stats
+      console.log(`[VideoService] Saving vocab stats...`);
+      const vocabStats = Array.from(wordFrequencies.entries()).map(([surface, data]) => ({
+        video_id: video.id,
+        surface,
+        reading: data.reading,
+        frequency: data.count
+      }));
+      for (let i = 0; i < vocabStats.length; i += 100) {
+        await client.from('video_vocab_stats').insert(vocabStats.slice(i, i + 100));
+      }
+
+      console.log(`[VideoService] Processing for ${youtubeId} complete.`);
+    } else {
+      console.error(`[VideoService] Failed to fetch transcripts: ${res.status}`);
+    }
+  } catch (err) {
+    console.error(`[VideoService] Error processing video ${youtubeId}:`, err);
+  }
 
   return video;
 }
