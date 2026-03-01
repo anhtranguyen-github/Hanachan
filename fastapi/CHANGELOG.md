@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **CI/CD Pipeline** - GitHub Actions workflow for automated testing (backend + frontend + lint)
+- **Test Infrastructure** - Enhanced FastAPI test setup with Faker, pytest fixtures, and coverage configuration
+- **Frontend Testing** - Improved Next.js test infrastructure with vitest coverage thresholds
+- **Test Utilities** - Added mock helpers for Supabase/client testing in both backend and frontend
+
+### Changed
+- **Responsive UI** - Refactored login/signup pages with improved mobile layout
+- **Monorepo Scripts** - Added unified test commands in root package.json
 - **ISSUES.md** - Documentation of all fixed issues
 - **Configuration validation** - Startup validation for required config fields (OPENAI_API_KEY, SUPABASE_URL, SUPABASE_KEY, DB_PASSWORD)
 - **Configurable rate limiting** - RATE_LIMIT_PER_MINUTE environment variable
@@ -19,7 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **API Auth Hardening** - Secured `sentences` endpoints and ensured all learning modules require authentication
 - **Video Subtitle Processing** - Integrated `yt-dlp` into FastAPI to robustly bypass YouTube anti-bot protections and extract structured JSON3 transcripts.
 
-### Changed
 - Consolidated issue fix comments from source files to ISSUES.md
 - Refactored config.py to use Pydantic validators for list fields
 - Updated rate_limit.py to use direct attribute access
