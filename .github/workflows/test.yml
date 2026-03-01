@@ -1,0 +1,126 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-key' }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://test.supabase.co' }}
+  SUPABASE_KEY: ${{ secrets.SUPABASE_KEY || 'test-anon-key' }}
+  SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY || 'test-service-key-32-chars-at-least-wow' }}
+
+jobs:
+  # FastAPI Backend Tests
+  backend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Setup Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        working-directory: fastapi
+        run: |
+          uv sync --extra test
+
+      - name: Run backend tests
+        working-directory: fastapi
+        run: uv run pytest tests/ -v --tb=short
+
+      - name: Run backend tests with coverage
+        working-directory: fastapi
+        run: uv run pytest tests/ --cov=app --cov-report=xml --cov-report=term
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./fastapi/coverage.xml
+          flags: backend
+
+  # Next.js Frontend Tests
+  frontend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        working-directory: nextjs
+        run: pnpm install --frozen-lockfile
+
+      - name: Run frontend unit tests
+        working-directory: nextjs
+        run: pnpm run test:unit
+
+      - name: Run frontend integration tests
+        working-directory: nextjs
+        run: pnpm run test:integration
+
+      - name: Run frontend tests with coverage
+        working-directory: nextjs
+        run: pnpm run test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./nextjs/coverage/coverage-final.json
+          flags: frontend
+
+  # Lint checks
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Setup Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        working-directory: fastapi
+        run: uv sync --extra dev
+
+      - name: Run ruff linter
+        working-directory: fastapi
+        run: uv run ruff check app/
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        working-directory: nextjs
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        working-directory: nextjs
+        run: pnpm run lint

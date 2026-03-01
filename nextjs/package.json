@@ -8,7 +8,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:unit": "vitest run --dir tests/unit",
+    "test:unit:watch": "vitest --dir tests/unit",
+    "test:integration": "vitest run --dir tests/integration",
+    "test:integration:watch": "vitest --dir tests/integration",
+    "test:ci": "vitest run --reporter=default --silent",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@langchain/core": "0.3.80",

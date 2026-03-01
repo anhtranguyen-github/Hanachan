@@ -1,5 +1,28 @@
 {
-  "dependencies": {
+  "name": "hanachan",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hanachan - Japanese language learning chatbot",
+  "scripts": {
+    "test": "pnpm run test:all",
+    "test:all": "pnpm run test:backend && pnpm run test:frontend",
+    "test:backend": "cd fastapi && pnpm run test",
+    "test:backend:watch": "cd fastapi && pnpm run test:watch",
+    "test:backend:coverage": "cd fastapi && pnpm run test:coverage",
+    "test:frontend": "cd nextjs && pnpm run test",
+    "test:frontend:watch": "cd nextjs && pnpm run test:watch",
+    "test:frontend:coverage": "cd nextjs && pnpm run test:coverage",
+    "test:unit": "pnpm run test:backend && pnpm run test:frontend:unit",
+    "test:integration": "pnpm run test:frontend:integration",
+    "lint": "pnpm run lint:backend && pnpm run lint:frontend",
+    "lint:backend": "cd fastapi && pnpm run lint",
+    "lint:frontend": "cd nextjs && pnpm run lint"
+  },
+  "devDependencies": {
     "@kilocode/cli": "^7.0.33"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
   }
 }
