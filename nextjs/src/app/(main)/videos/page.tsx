@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { BaseModal } from '@/components/shared/BaseModal';
 import { clsx } from 'clsx';
 import {
@@ -18,11 +18,17 @@ import {
   Loader2,
   BookmarkPlus,
   ChevronDown,
+  Trash2,
+  AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 import { useUser } from '@/features/auth/AuthContext';
-import { useVideoLibrary } from '@/features/video/hooks/useVideoLibrary';
+import { useVideoLibrary, type UploadStage } from '@/features/video/hooks/useVideoLibrary';
 import { VideoCard } from '@/features/video/components/VideoCard';
 import { JLPTBadge } from '@/features/video/components/JLPTBadge';
+import { useToastHelpers } from '@/components/shared/Toast';
+import { ErrorModal, useErrorModal } from '@/components/shared/ErrorModal';
+import { VideoUploadProgress } from '@/components/shared/VideoUploadProgress';
 import type { LibraryFilterBy, LibrarySortBy, CreateCategoryRequest } from '@/features/video/types';
 
 const CATEGORY_COLORS = [
@@ -41,21 +47,138 @@ export default function VideoLibraryPage() {
     error,
     filters,
     updateFilters,
+    clearError,
+    uploadState,
+    resetUpload,
+    addVideo,
     removeVideo,
     toggleFavorite,
     assignCategory,
     createCategory,
     deleteCategory,
-    addVideo,
+    refresh,
   } = useVideoLibrary(user?.id);
+
+  const { showSuccess, showError, showLoading, updateLoading } = useToastHelpers();
+  const { showError: showErrorModal, ErrorModal: ErrorModalComponent } = useErrorModal();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+
+  // Handle critical errors with modal
+  useEffect(() => {
+    if (error && !uploadState.isUploading) {
+      showErrorModal({
+        title: 'Library Error',
+        message: 'We couldn\'t load your video library. This might be a temporary issue.',
+        error,
+        onRetry: () => {
+          clearError();
+          refresh();
+        },
+      });
+    }
+  }, [error, uploadState.isUploading, showErrorModal, clearError, refresh]);
 
   const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     updateFilters({ searchQuery: e.target.value });
   }, [updateFilters]);
+
+  const handleAddVideo = useCallback(async (youtubeId: string) => {
+    // First ensure video exists in DB
+    const res = await fetch('/api/videos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ youtube_id: youtubeId }),
+    });
+    
+    const data = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to create video');
+    }
+    
+    if (data.video) {
+      const result = await addVideo({ video_id: data.video.id });
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to add to library');
+      }
+      return data.video;
+    }
+    
+    throw new Error('No video data returned');
+  }, [addVideo]);
+
+  const handleRemoveVideo = useCallback(async (videoId: string, videoTitle: string) => {
+    const toastId = showLoading('Removing video...', `Removing "${videoTitle}" from your library`);
+    
+    const result = await removeVideo(videoId);
+    
+    if (result.success) {
+      updateLoading(toastId, 'success', 'Video removed', `"${videoTitle}" has been removed from your library`);
+    } else {
+      updateLoading(toastId, 'error', 'Failed to remove', result.error || 'Please try again');
+    }
+    
+    setShowDeleteConfirm(null);
+  }, [removeVideo, showLoading, updateLoading]);
+
+  const handleToggleFavorite = useCallback(async (videoId: string, isFavorite: boolean, videoTitle: string) => {
+    const result = await toggleFavorite(videoId, isFavorite);
+    
+    if (result.success) {
+      showSuccess(
+        isFavorite ? 'Added to favorites' : 'Removed from favorites',
+        `"${videoTitle}" ${isFavorite ? 'has been added to your favorites' : 'has been removed from your favorites'}`
+      );
+    } else {
+      showError('Action failed', result.error || 'Could not update favorite status');
+    }
+  }, [toggleFavorite, showSuccess, showError]);
+
+  const handleAssignCategory = useCallback(async (videoId: string, categoryId: string | null, categoryName?: string) => {
+    const result = await assignCategory(videoId, categoryId);
+    
+    if (result.success) {
+      showSuccess(
+        'Category updated',
+        categoryName 
+          ? `Video moved to "${categoryName}"`
+          : 'Video removed from category'
+      );
+    } else {
+      showError('Action failed', result.error || 'Could not update category');
+    }
+  }, [assignCategory, showSuccess, showError]);
+
+  const handleCreateCategory = useCallback(async (req: CreateCategoryRequest) => {
+    const toastId = showLoading('Creating category...', `Creating "${req.name}"`);
+    
+    const result = await createCategory(req);
+    
+    if (result.success) {
+      updateLoading(toastId, 'success', 'Category created', `"${req.name}" has been created`);
+      setShowCategoryModal(false);
+    } else {
+      updateLoading(toastId, 'error', 'Failed to create', result.error || 'Please try again');
+    }
+    
+    return result;
+  }, [createCategory, showLoading, updateLoading]);
+
+  const handleDeleteCategory = useCallback(async (categoryId: string, categoryName: string) => {
+    const toastId = showLoading('Deleting category...', `Deleting "${categoryName}"`);
+    
+    const result = await deleteCategory(categoryId);
+    
+    if (result.success) {
+      updateLoading(toastId, 'success', 'Category deleted', `"${categoryName}" has been deleted`);
+    } else {
+      updateLoading(toastId, 'error', 'Failed to delete', result.error || 'Please try again');
+    }
+  }, [deleteCategory, showLoading, updateLoading]);
 
   if (loading) {
     return (
@@ -70,6 +193,23 @@ export default function VideoLibraryPage() {
 
   return (
     <main className="max-w-[1400px] mx-auto space-y-4 animate-page-entrance">
+      {/* Error Modal for critical errors */}
+      <ErrorModalComponent />
+      
+      {/* Upload Progress Modal */}
+      <VideoUploadProgress
+        isOpen={uploadState.isUploading || uploadState.stage === 'complete' || uploadState.stage === 'error'}
+        stage={uploadState.stage}
+        progress={uploadState.progress}
+        videoTitle={uploadState.videoTitle}
+        error={uploadState.error}
+        onClose={resetUpload}
+        onRetry={() => {
+          resetUpload();
+          setShowAddModal(true);
+        }}
+      />
+
       {/* Header */}
       <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
@@ -287,9 +427,12 @@ export default function VideoLibraryPage() {
               entry={entry}
               categories={categories}
               view={filters.view}
-              onToggleFavorite={toggleFavorite}
-              onRemove={removeVideo}
-              onAssignCategory={assignCategory}
+              onToggleFavorite={(videoId, isFavorite) => handleToggleFavorite(videoId, isFavorite, entry.video.title)}
+              onRemove={() => setShowDeleteConfirm(entry.video_id)}
+              onAssignCategory={(videoId, categoryId) => {
+                const category = categories.find(c => c.id === categoryId);
+                handleAssignCategory(videoId, categoryId, category?.name);
+              }}
             />
           ))}
         </div>
@@ -299,19 +442,7 @@ export default function VideoLibraryPage() {
       {showAddModal && (
         <AddVideoModal
           onClose={() => setShowAddModal(false)}
-          onAdd={async (youtubeId) => {
-            // First ensure video exists in DB
-            const res = await fetch('/api/videos', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ youtube_id: youtubeId }),
-            });
-            const data = await res.json();
-            if (data.video) {
-              await addVideo({ video_id: data.video.id });
-            }
-            setShowAddModal(false);
-          }}
+          onAdd={handleAddVideo}
         />
       )}
 
@@ -319,13 +450,93 @@ export default function VideoLibraryPage() {
       {showCategoryModal && (
         <CreateCategoryModal
           onClose={() => setShowCategoryModal(false)}
-          onCreate={async (req) => {
-            await createCategory(req);
-            setShowCategoryModal(false);
+          onCreate={handleCreateCategory}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <DeleteConfirmModal
+          video={entries.find(e => e.video_id === showDeleteConfirm)?.video}
+          onClose={() => setShowDeleteConfirm(null)}
+          onConfirm={() => {
+            const entry = entries.find(e => e.video_id === showDeleteConfirm);
+            if (entry) {
+              handleRemoveVideo(showDeleteConfirm, entry.video.title);
+            }
           }}
         />
       )}
     </main>
+  );
+}
+
+// ==========================================
+// DELETE CONFIRMATION MODAL
+// ==========================================
+
+function DeleteConfirmModal({
+  video,
+  onClose,
+  onConfirm,
+}: {
+  video?: { title: string; thumbnail_url: string | null };
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      maxWidth="sm"
+      className="overflow-visible"
+    >
+      <div className="flex flex-col items-center text-center py-4">
+        <div className="relative mb-4">
+          <div className="absolute inset-0 bg-red-100 rounded-full blur-xl opacity-60" />
+          <div className="relative w-16 h-16 bg-gradient-to-br from-red-400 to-red-500 rounded-full flex items-center justify-center shadow-lg shadow-red-200">
+            <Trash2 size={28} className="text-white" />
+          </div>
+        </div>
+
+        <h3 className="text-lg font-black text-[#3E4A61] mb-2">Remove Video?</h3>
+        
+        {video && (
+          <div className="flex items-center gap-3 bg-[#F7FAFC] rounded-xl p-3 mb-4 w-full">
+            {video.thumbnail_url && (
+              <img 
+                src={video.thumbnail_url} 
+                alt={video.title}
+                className="w-16 h-10 object-cover rounded-lg"
+              />
+            )}
+            <p className="text-sm text-[#3E4A61] font-medium text-left line-clamp-2 flex-1">
+              {video.title}
+            </p>
+          </div>
+        )}
+
+        <p className="text-sm text-[#A0AEC0] leading-relaxed">
+          This will remove the video from your library. Your learning progress will be saved.
+        </p>
+
+        <div className="flex gap-3 mt-6 w-full">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl border border-border/30 text-[11px] font-black text-[#A0AEC0] hover:text-[#3E4A61] hover:bg-[#F7FAFC] uppercase tracking-wide transition-all"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-[11px] font-black uppercase tracking-wide hover:bg-red-600 transition-all flex items-center justify-center gap-2 shadow-md shadow-red-200"
+          >
+            <Trash2 size={14} />
+            Remove
+          </button>
+        </div>
+      </div>
+    </BaseModal>
   );
 }
 
@@ -394,14 +605,13 @@ function AddVideoModal({
   onAdd,
 }: {
   onClose: () => void;
-  onAdd: (youtubeId: string) => Promise<void>;
+  onAdd: (youtubeId: string) => Promise<{ id: string; title: string }>;
 }) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const extractYoutubeId = (input: string): string | null => {
-    // Handle various YouTube URL formats
     const patterns = [
       /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
       /^([a-zA-Z0-9_-]{11})$/, // Direct ID
@@ -424,8 +634,10 @@ function AddVideoModal({
 
     setLoading(true);
     setError('');
+    
     try {
       await onAdd(youtubeId);
+      // Don't close modal here - let the progress modal handle it
     } catch (err: any) {
       setError(err.message || 'Failed to add video');
     } finally {
@@ -472,8 +684,20 @@ function AddVideoModal({
             autoFocus
           />
           {error && (
-            <p className="text-[10px] text-[#FF6B6B] mt-1.5 font-bold">{error}</p>
+            <div className="flex items-center gap-1.5 mt-2 p-3 bg-red-50 rounded-xl border border-red-100">
+              <AlertTriangle size={14} className="text-red-500 shrink-0" />
+              <p className="text-[11px] font-bold text-red-600">{error}</p>
+            </div>
           )}
+        </div>
+        
+        <div className="p-4 bg-[#F7FAFC] rounded-xl space-y-2">
+          <p className="text-[10px] font-black text-[#A0AEC0] uppercase tracking-wide">Supported formats:</p>
+          <div className="flex flex-wrap gap-2">
+            <code className="px-2 py-1 bg-white rounded text-[10px] text-[#3E4A61] border border-border/20">youtube.com/watch?v=...</code>
+            <code className="px-2 py-1 bg-white rounded text-[10px] text-[#3E4A61] border border-border/20">youtu.be/...</code>
+            <code className="px-2 py-1 bg-white rounded text-[10px] text-[#3E4A61] border border-border/20">Video ID (11 chars)</code>
+          </div>
         </div>
       </form>
     </BaseModal>
@@ -489,20 +713,28 @@ function CreateCategoryModal({
   onCreate,
 }: {
   onClose: () => void;
-  onCreate: (req: CreateCategoryRequest) => Promise<void>;
+  onCreate: (req: CreateCategoryRequest) => Promise<{ success: boolean; category?: { id: string }; error?: string }>;
 }) {
   const [name, setName] = useState('');
   const [color, setColor] = useState(CATEGORY_COLORS[0]);
   const [icon, setIcon] = useState(CATEGORY_ICONS[0]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
     setLoading(true);
+    setError('');
+    
     try {
-      await onCreate({ name: name.trim(), color, icon });
+      const result = await onCreate({ name: name.trim(), color, icon });
+      if (!result.success) {
+        setError(result.error || 'Failed to create category');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to create category');
     } finally {
       setLoading(false);
     }
@@ -546,10 +778,13 @@ function CreateCategoryModal({
             type="text"
             placeholder="e.g. JLPT N3 Listening"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={e => { setName(e.target.value); setError(''); }}
             className="w-full px-4 py-2.5 bg-[#F7FAFC] border border-border/30 rounded-xl text-sm font-bold text-[#3E4A61] placeholder-[#CBD5E0] focus:outline-none focus:border-primary/40 transition-all shadow-sm"
             autoFocus
           />
+          {error && (
+            <p className="text-[10px] text-red-500 mt-1.5 font-bold">{error}</p>
+          )}
         </div>
 
         {/* Icon */}

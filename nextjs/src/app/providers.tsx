@@ -3,6 +3,7 @@
 import React from "react";
 import { ReactNode } from "react";
 import { AuthProvider } from "@/features/auth/AuthContext";
+import { ToastProvider } from "@/components/shared/Toast";
 
 interface ProvidersProps {
   children: ReactNode;
@@ -11,7 +12,9 @@ interface ProvidersProps {
 export function Providers({ children }: ProvidersProps) {
   return (
     <AuthProvider>
-      {children}
+      <ToastProvider>
+        {children}
+      </ToastProvider>
     </AuthProvider>
   );
 }

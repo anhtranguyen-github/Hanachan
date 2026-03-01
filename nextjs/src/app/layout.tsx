@@ -3,6 +3,7 @@ import { Noto_Sans_JP, Noto_Serif_JP } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/features/auth/AuthContext";
 import { AuthModal } from "@/features/auth/AuthModal";
+import { ToastProvider } from "@/components/shared/Toast";
 
 const notoSans = Noto_Sans_JP({
   subsets: ["latin"],
@@ -31,8 +32,10 @@ export default function RootLayout({
     <html lang="ja" className={`${notoSans.variable} ${notoSerif.variable}`}>
       <body className="font-sans antialiased text-foreground bg-background">
         <AuthProvider>
-          {children}
-          <AuthModal />
+          <ToastProvider>
+            {children}
+            <AuthModal />
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>
