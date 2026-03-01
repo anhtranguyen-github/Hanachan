@@ -94,7 +94,7 @@ jobs:
         run: uv sync --frozen
 
       - name: Install test dependencies
-        run: uv pip install pytest pytest-asyncio httpx pytest-cov
+        run: uv pip install pytest pytest-asyncio httpx pytest-cov faker
 
       - name: Run pytest
         env:

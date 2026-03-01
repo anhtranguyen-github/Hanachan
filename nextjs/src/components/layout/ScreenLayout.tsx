@@ -10,7 +10,7 @@ export function ScreenLayout({ children, background = 'pink', theme = 'dark' }: 
     const bgColor = theme === 'dark' ? 'bg-[#0a0a0c]' : 'bg-brand-cream';
 
     return (
-        <div className={`h-[100dvh] w-full relative flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden ${bgColor}`}>
+        <div className={`min-h-[100dvh] w-full relative flex flex-col items-center justify-start sm:justify-center p-3 sm:p-6 ${bgColor}`}>
             {/* Dynamic Background */}
             <div className="absolute inset-0 z-0 pointer-events-none">
                 {background === 'pink' && (
@@ -28,11 +28,9 @@ export function ScreenLayout({ children, background = 'pink', theme = 'dark' }: 
                 )}
             </div>
 
-            {/* Inner scroll container for extreme small heights (controlled scrolling) */}
-            <div className="relative z-10 w-full max-w-[440px] max-h-full overflow-y-auto overflow-x-hidden flex flex-col items-center justify-center py-2 no-scrollbar">
-                <div className="w-full relative">
-                    {children}
-                </div>
+            {/* Main content area - uses grid to separate branding from form */}
+            <div className="relative z-10 w-full max-w-[440px] h-full flex flex-col items-center">
+                {children}
             </div>
 
             {/* Hide scrollbar styles */}
