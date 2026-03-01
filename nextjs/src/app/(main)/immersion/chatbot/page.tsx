@@ -243,6 +243,14 @@ export default function ChatbotPage() {
 
     useEffect(() => {
         setMounted(true);
+        // Hard-lock the viewport for app-like layouts
+        document.documentElement.classList.add('screen-locked');
+        document.body.classList.add('screen-locked');
+
+        return () => {
+            document.documentElement.classList.remove('screen-locked');
+            document.body.classList.remove('screen-locked');
+        };
     }, []);
 
     useEffect(() => {
@@ -346,7 +354,7 @@ export default function ChatbotPage() {
     const streamingContent = streaming.partial;
 
     return (
-        <div className="flex h-full bg-[#FFFDFD] overflow-hidden rounded-[32px] border border-[#F0E0E0] shadow-sm relative">
+        <div className="flex h-[100dvh] bg-[#FFFDFD] overflow-hidden rounded-[32px] border border-[#F0E0E0] shadow-sm relative">
             {/* ── Sidebar ── */}
             <aside className={clsx(
                 'border-r border-[#F0E0E0] flex flex-col shrink-0 bg-white/50 backdrop-blur-sm transition-all duration-500 ease-in-out',
