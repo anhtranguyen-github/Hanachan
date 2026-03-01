@@ -674,7 +674,7 @@ export default function SpeakingPracticePage() {
         }
     }, [dynamicSentence, startAssessment]);
 
-    // Handle start recording
+    // Auto-handle result changes
     useEffect(() => {
         if (result && status === 'done') {
             handleRecordingComplete(result);
@@ -699,7 +699,7 @@ export default function SpeakingPracticePage() {
     // Render Welcome Screen if not started
     if (!sessionId && !isDynamicLoading) {
         return (
-            <div className="flex min-h-[100dvh] bg-[#FFF8F8] overflow-hidden relative mesh-bg items-center justify-center p-4 sm:p-8">
+            <div className="flex min-h-[100dvh] bg-[#FFF8F8] overflow-y-auto relative mesh-bg items-center justify-center p-4 sm:p-8">
                 <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
                     <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-gradient-to-br from-[#F4ACB7]/40 to-[#D88C9A]/20 rounded-full blur-3xl animate-pulse-slow"></div>
                     <div className="absolute top-[20%] -right-[10%] w-[35%] h-[35%] bg-gradient-to-br from-[#9BF6FF]/30 to-[#BDE0FE]/20 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
@@ -741,7 +741,7 @@ export default function SpeakingPracticePage() {
 
     if (isDynamicComplete) {
         return (
-            <div className="flex min-h-[100dvh] bg-[#FFF8F8] overflow-hidden items-center justify-center p-4 sm:p-8 text-center">
+            <div className="flex min-h-[100dvh] bg-[#FFF8F8] overflow-y-auto items-center justify-center p-4 sm:p-8 text-center">
                 <div className="relative z-10 glass-card p-8 sm:p-12 max-w-md w-full space-y-6 sm:space-y-8 animate-in fade-in duration-700">
                     <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-[#48BB78] to-[#38A169] rounded-[32px] sm:rounded-[48px] mx-auto flex items-center justify-center shadow-2xl shadow-[#48BB78]/30">
                         <CheckCircle2 size={48} className="sm:size-[56px] text-white" />
