@@ -46,7 +46,7 @@ async def get_video_transcript(youtube_id: str):
                 raise HTTPException(status_code=400, detail="Only HTTP/HTTPS URLs are allowed")
             
             req = urllib.request.Request(url)  # noqa: S310
-            with urllib.request.urlopen(req) as response:  # noqa: S310
+            with urllib.request.urlopen(req) as response:  # noqa: S310  # nosec B310
                 if response.status != 200:
                     raise HTTPException(status_code=500, detail="Failed to download transcript data")
                 json_data = json.loads(response.read().decode('utf-8'))
