@@ -60,7 +60,7 @@ export default function MainLayout({
 
                 <main className={clsx(
                     "flex-1 relative",
-                    isChatbot ? "overflow-hidden" : "overflow-auto custom-scrollbar",
+                    pathname.includes('/chatbot') ? "overflow-hidden" : "overflow-auto custom-scrollbar",
                     isChatbot ? "p-0" : "p-3 lg:p-4 pt-3 lg:pt-4",
                     // Mobile: add top padding for fixed header, bottom padding for bottom nav
                     "pt-[calc(3.5rem+0.75rem)] lg:pt-3 pb-[calc(4rem+0.75rem)] lg:pb-3"
