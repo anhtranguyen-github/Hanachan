@@ -106,34 +106,34 @@ export default function DashboardPage() {
         <main data-testid="dashboard-root" className="max-w-[1400px] mx-auto space-y-4 animate-page-entrance">
 
             {/* Hero Header */}
-            <header className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 overflow-hidden">
-                <div className="absolute -top-8 -right-8 w-48 h-48 bg-gradient-to-br from-primary/8 to-[#CDB4DB]/5 rounded-full blur-3xl pointer-events-none" />
-                <div className="flex items-center gap-3 relative z-10 text-left">
-                    <div className="relative">
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary to-[#D88C9A] rounded-2xl blur-lg opacity-20 animate-pulse-slow" />
-                        <div className="relative w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#F4ACB7] to-[#D88C9A] rounded-2xl flex items-center justify-center text-white font-black text-lg sm:text-xl shadow-lg shadow-primary/25">
+            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-2 px-1">
+                <div className="flex items-center gap-4">
+                    <div className="relative shrink-0">
+                        <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl animate-pulse-slow" />
+                        <div className="relative w-12 h-12 bg-gradient-to-br from-[#F4ACB7] to-[#D88C9A] rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg border-2 border-white/50">
                             花
                         </div>
                     </div>
-                    <div>
-                        <h1 className="text-xl sm:text-3xl font-black text-[#3E4A61] tracking-tighter leading-none">
+                    <div className="flex flex-col justify-center py-1">
+                        <h1 className="text-xl sm:text-2xl font-black text-[#3E4A61] tracking-tight leading-tight">
                             Konnichiwa, <span className="gradient-text-sakura">{displayName}</span>!
                         </h1>
-                        <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-[#CBD5E0] mt-1 flex items-center gap-1.5">
-                            <span className="w-1 h-1 bg-primary rounded-full inline-block" />
-                            <span className="hidden sm:inline">{today} •</span>
-                            Level {userLevel}
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#A0AEC0] mt-1 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 bg-primary/40 rounded-full" />
+                            <span className="opacity-70">{today}</span>
+                            <span className="w-1 h-1 bg-[#CBD5E0] rounded-full" />
+                            <span className="text-primary/60">Level {userLevel}</span>
                         </p>
                     </div>
                 </div>
-                <div className="flex gap-2 relative z-10">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-sm border border-primary/15 rounded-2xl shadow-sm">
-                        <Flame size={11} className="text-primary" />
-                        <span className="text-[9px] font-black text-[#3E4A61] uppercase tracking-widest">{stats.streak}d</span>
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-md border border-primary/10 rounded-2xl shadow-sm hover:shadow-md transition-all group">
+                        <Flame size={14} className="text-primary group-hover:scale-110 transition-transform" />
+                        <span className="text-[10px] font-black text-[#3E4A61] uppercase tracking-widest">{stats.streak}d Streak</span>
                     </div>
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-sm border border-[#48BB78]/20 rounded-2xl shadow-sm">
-                        <Sparkles size={11} className="text-[#48BB78]" />
-                        <span className="text-[9px] font-black text-[#3E4A61] uppercase tracking-widest">{stats.retention}%</span>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-md border border-[#48BB78]/10 rounded-2xl shadow-sm hover:shadow-md transition-all group">
+                        <Sparkles size={14} className="text-[#48BB78] group-hover:scale-110 transition-transform" />
+                        <span className="text-[10px] font-black text-[#3E4A61] uppercase tracking-widest">{stats.retention}% Mastery</span>
                     </div>
                 </div>
             </header>

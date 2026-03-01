@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { BaseModal } from '@/components/shared/BaseModal';
 import { clsx } from 'clsx';
 import {
   Search,
@@ -433,59 +434,49 @@ function AddVideoModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h2 className="text-lg font-black text-[#3E4A61]">Add Video</h2>
-            <p className="text-[9px] font-bold text-[#A0AEC0] uppercase tracking-widest mt-0.5">
-              Paste a YouTube URL or video ID
-            </p>
-          </div>
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      title="Add Video"
+      subtitle="Paste a YouTube URL or video ID"
+      maxWidth="md"
+      footer={
+        <div className="flex gap-2">
           <button
+            type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-[#CBD5E0] hover:text-[#3E4A61] hover:bg-[#F7FAFC] transition-all"
+            className="flex-1 py-2.5 rounded-xl border border-border/30 text-[11px] font-black text-[#A0AEC0] hover:text-[#3E4A61] uppercase tracking-wide transition-all"
           >
-            <X size={16} />
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="add-video-form"
+            disabled={loading || !url.trim()}
+            className="flex-1 py-2.5 rounded-xl bg-primary text-white text-[11px] font-black uppercase tracking-wide hover:bg-primary-dark transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 size={14} className="animate-spin" /> : <BookmarkPlus size={14} />}
+            {loading ? 'Adding...' : 'Add to Library'}
           </button>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <input
-              type="text"
-              placeholder="https://youtube.com/watch?v=... or video ID"
-              value={url}
-              onChange={e => { setUrl(e.target.value); setError(''); }}
-              className="w-full px-4 py-3 bg-[#F7FAFC] border border-border/30 rounded-xl text-sm text-[#3E4A61] placeholder-[#CBD5E0] focus:outline-none focus:border-primary/40 focus:bg-white transition-all"
-              autoFocus
-            />
-            {error && (
-              <p className="text-[10px] text-[#FF6B6B] mt-1.5 font-bold">{error}</p>
-            )}
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-border/30 text-[11px] font-black text-[#A0AEC0] hover:text-[#3E4A61] uppercase tracking-wide transition-all"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !url.trim()}
-              className="flex-1 py-2.5 rounded-xl bg-primary text-white text-[11px] font-black uppercase tracking-wide hover:bg-primary-dark transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading ? <Loader2 size={14} className="animate-spin" /> : <BookmarkPlus size={14} />}
-              {loading ? 'Adding...' : 'Add to Library'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+      }
+    >
+      <form id="add-video-form" onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <input
+            type="text"
+            placeholder="https://youtube.com/watch?v=... or video ID"
+            value={url}
+            onChange={e => { setUrl(e.target.value); setError(''); }}
+            className="w-full px-4 py-3 bg-[#F7FAFC] border border-border/30 rounded-xl text-sm text-[#3E4A61] placeholder-[#CBD5E0] focus:outline-none focus:border-primary/40 focus:bg-white transition-all font-bold"
+            autoFocus
+          />
+          {error && (
+            <p className="text-[10px] text-[#FF6B6B] mt-1.5 font-bold">{error}</p>
+          )}
+        </div>
+      </form>
+    </BaseModal>
   );
 }
 
@@ -518,107 +509,106 @@ function CreateCategoryModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-black text-[#3E4A61]">New Category</h2>
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      title="New Category"
+      subtitle="Create a custom category for your videos"
+      maxWidth="sm"
+      footer={
+        <div className="flex gap-2">
           <button
+            type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-[#CBD5E0] hover:text-[#3E4A61] hover:bg-[#F7FAFC] transition-all"
+            className="flex-1 py-2.5 rounded-xl border border-border/30 text-[11px] font-black text-[#A0AEC0] hover:text-[#3E4A61] hover:bg-[#F7FAFC] uppercase tracking-wide transition-all"
           >
-            <X size={16} />
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="create-category-form"
+            disabled={loading || !name.trim()}
+            className="flex-1 py-2.5 rounded-xl bg-primary text-white text-[11px] font-black uppercase tracking-wide hover:bg-primary-dark transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-md shadow-primary/20"
+          >
+            {loading ? <Loader2 size={14} className="animate-spin" /> : null}
+            Create
           </button>
         </div>
+      }
+    >
+      <form id="create-category-form" onSubmit={handleSubmit} className="space-y-5">
+        {/* Name */}
+        <div>
+          <label className="text-[9px] font-black text-[#A0AEC0] uppercase tracking-widest block mb-1.5">
+            Category Name
+          </label>
+          <input
+            type="text"
+            placeholder="e.g. JLPT N3 Listening"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            className="w-full px-4 py-2.5 bg-[#F7FAFC] border border-border/30 rounded-xl text-sm font-bold text-[#3E4A61] placeholder-[#CBD5E0] focus:outline-none focus:border-primary/40 transition-all shadow-sm"
+            autoFocus
+          />
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Name */}
-          <div>
-            <label className="text-[9px] font-black text-[#A0AEC0] uppercase tracking-widest block mb-1.5">
-              Category Name
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. JLPT N3 Listening"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="w-full px-4 py-2.5 bg-[#F7FAFC] border border-border/30 rounded-xl text-sm text-[#3E4A61] placeholder-[#CBD5E0] focus:outline-none focus:border-primary/40 transition-all"
-              autoFocus
-            />
+        {/* Icon */}
+        <div>
+          <label className="text-[9px] font-black text-[#A0AEC0] uppercase tracking-widest block mb-1.5">
+            Icon
+          </label>
+          <div className="grid grid-cols-5 gap-2">
+            {CATEGORY_ICONS.map(i => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setIcon(i)}
+                className={clsx(
+                  'w-full aspect-square rounded-xl text-lg flex items-center justify-center transition-all',
+                  icon === i ? 'bg-primary/20 ring-2 ring-primary/40' : 'bg-[#F7FAFC] hover:bg-[#EDF2F7]'
+                )}
+              >
+                {i}
+              </button>
+            ))}
           </div>
+        </div>
 
-          {/* Icon */}
-          <div>
-            <label className="text-[9px] font-black text-[#A0AEC0] uppercase tracking-widest block mb-1.5">
-              Icon
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORY_ICONS.map(i => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setIcon(i)}
-                  className={clsx(
-                    'w-9 h-9 rounded-xl text-lg flex items-center justify-center transition-all',
-                    icon === i ? 'bg-primary/10 ring-2 ring-primary/30' : 'bg-[#F7FAFC] hover:bg-[#EDF2F7]'
-                  )}
-                >
-                  {i}
-                </button>
-              ))}
-            </div>
+        {/* Color */}
+        <div>
+          <label className="text-[9px] font-black text-[#A0AEC0] uppercase tracking-widest block mb-1.5">
+            Color
+          </label>
+          <div className="grid grid-cols-5 gap-2">
+            {CATEGORY_COLORS.map(c => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setColor(c)}
+                className={clsx(
+                  'w-full aspect-square rounded-full transition-all flex items-center justify-center',
+                  color === c ? 'ring-2 ring-offset-2 scale-110 shadow-sm' : 'hover:scale-105'
+                )}
+                style={{ backgroundColor: c, '--tw-ring-color': c } as React.CSSProperties}
+              >
+                {color === c && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+              </button>
+            ))}
           </div>
+        </div>
 
-          {/* Color */}
-          <div>
-            <label className="text-[9px] font-black text-[#A0AEC0] uppercase tracking-widest block mb-1.5">
-              Color
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORY_COLORS.map(c => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  className={clsx(
-                    'w-7 h-7 rounded-full transition-all',
-                    color === c ? 'ring-2 ring-offset-2 scale-110' : 'hover:scale-105'
-                  )}
-                  style={{ backgroundColor: c, '--tw-ring-color': c } as React.CSSProperties}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Preview */}
-          <div className="flex items-center gap-2 p-3 bg-[#F7FAFC] rounded-xl">
-            <span
-              className="text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wide"
-              style={{ backgroundColor: `${color}30`, color }}
-            >
-              {icon} {name || 'Preview'}
-            </span>
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-border/30 text-[11px] font-black text-[#A0AEC0] hover:text-[#3E4A61] uppercase tracking-wide transition-all"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !name.trim()}
-              className="flex-1 py-2.5 rounded-xl bg-primary text-white text-[11px] font-black uppercase tracking-wide hover:bg-primary-dark transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading ? <Loader2 size={14} className="animate-spin" /> : null}
-              Create
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        {/* Preview */}
+        <div className="p-3 bg-gradient-to-br from-[#F7FAFC] to-[#EDF2F7] rounded-2xl border border-border/10 flex flex-col items-center gap-2">
+          <p className="text-[7px] font-black text-[#CBD5E0] uppercase tracking-[0.2em]">Preview</p>
+          <span
+            className="text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-wide border shadow-sm flex items-center gap-2"
+            style={{ backgroundColor: `${color}15`, color: color, borderColor: `${color}30` }}
+          >
+            <span className="text-sm">{icon}</span>
+            {name || 'Category'}
+          </span>
+        </div>
+      </form>
+    </BaseModal>
   );
 }

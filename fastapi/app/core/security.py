@@ -29,20 +29,21 @@ def _get_jwks_client() -> PyJWKClient:
     """Get or create a cached JWKS client for token verification."""
     global _jwks_client
     if _jwks_client is None:
-        # Supabase JWKS endpoint
-        jwks_url = f"{settings.supabase_url}/auth/v1/jwks"
+        # Supabase JWKS endpoint - requires apikey for some projects
+        # We use the anon/service key to identify the project to the gateway
+        jwks_url = f"{settings.supabase_url}/auth/v1/.well-known/jwks.json?apikey={settings.supabase_key}"
         _jwks_client = PyJWKClient(jwks_url, cache_keys=True)
     return _jwks_client
 
 
-def _decode_token_rs256(credentials: str) -> dict:
-    """Decode using RS256 (asymmetric with JWKS)."""
+def _decode_token_asymmetric(credentials: str) -> dict:
+    """Decode using Asymmetric key (ES256/RS256 with JWKS)."""
     jwks_client = _get_jwks_client()
     signing_key = jwks_client.get_signing_key_from_jwt(credentials)
     return jwt.decode(
         credentials,
         signing_key.key,
-        algorithms=["RS256"],
+        algorithms=["RS256", "ES256"],
         audience="authenticated",
     )
 
@@ -61,9 +62,9 @@ def require_auth(
     if settings.supabase_service_key and token == settings.supabase_service_key:
         return {"sub": "service_role", "role": "service_role"}
 
-    # 2. RS256 (User JWT)
+    # 2. Asymmetric (User JWT - ES256/RS256)
     try:
-        return _decode_token_rs256(token)
+        return _decode_token_asymmetric(token)
     except PyJWKClientError as e:
         # JWKS endpoint unavailable - fail hard, no fallback
         logger.error("rs256_jwks_unavailable", extra={"error": str(e)})

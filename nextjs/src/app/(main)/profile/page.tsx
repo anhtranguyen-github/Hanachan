@@ -11,6 +11,7 @@ import {
     CheckCircle2, AlertCircle, ChevronRight,
     Globe, Plus, Palette
 } from 'lucide-react';
+import { BaseModal } from '@/components/shared/BaseModal';
 import { clsx } from 'clsx';
 import type { UserProfile } from '@/features/auth/types';
 
@@ -395,59 +396,73 @@ function EditProfileModal({
     const initials = (editForm.display_name || 'U').slice(0, 2).toUpperCase();
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border">
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-white rounded-t-3xl z-10">
-                    <div>
-                        <h2 className="text-base font-black text-[#3E4A61] uppercase tracking-tight">Edit Profile</h2>
-                        <p className="text-[9px] font-black text-foreground/30 uppercase tracking-widest mt-0.5">Update your profile</p>
-                    </div>
-                    <button onClick={onCancel} className="p-2 hover:bg-[#F7FAFC] rounded-xl transition-colors text-foreground/40">
-                        <X size={16} />
+        <BaseModal
+            isOpen={true}
+            onClose={onCancel}
+            title="Edit Profile"
+            subtitle="Update your public profile and preferences"
+            maxWidth="lg"
+            footer={
+                <div className="flex gap-3">
+                    <button
+                        onClick={onCancel}
+                        className="flex-1 py-3 bg-[#F7FAFC] border border-border rounded-2xl text-xs font-black uppercase tracking-widest text-foreground/50 hover:text-foreground transition-all"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={onSave}
+                        disabled={saving}
+                        className="flex-1 py-3 bg-[#3E4A61] text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-[#2D3748] transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-[#3E4A61]/20"
+                    >
+                        {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                        Save Changes
                     </button>
                 </div>
-
-                <div className="p-6 space-y-6">
-                    {/* Avatar Preview + Color */}
-                    <div className="flex flex-col items-center gap-4">
-                        {editForm.avatar_url ? (
-                            <img
-                                src={editForm.avatar_url}
-                                alt="Profile Avatar"
-                                className="w-20 h-20 rounded-2xl object-cover shadow-xl"
-                            />
-                        ) : (
-                            <div
-                                className="w-20 h-20 rounded-2xl flex items-center justify-center text-white font-black text-3xl shadow-xl"
-                                style={{ background: `linear-gradient(135deg, ${selectedColor.from}, ${selectedColor.to})` }}
-                            >
-                                {initials}
-                            </div>
-                        )}
-                        <div className="space-y-2 w-full">
-                            <label className="text-[9px] font-black text-foreground/40 uppercase tracking-widest flex items-center gap-1.5">
-                                <Palette size={10} /> Avatar Color
-                            </label>
-                            <div className="flex flex-wrap gap-2">
-                                {AVATAR_COLORS.map(color => (
-                                    <button
-                                        key={color.id}
-                                        onClick={() => setEditForm(prev => ({ ...prev, avatar_color: color.id }))}
-                                        title={color.label}
-                                        className={clsx(
-                                            'w-8 h-8 rounded-xl transition-all',
-                                            editForm.avatar_color === color.id
-                                                ? 'ring-2 ring-offset-2 ring-[#3E4A61] scale-110'
-                                                : 'hover:scale-105'
-                                        )}
-                                        style={{ background: `linear-gradient(135deg, ${color.from}, ${color.to})` }}
-                                    />
-                                ))}
-                            </div>
+            }
+        >
+            <div className="space-y-6">
+                {/* Avatar Preview + Color */}
+                <div className="flex flex-col items-center gap-4 p-4 bg-gradient-to-br from-[#F7FAFC] to-white rounded-3xl border border-border/5">
+                    {editForm.avatar_url ? (
+                        <img
+                            src={editForm.avatar_url}
+                            alt="Profile Avatar"
+                            className="w-24 h-24 rounded-3xl object-cover shadow-2xl ring-4 ring-white"
+                        />
+                    ) : (
+                        <div
+                            className="w-24 h-24 rounded-3xl flex items-center justify-center text-white font-black text-4xl shadow-2xl ring-4 ring-white"
+                            style={{ background: `linear-gradient(135deg, ${selectedColor.from}, ${selectedColor.to})` }}
+                        >
+                            {initials}
+                        </div>
+                    )}
+                    <div className="space-y-2 w-full max-w-sm">
+                        <label className="text-[9px] font-black text-foreground/40 uppercase tracking-widest flex items-center justify-center gap-1.5">
+                            <Palette size={10} /> Avatar Color
+                        </label>
+                        <div className="flex flex-wrap justify-center gap-2">
+                            {AVATAR_COLORS.map(color => (
+                                <button
+                                    key={color.id}
+                                    onClick={() => setEditForm(prev => ({ ...prev, avatar_color: color.id }))}
+                                    title={color.label}
+                                    className={clsx(
+                                        'w-8 h-8 rounded-xl transition-all shadow-sm',
+                                        editForm.avatar_color === color.id
+                                            ? 'ring-2 ring-offset-2 ring-[#3E4A61] scale-110'
+                                            : 'hover:scale-110'
+                                    )}
+                                    style={{ background: `linear-gradient(135deg, ${color.from}, ${color.to})` }}
+                                />
+                            ))}
                         </div>
                     </div>
+                </div>
 
+                {/* Form Fields */}
+                <div className="grid grid-cols-1 gap-5">
                     {/* Display Name */}
                     <div className="space-y-2">
                         <label className="text-[9px] font-black text-foreground/40 uppercase tracking-widest">Display Name</label>
@@ -457,22 +472,24 @@ function EditProfileModal({
                             onChange={e => setEditForm(prev => ({ ...prev, display_name: e.target.value }))}
                             placeholder="Your display name"
                             maxLength={50}
-                            className="w-full px-4 py-3 bg-[#F7FAFC] border border-border rounded-2xl text-sm font-bold text-[#3E4A61] outline-none focus:border-primary transition-colors"
+                            className="w-full px-4 py-3 bg-[#F7FAFC] border border-border rounded-2xl text-sm font-bold text-[#3E4A61] outline-none focus:border-primary focus:bg-white transition-all shadow-sm"
                         />
                     </div>
 
                     {/* Bio */}
                     <div className="space-y-2">
-                        <label className="text-[9px] font-black text-foreground/40 uppercase tracking-widest">Bio</label>
+                        <div className="flex justify-between items-center">
+                            <label className="text-[9px] font-black text-foreground/40 uppercase tracking-widest">Bio</label>
+                            <p className="text-[8px] text-foreground/20 font-black uppercase tracking-widest">{editForm.bio.length}/200</p>
+                        </div>
                         <textarea
                             value={editForm.bio}
                             onChange={e => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
-                            placeholder="Tell us about yourself and your Japanese learning journey..."
+                            placeholder="Tell us about yourself..."
                             maxLength={200}
                             rows={3}
-                            className="w-full px-4 py-3 bg-[#F7FAFC] border border-border rounded-2xl text-sm font-medium text-[#3E4A61] outline-none focus:border-primary transition-colors resize-none"
+                            className="w-full px-4 py-3 bg-[#F7FAFC] border border-border rounded-2xl text-sm font-medium text-[#3E4A61] outline-none focus:border-primary focus:bg-white transition-all resize-none shadow-sm"
                         />
-                        <p className="text-[8px] text-foreground/20 font-black uppercase tracking-widest text-right">{editForm.bio.length}/200</p>
                     </div>
 
                     {/* Native Language */}
@@ -483,9 +500,9 @@ function EditProfileModal({
                         <select
                             value={editForm.native_language}
                             onChange={e => setEditForm(prev => ({ ...prev, native_language: e.target.value }))}
-                            className="w-full px-4 py-3 bg-[#F7FAFC] border border-border rounded-2xl text-sm font-bold text-[#3E4A61] outline-none focus:border-primary transition-colors appearance-none cursor-pointer"
+                            className="w-full px-4 py-3 bg-[#F7FAFC] border border-border rounded-2xl text-sm font-bold text-[#3E4A61] outline-none focus:border-primary focus:bg-white transition-all appearance-none cursor-pointer shadow-sm"
                         >
-                            <option value="">Select your native language</option>
+                            <option value="">Select language</option>
                             {NATIVE_LANGUAGES.map(lang => (
                                 <option key={lang} value={lang}>{lang}</option>
                             ))}
@@ -499,21 +516,22 @@ function EditProfileModal({
                         </label>
 
                         {/* Current goals */}
-                        {editForm.learning_goals.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                                {editForm.learning_goals.map(goal => (
-                                    <div key={goal} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-xl">
-                                        <span className="text-[10px] font-black text-primary">{goal}</span>
-                                        <button
-                                            onClick={() => removeGoal(goal)}
-                                            className="text-primary/50 hover:text-primary transition-colors"
-                                        >
-                                            <X size={10} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        <div className="flex flex-wrap gap-2">
+                            {editForm.learning_goals.map(goal => (
+                                <div key={goal} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-xl shadow-sm">
+                                    <span className="text-[10px] font-black text-primary uppercase tracking-tight">{goal}</span>
+                                    <button
+                                        onClick={() => removeGoal(goal)}
+                                        className="text-primary/50 hover:text-primary transition-colors"
+                                    >
+                                        <X size={10} />
+                                    </button>
+                                </div>
+                            ))}
+                            {editForm.learning_goals.length === 0 && (
+                                <p className="text-[10px] font-bold text-foreground/20 uppercase tracking-widest italic py-2">No goals set yet</p>
+                            )}
+                        </div>
 
                         {/* Add custom goal */}
                         <div className="flex gap-2">
@@ -522,27 +540,27 @@ function EditProfileModal({
                                 value={goalInput}
                                 onChange={e => setGoalInput(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && addGoal(goalInput)}
-                                placeholder="Add a custom goal..."
-                                className="flex-1 px-3 py-2 bg-[#F7FAFC] border border-border rounded-xl text-xs font-bold text-[#3E4A61] outline-none focus:border-primary transition-colors"
+                                placeholder="Add focus..."
+                                className="flex-1 px-3 py-2 bg-[#F7FAFC] border border-border rounded-xl text-xs font-bold text-[#3E4A61] outline-none focus:border-primary transition-all shadow-sm"
                             />
                             <button
                                 onClick={() => addGoal(goalInput)}
                                 disabled={!goalInput.trim()}
-                                className="px-3 py-2 bg-primary text-white rounded-xl text-xs font-black disabled:opacity-40 hover:opacity-90 transition-opacity"
+                                className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center disabled:opacity-40 hover:opacity-90 transition-all shadow-lg shadow-primary/20"
                             >
-                                <Plus size={12} />
+                                <Plus size={16} />
                             </button>
                         </div>
 
                         {/* Suggestions */}
-                        <div className="space-y-1.5">
+                        <div className="p-3 bg-surface-muted/50 rounded-2xl border border-border/10 space-y-2">
                             <p className="text-[8px] font-black text-foreground/20 uppercase tracking-widest">Suggestions</p>
                             <div className="flex flex-wrap gap-1.5">
                                 {LEARNING_GOAL_SUGGESTIONS.filter(g => !editForm.learning_goals.includes(g)).slice(0, 8).map(goal => (
                                     <button
                                         key={goal}
                                         onClick={() => addGoal(goal)}
-                                        className="px-2.5 py-1 bg-[#F7FAFC] border border-border hover:border-primary/30 rounded-lg text-[9px] font-bold text-foreground/40 hover:text-foreground transition-all"
+                                        className="px-2.5 py-1 bg-white border border-border hover:border-primary/30 rounded-lg text-[9px] font-bold text-foreground/40 hover:text-primary transition-all shadow-sm"
                                     >
                                         + {goal}
                                     </button>
@@ -550,35 +568,17 @@ function EditProfileModal({
                             </div>
                         </div>
                     </div>
-
-                    {/* Error */}
-                    {saveError && (
-                        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-2xl">
-                            <AlertCircle size={14} className="text-red-400 shrink-0" />
-                            <span className="text-xs font-bold text-red-500">{saveError}</span>
-                        </div>
-                    )}
                 </div>
 
-                {/* Footer */}
-                <div className="flex gap-3 p-6 border-t border-border sticky bottom-0 bg-white rounded-b-3xl">
-                    <button
-                        onClick={onCancel}
-                        className="flex-1 py-3 bg-[#F7FAFC] border border-border rounded-2xl text-xs font-black uppercase tracking-widest text-foreground/50 hover:text-foreground transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={onSave}
-                        disabled={saving}
-                        className="flex-1 py-3 bg-[#3E4A61] text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                        {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                        Save Profile
-                    </button>
-                </div>
+                {/* Error */}
+                {saveError && (
+                    <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-2xl animate-in shake duration-500">
+                        <AlertCircle size={14} className="text-red-400 shrink-0" />
+                        <span className="text-xs font-bold text-red-500">{saveError}</span>
+                    </div>
+                )}
             </div>
-        </div>
+        </BaseModal>
     );
 }
 
