@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException
-import json
 import yt_dlp
 
 router = APIRouter()
