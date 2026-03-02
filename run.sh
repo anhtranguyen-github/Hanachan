@@ -1,95 +1,148 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -Eeuo pipefail
 
-# Hanachan Startup Script (Optimized)
-# This script starts Supabase, cleans up ports, kills zombie processes, and starts services.
+########################################
+# Hanachan Startup Script (Overhauled)
+########################################
 
 FRONTEND_PORT=3000
 BACKEND_PORT=8765
+MODE="${1:-dev}"
 
-MODE=${1:-dev}
-
-# Root directory
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "--- ☁️ Phase 1: Using Cloud Supabase ---"
-echo "Local Supabase stack removed. Connecting directly to Cloud DB."
+BACKEND_PID=""
+FRONTEND_PID=""
 
-echo "--- 🛠️  Phase 2: Cleanup ---"
-
-cleanup_port() {
-  local port=$1
-  echo "Ensuring port $port is free..."
-  
-  # 1. Try fuser (very effective on Linux)
-  if command -v fuser >/dev/null 2>&1; then
-    fuser -k $port/tcp >/dev/null 2>&1
-  fi
-  
-  # 2. Sequential kill for any remaining PIDs via lsof
-  local pids=$(lsof -t -i:$port)
-  if [ ! -z "$pids" ]; then
-    echo "Killing remaining processes on $port: $pids"
-    kill -9 $pids 2>/dev/null
-  fi
-  
-  # 3. Small grace period to allow OS to release socket
-  sleep 1.5
+########################################
+# Logging helpers
+########################################
+log() {
+  echo -e "[$(date +'%H:%M:%S')] $*"
 }
 
-# Ensure we clear both ports
-cleanup_port $BACKEND_PORT
-cleanup_port $FRONTEND_PORT
+########################################
+# Port cleanup
+########################################
+cleanup_port() {
+  local port="$1"
+  log "Ensuring port $port is free..."
 
-echo "--- 🚀 Phase 3: Starting Services ---"
+  if command -v fuser >/dev/null 2>&1; then
+    fuser -k "$port/tcp" >/dev/null 2>&1 || true
+  fi
 
-# Trap exits to kill background processes only on interruption
-trap "echo 'Stopping...'; kill 0" SIGINT SIGTERM
+  if command -v lsof >/dev/null 2>&1; then
+    local pids
+    pids="$(lsof -ti :"$port" || true)"
+    if [[ -n "$pids" ]]; then
+      log "Killing remaining PIDs on port $port: $pids"
+      kill -9 $pids 2>/dev/null || true
+    fi
+  fi
 
-# 1. Start FastAPI Backend
-echo "[Backend] Starting on port $BACKEND_PORT..."
+  sleep 1
+}
+
+########################################
+# Graceful shutdown
+########################################
+shutdown() {
+  log "Stopping services..."
+
+  if [[ -n "$FRONTEND_PID" ]] && kill -0 "$FRONTEND_PID" 2>/dev/null; then
+    log "Stopping frontend (PID $FRONTEND_PID)"
+    kill -TERM "$FRONTEND_PID" 2>/dev/null || true
+  fi
+
+  if [[ -n "$BACKEND_PID" ]] && kill -0 "$BACKEND_PID" 2>/dev/null; then
+    log "Stopping backend (PID $BACKEND_PID)"
+    kill -TERM "$BACKEND_PID" 2>/dev/null || true
+  fi
+
+  # Give processes time to exit gracefully
+  sleep 2
+
+  # Hard kill if still alive
+  if [[ -n "$FRONTEND_PID" ]] && kill -0 "$FRONTEND_PID" 2>/dev/null; then
+    log "Force killing frontend"
+    kill -KILL "$FRONTEND_PID" 2>/dev/null || true
+  fi
+
+  if [[ -n "$BACKEND_PID" ]] && kill -0 "$BACKEND_PID" 2>/dev/null; then
+    log "Force killing backend"
+    kill -KILL "$BACKEND_PID" 2>/dev/null || true
+  fi
+
+  wait || true
+  log "Shutdown complete."
+  exit 0
+}
+
+trap shutdown SIGINT SIGTERM
+
+########################################
+# Startup
+########################################
+log "☁️ Using Cloud Supabase"
+log "🧹 Cleaning ports"
+
+cleanup_port "$BACKEND_PORT"
+cleanup_port "$FRONTEND_PORT"
+
+########################################
+# Backend
+########################################
+log "🚀 Starting backend on port $BACKEND_PORT"
 cd "$ROOT_DIR/fastapi"
-# Use uv to run the backend
-uv run python -m uvicorn app.main:app --host 0.0.0.0 --port $BACKEND_PORT > "$ROOT_DIR/fastapi/server.log" 2>&1 &
+
+uv run python -m uvicorn app.main:app \
+  --host 0.0.0.0 \
+  --port "$BACKEND_PORT" \
+  > "$ROOT_DIR/fastapi/server.log" 2>&1 &
+
 BACKEND_PID=$!
 
-# Wait for backend health
-echo "[Backend] Waiting for initialization..."
+log "⏳ Waiting for backend health..."
 for i in {1..10}; do
-  if curl -s "http://localhost:$BACKEND_PORT/health" > /dev/null; then
-    echo "[Backend] Ready ✓"
+  if curl -sf "http://localhost:$BACKEND_PORT/health" >/dev/null; then
+    log "✅ Backend ready"
     break
   fi
   sleep 1
-  if [ $i -eq 10 ]; then
-    echo "[Backend] Warning: Health check timed out, but proceeding anyway."
-  fi
 done
 
-# 2. Start Next.js Frontend with pnpm
+########################################
+# Frontend
+########################################
 cd "$ROOT_DIR/nextjs"
 
-if [ "$MODE" = "prod" ] || [ "$MODE" = "product" ]; then
-  echo "[Frontend] Building for production..."
-  pnpm run build
-  echo "[Frontend] Starting production server on port $FRONTEND_PORT..."
-  PORT=$FRONTEND_PORT pnpm run start &
-elif [ "$MODE" = "build" ]; then
-  echo "[Frontend] Running build check..."
-  pnpm run build
-  echo "--- ✅ Build Complete ---"
-  kill $BACKEND_PID
-  exit 0
-else
-  echo "[Frontend] Starting dev server on port $FRONTEND_PORT using pnpm..."
-  PORT=$FRONTEND_PORT pnpm run dev &
-fi
+case "$MODE" in
+  prod|product)
+    log "🏗️ Building frontend (production)"
+    pnpm run build
+    log "🚀 Starting frontend (production)"
+    PORT="$FRONTEND_PORT" pnpm run start &
+    ;;
+  build)
+    log "🏗️ Build-only mode"
+    pnpm run build
+    shutdown
+    ;;
+  *)
+    log "🚀 Starting frontend (dev)"
+    PORT="$FRONTEND_PORT" pnpm run dev &
+    ;;
+esac
+
 FRONTEND_PID=$!
 
-echo "--- ✅ Startup Complete ---"
-echo "Backend:  http://localhost:$BACKEND_PORT"
-echo "Frontend: http://localhost:$FRONTEND_PORT"
-echo ""
-echo "Press Ctrl+C to stop services."
+########################################
+# Final status
+########################################
+log "✅ Startup complete"
+log "Backend:  http://localhost:$BACKEND_PORT"
+log "Frontend: http://localhost:$FRONTEND_PORT"
+log "Press Ctrl+C to stop."
 
-# Keep script running to maintain services
 wait

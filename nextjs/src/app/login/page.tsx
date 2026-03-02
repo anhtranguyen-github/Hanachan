@@ -35,7 +35,7 @@ export default function LoginPage() {
             } else {
                 // Read 'next' param if available
                 const queryParams = new URLSearchParams(window.location.search);
-                const nextPath = queryParams.get('next') || '/dashboard';
+                const nextPath = queryParams.get('next') || '/chat';
                 router.push(nextPath);
                 router.refresh();
             }
