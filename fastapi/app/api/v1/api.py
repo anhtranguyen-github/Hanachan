@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .endpoints import chat, session, memory, maintenance, reading, speaking, video_dictation, sentences, videos
+from .endpoints import chat, session, memory, maintenance, reading, speaking, video_dictation, sentences, videos, fsrs
 
 api_router = APIRouter()
 api_router.include_router(chat.router, tags=["Chat"])
@@ -11,3 +11,4 @@ api_router.include_router(speaking.router, prefix="/practice", tags=["Speaking"]
 api_router.include_router(video_dictation.router, prefix="/dictation", tags=["Video Dictation"])
 api_router.include_router(sentences.router, prefix="/sentences", tags=["Sentences"])
 api_router.include_router(videos.router, prefix="/videos", tags=["Videos"])
+api_router.include_router(fsrs.router, prefix="/fsrs", tags=["FSRS"])
