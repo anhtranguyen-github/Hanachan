@@ -114,7 +114,11 @@ def save_sentence_to_library(
         
         sentence = service.create_sentence(user_id, sentence_data)
         
-        return f"Saved sentence to your library! ID: {sentence.id}\nJapanese: {sentence.japanese}\nEnglish: {sentence.english}"
+        return (
+            f"Saved sentence to your library! ID: {sentence.id}\n"
+            f"Japanese: {sentence.japanese}\n"
+            f"English: {sentence.english}"
+        )
     except Exception as e:
         return f"Failed to save sentence: {str(e)}"
 
@@ -153,7 +157,9 @@ def search_sentence_library(
                     lines.append(f"  Notes: {s.notes}")
             return "\n".join(lines)
         else:
-            sentences, total = service.list_sentences(user_id, search_query=query, limit=limit)
+            sentences, total = service.list_sentences(
+                user_id, search_query=query, limit=limit
+            )
             if not sentences:
                 return "No sentences found matching your query."
             
@@ -191,8 +197,12 @@ def analyze_sentence(sentence: str, user_id: str = "INJECTED") -> str:
         ]
         
         for token in analysis.tokens[:10]:  # Limit output
-            ku_info = f" [KU: {token.get('ku_id', 'N/A')}]" if token.get('ku_id') else ""
-            lines.append(f"  • {token['surface']} ({token['reading']}) - {token['pos']}{ku_info}")
+            ku_info = ""
+            if token.get('ku_id'):
+                ku_info = f" [KU: {token.get('ku_id', 'N/A')}]"
+            lines.append(
+                f"  • {token['surface']} ({token['reading']}) - {token['pos']}{ku_info}"
+            )
         
         if analysis.tokens[10:]:
             lines.append(f"  ... and {len(analysis.tokens) - 10} more")
@@ -203,7 +213,9 @@ def analyze_sentence(sentence: str, user_id: str = "INJECTED") -> str:
                 lines.append(f"  • {gp['pattern']}")
         
         if analysis.featured_ku_ids:
-            lines.append(f"\nFeatured Vocabulary: {len(analysis.featured_ku_ids)} items")
+            lines.append(
+                f"\nFeatured Vocabulary: {len(analysis.featured_ku_ids)} items"
+            )
         
         return "\n".join(lines)
     except Exception as e:
@@ -238,7 +250,10 @@ def get_sentences_for_lesson(
         sentences = service.get_lesson_sentences(user_id, [ku_id], limit=limit)
         
         if not sentences:
-            return f"No example sentences found in library for {ku['character']} ({ku['meaning']})."
+            return (
+                f"No example sentences found in library for "
+                f"{ku['character']} ({ku['meaning']})."
+            )
         
         lines = [
             f"Example sentences for {ku['character']} ({ku['meaning']}):",
@@ -278,19 +293,27 @@ def search_videos(
         results = service.search_videos(query, user_id, jlpt_level, limit)
         
         if not results:
-            return f"No videos found matching '{query}'. Try a different query or remove filters."
+            return (
+                f"No videos found matching '{query}'. "
+                f"Try a different query or remove filters."
+            )
         
         lines = [f"Found {len(results)} videos:\n"]
         
         for r in results:
-            jlpt_info = f" [N{r.jlpt_level}]" if r.jlpt_level else ""
+            jlpt_info = ""
+            if r.jlpt_level:
+                jlpt_info = f" [N{r.jlpt_level}]"
             sim_pct = int(r.similarity_score * 100)
             
             lines.append(f"📺 {r.title}{jlpt_info} (Match: {sim_pct}%)")
             if r.channel_name:
                 lines.append(f"   Channel: {r.channel_name}")
             if r.description:
-                desc = r.description[:100] + "..." if len(r.description) > 100 else r.description
+                if len(r.description) > 100:
+                    desc = r.description[:100] + "..."
+                else:
+                    desc = r.description
                 lines.append(f"   {desc}")
             lines.append("")
         
@@ -370,18 +393,34 @@ def get_due_reviews(user_id: str = "INJECTED", limit: int = 5) -> str:
         
         if not due_items:
             summary = service.get_learning_summary(user_id)
-            total_learned = summary["by_state"].get("learning", 0) + summary["by_state"].get("review", 0)
+            learning_count = summary["by_state"].get("learning", 0)
+            review_count = summary["by_state"].get("review", 0)
+            total_learned = learning_count + review_count
             
             if total_learned == 0:
-                return "You haven't started learning yet! Let me teach you some new content."
+                return (
+                    "You haven't started learning yet! "
+                    "Let me teach you some new content."
+                )
             
-            return "Great job! Nothing is due for review right now. You're all caught up! 🎉"
+            return (
+                "Great job! Nothing is due for review right now. "
+                "You're all caught up! 🎉"
+            )
         
         lines = [f"You have {len(due_items)} items due for review:\n"]
         
         for item in due_items[:limit]:
-            item_type = "📝" if item.item_type == "sentence" else "📚" if item.item_type == "ku" else "📺"
-            due_info = "Due now!" if item.priority_score > 1 else f"Due in {int(item.interval_days)} days"
+            if item.item_type == "sentence":
+                item_type = "📝"
+            elif item.item_type == "ku":
+                item_type = "📚"
+            else:
+                item_type = "📺"
+            if item.priority_score > 1:
+                due_info = "Due now!"
+            else:
+                due_info = f"Due in {int(item.interval_days)} days"
             lines.append(f"{item_type} {item.item_id} - {due_info}")
         
         lines.append("\nWould you like to start a review session?")
@@ -412,13 +451,17 @@ def should_teach_or_review(user_id: str = "INJECTED") -> str:
             lines.append(f"📚 You have {details['due_count']} items due for review.")
             lines.append(f"Suggested: Review {details['suggested_reviews']} items")
         elif action == "teach":
-            lines.append(f"📖 Your knowledge base has {details['review_count']} items in review.")
+            lines.append(
+                f"📖 Your knowledge base has {details['review_count']} items in review."
+            )
             lines.append(f"Suggested: Learn {details['suggested_new']} new items")
         else:  # mixed
             lines.append(f"📚 Due for review: {details.get('due_count', 0)}")
             if 'learning_count' in details:
                 lines.append(f"📝 In learning: {details['learning_count']}")
-            lines.append(f"Suggested: Review some, then learn {details['suggested_new']} new")
+            lines.append(
+                f"Suggested: Review some, then learn {details['suggested_new']} new"
+            )
         
         return "\n".join(lines)
     except Exception as e:
@@ -446,21 +489,27 @@ PLANNER_PROMPT_FSRS = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are Hanachan, a strategic Japanese language learning assistant with FSRS-based scheduling.\n"
-            "Your goal is to help users learn efficiently by balancing new content with spaced repetition reviews.\n\n"
-            "User session context:\n{thread_context}\n\n"
-            "Learning Mode: {mode}\n"
-            "Due Reviews: {due_count}\n\n"
-            "Instructions:\n"
-            "1. Analyze the user's message.\n"
-            "2. If they want to learn new content, use tools to find appropriate material.\n"
-            "3. If they have items due for review, prioritize those.\n"
-            "4. Use sentence library tools to find or save examples.\n"
-            "5. Use video search to find relevant immersion content.\n"
-            "6. Call should_teach_or_review if unsure what to do next.\n"
-            "7. Use get_due_reviews to check what needs review.\n"
-            "8. Use get_sentences_for_lesson when teaching specific vocabulary.\n\n"
-            "Current Date: {date}",
+            (
+                "You are Hanachan, a strategic Japanese language learning "
+                "assistant with FSRS-based scheduling.\n"
+                "Your goal is to help users learn efficiently by balancing "
+                "new content with spaced repetition reviews.\n\n"
+                "User session context:\n{thread_context}\n\n"
+                "Learning Mode: {mode}\n"
+                "Due Reviews: {due_count}\n\n"
+                "Instructions:\n"
+                "1. Analyze the user's message.\n"
+                "2. If they want to learn new content, use tools to find "
+                "appropriate material.\n"
+                "3. If they have items due for review, prioritize those.\n"
+                "4. Use sentence library tools to find or save examples.\n"
+                "5. Use video search to find relevant immersion content.\n"
+                "6. Call should_teach_or_review if unsure what to do next.\n"
+                "7. Use get_due_reviews to check what needs review.\n"
+                "8. Use get_sentences_for_lesson when teaching specific "
+                "vocabulary.\n\n"
+                "Current Date: {date}"
+            ),
         ),
         ("placeholder", "{messages}"),
     ]
@@ -547,7 +596,12 @@ def review_prompt_node(state: FSRSAgentState) -> Dict[str, Any]:
     
     if not due_items:
         return {
-            "messages": [AIMessage(content="🎉 Nothing due for review! Great job keeping up with your studies.")],
+            "messages": [AIMessage(
+                content=(
+                    "🎉 Nothing due for review! "
+                    "Great job keeping up with your studies."
+                )
+            )],
             "due_reviews": []
         }
     
@@ -666,7 +720,10 @@ def build_fsrs_graph():
     # Add nodes
     workflow.add_node("planner", fsrs_planner_node)
     workflow.add_node("tools", fsrs_tools_node)
-    workflow.add_node("reviewer", lambda state: {"review_result": "generate"})  # Simplified
+    workflow.add_node(
+        "reviewer",
+        lambda state: {"review_result": "generate"}  # Simplified
+    )
     workflow.add_node("lesson_delivery", lesson_delivery_node)
     workflow.add_node("review_prompt", review_prompt_node)
     workflow.add_node("decision", teach_or_review_decision_node)
@@ -676,8 +733,8 @@ def build_fsrs_graph():
     
     # Planner -> Tools or Decision
     workflow.add_conditional_edges(
-        "planner", 
-        should_continue_fsrs, 
+        "planner",
+        should_continue_fsrs,
         {"tools": "tools", "reviewer": "decision"}
     )
     
