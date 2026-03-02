@@ -105,7 +105,7 @@ BACKEND_PID=$!
 
 log "⏳ Waiting for backend health..."
 for i in {1..10}; do
-  if curl -sf "http://localhost:$BACKEND_PORT/health" >/dev/null; then
+  if curl -sf "http://localhost:$BACKEND_PORT/api/v1/health" >/dev/null; then
     log "✅ Backend ready"
     break
   fi
