@@ -4,7 +4,6 @@ API for managing user's personal sentence collection.
 """
 
 from typing import Any, Dict, List, Optional
-from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
@@ -12,7 +11,6 @@ from ....core.security import require_auth
 from ....services.sentence_library import (
     get_sentence_library_service,
     SentenceCreate,
-    Sentence
 )
 
 router = APIRouter()
