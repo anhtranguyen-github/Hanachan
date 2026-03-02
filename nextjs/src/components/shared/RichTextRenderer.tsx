@@ -9,7 +9,15 @@ const SANITIZE_CONFIG = {
         'code', 'pre', 'ul', 'ol', 'li'
     ],
     allowedAttributes: {
-        '*': ['class', 'style', 'color', 'background', 'background-color', 'font-size', 'font-weight', 'text-align']
+        '*': ['class']
+    },
+    allowedStyles: {
+        '*': {
+            'color': [/^#(0x)?[0-9a-f]+$/i, /^rgb\(/i, /^hsl\(/i, /^[a-z]+$/i],
+            'background-color': [/^#(0x)?[0-9a-f]+$/i, /^rgb\(/i, /^hsl\(/i, /^[a-z]+$/i],
+            'font-weight': [/^[0-9]+$/i, /^[a-z]+$/i],
+            'text-align': [/^[a-z]+$/i]
+        }
     }
 };
 
