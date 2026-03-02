@@ -1,13 +1,6 @@
-# ruff: noqa: S608
-"""
-Sentence Library Service
-Manages user's personal sentence collection with semantic search capabilities.
-"""
-
-from __future__ import annotations
-
 import json
 import uuid
+import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -15,6 +8,9 @@ from pydantic import BaseModel, Field
 
 from ..core.database import execute_query, execute_single
 from ..core.llm import make_embedding_model
+
+
+logger = logging.getLogger(__name__)
 
 
 class SentenceCreate(BaseModel):
@@ -162,7 +158,7 @@ class SentenceLibraryService:
             )
         except Exception as e:
             # Log but don't fail sentence creation
-            print(f"Failed to generate embedding for sentence {sentence_id}: {e}")
+            logger.error(f"Failed to generate embedding for sentence {sentence_id}: {e}")
     
     def get_sentence(self, sentence_id: str, user_id: str) -> Optional[Sentence]:
         """Get a sentence by ID with learning state."""
@@ -308,7 +304,7 @@ class SentenceLibraryService:
             
             return results
         except Exception as e:
-            print(f"Semantic search failed: {e}")
+            logger.error(f"Semantic search failed: {e}")
             return []
     
     def analyze_sentence(self, japanese: str, user_id: Optional[str] = None) -> SentenceAnalysis:
