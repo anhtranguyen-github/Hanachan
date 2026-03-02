@@ -37,8 +37,8 @@ router = APIRouter()
 @limiter.limit(f"{settings.rate_limit_per_minute}/minute")
 async def chat(request: Request, req: ChatRequest, token: dict = Depends(require_auth)):
     """Memory-augmented chat (non-streaming)."""
-    # Issue #8: user_id must match the JWT subject
-    if req.user_id != token.get("sub"):
+    # Issue #8: user_id must match the JWT subject, unless it is a service_role bypass
+    if req.user_id != token.get("sub") and token.get("role") != "service_role":
         raise HTTPException(status_code=403, detail="user_id does not match token")
 
     try:
@@ -75,8 +75,8 @@ async def chat_stream(
     token: dict = Depends(require_auth),
 ):
     """Streaming version of /chat using the new iterative LangGraph."""
-    # Issue #8: user_id must match the JWT subject
-    if req.user_id != token.get("sub"):
+    # Issue #8: user_id must match the JWT subject, unless it is a service_role bypass
+    if req.user_id != token.get("sub") and token.get("role") != "service_role":
         raise HTTPException(status_code=403, detail="user_id does not match token")
 
     async def event_stream() -> AsyncGenerator[str, None]:

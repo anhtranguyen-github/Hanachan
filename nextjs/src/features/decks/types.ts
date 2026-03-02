@@ -49,3 +49,32 @@ export interface LevelInteraction {
     ku_id: string;
     updates: Record<string, any>;
 }
+
+// Custom Decks
+export type DeckItemType = 'ku' | 'sentence' | 'video';
+
+export interface Deck {
+    id: string;
+    user_id: string;
+    name: string;
+    description?: string | null;
+    created_at?: string;
+    updated_at?: string;
+    items?: DeckItem[];
+    deck_items?: DeckItem[]; // For supabase join
+}
+
+export interface DeckCreate {
+    name: string;
+    description?: string;
+}
+
+export interface DeckItem {
+    id: string;
+    deck_id: string;
+    item_id: string;
+    item_type: DeckItemType;
+    created_at?: string;
+    // Optional joined data
+    item_details?: any;
+}
