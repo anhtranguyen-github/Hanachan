@@ -244,10 +244,8 @@ class SentenceLibraryService:
         where_clause = " AND ".join(conditions)
         
         # Get total count
-        count_result = execute_single(
-            f"SELECT COUNT(*) as total FROM public.sentences s WHERE {where_clause}",
-            tuple(params)
-        )
+        count_query = "SELECT COUNT(*) as total FROM public.sentences s WHERE " + where_clause
+        count_result = execute_single(count_query, tuple(params))
         total = count_result["total"] if count_result else 0
         
         # Get paginated results
@@ -404,9 +402,6 @@ class SentenceLibraryService:
     def _detect_grammar_points(self, tokens: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Detect grammar patterns in tokens."""
         grammar_points = []
-        
-        # Simple pattern matching for common grammar
-        surfaces = [t["surface"] for t in tokens]
         
         # Check for common patterns
         patterns = {
