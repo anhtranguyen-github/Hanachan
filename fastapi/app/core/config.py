@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import field_validator
+from pydantic import field_validator, Field
 
 
 # Resolve path to the .env that lives in the fastapi root
@@ -20,6 +20,7 @@ class Settings(BaseSettings):
         env_file=str(_ENV_FILE) if _ENV_FILE.exists() else None,
         env_file_encoding="utf-8",
         extra="ignore",
+        env_prefix="",
     )
 
     # OpenAI
@@ -33,8 +34,8 @@ class Settings(BaseSettings):
     # Supabase
     supabase_url: str = ""
     supabase_key: str = ""
-    supabase_service_key: str = ""  # New: dedicated secret for service_role access
-    supabase_jwt_secret: str = ""  # Required for JWT validation — no default
+    supabase_service_key: str = Field("", alias="SUPABASE_SERVICE_ROLE_KEY")
+    supabase_jwt_secret: str = ""
 
     # PostgreSQL (direct connection for memory modules)
     db_host: str = "127.0.0.1"

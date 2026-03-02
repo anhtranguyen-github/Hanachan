@@ -22,6 +22,7 @@ from ..services.memory import episodic_memory as ep_mem
 from ..services.memory import semantic_memory as sem_mem
 from ..services.memory import session_memory as sess_mem
 from ..services import learning_service as learn_serv
+from ..agents.deck_manager import DECK_TOOLS
 from ..core.llm import make_llm
 from ..schemas.memory import KnowledgeGraph
 
@@ -149,7 +150,7 @@ TOOLS = [
     get_user_learning_progress,
     search_knowledge_units,
     append_to_learning_notes,
-]
+] + DECK_TOOLS
 
 
 def tools_node(state: AgentState) -> Dict[str, Any]:
@@ -171,6 +172,11 @@ def tools_node(state: AgentState) -> Dict[str, Any]:
             "get_semantic_facts",
             "get_user_learning_progress",
             "append_to_learning_notes",
+            "create_user_deck",
+            "list_my_decks",
+            "add_to_deck",
+            "remove_from_deck",
+            "view_deck_contents",
         ]:
             args["user_id"] = user_id
 
@@ -206,7 +212,8 @@ PLANNER_PROMPT = ChatPromptTemplate.from_messages(
             "5. If it refers to past conversations, use 'get_episodic_memory'.\n"
             "6. If it's about their personal facts, interests, or goals, use 'get_semantic_facts'.\n"
             "7. If the user explicitly asks you to save or remember a note for a specific kanji/vocab/grammar, use 'append_to_learning_notes'.\n"
-            "8. If you have already gathered info, decide if you need more or if you can proceed to answer.\n\n"
+            "8. If the user wants to create, list, view, or manage their study decks, use the appropriate 'deck' tools.\n"
+            "9. If you have already gathered info, decide if you need more or if you can proceed to answer.\n\n"
             "Current Date: {date}",
         ),
         ("placeholder", "{messages}"),

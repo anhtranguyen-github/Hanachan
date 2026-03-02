@@ -29,9 +29,8 @@ def _get_jwks_client() -> PyJWKClient:
     """Get or create a cached JWKS client for token verification."""
     global _jwks_client
     if _jwks_client is None:
-        # Supabase JWKS endpoint - requires apikey for some projects
-        # We use the anon/service key to identify the project to the gateway
-        jwks_url = f"{settings.supabase_url}/auth/v1/.well-known/jwks.json?apikey={settings.supabase_key}"
+        # Supabase JWKS endpoint - usually doesn't need apikey if correctly configured
+        jwks_url = f"{settings.supabase_url}/auth/v1/.well-known/jwks.json"
         _jwks_client = PyJWKClient(jwks_url, cache_keys=True)
     return _jwks_client
 
