@@ -4,7 +4,7 @@
  * Import this wherever you need persistent memory in the Next.js app.
  */
 
-const MEMORY_API_BASE = process.env.MEMORY_API_URL ?? 'http://localhost:8765';
+const MEMORY_API_BASE = process.env.MEMORY_API_URL ?? 'http://localhost:8765/api/v1';
 const MEMORY_API_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // ---------------------------------------------------------------------------
