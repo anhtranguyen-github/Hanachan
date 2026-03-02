@@ -30,6 +30,7 @@ from ..services import learning_service as learn_serv
 from .memory_agent import (
     TOOLS as BASE_TOOLS
 )
+from .deck_manager import DECK_TOOLS
 
 logger = logging.getLogger(__name__)
 
@@ -478,7 +479,7 @@ FSRS_TOOLS = BASE_TOOLS + [
     get_video_learning_segments,
     get_due_reviews,
     should_teach_or_review,
-]
+] + DECK_TOOLS
 
 
 # -----------------------------------------------------------------------------
@@ -507,7 +508,9 @@ PLANNER_PROMPT_FSRS = ChatPromptTemplate.from_messages(
                 "6. Call should_teach_or_review if unsure what to do next.\n"
                 "7. Use get_due_reviews to check what needs review.\n"
                 "8. Use get_sentences_for_lesson when teaching specific "
-                "vocabulary.\n\n"
+                "vocabulary.\n"
+                "9. Use deck tools (create_user_deck, add_to_deck, etc.) "
+                "when the user wants to manage their custom collections.\n\n"
                 "Current Date: {date}"
             ),
         ),
@@ -669,6 +672,11 @@ def fsrs_tools_node(state: FSRSAgentState) -> Dict[str, Any]:
             "get_video_learning_segments",
             "get_due_reviews",
             "should_teach_or_review",
+            "create_user_deck",
+            "list_my_decks",
+            "add_to_deck",
+            "remove_from_deck",
+            "view_deck_contents",
         ]:
             args["user_id"] = user_id
         
