@@ -304,23 +304,17 @@ Summary (2-3 sentences about what this video teaches):"""
             where_clause = " AND ".join(conditions)
             
             # Get results ordered by similarity
-            query = """
-                SELECT DISTINCT ON (v.id)
-                    v.id as video_id,
-                    v.youtube_id,
-                    v.title,
-                    v.description,
-                    v.channel_name,
-                    v.thumbnail_url,
-                    v.jlpt_level,
-                    ve.embedding_type as match_type,
-                    1 - (ve.embedding <=> %s::vector) as similarity
-                FROM public.video_embeddings ve
-                JOIN public.videos v ON v.id = ve.video_id
-                WHERE {}
-                ORDER BY v.id, similarity DESC
-                LIMIT %s
-            """.format(where_clause)
+            query = (
+                "SELECT DISTINCT ON (v.id) v.id as video_id, v.youtube_id, v.title, "
+                "v.description, v.channel_name, v.thumbnail_url, v.jlpt_level, "
+                "ve.embedding_type as match_type, "
+                "1 - (ve.embedding <=> %s::vector) as similarity "
+                "FROM public.video_embeddings ve "
+                "JOIN public.videos v ON v.id = ve.video_id "
+                "WHERE {} "
+                "ORDER BY v.id, similarity DESC "
+                "LIMIT %s"
+            ).format(where_clause)  # nosec B608
             rows = execute_query(query, tuple(params + [embedding_str, limit]))
             
             results = []

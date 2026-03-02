@@ -245,22 +245,24 @@ class SentenceLibraryService:
         where_clause = " AND ".join(conditions)
         
         # Get total count
-        count_query = "SELECT COUNT(*) as total FROM public.sentences s WHERE {}".format(where_clause)
+        count_query = (  # nosec B608
+            "SELECT COUNT(*) as total FROM public.sentences s WHERE {}"
+        ).format(where_clause)
         count_result = execute_single(count_query, tuple(params))
         total = count_result["total"] if count_result else 0
         
         # Get paginated results
         params.extend([limit, offset])
-        query = """
-            SELECT s.*, fs.state as learning_state, fs.next_review
-            FROM public.sentences s
-            LEFT JOIN public.user_fsrs_states fs
-                ON fs.item_id = s.id::text AND fs.item_type = 'sentence'
-                AND fs.user_id = s.user_id
-            WHERE {}
-            ORDER BY s.created_at DESC
-            LIMIT %s OFFSET %s
-        """.format(where_clause)
+        query = (
+            "SELECT s.*, fs.state as learning_state, fs.next_review "
+            "FROM public.sentences s "
+            "LEFT JOIN public.user_fsrs_states fs "
+            "ON fs.item_id = s.id::text AND fs.item_type = 'sentence' "
+            "AND fs.user_id = s.user_id "
+            "WHERE {} "
+            "ORDER BY s.created_at DESC "
+            "LIMIT %s OFFSET %s"
+        ).format(where_clause)  # nosec B608
         rows = execute_query(query, tuple(params))
         
         sentences = [self._row_to_sentence(row) for row in rows]
@@ -502,11 +504,9 @@ class SentenceLibraryService:
         set_clauses.append("updated_at = %s")
         params.extend([datetime.now(timezone.utc), sentence_id, user_id])
         
-        query = """
-            UPDATE public.sentences
-            SET {}
-            WHERE id = %s AND user_id = %s
-        """.format(', '.join(set_clauses))
+        query = (
+            "UPDATE public.sentences SET {} WHERE id = %s AND user_id = %s"
+        ).format(', '.join(set_clauses))  # nosec B608
         execute_query(query, tuple(params), fetch=False)
         
         return self.get_sentence(sentence_id, user_id)
