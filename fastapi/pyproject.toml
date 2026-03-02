@@ -66,11 +66,14 @@ filterwarnings = [
 
 [tool.ruff.lint]
 select = ["E", "F", "S"]
-ignore = ["S608"]
+ignore = ["S608", "E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "app/services/sentence_library.py" = ["S608"]
 "app/services/video_embeddings.py" = ["S608"]
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 120
 
 [tool.coverage.run]
 source = ["app"]
