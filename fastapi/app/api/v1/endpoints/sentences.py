@@ -3,6 +3,7 @@ Sentence Library API Endpoints
 API for managing user's personal sentence collection.
 """
 
+import logging
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -14,6 +15,7 @@ from ....services.sentence_library import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class SentenceCreateRequest(BaseModel):
@@ -81,7 +83,8 @@ async def create_sentence(
             "sentence": sentence.model_dump()
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to create sentence for user {user['id']}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to create sentence")
 
 
 @router.get("/")

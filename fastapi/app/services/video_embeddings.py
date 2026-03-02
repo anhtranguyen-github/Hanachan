@@ -1,12 +1,5 @@
-# ruff: noqa: S608
-"""
-Video Embeddings Service
-Manages semantic embeddings for video content enabling similarity search.
-"""
-
-from __future__ import annotations
-
 import json
+import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -14,6 +7,9 @@ from pydantic import BaseModel
 
 from ..core.database import execute_query, execute_single
 from ..core.llm import make_embedding_model, make_llm
+
+
+logger = logging.getLogger(__name__)
 
 
 class VideoEmbedding(BaseModel):
@@ -146,7 +142,7 @@ class VideoEmbeddingsService:
                 fetch=False
             )
         except Exception as e:
-            print(f"Failed to store embedding for video {video_id}: {e}")
+            logger.error(f"Failed to store embedding for video {video_id}: {e}")
             raise
     
     def _summarize_text(self, text: str, max_chars: int = 500) -> str:
@@ -163,7 +159,7 @@ Summary (max 3 sentences):"""
             summary = response.content.strip()
             return summary[:max_chars]
         except Exception as e:
-            print(f"Summarization failed: {e}")
+            logger.error(f"Summarization failed: {e}")
             # Fallback to truncation
             return text[:max_chars] + "..." if len(text) > max_chars else text
     
@@ -226,7 +222,7 @@ Summary (max 3 sentences):"""
             }
             
         except Exception as e:
-            print(f"Transcript embedding failed: {e}")
+            logger.error(f"Transcript embedding failed: {e}")
             return {"success": False, "error": str(e)}
     
     def _summarize_transcript(self, transcript: str) -> str:
@@ -244,7 +240,7 @@ Summary (2-3 sentences about what this video teaches):"""
             response = llm.invoke(prompt)
             return response.content.strip()[:500]
         except Exception as e:
-            print(f"Transcript summarization failed: {e}")
+            logger.error(f"Transcript summarization failed: {e}")
             return transcript[:500] + "..."
     
     def _analyze_jlpt_distribution(self, segments: List[Dict]) -> Dict[int, int]:
@@ -334,7 +330,7 @@ Summary (2-3 sentences about what this video teaches):"""
             return results
             
         except Exception as e:
-            print(f"Video search failed: {e}")
+            logger.error(f"Video search failed: {e}")
             return []
     
     def find_similar_videos(
@@ -414,7 +410,7 @@ Summary (2-3 sentences about what this video teaches):"""
             return results
             
         except Exception as e:
-            print(f"Similar video search failed: {e}")
+            logger.error(f"Similar video search failed: {e}")
             return []
     
     def get_video_segments_for_learning(
@@ -592,7 +588,7 @@ Summary (2-3 sentences about what this video teaches):"""
             ]
             
         except Exception as e:
-            print(f"Video recommendation failed: {e}")
+            logger.error(f"Video recommendation failed: {e}")
             return []
     
     def _level_to_jlpt(self, level: int) -> int:
@@ -618,7 +614,7 @@ Summary (2-3 sentences about what this video teaches):"""
             )
             return True
         except Exception as e:
-            print(f"Failed to delete embeddings: {e}")
+            logger.error(f"Failed to delete embeddings: {e}")
             return False
 
 
