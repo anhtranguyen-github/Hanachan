@@ -98,8 +98,13 @@ class FSRSScheduler:
         """Calculate next stability after a review."""
         if rating == 1:  # Again (failed)
             # w[11] is failure stability factor
-            return max(0.1, self.w[11] * math.pow(difficulty, -self.w[12]) * 
-                      (math.pow(stability + 1, self.w[13]) - 1) * math.exp((1 - rating) * self.w[14]))
+            return max(
+                0.1,
+                self.w[11]
+                * math.pow(difficulty, -self.w[12])
+                * (math.pow(stability + 1, self.w[13]) - 1)
+                * math.exp((1 - rating) * self.w[14]),
+            )
         else:
             # Success path
             if state == "new":
@@ -112,9 +117,13 @@ class FSRSScheduler:
             retrievability = math.exp(math.log(0.9) * 1.0)  # Simplified
             
             next_s = stability * (
-                1 + math.exp(self.w[8]) * (11 - difficulty) * 
-                math.pow(stability, -self.w[9]) * 
-                (math.exp((1 - retrievability) * self.w[10]) - 1) * hard_penalty * easy_bonus
+                1
+                + math.exp(self.w[8])
+                * (11 - difficulty)
+                * math.pow(stability, -self.w[9])
+                * (math.exp((1 - retrievability) * self.w[10]) - 1)
+                * hard_penalty
+                * easy_bonus
             )
             return max(0.1, next_s)
     
@@ -396,6 +405,7 @@ class FSRSService:
         due_count = summary["due_today"]
         review_count = summary["by_state"].get("review", 0)
         learning_count = summary["by_state"].get("learning", 0)
+        # new_count removed - was unused
         
         # If many items are due, prioritize review
         if due_count >= 10:
