@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Sidebar } from '@/components/layout/Sidebar';
+import { Header } from '@/components/layout/Header';
 import { useUser } from '@/features/auth/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
@@ -16,15 +16,12 @@ export default function MainLayout({
     const router = useRouter();
     const pathname = usePathname();
 
-    const isChatbot = pathname.includes('/chatbot') || pathname.includes('/speaking');
-
     useEffect(() => {
-        // Enforce guest access restrictions manually as well
+        // Enforce guest access restrictions manually
         if (!loading && !user) {
-            const protectedRoutes = ['/learn', '/dashboard', '/review', '/immersion', '/reading', '/videos', '/decks', '/sentences', '/profile'];
+            const protectedRoutes = ['/learn', '/dashboard', '/review', '/immersion', '/reading', '/videos', '/decks', '/sentences', '/profile', '/chat'];
             const isProtected = protectedRoutes.some(path => pathname.startsWith(path));
 
-            // Note: /content stays accessible as static-content
             if (isProtected) {
                 router.replace('/');
             }
@@ -41,33 +38,31 @@ export default function MainLayout({
                             花
                         </div>
                     </div>
-                    <div className="flex gap-1.5">
-                        {[0, 1, 2].map(i => (
-                            <div key={i} className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
-                        ))}
-                    </div>
                 </div>
             </div>
         );
     }
 
+    // Special handling for the chat layout which needs to be flush and manage its own height
+    const isChat = pathname.startsWith('/chat');
+
     return (
-        <div className="flex h-[100dvh] overflow-hidden font-sans relative mesh-bg">
-            {/* Desktop sidebar - hidden on mobile */}
-            <Sidebar />
+        <div className="flex flex-col h-screen overflow-hidden font-sans relative mesh-bg">
+            {/* Global Top Header */}
+            <Header />
 
-            <div className="flex-1 flex flex-col overflow-hidden relative min-w-0">
-
+            {/* Main Content Area */}
+            <div className={clsx(
+                "flex-1 flex flex-col overflow-hidden",
+                isChat ? "min-h-0" : "relative"
+            )}>
                 <main className={clsx(
                     "flex-1 relative",
-                    pathname.includes('/chatbot') ? "overflow-hidden" : "overflow-auto custom-scrollbar",
-                    isChatbot ? "p-0" : "p-3 lg:p-4 pt-3 lg:pt-4",
-                    // Mobile: add top padding for fixed header, bottom padding for bottom nav
-                    "pt-[calc(3.5rem+0.75rem)] lg:pt-3 pb-[calc(4rem+0.75rem)] lg:pb-3"
+                    isChat ? "overflow-hidden min-h-0" : "overflow-auto custom-scrollbar p-4 lg:p-6"
                 )}>
                     {children}
                 </main>
-                <HanaClock />
+                {!isChat && <HanaClock />}
             </div>
         </div>
     );
