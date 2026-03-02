@@ -18,6 +18,13 @@ function getSupabaseFromRequest(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    const supabase = getSupabaseFromRequest(req);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const query = searchParams.get('q') || '';
     const jlptLevel = searchParams.get('jlpt') ? parseInt(searchParams.get('jlpt')!) : undefined;
@@ -26,12 +33,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ videos });
   } catch (error: any) {
     console.error('[API/videos] GET error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = getSupabaseFromRequest(req);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { youtube_id } = body;
 
@@ -43,6 +57,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ video });
   } catch (error: any) {
     console.error('[API/videos] POST error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

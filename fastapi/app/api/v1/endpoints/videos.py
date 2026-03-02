@@ -1,13 +1,41 @@
-from typing import Any, Dict, Optional
-from fastapi import APIRouter, HTTPException, Depends, Query
-from urllib.parse import urlparse
 import yt_dlp
+import logging
+import ipaddress
+import socket
+from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
+from fastapi import APIRouter, HTTPException, Depends, Query
 
 from ....core.security import require_auth
 from ....services.video_embeddings import get_video_embeddings_service
 from ....services.fsrs_service import get_fsrs_service
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+
+def is_safe_url(url: str) -> bool:
+    """Check if the URL is safe to fetch (non-local, non-private)."""
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return False
+        
+        hostname = parsed.hostname
+        if not hostname:
+            return False
+            
+        # Resolve hostname to IP
+        ip_addr = socket.gethostbyname(hostname)
+        ip = ipaddress.ip_address(ip_addr)
+        
+        # Check against private/local ranges
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast:
+            return False
+            
+        return True
+    except Exception:
+        return False
 
 
 @router.post("/{video_id}/embeddings")
@@ -201,7 +229,10 @@ async def get_video_fsrs_status(
 
 
 @router.get("/transcript/{youtube_id}")
-async def get_video_transcript(youtube_id: str):
+async def get_video_transcript(
+    youtube_id: str,
+    user: Dict[str, Any] = Depends(require_auth)
+):
     """
     Fetch the Japanese transcript for a given YouTube video ID.
     If multiple languages exist, attempts to fetch 'ja'.
@@ -215,7 +246,11 @@ async def get_video_transcript(youtube_id: str):
             'quiet': True,
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(youtube_id, download=False)
+            try:
+                info = ydl.extract_info(youtube_id, download=False)
+            except Exception as e:
+                logger.error(f"yt-dlp error for {youtube_id}: {e}")
+                raise HTTPException(status_code=400, detail="Invalid video ID or transcript not available")
             
             subs = info.get('subtitles', {})
             auto_subs = info.get('automatic_captions', {})
@@ -235,14 +270,14 @@ async def get_video_transcript(youtube_id: str):
             import urllib.request
             import json
             
-            # Validate URL scheme to prevent security issues (S310)
+            # Validate URL for SSRF
             url = json3_sub['url']
-            parsed = urlparse(url)
-            if parsed.scheme not in ('http', 'https'):
-                raise HTTPException(status_code=400, detail="Only HTTP/HTTPS URLs are allowed")
+            if not is_safe_url(url):
+                logger.warning(f"SSRF attempt blocked: {url} from YouTube info")
+                raise HTTPException(status_code=400, detail="Insecure URL target detected")
             
-            req = urllib.request.Request(url)  # noqa: S310
-            with urllib.request.urlopen(req) as response:  # noqa: S310  # nosec B310
+            req = urllib.request.Request(url)
+            with urllib.request.urlopen(req) as response:  # nosec B310
                 if response.status != 200:
                     raise HTTPException(status_code=500, detail="Failed to download transcript data")
                 json_data = json.loads(response.read().decode('utf-8'))
@@ -278,5 +313,7 @@ async def get_video_transcript(youtube_id: str):
             return {"transcript": transcript}
         
     except Exception as e:
-        print(f"Transcript Error for {youtube_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        if not isinstance(e, HTTPException):
+            logger.error(f"Transcript Error for {youtube_id}: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Internal server error")
+        raise
