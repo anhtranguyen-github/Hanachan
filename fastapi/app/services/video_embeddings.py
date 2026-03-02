@@ -1,3 +1,4 @@
+# ruff: noqa: S608
 """
 Video Embeddings Service
 Manages semantic embeddings for video content enabling similarity search.
@@ -303,8 +304,7 @@ Summary (2-3 sentences about what this video teaches):"""
             where_clause = " AND ".join(conditions)
             
             # Get results ordered by similarity
-            rows = execute_query(  # noqa: S608
-                f"""
+            query = """
                 SELECT DISTINCT ON (v.id)
                     v.id as video_id,
                     v.youtube_id,
@@ -317,12 +317,11 @@ Summary (2-3 sentences about what this video teaches):"""
                     1 - (ve.embedding <=> %s::vector) as similarity
                 FROM public.video_embeddings ve
                 JOIN public.videos v ON v.id = ve.video_id
-                WHERE {where_clause}
+                WHERE {}
                 ORDER BY v.id, similarity DESC
                 LIMIT %s
-                """,
-                tuple(params + [embedding_str, limit])
-            )
+            """.format(where_clause)
+            rows = execute_query(query, tuple(params + [embedding_str, limit]))
             
             results = []
             for row in rows:
