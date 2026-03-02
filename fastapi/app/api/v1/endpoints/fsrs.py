@@ -3,11 +3,11 @@ FSRS API Endpoints
 API for spaced repetition scheduling and review management.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, HTTPException
 
 from ....core.security import require_auth
-from ....services.fsrs_service import get_fsrs_service, FSRSSchedule, FSRSReviewResult
+from ....services.fsrs_service import get_fsrs_service
 
 router = APIRouter()
 

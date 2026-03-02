@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from fastapi import APIRouter, HTTPException, Depends, Query
 from urllib.parse import urlparse
 import yt_dlp

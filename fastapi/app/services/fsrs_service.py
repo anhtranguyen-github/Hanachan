@@ -396,7 +396,6 @@ class FSRSService:
         due_count = summary["due_today"]
         review_count = summary["by_state"].get("review", 0)
         learning_count = summary["by_state"].get("learning", 0)
-        new_count = summary["by_state"].get("new", 0)
         
         # If many items are due, prioritize review
         if due_count >= 10:

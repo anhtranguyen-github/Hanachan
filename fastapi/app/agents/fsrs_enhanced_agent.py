@@ -8,7 +8,6 @@ Extends the base memory agent with:
 
 from __future__ import annotations
 
-import json
 import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Annotated
@@ -20,24 +19,15 @@ from langchain_core.tools import tool
 from langgraph.graph import StateGraph, END
 
 from ..core.llm import make_llm
-from ..services.fsrs_service import get_fsrs_service, FSRSSchedule
+from ..services.fsrs_service import get_fsrs_service
 from ..services.sentence_library import (
-    get_sentence_library_service, 
+    get_sentence_library_service,
     SentenceCreate,
-    Sentence
 )
-from ..services.video_embeddings import get_video_embeddings_service, VideoSearchResult
-from ..services.memory import episodic_memory as ep_mem
+from ..services.video_embeddings import get_video_embeddings_service
 from ..services.memory import session_memory as sess_mem
 from ..services import learning_service as learn_serv
 from .memory_agent import (
-    AgentState as BaseAgentState,
-    get_episodic_memory,
-    get_semantic_facts,
-    get_user_learning_progress,
-    search_knowledge_units,
-    append_to_learning_notes,
-    tools_node,
     TOOLS as BASE_TOOLS
 )
 
@@ -192,11 +182,11 @@ def analyze_sentence(sentence: str, user_id: str = "INJECTED") -> str:
         analysis = service.analyze_sentence(sentence, user_id)
         
         lines = [
-            f"Sentence Analysis:",
+            "Sentence Analysis:",
             f"Japanese: {analysis.japanese}",
             f"Estimated JLPT Level: N{analysis.jlpt_level}",
             f"Difficulty Score: {analysis.difficulty_score}/100",
-            f"",
+            "",
             f"Tokens ({len(analysis.tokens)}):"
         ]
         
@@ -208,7 +198,7 @@ def analyze_sentence(sentence: str, user_id: str = "INJECTED") -> str:
             lines.append(f"  ... and {len(analysis.tokens) - 10} more")
         
         if analysis.grammar_points:
-            lines.append(f"\nDetected Grammar Patterns:")
+            lines.append("\nDetected Grammar Patterns:")
             for gp in analysis.grammar_points[:5]:
                 lines.append(f"  • {gp['pattern']}")
         
@@ -293,7 +283,6 @@ def search_videos(
         lines = [f"Found {len(results)} videos:\n"]
         
         for r in results:
-            match_info = f"[{r.match_type}]" if r.match_type else ""
             jlpt_info = f" [N{r.jlpt_level}]" if r.jlpt_level else ""
             sim_pct = int(r.similarity_score * 100)
             
@@ -395,7 +384,7 @@ def get_due_reviews(user_id: str = "INJECTED", limit: int = 5) -> str:
             due_info = "Due now!" if item.priority_score > 1 else f"Due in {int(item.interval_days)} days"
             lines.append(f"{item_type} {item.item_id} - {due_info}")
         
-        lines.append(f"\nWould you like to start a review session?")
+        lines.append("\nWould you like to start a review session?")
         return "\n".join(lines)
     except Exception as e:
         return f"Failed to get reviews: {str(e)}"
