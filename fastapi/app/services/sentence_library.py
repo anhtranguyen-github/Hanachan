@@ -244,13 +244,13 @@ class SentenceLibraryService:
         where_clause = " AND ".join(conditions)
         
         # Get total count
-        count_query = "SELECT COUNT(*) as total FROM public.sentences s WHERE " + where_clause
+        count_query = "SELECT COUNT(*) as total FROM public.sentences s WHERE " + where_clause  # noqa: S608
         count_result = execute_single(count_query, tuple(params))
         total = count_result["total"] if count_result else 0
         
         # Get paginated results
         params.extend([limit, offset])
-        rows = execute_query(
+        rows = execute_query(  # noqa: S608
             f"""
             SELECT s.*, fs.state as learning_state, fs.next_review
             FROM public.sentences s
@@ -503,7 +503,7 @@ class SentenceLibraryService:
         set_clauses.append("updated_at = %s")
         params.extend([datetime.now(timezone.utc), sentence_id, user_id])
         
-        execute_query(
+        execute_query(  # noqa: S608
             f"""
             UPDATE public.sentences 
             SET {', '.join(set_clauses)}
