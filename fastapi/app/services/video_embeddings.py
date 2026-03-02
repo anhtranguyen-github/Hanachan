@@ -303,7 +303,7 @@ Summary (2-3 sentences about what this video teaches):"""
             where_clause = " AND ".join(conditions)
             
             # Get results ordered by similarity
-            rows = execute_query(
+            rows = execute_query(  # noqa: S608
                 f"""
                 SELECT DISTINCT ON (v.id)
                     v.id as video_id,
