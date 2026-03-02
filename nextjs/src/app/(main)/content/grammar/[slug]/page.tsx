@@ -78,11 +78,20 @@ export default async function GrammarDetailPage({ params }: { params: { slug: st
                             <div className="pt-2 border-t border-border/30">
                                 <p className="text-[9px] font-black text-foreground/30 uppercase tracking-widest mb-2">Structure</p>
                                 <div className="flex flex-wrap gap-2">
-                                    {Object.entries(structure.variants).filter(([, v]) => v).slice(0, 2).map(([name, code]: [string, any]) => (
-                                        <div key={name} className="px-3 py-1.5 bg-[#B7E4C7]/10 border border-[#B7E4C7]/20 rounded-xl">
-                                            <span className="text-xs font-black text-[#5A9E72] jp-text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(typeof code === 'string' ? code : JSON.stringify(code), SANITIZE_CONFIG) }} />
-                                        </div>
-                                    ))}
+                                    {Object.entries(structure.variants).filter(([, v]) => v).slice(0, 2).map(([name, code]: [string, any]) => {
+                                        // Pick the first pattern to show in the preview if it's an object
+                                        const previewHtml = typeof code === 'string'
+                                            ? code
+                                            : (typeof code === 'object' && code !== null)
+                                                ? (Object.values(code)[0] as string)
+                                                : "Structure info unavailable";
+
+                                        return (
+                                            <div key={name} className="px-3 py-1.5 bg-[#B7E4C7]/10 border border-[#B7E4C7]/20 rounded-xl">
+                                                <span className="text-xs font-black text-[#5A9E72] jp-text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewHtml, SANITIZE_CONFIG) }} />
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
@@ -146,14 +155,16 @@ export default async function GrammarDetailPage({ params }: { params: { slug: st
                                 </div>
                                 <h2 className="text-xs font-black text-foreground/50 uppercase tracking-widest">Structure</h2>
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-4">
                                 {Object.entries(structure.variants).filter(([, v]) => v).map(([name, code]: [string, any]) => {
-                                    const displayMap = typeof code === 'object' ? code : { [name]: code };
+                                    const displayMap = typeof code === 'string' ? { [name]: code } : code;
                                     return Object.entries(displayMap).map(([subName, html]: [string, any]) => (
-                                        <div key={subName} className="space-y-1">
-                                            <span className="text-[8px] font-black uppercase tracking-widest text-foreground/20">{subName}</span>
+                                        <div key={subName} className="space-y-2">
+                                            {subName !== 'standard' && (
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-[#5A9E72] bg-[#B7E4C7]/10 px-2 py-0.5 rounded-md border border-[#B7E4C7]/20 inline-block">{subName}</span>
+                                            )}
                                             <div
-                                                className="p-2.5 bg-surface-muted/40 rounded-xl border border-border text-xs font-black text-foreground/60 jp-text leading-relaxed"
+                                                className="p-3.5 bg-surface-muted/40 rounded-2xl border border-border text-sm font-black text-foreground/80 jp-text leading-relaxed shadow-inner"
                                                 dangerouslySetInnerHTML={{ __html: sanitizeHtml(html, SANITIZE_CONFIG) }}
                                             />
                                         </div>
