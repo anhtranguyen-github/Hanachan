@@ -105,8 +105,18 @@ export async function getKnowledgeUnit(type: string, slug: string) {
 
             // Map resources and structure for grammar
             item.resources = details.external_links || { online: [], offline: [] };
+
+            let parsedStructure = details.structure;
+            if (typeof details.structure === 'string' && (details.structure.trim().startsWith('{') || details.structure.trim().startsWith('['))) {
+                try {
+                    parsedStructure = JSON.parse(details.structure);
+                } catch (e) {
+                    console.warn("Failed to parse grammar structure JSON:", e);
+                }
+            }
+
             item.structure = {
-                variants: { standard: details.structure },
+                variants: { standard: parsedStructure },
                 patterns: []
             };
             item.ku_grammar = details;
