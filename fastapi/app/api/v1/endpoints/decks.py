@@ -1,8 +1,17 @@
+"""
+Deck API Endpoints
+
+Architecture Note:
+  Auth removed from FastAPI per architecture rules.
+  FastAPI = Agents ONLY (stateless, no auth)
+  Auth handled by Supabase/Next.js (BFF pattern)
+  user_id passed in request body/query from trusted Next.js layer
+"""
+
 from typing import Any, Dict, List
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from uuid import UUID
 
-from ....core.security import require_auth
 from ....core.rate_limit import limiter
 from ....core.config import settings
 from ....services.deck_service import get_deck_service
@@ -16,12 +25,16 @@ router = APIRouter()
 async def create_deck(
     request: Request,
     deck_in: DeckCreate,
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
-    """Create a new custom deck."""
+    """Create a new custom deck.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+    """
     service = get_deck_service()
     deck = service.create_deck(
-        user_id=str(user["id"]),
+        user_id=user_id,
         name=deck_in.name,
         description=deck_in.description
     )
@@ -32,11 +45,15 @@ async def create_deck(
 @limiter.limit(f"{settings.rate_limit_per_minute}/minute")
 async def list_decks(
     request: Request,
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
-    """List all custom decks for the current user."""
+    """List all custom decks for the current user.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+    """
     service = get_deck_service()
-    decks = service.get_user_decks(user_id=str(user["id"]))
+    decks = service.get_user_decks(user_id=user_id)
     return decks
 
 
@@ -45,11 +62,15 @@ async def list_decks(
 async def get_deck(
     request: Request,
     deck_id: UUID,
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
-    """Get details of a specific deck including its items."""
+    """Get details of a specific deck including its items.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+    """
     service = get_deck_service()
-    deck = service.get_deck_details(deck_id=str(deck_id), user_id=str(user["id"]))
+    deck = service.get_deck_details(deck_id=str(deck_id), user_id=user_id)
     if not deck:
         raise HTTPException(status_code=404, detail="Deck not found")
     return deck
@@ -61,13 +82,17 @@ async def add_item_to_deck(
     request: Request,
     deck_id: UUID,
     item_in: DeckItemCreate,
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
-    """Add an item (KU, sentence, or video) to a deck."""
+    """Add an item (KU, sentence, or video) to a deck.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+    """
     service = get_deck_service()
     try:
         item = service.add_item_to_deck(
-            user_id=str(user["id"]),
+            user_id=user_id,
             deck_id=str(deck_id),
             item_id=str(item_in.item_id),
             item_type=item_in.item_type
@@ -84,12 +109,16 @@ async def remove_item_from_deck(
     deck_id: UUID,
     item_type: str,
     item_id: UUID,
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
-    """Remove an item from a deck."""
+    """Remove an item from a deck.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+    """
     service = get_deck_service()
     success = service.remove_item_from_deck(
-        user_id=str(user["id"]),
+        user_id=user_id,
         deck_id=str(deck_id),
         item_id=str(item_id),
         item_type=item_type
@@ -104,11 +133,15 @@ async def remove_item_from_deck(
 async def delete_deck(
     request: Request,
     deck_id: UUID,
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
-    """Delete an entire deck."""
+    """Delete an entire deck.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+    """
     service = get_deck_service()
-    success = service.delete_deck(user_id=str(user["id"]), deck_id=str(deck_id))
+    success = service.delete_deck(user_id=user_id, deck_id=str(deck_id))
     if not success:
         raise HTTPException(status_code=404, detail="Deck not found")
     return {"success": True}

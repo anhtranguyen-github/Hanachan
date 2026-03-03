@@ -1,14 +1,19 @@
 """
 Sentence Library API Endpoints
 API for managing user's personal sentence collection.
+
+Architecture Note:
+  Auth removed from FastAPI per architecture rules.
+  FastAPI = Agents ONLY (stateless, no auth)
+  Auth handled by Supabase/Next.js (BFF pattern)
+  user_id passed in request body/query from trusted Next.js layer
 """
 
 import logging
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from ....core.security import require_auth
 from ....services.sentence_library import (
     get_sentence_library_service,
     SentenceCreate,
@@ -49,14 +54,17 @@ class SentenceUpdateRequest(BaseModel):
 @router.post("/", response_model=Dict[str, Any])
 async def create_sentence(
     request: SentenceCreateRequest,
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Create a new sentence in the user's library.
     Automatically analyzes the sentence for tokens, grammar, and difficulty.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
     service = get_sentence_library_service()
-    
+
     sentence_data = SentenceCreate(
         japanese=request.japanese,
         english=request.english,
@@ -70,20 +78,20 @@ async def create_sentence(
         category=request.category,
         notes=request.notes
     )
-    
+
     try:
         sentence = service.create_sentence(
-            user_id=str(user["id"]),
+            user_id=user_id,
             data=sentence_data,
             auto_analyze=True
         )
-        
+
         return {
             "success": True,
             "sentence": sentence.model_dump()
         }
     except Exception as e:
-        logger.error(f"Failed to create sentence for user {user['id']}: {e}", exc_info=True)
+        logger.error(f"Failed to create sentence for user {user_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to create sentence")
 
 
@@ -96,15 +104,18 @@ async def list_sentences(
     search: Optional[str] = None,
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     List sentences in the user's library with optional filters.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
     service = get_sentence_library_service()
-    
+
     sentences, total = service.list_sentences(
-        user_id=str(user["id"]),
+        user_id=user_id,
         category=category,
         jlpt_level=jlpt_level,
         is_favorite=is_favorite,
@@ -113,7 +124,7 @@ async def list_sentences(
         limit=limit,
         offset=offset
     )
-    
+
     return {
         "sentences": [s.model_dump() for s in sentences],
         "total": total,
@@ -128,11 +139,14 @@ async def search_sentences(
     semantic: bool = True,
     min_similarity: float = Query(0.6, ge=0.0, le=1.0),
     limit: int = Query(10, ge=1, le=50),
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Search sentences by semantic similarity or text match.
-    
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+
     Args:
         query: Search query (Japanese, English, or meaning description)
         semantic: If True, uses AI embeddings for meaning-based search
@@ -140,15 +154,15 @@ async def search_sentences(
         limit: Maximum results
     """
     service = get_sentence_library_service()
-    
+
     if semantic:
         results = service.semantic_search(
-            user_id=str(user["id"]),
+            user_id=user_id,
             query=query,
             limit=limit,
             min_similarity=min_similarity
         )
-        
+
         return {
             "results": [
                 {
@@ -162,11 +176,11 @@ async def search_sentences(
         }
     else:
         sentences, total = service.list_sentences(
-            user_id=str(user["id"]),
+            user_id=user_id,
             search_query=query,
             limit=limit
         )
-        
+
         return {
             "results": [s.model_dump() for s in sentences],
             "total": total,
@@ -178,17 +192,20 @@ async def search_sentences(
 @router.get("/{sentence_id}")
 async def get_sentence(
     sentence_id: str,
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Get a specific sentence by ID.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
     service = get_sentence_library_service()
-    sentence = service.get_sentence(sentence_id, str(user["id"]))
-    
+    sentence = service.get_sentence(sentence_id, user_id)
+
     if not sentence:
         raise HTTPException(status_code=404, detail="Sentence not found")
-    
+
     return {
         "sentence": sentence.model_dump()
     }
@@ -198,24 +215,27 @@ async def get_sentence(
 async def update_sentence(
     sentence_id: str,
     request: SentenceUpdateRequest,
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Update a sentence's properties.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
     service = get_sentence_library_service()
-    
+
     # Build updates dict from non-None fields
     updates = {}
     for field, value in request.model_dump(exclude_unset=True).items():
         if value is not None:
             updates[field] = value
-    
-    sentence = service.update_sentence(sentence_id, str(user["id"]), updates)
-    
+
+    sentence = service.update_sentence(sentence_id, user_id, updates)
+
     if not sentence:
         raise HTTPException(status_code=404, detail="Sentence not found")
-    
+
     return {
         "success": True,
         "sentence": sentence.model_dump()
@@ -225,17 +245,20 @@ async def update_sentence(
 @router.delete("/{sentence_id}")
 async def delete_sentence(
     sentence_id: str,
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Delete a sentence from the library.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
     service = get_sentence_library_service()
-    success = service.delete_sentence(sentence_id, str(user["id"]))
-    
+    success = service.delete_sentence(sentence_id, user_id)
+
     if not success:
         raise HTTPException(status_code=404, detail="Sentence not found")
-    
+
     return {
         "success": True,
         "message": "Sentence deleted"
@@ -246,28 +269,31 @@ async def delete_sentence(
 async def submit_sentence_review(
     sentence_id: str,
     rating: int = Query(..., ge=1, le=4),
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Submit a review rating for a sentence.
-    
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+
     Args:
         rating: 1=Again (forgot), 2=Hard, 3=Good, 4=Easy
     """
     from ....services.fsrs_service import get_fsrs_service
-    
+
     if rating not in [1, 2, 3, 4]:
         raise HTTPException(status_code=400, detail="Rating must be 1-4")
-    
+
     service = get_fsrs_service()
     result = service.submit_review(
-        user_id=str(user["id"]),
+        user_id=user_id,
         item_id=sentence_id,
         item_type="sentence",
         rating=rating,
         facet="meaning"
     )
-    
+
     return {
         "success": True,
         "result": result.model_dump()
@@ -277,21 +303,24 @@ async def submit_sentence_review(
 @router.get("/{sentence_id}/analysis")
 async def analyze_sentence(
     sentence_id: str,
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Get detailed analysis for a sentence.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
     service = get_sentence_library_service()
-    
+
     # First get the sentence
-    sentence = service.get_sentence(sentence_id, str(user["id"]))
+    sentence = service.get_sentence(sentence_id, user_id)
     if not sentence:
         raise HTTPException(status_code=404, detail="Sentence not found")
-    
+
     # Analyze it
-    analysis = service.analyze_sentence(sentence.japanese, str(user["id"]))
-    
+    analysis = service.analyze_sentence(sentence.japanese, user_id)
+
     return {
         "sentence_id": sentence_id,
         "analysis": analysis.model_dump()

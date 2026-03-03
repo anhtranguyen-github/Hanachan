@@ -1,12 +1,17 @@
 """
 FSRS API Endpoints
 API for spaced repetition scheduling and review management.
+
+Architecture Note:
+  Auth removed from FastAPI per architecture rules.
+  FastAPI = Agents ONLY (stateless, no auth)
+  Auth handled by Supabase/Next.js (BFF pattern)
+  user_id passed in request body/query from trusted Next.js layer
 """
 
 from typing import Any, Dict, Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
-from ....core.security import require_auth
 from ....services.fsrs_service import get_fsrs_service
 
 router = APIRouter()
@@ -16,22 +21,25 @@ router = APIRouter()
 async def get_due_items(
     item_type: Optional[str] = None,
     limit: int = 20,
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Get items due for review based on FSRS scheduling.
-    
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+
     Args:
         item_type: Optional filter by type ('ku', 'sentence', 'video')
         limit: Maximum number of items to return
     """
     service = get_fsrs_service()
     due_items = service.get_due_items(
-        user_id=str(user["id"]),
+        user_id=user_id,
         item_type=item_type,
         limit=limit
     )
-    
+
     return {
         "items": [item.model_dump() for item in due_items],
         "total": len(due_items),
@@ -41,32 +49,38 @@ async def get_due_items(
 
 @router.get("/summary")
 async def get_learning_summary(
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Get a summary of the user's learning state.
     Includes counts by type and state, plus items due today.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
     service = get_fsrs_service()
-    summary = service.get_learning_summary(str(user["id"]))
-    
+    summary = service.get_learning_summary(user_id)
+
     return summary
 
 
 @router.get("/recommendation")
 async def get_learning_recommendation(
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Get a recommendation for whether to teach new content or review.
-    
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+
     Returns:
         action: 'teach', 'review', or 'mixed'
         details: Reasoning and suggested counts
     """
     service = get_fsrs_service()
-    action, details = service.should_teach_or_review(str(user["id"]))
-    
+    action, details = service.should_teach_or_review(user_id)
+
     return {
         "action": action,
         "details": details,
@@ -80,35 +94,38 @@ async def submit_review(
     item_id: str,
     rating: int,
     facet: str = "meaning",
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Submit a review rating for an item.
-    
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+
     Args:
         item_type: Type of item ('ku', 'sentence', 'video')
         item_id: ID of the item
         rating: Review rating (1=Again, 2=Hard, 3=Good, 4=Easy)
         facet: For KU items, the facet being reviewed (meaning, reading, cloze)
-    
+
     Returns:
         Updated FSRS state with next review date
     """
     if rating not in [1, 2, 3, 4]:
         raise HTTPException(status_code=400, detail="Rating must be 1-4")
-    
+
     if item_type not in ["ku", "sentence", "video"]:
         raise HTTPException(status_code=400, detail="Invalid item type")
-    
+
     service = get_fsrs_service()
     result = service.submit_review(
-        user_id=str(user["id"]),
+        user_id=user_id,
         item_id=item_id,
         item_type=item_type,
         rating=rating,
         facet=facet
     )
-    
+
     return {
         "success": True,
         "result": result.model_dump()
@@ -119,19 +136,22 @@ async def submit_review(
 async def get_review_logs(
     item_type: Optional[str] = None,
     limit: int = 50,
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Get review history for the user.
-    
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+
     Args:
         item_type: Optional filter by item type
         limit: Maximum number of logs to return
     """
     from ....core.database import execute_query
-    
+
     query = """
-        SELECT 
+        SELECT
             item_id,
             item_type,
             facet,
@@ -144,18 +164,19 @@ async def get_review_logs(
         FROM public.fsrs_review_logs
         WHERE user_id = %s
     """
-    params = [str(user["id"])]
-    
+    params = [user_id]
+
     if item_type:
         query += " AND item_type = %s"
         params.append(item_type)
-    
+
     query += " ORDER BY reviewed_at DESC LIMIT %s"
     params.append(limit)
-    
-    logs = execute_query(query, tuple(params))
-    
+
+    rows = execute_query(query, tuple(params))
+
     return {
-        "logs": [dict(log) for log in logs],
-        "total": len(logs)
+        "logs": rows or [],
+        "total": len(rows) if rows else 0,
+        "limit": limit
     }

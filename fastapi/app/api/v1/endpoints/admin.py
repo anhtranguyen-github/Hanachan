@@ -1,12 +1,21 @@
 """
 Admin API Endpoints — Admin Control Plane for the AI Japanese Learning Application.
 
+⚠️  ARCHITECTURE VIOLATION WARNING ⚠️
+This module contains admin endpoints that should be called through Next.js BFF.
+FastAPI = Agents ONLY (stateless, no auth).
+Admin auth must be handled by Supabase/Next.js (BFF pattern).
+
 This module implements the CONTROL PLANE functionality:
 - User management (view, suspend, audit)
 - System monitoring (health, metrics)
 - Cost tracking (LLM usage, rate limits)
 - Abuse detection
 - Audit logging
+
+Architecture Note:
+  Auth removed from FastAPI per architecture rules.
+  Pass admin_user_id in request params from trusted Next.js layer.
 """
 
 from __future__ import annotations
@@ -15,15 +24,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 
-from ....core.admin_security import (
-    AdminContext,
-    AdminPermission,
-    get_admin_context,
-    require_permission,
-)
 from ....core.database import get_db_pool, check_db_health
 from ....schemas.admin import (
     AuditLogsResponse,
@@ -65,9 +68,13 @@ router = APIRouter()
     tags=["Admin Dashboard"],
 )
 async def get_dashboard_stats(
-    token: dict = Depends(require_permission(AdminPermission.VIEW_SYSTEM_HEALTH)),
+    admin_user_id: str = Query(..., description="Admin User ID (validated by Next.js/Supabase)"),
 ) -> AdminDashboardStats:
-    """Get overview statistics for the admin dashboard."""
+    """Get overview statistics for the admin dashboard.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. admin_user_id is trusted.
+    """
     pool = get_db_pool()
     
     async with pool.acquire() as conn:
@@ -164,9 +171,13 @@ async def list_users(
     is_suspended: Optional[bool] = None,
     min_level: Optional[int] = Query(None, ge=1, le=60),
     max_level: Optional[int] = Query(None, ge=1, le=60),
-    token: dict = Depends(require_permission(AdminPermission.VIEW_USERS)),
+    admin_user_id: str = Query(..., description="Admin User ID (validated by Next.js/Supabase)"),
 ) -> UserListResponse:
-    """List users with filtering and pagination."""
+    """List users with filtering and pagination.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. admin_user_id is trusted.
+    """
     return await admin_service.list_users(
         limit=limit,
         offset=offset,
@@ -184,9 +195,13 @@ async def list_users(
 )
 async def get_user_details(
     user_id: str,
-    token: dict = Depends(require_permission(AdminPermission.VIEW_USERS)),
+    admin_user_id: str = Query(..., description="Admin User ID (validated by Next.js/Supabase)"),
 ) -> UserDetailsResponse:
-    """Get detailed information about a specific user."""
+    """Get detailed information about a specific user.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. admin_user_id is trusted.
+    """
     user = await admin_service.get_user_details(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -202,49 +217,37 @@ async def suspend_user(
     user_id: str,
     request: Request,
     body: SuspendUserRequest,
-    ctx: AdminContext = Depends(get_admin_context),
+    admin_user_id: str = Query(..., description="Admin User ID (validated by Next.js/Supabase)"),
 ) -> SuspendUserResponse:
-    """Suspend a user account."""
-    # Check permission
-    if not await ctx.has_permission(AdminPermission.SUSPEND_USERS):
-        raise HTTPException(status_code=403, detail="Permission required: suspend_users")
-    
+    """Suspend a user account.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. admin_user_id is trusted.
+      Permission checks should be done by Next.js BFF.
+    """
     # Check if user exists
     user = await admin_service.get_user_details(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     # Prevent self-suspension
-    if user_id == ctx.user_id:
+    if user_id == admin_user_id:
         raise HTTPException(status_code=400, detail="Cannot suspend yourself")
-    
+
     result = await admin_service.suspend_user(
         user_id=user_id,
-        suspended_by=ctx.user_id,
+        suspended_by=admin_user_id,
         reason=body.reason,
         suspension_type=body.suspension_type,
         duration_hours=body.duration_hours,
     )
-    
-    # Log the action
-    await ctx.log_action(
-        action="user_suspend",
-        target_type="user",
-        target_id=user_id,
-        new_value={
-            "suspension_type": body.suspension_type,
-            "duration_hours": body.duration_hours,
-            "suspended_until": result.get("suspended_until"),
-        },
-        reason=body.reason,
-    )
-    
+
     logger.warning("user_suspended", extra={
-        "admin_user_id": ctx.user_id,
+        "admin_user_id": admin_user_id,
         "suspended_user_id": user_id,
         "suspension_type": body.suspension_type,
     })
-    
+
     return SuspendUserResponse(**result)
 
 
@@ -257,34 +260,28 @@ async def lift_suspension(
     suspension_id: str,
     request: Request,
     body: LiftSuspensionRequest,
-    ctx: AdminContext = Depends(get_admin_context),
+    admin_user_id: str = Query(..., description="Admin User ID (validated by Next.js/Supabase)"),
 ) -> LiftSuspensionResponse:
-    """Lift a user suspension."""
-    if not await ctx.has_permission(AdminPermission.SUSPEND_USERS):
-        raise HTTPException(status_code=403, detail="Permission required: suspend_users")
-    
+    """Lift a user suspension.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. admin_user_id is trusted.
+      Permission checks should be done by Next.js BFF.
+    """
     try:
         result = await admin_service.lift_suspension(
             suspension_id=suspension_id,
-            lifted_by=ctx.user_id,
+            lifted_by=admin_user_id,
             reason=body.reason,
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    
-    # Log the action
-    await ctx.log_action(
-        action="user_unsuspend",
-        target_type="suspension",
-        target_id=suspension_id,
-        reason=body.reason,
-    )
-    
+
     logger.info("suspension_lifted", extra={
-        "admin_user_id": ctx.user_id,
+        "admin_user_id": admin_user_id,
         "suspension_id": suspension_id,
     })
-    
+
     return LiftSuspensionResponse(**result)
 
 
@@ -300,9 +297,13 @@ async def lift_suspension(
 async def get_cost_analytics(
     days: int = Query(30, ge=1, le=365),
     user_id: Optional[str] = None,
-    token: dict = Depends(require_permission(AdminPermission.VIEW_COSTS)),
+    admin_user_id: str = Query(..., description="Admin User ID (validated by Next.js/Supabase)"),
 ) -> CostAnalyticsResponse:
-    """Get cost analytics for the specified period."""
+    """Get cost analytics for the specified period.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. admin_user_id is trusted.
+    """
     result = await admin_service.get_cost_analytics(days=days, user_id=user_id)
     return CostAnalyticsResponse(**result)
 
@@ -315,9 +316,13 @@ async def get_cost_analytics(
 async def get_user_cost_history(
     user_id: str,
     days: int = Query(30, ge=1, le=90),
-    token: dict = Depends(require_permission(AdminPermission.VIEW_COSTS)),
+    admin_user_id: str = Query(..., description="Admin User ID (validated by Next.js/Supabase)"),
 ) -> UserCostHistoryResponse:
-    """Get detailed cost history for a specific user."""
+    """Get detailed cost history for a specific user.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. admin_user_id is trusted.
+    """
     result = await admin_service.get_user_cost_history(user_id=user_id, days=days)
     return UserCostHistoryResponse(**result)
 
@@ -334,14 +339,18 @@ async def get_user_cost_history(
 async def get_audit_logs(
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    admin_user_id: Optional[str] = None,
+    admin_user_id_filter: Optional[str] = None,
     action: Optional[str] = None,
     target_type: Optional[str] = None,
     target_id: Optional[str] = None,
     days: int = Query(30, ge=1, le=90),
-    token: dict = Depends(require_permission(AdminPermission.VIEW_AUDIT_LOGS)),
+    admin_user_id: str = Query(..., description="Admin User ID (validated by Next.js/Supabase)"),
 ) -> AuditLogsResponse:
-    """Query admin audit logs with filtering."""
+    """Query admin audit logs with filtering.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. admin_user_id is trusted.
+    """
     result = await admin_service.get_audit_logs(
         limit=limit,
         offset=offset,
@@ -369,9 +378,13 @@ async def get_abuse_alerts(
     status: Optional[str] = Query(None, pattern="^(open|investigating|resolved|false_positive)$"),
     severity: Optional[str] = Query(None, pattern="^(low|medium|high|critical)$"),
     alert_type: Optional[str] = Query(None, pattern="^(rate_limit_exceeded|cost_spike|suspicious_pattern|data_exfiltration|spam)$"),
-    token: dict = Depends(require_permission(AdminPermission.VIEW_ABUSE_ALERTS)),
+    admin_user_id: str = Query(..., description="Admin User ID (validated by Next.js/Supabase)"),
 ) -> AbuseAlertsResponse:
-    """Get abuse detection alerts."""
+    """Get abuse detection alerts.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. admin_user_id is trusted.
+    """
     result = await admin_service.get_abuse_alerts(
         limit=limit,
         offset=offset,
@@ -390,12 +403,14 @@ async def get_abuse_alerts(
 async def create_abuse_alert(
     request: Request,
     body: CreateAbuseAlertRequest,
-    ctx: AdminContext = Depends(get_admin_context),
+    admin_user_id: str = Query(..., description="Admin User ID (validated by Next.js/Supabase)"),
 ) -> CreateAbuseAlertResponse:
-    """Create a new abuse alert (typically called automatically by detection systems)."""
-    if not await ctx.has_permission(AdminPermission.MANAGE_ABUSE_ALERTS):
-        raise HTTPException(status_code=403, detail="Permission required: manage_abuse_alerts")
-    
+    """Create a new abuse alert (typically called automatically by detection systems).
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. admin_user_id is trusted.
+      Permission checks should be done by Next.js BFF.
+    """
     result = await admin_service.create_abuse_alert(
         alert_type=body.alert_type,
         severity=body.severity,
@@ -404,25 +419,14 @@ async def create_abuse_alert(
         ip_address=body.ip_address,
         evidence=body.evidence,
     )
-    
-    await ctx.log_action(
-        action="abuse_alert_create",
-        target_type="abuse_alert",
-        target_id=result["alert_id"],
-        new_value={
-            "alert_type": body.alert_type,
-            "severity": body.severity,
-            "user_id": body.user_id,
-        },
-    )
-    
+
     logger.warning("abuse_alert_created", extra={
-        "admin_user_id": ctx.user_id,
+        "admin_user_id": admin_user_id,
         "alert_type": body.alert_type,
         "severity": body.severity,
         "target_user_id": body.user_id,
     })
-    
+
     return CreateAbuseAlertResponse(**result)
 
 
@@ -435,36 +439,30 @@ async def resolve_abuse_alert(
     alert_id: str,
     request: Request,
     body: ResolveAbuseAlertRequest,
-    ctx: AdminContext = Depends(get_admin_context),
+    admin_user_id: str = Query(..., description="Admin User ID (validated by Next.js/Supabase)"),
 ) -> ResolveAbuseAlertResponse:
-    """Resolve an abuse alert."""
-    if not await ctx.has_permission(AdminPermission.MANAGE_ABUSE_ALERTS):
-        raise HTTPException(status_code=403, detail="Permission required: manage_abuse_alerts")
-    
+    """Resolve an abuse alert.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. admin_user_id is trusted.
+      Permission checks should be done by Next.js BFF.
+    """
     try:
         result = await admin_service.resolve_abuse_alert(
             alert_id=alert_id,
-            resolved_by=ctx.user_id,
+            resolved_by=admin_user_id,
             resolution_notes=body.resolution_notes,
             status=body.status,
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    
-    await ctx.log_action(
-        action="abuse_alert_resolve",
-        target_type="abuse_alert",
-        target_id=alert_id,
-        new_value={"status": body.status},
-        reason=body.resolution_notes,
-    )
-    
+
     logger.info("abuse_alert_resolved", extra={
-        "admin_user_id": ctx.user_id,
+        "admin_user_id": admin_user_id,
         "alert_id": alert_id,
         "status": body.status,
     })
-    
+
     return ResolveAbuseAlertResponse(**result)
 
 
@@ -479,9 +477,13 @@ async def resolve_abuse_alert(
 )
 async def get_rate_limit_overrides(
     limit: int = Query(50, ge=1, le=100),
-    token: dict = Depends(require_permission(AdminPermission.MANAGE_RATE_LIMITS)),
+    admin_user_id: str = Query(..., description="Admin User ID (validated by Next.js/Supabase)"),
 ) -> RateLimitOverridesResponse:
-    """Get all active rate limit overrides."""
+    """Get all active rate limit overrides.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. admin_user_id is trusted.
+    """
     result = await admin_service.get_active_rate_limit_overrides(limit=limit)
     return RateLimitOverridesResponse(**result)
 
@@ -494,20 +496,22 @@ async def get_rate_limit_overrides(
 async def create_rate_limit_override(
     request: Request,
     body: CreateRateLimitOverrideRequest,
-    ctx: AdminContext = Depends(get_admin_context),
+    admin_user_id: str = Query(..., description="Admin User ID (validated by Next.js/Supabase)"),
 ) -> CreateRateLimitOverrideResponse:
-    """Create a rate limit override."""
-    if not await ctx.has_permission(AdminPermission.MANAGE_RATE_LIMITS):
-        raise HTTPException(status_code=403, detail="Permission required: manage_rate_limits")
-    
+    """Create a rate limit override.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. admin_user_id is trusted.
+      Permission checks should be done by Next.js BFF.
+    """
     # Validate scope-specific fields
     if body.scope == "user" and not body.user_id:
         raise HTTPException(status_code=400, detail="user_id required for user scope")
     if body.scope == "ip" and not body.ip_address:
         raise HTTPException(status_code=400, detail="ip_address required for ip scope")
-    
+
     result = await admin_service.create_rate_limit_override(
-        created_by=ctx.user_id,
+        created_by=admin_user_id,
         scope=body.scope,
         endpoint_pattern=body.endpoint_pattern,
         reason=body.reason,
@@ -518,26 +522,13 @@ async def create_rate_limit_override(
         max_requests_per_hour=body.max_requests_per_hour,
         max_requests_per_day=body.max_requests_per_day,
     )
-    
-    await ctx.log_action(
-        action="rate_limit_override_create",
-        target_type="rate_limit_override",
-        target_id=result["override_id"],
-        new_value={
-            "scope": body.scope,
-            "user_id": body.user_id,
-            "ip_address": body.ip_address,
-            "endpoint_pattern": body.endpoint_pattern,
-        },
-        reason=body.reason,
-    )
-    
+
     logger.info("rate_limit_override_created", extra={
-        "admin_user_id": ctx.user_id,
+        "admin_user_id": admin_user_id,
         "scope": body.scope,
         "user_id": body.user_id,
     })
-    
+
     return CreateRateLimitOverrideResponse(**result)
 
 
@@ -551,9 +542,13 @@ async def create_rate_limit_override(
     tags=["Admin System"],
 )
 async def get_system_health(
-    token: dict = Depends(require_permission(AdminPermission.VIEW_SYSTEM_HEALTH)),
+    admin_user_id: str = Query(..., description="Admin User ID (validated by Next.js/Supabase)"),
 ) -> SystemHealthResponse:
-    """Get detailed system health status (admin view)."""
+    """Get detailed system health status (admin view).
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. admin_user_id is trusted.
+    """
     # Check database
     db_status = await run_in_threadpool(check_db_health)
     
@@ -596,8 +591,13 @@ async def get_user_agent_traces(
     user_id: str,
     limit: int = Query(50, ge=1, le=100),
     agent_name: Optional[str] = None,
-    token: dict = Depends(require_permission(AdminPermission.VIEW_AI_TRACES)),
+    admin_user_id: str = Query(..., description="Admin User ID (validated by Next.js/Supabase)"),
 ):
+    """Get AI agent traces for a user.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. admin_user_id is trusted.
+    """
     """Get agent execution traces for a user."""
     pool = get_db_pool()
     

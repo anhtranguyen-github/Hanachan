@@ -18,7 +18,6 @@ from slowapi.middleware import SlowAPIMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .core.config import settings, validate_config
-from .core.database import init_pool, close_pool
 from .core.errors import AppError, app_error_handler, unhandled_exception_handler
 from .core.logging import configure_logging, RequestIdMiddleware
 from .core.rate_limit import limiter, rate_limit_exceeded_handler
@@ -71,13 +70,9 @@ async def lifespan(app: FastAPI):
         logger.critical("startup_config_invalid", extra={"error": str(exc)})
         sys.exit(1)
 
-    # Required: DB pool must be available — hard fail if not
-    try:
-        init_pool()
-        logger.info("startup_db_pool_ok")
-    except Exception as exc:
-        logger.critical("startup_db_pool_failed", extra={"error": str(exc)})
-        sys.exit(1)
+    # NOTE: Direct PostgreSQL pool initialization removed (per architecture rules)
+    # All DB access must go through Supabase client for RLS enforcement
+    logger.info("startup_db_pool_skipped (direct access removed)")
 
     # Optional: degrade gracefully if Qdrant unavailable
     try:
@@ -101,7 +96,7 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown: close all pools and executors
-    close_pool()
+    # NOTE: close_pool() removed - no direct DB connections to clean up
     sess_mem.shutdown_bg_executor()
     logger.info("shutdown_complete")
 

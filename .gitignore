@@ -104,3 +104,5 @@ temp/
 .kilocode/
 .kiro/
 skills-lock.json
+docs/
+documentation/

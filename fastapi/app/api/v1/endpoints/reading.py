@@ -20,12 +20,11 @@ from datetime import datetime, timezone, date, timedelta
 from typing import Any, List, Optional, Literal
 from uuid import uuid4, UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
 from ....core.database import execute_query
-from ....core.security import require_auth
 from ....agents.reading_creator import (
     ReadingConfig,
     generate_reading_session,
@@ -38,12 +37,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/reading", tags=["Reading"])
 
 
-def get_user_id(token: dict = Depends(require_auth)) -> str:
-    """Extract user_id from JWT token."""
-    user_id = token.get("sub")
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid token: missing sub")
-    return user_id
+# Architecture Note: Auth handled by Next.js/Supabase
+# user_id is passed directly from the trusted BFF layer
 
 
 # ---------------------------------------------------------------------------
@@ -87,8 +82,12 @@ class CompleteSessionRequest(BaseModel):
 
 
 @router.get("/config")
-async def get_reading_config(user_id: str = Depends(get_user_id)):
-    """Get user's reading practice configuration."""
+async def get_reading_config(user_id: str):
+    """Get user's reading practice configuration.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+    """
     rows = execute_query(
         "SELECT * FROM public.reading_configs WHERE user_id = %s",
         (user_id,),
@@ -115,9 +114,13 @@ async def get_reading_config(user_id: str = Depends(get_user_id)):
 @router.put("/config")
 async def update_reading_config(
     body: ReadingConfigUpdate,
-    user_id: str = Depends(get_user_id),
+    user_id: str,
 ):
-    """Create or update user's reading practice configuration."""
+    """Create or update user's reading practice configuration.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+    """
     # Validate weights sum
     if (
         body.vocab_weight is not None
@@ -208,11 +211,14 @@ async def update_reading_config(
 async def create_reading_session(
     request: Request,
     body: CreateSessionRequest,
-    user_id: str = Depends(get_user_id),
+    user_id: str,
 ):
     """
     Create a new reading session with auto-generated exercises.
     Uses user's learning status to personalize content.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
     # Get user config
     config_rows = execute_query(
@@ -331,9 +337,13 @@ async def list_reading_sessions(
     status: Optional[str] = Query(None),
     limit: int = Query(10, ge=1, le=50),
     offset: int = Query(0, ge=0),
-    user_id: str = Depends(get_user_id),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
-    """List user's reading sessions."""
+    """List user's reading sessions.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+    """
     where_clauses = ["user_id = %s"]
     params: List[Any] = [user_id]
 
@@ -374,9 +384,13 @@ async def list_reading_sessions(
 @router.get("/sessions/{session_id}")
 async def get_session_detail(
     session_id: UUID,
-    user_id: str = Depends(get_user_id),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
-    """Get session details with all exercises."""
+    """Get session details with all exercises.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+    """
     session_rows = execute_query(
         """
         SELECT id, status, total_exercises, completed_exercises, correct_answers,
@@ -430,9 +444,13 @@ async def get_session_detail(
 @router.post("/sessions/{session_id}/start")
 async def start_session(
     session_id: UUID,
-    user_id: str = Depends(get_user_id),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
-    """Mark a session as active/started."""
+    """Mark a session as active/started.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+    """
     rows = execute_query(
         "SELECT id, status FROM public.reading_sessions WHERE id = %s AND user_id = %s",
         (session_id, user_id),
@@ -470,9 +488,13 @@ async def complete_session(
     request: Request,
     session_id: UUID,
     body: CompleteSessionRequest,
-    user_id: str = Depends(get_user_id),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
-    """Complete a reading session and calculate final score."""
+    """Complete a reading session and calculate final score.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+    """
     rows = execute_query(
         """
         SELECT id, status, total_exercises, completed_exercises, correct_answers
@@ -548,9 +570,13 @@ async def complete_session(
 async def submit_answer(
     exercise_id: UUID,
     body: SubmitAnswerRequest,
-    user_id: str = Depends(get_user_id),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
-    """Submit an answer for a reading exercise question."""
+    """Submit an answer for a reading exercise question.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+    """
     # Get exercise
     ex_rows = execute_query(
         """
@@ -669,8 +695,12 @@ async def submit_answer(
 
 
 @router.get("/metrics")
-async def get_reading_metrics(user_id: str = Depends(get_user_id)):
-    """Get reading practice dashboard metrics."""
+async def get_reading_metrics(user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)")):
+    """Get reading practice dashboard metrics.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+    """
     # Overall stats
     overall = execute_query(
         """
@@ -763,9 +793,13 @@ async def get_reading_metrics(user_id: str = Depends(get_user_id)):
 @router.get("/metrics/history")
 async def get_metrics_history(
     days: int = Query(30, ge=7, le=365),
-    user_id: str = Depends(get_user_id),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
-    """Get historical reading metrics."""
+    """Get historical reading metrics.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+    """
     rows = execute_query(
         """
         SELECT date, sessions_completed, exercises_completed,
