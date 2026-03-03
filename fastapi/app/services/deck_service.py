@@ -109,6 +109,13 @@ class DeckService:
         )
         return len(result) > 0 if result else False
 
+    def get_ku_details(self, ku_id: str) -> Optional[Dict[str, Any]]:
+        """Get character and meaning for a knowledge unit by ID."""
+        return execute_single(
+            "SELECT character, meaning FROM public.knowledge_units WHERE id = %s",
+            (ku_id,)
+        )
+
 
 # Singleton instance
 _deck_service: Optional[DeckService] = None

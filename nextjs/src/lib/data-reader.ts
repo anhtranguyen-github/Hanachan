@@ -256,7 +256,7 @@ export async function listGrammarData(level: number, userId?: string) {
         .select(`
             *,
             ku_grammar (*),
-            user_learning_states (state, reps, lapses, next_review)
+            user_fsrs_states (state, reps, lapses, next_review)
         `)
         .eq('type', 'grammar')
         .eq('level', level);
@@ -270,7 +270,7 @@ export async function listKUsData(type: 'kanji' | 'vocabulary' | 'radical', leve
         .from('knowledge_units')
         .select(`
             *,
-            user_learning_states (state, reps, lapses, next_review)
+            user_fsrs_states (state, reps, lapses, next_review)
         `)
         .eq('type', type)
         .eq('level', level);

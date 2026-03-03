@@ -112,7 +112,7 @@ export async function checkAndUnlockNextLevel(userId: string, currentLevel: numb
     const levelItems = await lessonRepository.fetchLevelContent(currentLevel, userId);
     // Mastered = all facets of a Unit reached stage 'review' or 'burned'
     const mastered = levelItems.filter(i => {
-        const states = i.user_learning_states;
+        const states = i.user_fsrs_states;
         if (!states || states.length === 0) return false;
 
         // Determine expected facets
@@ -151,9 +151,9 @@ export async function fetchLevelStats(userId: string, levelId: string) {
         const total = counts[level] || 0;
 
         const levelItems = await lessonRepository.fetchLevelContent(level, userId);
-        const learned = levelItems.filter(i => i.user_learning_states?.length > 0).length;
+        const learned = levelItems.filter(i => i.user_fsrs_states?.length > 0).length;
         const mastered = levelItems.filter(i => {
-            const states = i.user_learning_states;
+            const states = i.user_fsrs_states;
             if (!states || states.length === 0) return false;
             // Mastery = all facets must be in review/burned
             return states.every((s: any) => s.state === 'review' || s.state === 'burned');
@@ -173,7 +173,7 @@ export async function fetchLevelStats(userId: string, levelId: string) {
             const typeKey = type as keyof typeof typeStats;
             if (typeStats[typeKey]) {
                 typeStats[typeKey].total++;
-                const states = i.user_learning_states;
+                const states = i.user_fsrs_states;
                 if (states?.length > 0 && states.every((s: any) => s.state === 'review' || s.state === 'burned')) {
                     typeStats[typeKey].mastered++;
                 }
@@ -186,7 +186,7 @@ export async function fetchLevelStats(userId: string, levelId: string) {
             mastered,
             typeStats,
             due: levelItems.filter(i => {
-                const state = i.user_learning_states?.[0];
+                const state = i.user_fsrs_states?.[0];
                 return state && new Date(state.next_review) <= HanaTime.getNow();
             }).length,
             new: total - learned

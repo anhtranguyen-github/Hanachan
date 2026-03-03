@@ -53,7 +53,7 @@ export async function selectSentenceForGrammar(
     const { data: grammarSentences, error } = await supabase
         .from('ku_to_sentence')
         .select('*, sentences(*)')
-        .eq('ku_id', grammarId)
+        .eq('item_id', grammarId)
         .limit(50);  // Get a pool to choose from
 
     if (error || !grammarSentences || grammarSentences.length === 0) {

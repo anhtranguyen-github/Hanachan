@@ -76,7 +76,7 @@ export async function generateReviewCard(
     const { data: question, error } = await supabase
         .from('questions')
         .select('*')
-        .eq('ku_id', ku.id)
+        .eq('item_id', ku.id)
         .eq('facet', facet)
         .maybeSingle();
 
@@ -96,10 +96,10 @@ export async function generateReviewCard(
     let userNotes: string | undefined = undefined;
     if (userId) {
         const { data: stateData } = await supabase
-            .from('user_learning_states')
+            .from('user_fsrs_states')
             .select('notes')
             .eq('user_id', userId)
-            .eq('ku_id', ku.id)
+            .eq('item_id', ku.id)
             .limit(1)
             .maybeSingle();
 
