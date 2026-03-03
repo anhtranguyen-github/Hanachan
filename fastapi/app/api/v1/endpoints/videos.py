@@ -276,8 +276,8 @@ async def get_video_transcript(
                 logger.warning(f"SSRF attempt blocked: {url} from YouTube info")
                 raise HTTPException(status_code=400, detail="Insecure URL target detected")
             
-            req = urllib.request.Request(url)
-            with urllib.request.urlopen(req) as response:  # nosec B310
+            req = urllib.request.Request(url)  # noqa: S310
+            with urllib.request.urlopen(req) as response:  # noqa: S310
                 if response.status != 200:
                     raise HTTPException(status_code=500, detail="Failed to download transcript data")
                 json_data = json.loads(response.read().decode('utf-8'))
