@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
 import { Loader2, Film, CheckCircle, AlertCircle, X } from 'lucide-react';
 
@@ -50,23 +51,29 @@ export function VideoUploadProgress({
   onRetry,
   onDismiss,
 }: VideoUploadProgressProps) {
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || !isOpen) return null;
 
   const isComplete = stage === 'complete';
   const isError = stage === 'error';
   const currentStageIndex = stages.findIndex(s => s.key === stage);
 
   // Calculate progress percentage
-  const calculatedProgress = progress ?? (currentStageIndex >= 0 
-    ? ((currentStageIndex + 1) / stages.length) * 100 
+  const calculatedProgress = progress ?? (currentStageIndex >= 0
+    ? ((currentStageIndex + 1) / stages.length) * 100
     : 0
   );
 
-  return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-[#3E4A61]/60 backdrop-blur-sm animate-in fade-in duration-200"
+      <div
+        className="fixed inset-0 bg-[#3E4A61]/60 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={isComplete || isError ? onClose : undefined}
       />
 
@@ -76,8 +83,8 @@ export function VideoUploadProgress({
         <div className={clsx(
           "px-6 py-5",
           isComplete ? "bg-gradient-to-r from-emerald-400 to-emerald-500" :
-          isError ? "bg-gradient-to-r from-red-400 to-red-500" :
-          "bg-gradient-to-r from-primary to-primary-dark"
+            isError ? "bg-gradient-to-r from-red-400 to-red-500" :
+              "bg-gradient-to-r from-primary to-primary-dark"
         )}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -138,14 +145,14 @@ export function VideoUploadProgress({
                 {stages.map((s, i) => {
                   const isActive = i === currentStageIndex;
                   const isPast = i < currentStageIndex;
-                  
+
                   return (
                     <div key={s.key} className="flex flex-col items-center gap-1.5">
                       <div className={clsx(
                         'w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300',
                         isPast ? 'bg-emerald-100 text-emerald-500' :
-                        isActive ? 'bg-primary text-white shadow-md shadow-primary/30' :
-                        'bg-[#F7FAFC] text-[#CBD5E0]'
+                          isActive ? 'bg-primary text-white shadow-md shadow-primary/30' :
+                            'bg-[#F7FAFC] text-[#CBD5E0]'
                       )}>
                         {isPast ? (
                           <CheckCircle size={14} />
@@ -230,9 +237,11 @@ export function VideoUploadProgress({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
+
 
 // Hook for managing upload progress state
 import { useState, useCallback } from 'react';
