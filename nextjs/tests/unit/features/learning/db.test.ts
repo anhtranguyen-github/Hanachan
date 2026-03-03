@@ -33,16 +33,18 @@ describe('srsRepository', () => {
     it('should call fetchDueItems with correct table and filters', async () => {
         const userId = 'user-1';
         const mockData = [
-            { id: 'state-1', ku_id: 'ku-1', state: 'learning', next_review: new Date().toISOString() }
+            { id: 'state-1', item_id: 'ku-1', state: 'learning', next_review: new Date().toISOString() }
         ];
 
         vi.mocked(supabase.order).mockResolvedValue({ data: mockData, error: null } as any);
 
         const result = await srsRepository.fetchDueItems(userId);
 
-        expect(supabase.from).toHaveBeenCalledWith('user_learning_states');
+        expect(supabase.from).toHaveBeenCalledWith('user_fsrs_states');
         expect(supabase.eq).toHaveBeenCalledWith('user_id', userId);
         expect(supabase.neq).toHaveBeenCalledWith('state', 'burned');
-        expect(result).toEqual(mockData);
+        expect(result).toEqual([
+            { ...mockData[0], ku_id: 'ku-1' }
+        ]);
     });
 });
