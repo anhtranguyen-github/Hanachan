@@ -6,9 +6,10 @@ import { HanaTime } from "@/lib/time";
 export const srsRepository = {
     async fetchDueItems(userId: string) {
         const { data, error } = await supabase
-            .from('user_learning_states')
-            .select('*, facet, knowledge_units(*, kanji_details(*), vocabulary_details(*), grammar_details(*))')
+            .from('user_fsrs_states')
+            .select('*, facet, knowledge_units!inner(*, kanji_details(*), vocabulary_details(*), grammar_details(*))')
             .eq('user_id', userId)
+            .eq('item_type', 'ku')
             .neq('state', 'burned')
             .lte('next_review', HanaTime.getNowISO())
             .order('next_review', { ascending: true });
@@ -18,21 +19,26 @@ export const srsRepository = {
             return [];
         }
 
-        return data;
+        // Map item_id back to ku_id for backward compatibility
+        return data?.map((item: any) => ({
+            ...item,
+            ku_id: item.item_id
+        })) || [];
     },
 
     async updateUserState(userId: string, unitId: string, facet: string, updates: any, rating?: Rating) {
         console.log(`[srsRepository] updateUserState: ${userId}, ${unitId}, ${facet}`, updates);
 
         const { error } = await supabase
-            .from('user_learning_states')
+            .from('user_fsrs_states')
             .upsert({
                 user_id: userId,
-                ku_id: unitId,
+                item_id: unitId,
+                item_type: 'ku',
                 facet: facet,
                 ...updates
             }, {
-                onConflict: 'user_id,ku_id,facet'
+                onConflict: 'user_id,item_id,item_type,facet'
             });
 
         if (error) {
@@ -44,9 +50,10 @@ export const srsRepository = {
 
         // If a rating was provided, log it
         if (rating) {
-            const { error: logError } = await supabase.from('user_learning_logs').insert({
+            const { error: logError } = await supabase.from('fsrs_review_logs').insert({
                 user_id: userId,
-                ku_id: unitId,
+                item_id: unitId,
+                item_type: 'ku',
                 facet: facet,
                 rating: rating,
                 stability: updates.stability || 0,
@@ -65,10 +72,11 @@ export const srsRepository = {
         console.log(`[srsRepository] updateKUNote: ${userId}, ${kuId}`);
         // First get the existing notes to append to them properly
         const { data: existingState } = await supabase
-            .from('user_learning_states')
+            .from('user_fsrs_states')
             .select('notes')
             .eq('user_id', userId)
-            .eq('ku_id', kuId)
+            .eq('item_id', kuId)
+            .eq('item_type', 'ku')
             // Just grab the primary meaning facet or any to attach the note to the KU conceptually
             .limit(1)
             .maybeSingle();
@@ -77,10 +85,11 @@ export const srsRepository = {
         const updatedNotes = existingNotes ? `${existingNotes}\n- ${note.trim()}` : `- ${note.trim()}`;
 
         const { error } = await supabase
-            .from('user_learning_states')
+            .from('user_fsrs_states')
             .update({ notes: updatedNotes })
             .eq('user_id', userId)
-            .eq('ku_id', kuId);
+            .eq('item_id', kuId)
+            .eq('item_type', 'ku');
 
         if (error) {
             console.error("[srsRepository] Error updating KU note:", error);
@@ -196,7 +205,7 @@ export const srsRepository = {
     async fetchStats(userId: string) {
         // 1. Fetch Current States Summary
         const { data: learnedStates, error: statsError } = await supabase
-            .from('user_learning_states')
+            .from('user_fsrs_states')
             .select('state, ku_id, last_review, stability, knowledge_units(type)')
             .eq('user_id', userId);
 
@@ -288,7 +297,7 @@ export const srsRepository = {
 
     async fetchReviewForecast(userId: string) {
         const { data, error } = await supabase
-            .from('user_learning_states')
+            .from('user_fsrs_states')
             .select('next_review')
             .eq('user_id', userId)
             .neq('state', 'burned')

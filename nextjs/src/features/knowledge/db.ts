@@ -11,7 +11,7 @@ export const curriculumRepository = {
         const tableName = getDetailsTableName(type);
         const { data, error } = await supabase
             .from('knowledge_units')
-            .select(`*, details:${tableName}(*), user_learning_states(*)`)
+            .select(`*, details:${tableName}(*), user_fsrs_states(*)`)
             .eq('id', id)
             .maybeSingle();
 
@@ -29,7 +29,7 @@ export const curriculumRepository = {
 
             let { data, error } = await supabase
                 .from('knowledge_units')
-                .select(`*, details:${tableName}(*), user_learning_states(*)`)
+                .select(`*, details:${tableName}(*), user_fsrs_states(*)`)
                 .eq('slug', cleanSlug)
                 .maybeSingle();
 
@@ -37,7 +37,7 @@ export const curriculumRepository = {
                 const prefixedSlug = `${type}:${cleanSlug}`;
                 const { data: prefixedData } = await supabase
                     .from('knowledge_units')
-                    .select(`*, details:${tableName}(*), user_learning_states(*)`)
+                    .select(`*, details:${tableName}(*), user_fsrs_states(*)`)
                     .eq('slug', prefixedSlug)
                     .maybeSingle();
                 data = prefixedData;
@@ -98,7 +98,7 @@ export const curriculumRepository = {
 
         const { data, error, count } = await supabase
             .from('knowledge_units')
-            .select(`*, details:${tableName}(*), user_learning_states(*)`, { count: 'exact' })
+            .select(`*, details:${tableName}(*), user_fsrs_states(*)`, { count: 'exact' })
             .eq('type', type)
             .range(from, to)
             .order('level', { ascending: true })
@@ -121,7 +121,7 @@ export const curriculumRepository = {
         const tableName = getDetailsTableName(type);
         const { data, error } = await supabase
             .from('knowledge_units')
-            .select(`*, details:${tableName}(*), user_learning_states(*)`)
+            .select(`*, details:${tableName}(*), user_fsrs_states(*)`)
             .eq('level', level)
             .eq('type', type);
 

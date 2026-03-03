@@ -19,7 +19,7 @@ export const questionRepository = {
         const { data, error } = await supabase
             .from('questions')
             .select('*')
-            .eq('ku_id', unitId)
+            .eq('item_id', unitId)
             .eq('facet', facet)
             .maybeSingle();
 

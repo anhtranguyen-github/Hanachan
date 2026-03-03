@@ -176,12 +176,11 @@ def view_deck_contents(deck_name_or_id: str, user_id: str = "INJECTED") -> str:
             # Enhanced labels for KUs if possible
             label = item["item_id"]
             if item["item_type"] == "ku":
-                # We could fetch KU details here for better display
-                query = "SELECT character, meaning FROM public.knowledge_units WHERE id = %s"
-                ku = learn_serv.execute_single(query, (str(item["item_id"]),))
+                # Fetch KU details via deck service for consistency
+                ku = service.get_ku_details(str(item["item_id"]))
                 if ku:
                     label = f"{ku['character']} ({ku['meaning']})"
-            
+
             lines.append(f"• [{item['item_type'].upper()}] {label}")
             
         return "\n".join(lines)

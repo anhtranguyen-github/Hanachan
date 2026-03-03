@@ -4,11 +4,12 @@ export const lessonRepository = {
     async fetchNewItems(userId: string, limit: number = 5, level?: number) {
         // Get IDs of items user is already learning
         const { data: learned, error: learnedError } = await supabase
-            .from('user_learning_states')
-            .select('ku_id')
-            .eq('user_id', userId);
+            .from('user_fsrs_states')
+            .select('item_id')
+            .eq('user_id', userId)
+            .eq('item_type', 'ku');
 
-        const learnedIds = learned?.map(l => l.ku_id) || [];
+        const learnedIds = learned?.map(l => l.item_id) || [];
         console.log(`[lessonRepository] fetchNewItems: User ${userId} Level ${level}. Learned Count: ${learnedIds.length}`);
 
         let query = supabase
@@ -48,7 +49,7 @@ export const lessonRepository = {
     async fetchLevelContent(level: number, userId: string) {
         const { data, error } = await supabase
             .from('knowledge_units')
-            .select('*, user_learning_states(*)')
+            .select('*, user_fsrs_states(*)')
             .eq('level', level);
 
         if (error) {
@@ -56,10 +57,10 @@ export const lessonRepository = {
             return [];
         }
 
-        // Filter user_learning_states for the current user manually to avoid parent filtering
+        // Filter user_fsrs_states for the current user manually to avoid parent filtering
         return data.map(item => ({
             ...item,
-            user_learning_states: item.user_learning_states?.filter((s: any) => s.user_id === userId) || []
+            user_fsrs_states: item.user_fsrs_states?.filter((s: any) => s.user_id === userId && s.item_type === 'ku') || []
         }));
     },
 

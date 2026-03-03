@@ -33,7 +33,7 @@ export function KUUserSentences({ kuId, kuType, character }: KUUserSentencesProp
             const { data } = await supabase
                 .from('ku_to_sentence')
                 .select('sentence:sentences(*)')
-                .eq('ku_id', kuId);
+                .eq('item_id', kuId);
 
             if (data) {
                 setSentences(data.map((d: any) => d.sentence));
