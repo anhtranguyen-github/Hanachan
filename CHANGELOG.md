@@ -9,6 +9,107 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Phase 2: Ownership Correction (COMPLETE)
+
+**Status**: All service migrations completed on 2026-03-03
+
+#### Summary
+
+Phase 2 completed the migration of all business logic from FastAPI to Next.js, establishing Next.js as the single owner of business logic and Supabase as the single source of truth.
+
+| Service | Migration Status | New Location |
+|---------|-----------------|--------------|
+| FSRS | ✅ Migrated | [`nextjs/src/features/learning/services/fsrsService.ts`](nextjs/src/features/learning/services/fsrsService.ts) |
+| Reading | ✅ Migrated | [`nextjs/src/features/reading/`](nextjs/src/features/reading/) |
+| Speaking | ✅ Migrated | [`nextjs/src/features/speaking/`](nextjs/src/features/speaking/) |
+| Video | ✅ Migrated | [`nextjs/src/features/video/`](nextjs/src/features/video/) |
+| Dictation | ✅ Migrated | [`nextjs/src/features/video/dictationService.ts`](nextjs/src/features/video/dictationService.ts) |
+| Sentence Library | ✅ Migrated | [`nextjs/src/features/sentence/`](nextjs/src/features/sentence/) |
+| Admin | ✅ Migrated | [`nextjs/src/features/admin/service.ts`](nextjs/src/features/admin/service.ts) |
+| Decks | ✅ Migrated | [`nextjs/src/features/decks/service.ts`](nextjs/src/features/decks/service.ts) |
+
+#### Changed
+- **Admin Service**: Migrated from FastAPI HTTP calls to direct Supabase access
+  - Removed all `fetchApi` calls to FastAPI endpoints
+  - Implemented direct Supabase queries for user management, cost analytics, audit logs, and abuse alerts
+  - Added proper TypeScript types for all admin operations
+  
+- **Reading Service**: Completed migration to Next.js
+  - Added missing functions: `getReadingSessionById`, `startReadingSession`, `completeReadingSession`, `submitAnswer`, `getMetricsHistory`
+  - Updated [`actions.ts`](nextjs/src/features/reading/actions.ts) to use completed service functions
+  - Fixed type compatibility with [`types.ts`](nextjs/src/features/reading/types.ts)
+
+- **FastAPI API Router**: Removed all CRUD-style endpoints
+  - Removed endpoints: reading, speaking, video_dictation, sentences, videos, fsrs, admin
+  - Only agent endpoints remain: chat, memory (session, episodic, semantic), maintenance
+  - Added comprehensive architecture documentation in [`api.py`](fastapi/app/api/v1/api.py)
+
+- **FastAPI Services Module**: Removed all service exports
+  - [`__init__.py`](fastapi/app/services/__init__.py) now documents the migration
+  - No direct DB services are exported from FastAPI
+
+---
+
+### Phase 3: Communication Hardening (COMPLETE)
+
+**Status**: Supabase-mediated workflow implemented on 2026-03-03
+
+#### Summary
+
+Phase 3 established the Supabase-mediated workflow for agent triggering, with idempotency keys and replay safety mechanisms.
+
+#### Added
+- **Agent Job Queue Schema** ([`supabase/migrations/20260303_agent_job_queue.sql`](supabase/migrations/20260303_agent_job_queue.sql))
+  - `agent_jobs` table with idempotency key support
+  - `agent_job_events` table for event sourcing
+  - `idempotency_locks` table for distributed locking
+  - `agent_webhook_deliveries` table for webhook tracking
+  - Database functions: `create_agent_job`, `claim_agent_job`, `complete_agent_job`, `fail_agent_job`, `get_agent_job_result`, `cleanup_agent_jobs`
+  - RLS policies for secure access control
+
+- **Agent Job Repository** ([`nextjs/src/features/jobs/jobRepository.ts`](nextjs/src/features/jobs/jobRepository.ts))
+  - `generateIdempotencyKey()`: Creates unique idempotency keys
+  - `createAgentJob()`: Creates jobs with idempotency check
+  - `getJobResultByIdempotencyKey()`: Retrieves results with replay tracking
+  - `waitForJobCompletion()`: Polling utility for job completion
+  - Full TypeScript types for job management
+
+- **Idempotency Features**
+  - 24-hour idempotency window for job creation
+  - Automatic duplicate detection and existing result return
+  - Replay count tracking for completed jobs
+  - Event sourcing for audit trails
+
+---
+
+### Phase 4: Tests & Guards (COMPLETE)
+
+**Status**: Integration tests and validation completed on 2026-03-03
+
+#### Added
+- **RLS Enforcement Tests** ([`nextjs/tests/integration/rls-enforcement.test.ts`](nextjs/tests/integration/rls-enforcement.test.ts))
+  - Tests for agent_jobs table access control
+  - Tests for agent_job_events read restrictions
+  - Tests for cross-user data isolation
+  - Verification that users cannot modify jobs directly
+
+- **Idempotency Tests** ([`nextjs/tests/integration/idempotency.test.ts`](nextjs/tests/integration/idempotency.test.ts))
+  - Tests for idempotency key generation
+  - Tests for duplicate job detection
+  - Tests for replay safety mechanisms
+  - Tests for job status lifecycle tracking
+
+#### Architecture Validation
+- All violations from Phase 1 audit have been resolved
+- FastAPI no longer has direct database access
+- All business logic migrated to Next.js
+- Supabase is the single source of truth
+- Architecture guard tests pass
+
+---
+
+## Previous Releases
+
 ### Phase 1: Architectural Safety Remediation (COMPLETE)
 
 **Status**: All 6 sub-phases completed on 2026-03-03
