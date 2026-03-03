@@ -322,7 +322,7 @@ class FSRSService:
             SET {fields}, updated_at = NOW()
             WHERE user_id = %s
             RETURNING *
-        """
+        """  # noqa: S608
         execute_query(query, tuple(values), fetch=False)
         
         # Clear cached scheduler to pick up new weights

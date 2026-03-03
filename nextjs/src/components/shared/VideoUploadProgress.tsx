@@ -244,7 +244,7 @@ export function VideoUploadProgress({
 
 
 // Hook for managing upload progress state
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 
 interface UploadState {
   isOpen: boolean;
