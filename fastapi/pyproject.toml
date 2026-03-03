@@ -7,6 +7,7 @@ dependencies = [
     "fastapi>=0.109.0",
     "uvicorn>=0.27.0",
     "langchain-openai>=0.0.5",
+    "langchain-qdrant>=0.2.0",
     "qdrant-client>=1.7.0",
     "neo4j>=5.16.0",
     "langgraph>=0.0.26",
@@ -20,6 +21,7 @@ dependencies = [
     "youtube-transcript-api>=1.2.4",
     "yt-dlp>=2026.2.21",
     "janome>=0.5.0",
+    "langchain-neo4j>=0.8.0",
 ]
 
 [project.optional-dependencies]
@@ -40,6 +42,7 @@ dev = [
     "faker>=22.0.0",
     "ruff>=0.1.0",
     "mypy>=1.8.0",
+    "langchain-community>=0.4.1",
 ]
 
 [tool.uv]

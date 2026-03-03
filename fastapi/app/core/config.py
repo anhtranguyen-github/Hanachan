@@ -43,9 +43,12 @@ class Settings(BaseSettings):
     qdrant_collection: str = "episodic_memory"
 
     # Neo4j (cloud)
-    neo4j_uri: str = ""
-    neo4j_user: str = ""
-    neo4j_password: str = ""
+    neo4j_uri: str = Field("", alias="NEO4J_URI")
+    neo4j_username: str = Field("", alias="NEO4J_USERNAME")
+    neo4j_password: str = Field("", alias="NEO4J_PASSWORD")
+    neo4j_database: str = Field("neo4j", alias="NEO4J_DATABASE")
+    aura_instanceid: str = Field("", alias="AURA_INSTANCEID")
+    aura_instancename: str = Field("", alias="AURA_INSTANCENAME")
 
     # CORS — explicit origin list, never wildcard with credentials
     allowed_origins: List[str] = ["http://localhost:3000"]
