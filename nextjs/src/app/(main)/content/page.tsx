@@ -33,7 +33,7 @@ function ContentDatabase() {
 
             let stateMap: Record<string, any> = {};
             if (userId) {
-                const { data: userStates } = await supabase.from('user_learning_states').select('*').eq('user_id', userId);
+                const { data: userStates } = await supabase.from('user_fsrs_states').select('*').eq('user_id', userId);
                 userStates?.forEach((s: any) => { stateMap[s.ku_id] = s; });
 
                 const { data: userData } = await supabase.from('users').select('level').eq('id', userId).maybeSingle();

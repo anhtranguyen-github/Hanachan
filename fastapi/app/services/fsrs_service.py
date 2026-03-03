@@ -14,12 +14,48 @@ from pydantic import BaseModel
 from ..core.database import execute_query, execute_single
 
 
-# FSRS-4.5 Parameters (default weights)
-# These can be tuned based on user performance data
+# FSRS-4.5 Default Parameters (19 weights)
+# These are the default values from the FSRS-4.5 paper
+# Users can customize these via user_fsrs_settings table
 DEFAULT_W = [
-    0.4, 0.6, 2.4, 5.8, 4.93, 0.94, 0.86, 0.01,
-    1.49, 0.14, 0.94, 2.18, 0.05, 0.34, 1.26, 0.29, 2.61
+    0.4,   # w0: Initial stability for rating 1 (Again)
+    0.6,   # w1: Initial stability for rating 2 (Hard)
+    2.2,   # w2: Initial stability for rating 3 (Good)
+    10.9,  # w3: Initial stability for rating 4 (Easy)
+    5.8,   # w4: Initial difficulty
+    0.93,  # w5: Difficulty factor
+    0.94,  # w6: Stability gain for Again
+    0.86,  # w7: Stability gain for Hard
+    1.01,  # w8: Stability gain for Good
+    1.05,  # w9: Stability gain for Easy
+    0.94,  # w10: Retrievability factor
+    0.74,  # w11: Difficulty damping
+    0.46,  # w12: Difficulty mean reversion
+    0.27,  # w13: Short-term stability
+    0.42,  # w14: Short-term stability exponent
+    0.36,  # w15: Short-term difficulty
+    0.29,  # w16: Short-term difficulty exponent
+    1.2,   # w17: Initial stability for relearning
+    0.25   # w18: Relearning stability factor
 ]
+
+
+class FSRSSettings(BaseModel):
+    """Per-user FSRS settings."""
+    user_id: str
+    # FSRS Weights w0-w18
+    w: List[float] = DEFAULT_W.copy()
+    # User preferences
+    daily_new_cards: int = 10
+    daily_review_limit: int = 100
+    learning_steps: List[int] = [1, 10]  # Minutes
+    relearning_steps: List[int] = [10]   # Minutes
+    graduation_interval: int = 1  # Days
+    easy_interval: int = 4        # Days
+    interval_modifier: float = 1.0
+    # Feature flags
+    show_answer_timer: bool = True
+    auto_play_audio: bool = False
 
 
 class FSRSState(BaseModel):
@@ -202,7 +238,98 @@ class FSRSService:
     """Service for managing FSRS-based learning and reviews."""
     
     def __init__(self):
-        self.scheduler = FSRSScheduler()
+        self._user_schedulers: Dict[str, FSRSScheduler] = {}
+    
+    def _get_user_scheduler(self, user_id: str) -> FSRSScheduler:
+        """Get or create a scheduler with user's custom weights."""
+        if user_id not in self._user_schedulers:
+            settings = self.get_user_settings(user_id)
+            self._user_schedulers[user_id] = FSRSScheduler(weights=settings.w)
+        return self._user_schedulers[user_id]
+    
+    def get_user_settings(self, user_id: str) -> FSRSSettings:
+        """Get FSRS settings for a user. Creates defaults if not exists."""
+        query = """
+            SELECT 
+                user_id,
+                ARRAY[w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14, w15, w16, w17, w18] as w,
+                daily_new_cards,
+                daily_review_limit,
+                learning_steps,
+                relearning_steps,
+                graduation_interval,
+                easy_interval,
+                interval_modifier,
+                show_answer_timer,
+                auto_play_audio
+            FROM public.user_fsrs_settings
+            WHERE user_id = %s
+        """
+        result = execute_single(query, (user_id,))
+        
+        if result:
+            return FSRSSettings(
+                user_id=str(result["user_id"]),
+                w=result["w"],
+                daily_new_cards=result["daily_new_cards"],
+                daily_review_limit=result["daily_review_limit"],
+                learning_steps=result["learning_steps"],
+                relearning_steps=result["relearning_steps"],
+                graduation_interval=result["graduation_interval"],
+                easy_interval=result["easy_interval"],
+                interval_modifier=result["interval_modifier"],
+                show_answer_timer=result["show_answer_timer"],
+                auto_play_audio=result["auto_play_audio"]
+            )
+        
+        # Create default settings
+        self._create_default_settings(user_id)
+        return FSRSSettings(user_id=user_id)
+    
+    def _create_default_settings(self, user_id: str) -> None:
+        """Create default FSRS settings for a user."""
+        query = """
+            INSERT INTO public.user_fsrs_settings (user_id)
+            VALUES (%s)
+            ON CONFLICT (user_id) DO NOTHING
+        """
+        execute_query(query, (user_id,), fetch=False)
+    
+    def update_user_settings(self, user_id: str, settings: Dict[str, Any]) -> FSRSSettings:
+        """Update FSRS settings for a user."""
+        # Build dynamic update query
+        allowed_fields = {
+            'w', 'daily_new_cards', 'daily_review_limit', 'learning_steps',
+            'relearning_steps', 'graduation_interval', 'easy_interval',
+            'interval_modifier', 'show_answer_timer', 'auto_play_audio'
+        }
+        
+        updates = {k: v for k, v in settings.items() if k in allowed_fields}
+        if not updates:
+            return self.get_user_settings(user_id)
+        
+        # Handle weights array specially
+        if 'w' in updates and isinstance(updates['w'], list):
+            w = updates.pop('w')
+            for i, val in enumerate(w[:19]):
+                updates[f'w{i}'] = val
+        
+        fields = ', '.join([f"{k} = %s" for k in updates.keys()])
+        values = list(updates.values()) + [user_id]
+        
+        query = f"""
+            UPDATE public.user_fsrs_settings
+            SET {fields}, updated_at = NOW()
+            WHERE user_id = %s
+            RETURNING *
+        """
+        execute_query(query, tuple(values), fetch=False)
+        
+        # Clear cached scheduler to pick up new weights
+        if user_id in self._user_schedulers:
+            del self._user_schedulers[user_id]
+        
+        return self.get_user_settings(user_id)
     
     def get_due_items(
         self, 
@@ -279,7 +406,7 @@ class FSRSService:
         
         summary = {
             "by_type": {},
-            "by_state": {"new": 0, "learning": 0, "review": 0, "relearning": 0},
+            "by_state": {"new": 0, "learning": 0, "review": 0, "relearning": 0, "burned": 0},
             "total": 0,
             "due_today": 0
         }
@@ -317,6 +444,9 @@ class FSRSService:
         facet: str = "meaning"
     ) -> FSRSReviewResult:
         """Submit a review and update the schedule."""
+        # Get user's scheduler with custom weights
+        scheduler = self._get_user_scheduler(user_id)
+        
         # Get current state
         current = execute_single(
             """SELECT * FROM public.user_fsrs_states 
@@ -352,8 +482,8 @@ class FSRSService:
                 lapses=0
             )
         
-        # Calculate new schedule
-        result = self.scheduler.schedule_review(state, rating)
+        # Calculate new schedule using user's custom scheduler
+        result = scheduler.schedule_review(state, rating)
         
         # Save to database
         now = datetime.now(timezone.utc)

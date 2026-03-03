@@ -30,10 +30,10 @@ export function KUUserNotes({ kuId, kuType }: KUUserNotesProps) {
             setIsLoading(true);
             try {
                 const { data } = await supabase
-                    .from('user_learning_states')
+                    .from('user_fsrs_states')
                     .select('notes')
                     .eq('user_id', user.id)
-                    .eq('ku_id', kuId)
+                    .eq('item_id', kuId)
                     .limit(1)
                     .maybeSingle();
                 if (data?.notes) {
@@ -61,10 +61,10 @@ export function KUUserNotes({ kuId, kuType }: KUUserNotesProps) {
 
             // Safest way: just update the notes column for the primary facet
             const { error: updateError } = await supabase
-                .from('user_learning_states')
+                .from('user_fsrs_states')
                 .update({ notes: notes })
                 .eq('user_id', user.id)
-                .eq('ku_id', kuId)
+                .eq('item_id', kuId)
                 .eq('facet', 'primary');
 
             if (updateError) throw updateError;

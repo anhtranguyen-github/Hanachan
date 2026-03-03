@@ -1,6 +1,5 @@
-/* eslint-disable react/no-unescaped-entities */
-'use client';
-
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { X } from 'lucide-react';
 import { RichTextRenderer } from './RichTextRenderer';
@@ -34,13 +33,19 @@ interface QuickViewModalProps {
 }
 
 export const QuickViewModal: React.FC<QuickViewModalProps> = ({ isOpen, onClose, data, onAddToDeck }) => {
-    if (!isOpen || !data) return null;
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted || !isOpen || !data) return null;
 
     const isToken = data.type === 'TOKEN';
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-6" data-testid="quick-view-modal">
-            <div className="absolute inset-0 bg-[#3E4A61]/50 backdrop-blur-sm" onClick={onClose} />
+            <div className="fixed inset-0 bg-[#3E4A61]/50 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-white w-full sm:max-w-lg rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-400 max-h-[85vh] flex flex-col">
                 {/* Header */}
                 <div className="px-5 pt-5 pb-0 flex justify-between items-center shrink-0">
@@ -61,7 +66,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ isOpen, onClose,
                     {/* Character + info row */}
                     <div className="flex items-center gap-5">
                         <div className="relative w-20 h-20 bg-[#FFF5F5] border border-[#F0E0E0] rounded-3xl flex items-center justify-center shadow-inner shrink-0">
-                            <span className="text-4xl font-black text-[#FFB5B5] leading-none jp-text" data-testid="quick-view-character">{data.title}</span>
+                            <span className="text-4xl font-black text-[#FFB5B5] jp-text" data-testid="quick-view-character">{data.title}</span>
                             {data.audio_items && data.audio_items.length > 0 && (
                                 <div className="absolute -bottom-2 -right-2">
                                     <AudioPlayer items={data.audio_items} />
@@ -146,8 +151,10 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ isOpen, onClose,
                     )}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
+
 
 
