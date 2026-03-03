@@ -48,9 +48,9 @@ async def list_users(
     
     if is_suspended is not None:
         if is_suspended:
-            conditions.append("EXISTS (SELECT 1 FROM user_suspensions s WHERE s.user_id = u.id AND s.is_active = true AND (s.suspended_until IS NULL OR s.suspended_until > now()))")
+            conditions.append(f"EXISTS (SELECT 1 FROM user_suspensions s WHERE s.user_id = u.id AND s.is_active = true AND (s.suspended_until IS NULL OR s.suspended_until > now()))")
         else:
-            conditions.append("NOT EXISTS (SELECT 1 FROM user_suspensions s WHERE s.user_id = u.id AND s.is_active = true AND (s.suspended_until IS NULL OR s.suspended_until > now()))")
+            conditions.append(f"NOT EXISTS (SELECT 1 FROM user_suspensions s WHERE s.user_id = u.id AND s.is_active = true AND (s.suspended_until IS NULL OR s.suspended_until > now()))")
     
     if min_level is not None:
         conditions.append(f"u.level >= ${param_idx}")
