@@ -616,7 +616,7 @@ async def get_user_agent_traces(
     async with pool.acquire() as conn:
         rows = await conn.fetch(
             f"""
-            SELECT 
+            SELECT
                 id, agent_name, trace_type, step_number,
                 input_data, output_data, latency_ms, model,
                 tokens_used, error_message, created_at
@@ -624,7 +624,7 @@ async def get_user_agent_traces(
             WHERE {where_clause}
             ORDER BY created_at DESC
             LIMIT ${param_idx}
-            """,
+            """,  # noqa: S608
             *params,
             limit,
         )
