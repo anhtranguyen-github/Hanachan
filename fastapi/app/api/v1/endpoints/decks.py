@@ -1,5 +1,5 @@
-from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from typing import Any, Dict, List
+from fastapi import APIRouter, Depends, HTTPException, Request
 from uuid import UUID
 
 from ....core.security import require_auth

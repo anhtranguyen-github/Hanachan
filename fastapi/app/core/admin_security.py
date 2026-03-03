@@ -14,12 +14,11 @@ import logging
 from datetime import datetime, timezone
 from enum import Enum
 from functools import wraps
-from typing import Optional, Callable, Any
+from typing import Optional, Callable
 
 from fastapi import Depends, HTTPException, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer
 
-from .config import settings
 from .database import get_db_pool
 from .security import require_auth
 
@@ -217,7 +216,7 @@ async def require_admin(
     return token
 
 
-async def require_permission(permission: AdminPermission):
+def require_permission(permission: AdminPermission):
     """
     Factory for dependencies that require specific admin permissions.
     Usage: Depends(require_permission(AdminPermission.VIEW_USERS))
