@@ -22,7 +22,6 @@ from ....core.admin_security import (
     AdminContext,
     AdminPermission,
     get_admin_context,
-    require_admin,
     require_permission,
 )
 from ....core.database import get_db_pool, check_db_health

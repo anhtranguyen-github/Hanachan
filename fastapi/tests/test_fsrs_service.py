@@ -82,7 +82,7 @@ class TestFSRSScheduler:
 
     def test_default_weights(self, scheduler):
         """Test that default weights are loaded correctly."""
-        assert len(scheduler.w) == 17
+        assert len(scheduler.w) == 19
         assert scheduler.w == DEFAULT_W
 
     def test_custom_weights(self, custom_scheduler):
@@ -315,16 +315,41 @@ class TestFSRSService:
     @patch("app.services.fsrs_service.execute_single")
     def test_submit_review_existing_item(self, mock_single, mock_query, service):
         """Test submitting a review for an existing item."""
+        from datetime import datetime, timezone
         now = datetime.now(timezone.utc)
-        mock_single.return_value = {
-            "state": "review",
-            "stability": 5.0,
-            "difficulty": 3.0,
-            "reps": 10,
-            "lapses": 1,
-            "last_review": now - timedelta(days=5),
-            "next_review": now,
-        }
+        
+        # First call is for user settings, second for item state
+        call_count = [0]
+        def side_effect(*args, **kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                # First call - user settings from user_fsrs_settings
+                return {
+                    "user_id": "user-1",
+                    "w": DEFAULT_W,
+                    "daily_new_cards": 20,
+                    "daily_review_limit": 100,
+                    "learning_steps": [1, 10],
+                    "relearning_steps": [10],
+                    "graduation_interval": 1,
+                    "easy_interval": 4,
+                    "interval_modifier": 1.0,
+                    "show_answer_timer": True,
+                    "auto_play_audio": False,
+                }
+            else:
+                # Second call - item state from user_fsrs_states
+                return {
+                    "state": "review",
+                    "stability": 5.0,
+                    "difficulty": 3.0,
+                    "reps": 10,
+                    "lapses": 1,
+                    "last_review": now - timedelta(days=5),
+                    "next_review": now,
+                }
+        
+        mock_single.side_effect = side_effect
         mock_query.return_value = None
         
         result = service.submit_review("user-1", "ku-1", "ku", 3)

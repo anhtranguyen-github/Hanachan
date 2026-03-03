@@ -2,7 +2,7 @@ import yt_dlp
 import logging
 import ipaddress
 import socket
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 from fastapi import APIRouter, HTTPException, Depends, Query
 
