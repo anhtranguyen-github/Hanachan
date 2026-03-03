@@ -1,27 +1,22 @@
 /**
- * Dictation Attempt API
- * Submit a dictation attempt
+ * Practice Stats API
+ * Get speaking practice statistics for the current user
  * 
  * Architecture: Next.js BFF pattern - all business logic in Next.js
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { submitDictationAttempt } from '@/features/video/dictationService';
+import { getPracticeStats } from '@/features/speaking/speakingService';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * POST /api/dictation/session/{session_id}/attempt
- * Submit a dictation attempt
+ * GET /api/practice/stats
+ * Get speaking practice statistics
  */
-export async function POST(
-    req: NextRequest,
-    { params }: { params: { session_id: string } }
-) {
+export async function GET(req: NextRequest) {
     try {
-        const sessionId = params.session_id;
-
         // Get user from authorization header
         const authHeader = req.headers.get('authorization');
         if (!authHeader?.startsWith('Bearer ')) {
@@ -54,40 +49,16 @@ export async function POST(
             );
         }
 
-        // Parse body
-        const body = await req.json();
-        const { subtitle_id, user_input, time_taken_ms } = body;
-
-        if (!subtitle_id || user_input === undefined) {
-            return NextResponse.json(
-                { success: false, error: 'subtitle_id and user_input are required' },
-                { status: 400 }
-            );
-        }
-
-        // Submit attempt using local service
-        const result = await submitDictationAttempt(
-            user.id,
-            sessionId,
-            subtitle_id,
-            user_input,
-            time_taken_ms || 0
-        );
-
-        if (!result.success) {
-            return NextResponse.json(
-                { success: false, error: result.error },
-                { status: 500 }
-            );
-        }
+        // Get stats using local service
+        const stats = await getPracticeStats(user.id);
 
         return NextResponse.json({
             success: true,
-            result: result.result
+            stats
         });
 
     } catch (error: any) {
-        console.error('[Dictation Attempt API]', error);
+        console.error('[Practice Stats API]', error);
         return NextResponse.json(
             { success: false, error: error.message || 'Internal server error' },
             { status: 500 }

@@ -1,43 +1,86 @@
-import { NextRequest, NextResponse } from 'next/server';
+/**
+ * Dictation Session API
+ * Creates a new dictation session for a video
+ * 
+ * Architecture: Next.js BFF pattern - all business logic in Next.js
+ */
 
-// Get FastAPI backend URL from environment
-const FASTAPI_URL = process.env.NEXT_PUBLIC_FASTAPI_URL || 'http://localhost:8000';
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { createDictationSession } from '@/features/video/dictationService';
 
 export const dynamic = 'force-dynamic';
 
-// Create a new dictation session
+/**
+ * POST /api/dictation/session
+ * Create a new dictation session
+ */
 export async function POST(req: NextRequest) {
     try {
-        const body = await req.json();
-        
-        // Forward to FastAPI backend
-        const response = await fetch(`${FASTAPI_URL}/api/v1/dictation/session`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                // Forward the authorization header if present
-                ...(req.headers.get('authorization') && {
-                    'Authorization': req.headers.get('authorization')!,
-                }),
-            },
-            body: JSON.stringify(body),
-        });
-        
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ detail: 'Failed to create session' }));
+        // Get user from authorization header
+        const authHeader = req.headers.get('authorization');
+        if (!authHeader?.startsWith('Bearer ')) {
             return NextResponse.json(
-                { success: false, error: error.detail || 'Failed to create session' },
-                { status: response.status }
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
             );
         }
+
+        const token = authHeader.split(' ')[1];
         
-        const data = await response.json();
-        return NextResponse.json(data);
+        // Verify token with Supabase
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                auth: {
+                    autoRefreshToken: false,
+                    persistSession: false
+                }
+            }
+        );
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
         
-    } catch (e: any) {
-        console.error('[Dictation Session API]', e);
+        if (authError || !user) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        // Parse body
+        const body = await req.json();
+        const { video_id, settings } = body;
+
+        if (!video_id) {
+            return NextResponse.json(
+                { success: false, error: 'video_id is required' },
+                { status: 400 }
+            );
+        }
+
+        // Create session using local service
+        const result = await createDictationSession(user.id, video_id, settings);
+
+        if (!result.success) {
+            return NextResponse.json(
+                { success: false, error: result.error },
+                { status: 500 }
+            );
+        }
+
+        return NextResponse.json({
+            success: true,
+            session_id: result.session?.id,
+            session: result.session,
+            subtitles: result.subtitles
+        });
+
+    } catch (error: any) {
+        console.error('[Dictation Session API]', error);
         return NextResponse.json(
-            { success: false, error: e.message || 'Internal server error' },
+            { success: false, error: error.message || 'Internal server error' },
             { status: 500 }
         );
     }
