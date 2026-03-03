@@ -1,17 +1,37 @@
+"""
+FastAPI API Router - Phase 2 Remediation
+
+CRITICAL: FastAPI is now a STATELESS AGENT HOST only.
+All CRUD operations have been removed. Only agent-related endpoints remain.
+
+Architecture:
+- Next.js → Supabase (for data access)
+- Next.js → FastAPI (for AI agent processing ONLY)
+- FastAPI NEVER touches the database directly
+
+Removed endpoints (migrated to Next.js + Supabase):
+- /reading/* → Next.js reading feature
+- /practice/speaking/* → Next.js speaking feature  
+- /dictation/* → Next.js video feature
+- /sentences/* → Next.js sentence feature
+- /videos/* → Next.js video feature
+- /fsrs/* → Next.js learning feature
+- /admin/* → Next.js admin feature
+"""
+
 from fastapi import APIRouter
-from .endpoints import chat, session, memory, maintenance, reading, speaking, video_dictation, sentences, videos, fsrs, admin
+from .endpoints import chat, session, memory, maintenance
 
 api_router = APIRouter()
+
+# Agent-only endpoints (stateless AI processing)
 api_router.include_router(chat.router, tags=["Chat"])
-# Decks API not exposed - Next.js uses direct Supabase access
-# Deck service layer remains for agent tools only
 api_router.include_router(session.router, prefix="/memory", tags=["Session"])
 api_router.include_router(memory.router, prefix="/memory", tags=["Memory"])
+
+# Maintenance endpoints (health checks, not data access)
 api_router.include_router(maintenance.router, tags=["Maintenance"])
-api_router.include_router(reading.router, tags=["Reading"])
-api_router.include_router(speaking.router, prefix="/practice", tags=["Speaking"])
-api_router.include_router(video_dictation.router, prefix="/dictation", tags=["Video Dictation"])
-api_router.include_router(sentences.router, prefix="/sentences", tags=["Sentences"])
-api_router.include_router(videos.router, prefix="/videos", tags=["Videos"])
-api_router.include_router(fsrs.router, prefix="/fsrs", tags=["FSRS"])
-api_router.include_router(admin.router, prefix="/admin", tags=["Admin"])
+
+# NOTE: All CRUD endpoints have been removed as part of Phase 2 architectural remediation.
+# Business logic now lives in Next.js, data access goes through Supabase.
+# FastAPI is strictly an AI agent host (stateless, no database access).
