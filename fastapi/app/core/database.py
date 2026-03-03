@@ -108,3 +108,16 @@ def get_db_connection():
             "Database pool not initialized. Call init_pool() at application startup."
         )
     return _pool.getconn()
+
+
+def get_db_pool():
+    """Return the connection pool for asyncpg-style access patterns.
+    
+    This function returns the pool for use with asyncpg-compatible code.
+    The pool supports acquire() method for getting connections.
+    """
+    if _pool is None:
+        raise RuntimeError(
+            "Database pool not initialized. Call init_pool() at application startup."
+        )
+    return _pool
