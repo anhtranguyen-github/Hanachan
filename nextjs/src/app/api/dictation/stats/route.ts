@@ -1,37 +1,66 @@
-import { NextRequest, NextResponse } from 'next/server';
+/**
+ * Dictation Stats API
+ * Get dictation statistics for the current user
+ * 
+ * Architecture: Next.js BFF pattern - all business logic in Next.js
+ */
 
-const FASTAPI_URL = process.env.NEXT_PUBLIC_FASTAPI_URL || 'http://localhost:8000';
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { getDictationStats } from '@/features/video/dictationService';
 
 export const dynamic = 'force-dynamic';
 
-// Get dictation stats
+/**
+ * GET /api/dictation/stats
+ * Get dictation statistics
+ */
 export async function GET(req: NextRequest) {
     try {
-        const response = await fetch(`${FASTAPI_URL}/api/v1/dictation/stats`, {
-            method: 'GET',
-            headers: {
-                // Forward the authorization header if present
-                ...(req.headers.get('authorization') && {
-                    'Authorization': req.headers.get('authorization')!,
-                }),
-            },
-        });
-        
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ detail: 'Failed to get stats' }));
+        // Get user from authorization header
+        const authHeader = req.headers.get('authorization');
+        if (!authHeader?.startsWith('Bearer ')) {
             return NextResponse.json(
-                { success: false, error: error.detail || 'Failed to get stats' },
-                { status: response.status }
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
             );
         }
+
+        const token = authHeader.split(' ')[1];
         
-        const data = await response.json();
-        return NextResponse.json(data);
+        // Verify token with Supabase
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                auth: {
+                    autoRefreshToken: false,
+                    persistSession: false
+                }
+            }
+        );
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
         
-    } catch (e: any) {
-        console.error('[Dictation Stats API]', e);
+        if (authError || !user) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        // Get stats using local service
+        const stats = await getDictationStats(user.id);
+
+        return NextResponse.json({
+            success: true,
+            stats
+        });
+
+    } catch (error: any) {
+        console.error('[Dictation Stats API]', error);
         return NextResponse.json(
-            { success: false, error: e.message || 'Internal server error' },
+            { success: false, error: error.message || 'Internal server error' },
             { status: 500 }
         );
     }
