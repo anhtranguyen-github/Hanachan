@@ -63,6 +63,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     loadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offset, isSuspended]);
 
   const handleSearch = (e: React.FormEvent) => {

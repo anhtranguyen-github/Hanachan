@@ -4,6 +4,8 @@ version: '3.8'
 # Services:
 #   nextjs   — Next.js 14 frontend (port 3000)
 #   fastapi  — FastAPI memory backend (port 8765)
+#   qdrant   — Vector database (ports 6333, 6334)
+#   neo4j    — Graph database (ports 7474, 7687)
 #
 # Usage:
 #   docker compose up                  # start all services
@@ -48,6 +50,11 @@ services:
       - "8765:8765"
     env_file:
       - ./fastapi/.env
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
     networks:
       - app-network
     restart: unless-stopped
@@ -57,6 +64,49 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  # ── Qdrant Vector Database ───────────────────────────────────────────────────
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    environment:
+      - QDRANT_ALLOW_RECOVERY_MODE=true
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── Neo4j Graph Database ─────────────────────────────────────────────────────
+  neo4j:
+    image: neo4j:5.15-community
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j-data:/data
+      - neo4j-logs:/logs
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_PLUGINS=["apoc", "gds"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # ── FastAPI Test Runner ──────────────────────────────────────────────────────
   fastapi-test:
@@ -99,6 +149,11 @@ services:
       - app-network
     profiles:
       - test
+
+volumes:
+  qdrant-data:
+  neo4j-data:
+  neo4j-logs:
 
 networks:
   app-network:

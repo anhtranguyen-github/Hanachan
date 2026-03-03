@@ -8,7 +8,7 @@ Architecture Note:
   user_id passed in request body/query from trusted Next.js layer
 """
 
-from typing import Any, Dict, List
+from typing import List
 from fastapi import APIRouter, HTTPException, Query, Request
 from uuid import UUID
 
