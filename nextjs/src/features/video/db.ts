@@ -457,7 +457,7 @@ export async function removeGrammarBookmark(userId: string, kuId: string): Promi
     .from('user_grammar_bookmarks')
     .delete()
     .eq('user_id', userId)
-    .eq('ku_id', kuId);
+    .eq('item_id', kuId);
 
   if (error) throw error;
 }
