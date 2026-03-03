@@ -5,16 +5,13 @@ Deck Manager Agent - handles user requests for creating and managing custom deck
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
-from uuid import UUID
+from typing import Any, Dict, Optional
 
 from langchain_core.tools import tool
-from langchain_core.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 
 from ..services.deck_service import get_deck_service
 from ..services import learning_service as learn_serv
-from ..services.sentence_library import get_sentence_library_service
 from ..core.llm import make_llm
 
 logger = logging.getLogger(__name__)

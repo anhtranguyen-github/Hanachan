@@ -5,8 +5,6 @@ Deck Service - manages custom user decks and their items.
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
-from uuid import UUID
-from datetime import datetime, timezone
 
 from ..core.database import execute_query, execute_single
 

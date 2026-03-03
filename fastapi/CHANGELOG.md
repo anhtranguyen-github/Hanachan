@@ -36,6 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Japanese Tokenization Engine** - Migrated Japanese text tokenization from Next.js (`kuromoji`) to FastAPI (`janome`) to resolve server-side memory "Segmentation fault" crashes in Edge environments.
 
 ### Fixed
+- **Admin Security** - Fixed `require_permission` async decorator causing `TypeError: coroutine object is not callable` in FastAPI dependency injection
+- **Code Quality** - Fixed 17 F401 unused import errors across multiple files (admin_security.py, deck_manager.py, admin.py, decks.py, videos.py, admin.py, deck_service.py)
+- **Code Quality** - Fixed 2 F541 f-string without placeholders errors in admin_service.py
+- **Unit Testing** - Fixed `test_default_weights` to expect 19 weights (w0-w18) matching FSRS-4.5 specification
+- **Unit Testing** - Fixed `test_submit_review_existing_item` mock to properly handle multiple `execute_single` calls with different return values
 - Environment file path resolution for Docker/container deployments
 - Rate limit configuration now uses settings instead of hardcoded values
 - **Linting (FastAPI)** - Fixed `F811` (Redefinition of unused `os`) in `migrate_sentences.py`
