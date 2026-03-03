@@ -1,149 +1,234 @@
-import { NextRequest, NextResponse } from 'next/server';
+/**
+ * Practice Session Management API
+ * Handles GET (next item), POST (record attempt), and DELETE (end session)
+ * 
+ * Architecture: Next.js BFF pattern - all business logic in Next.js
+ */
 
-// Get FastAPI backend URL from environment
-const FASTAPI_URL = process.env.NEXT_PUBLIC_FASTAPI_URL || 'http://localhost:8000';
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { recordPracticeAttempt, endPracticeSession, getPracticeStats } from '@/features/speaking/speakingService';
 
 export const dynamic = 'force-dynamic';
 
-// Get Next practice item
+/**
+ * GET /api/practice/session/{session_id}
+ * Get next practice item (simplified - returns session info)
+ */
 export async function GET(
     req: NextRequest,
     { params }: { params: { session_id: string } }
 ) {
     try {
-        const { session_id } = params;
+        const sessionId = params.session_id;
 
-        if (!session_id) {
+        // Get user from authorization header
+        const authHeader = req.headers.get('authorization');
+        if (!authHeader?.startsWith('Bearer ')) {
             return NextResponse.json(
-                { success: false, error: 'session_id is required' },
-                { status: 400 }
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
             );
         }
 
-        // Forward to FastAPI backend
-        const response = await fetch(`${FASTAPI_URL}/api/v1/practice/session/${session_id}/next`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(req.headers.get('authorization') && {
-                    'Authorization': req.headers.get('authorization')!,
-                }),
-            },
+        const token = authHeader.split(' ')[1];
+        
+        // Verify token with Supabase
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                auth: {
+                    autoRefreshToken: false,
+                    persistSession: false
+                }
+            }
+        );
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+        
+        if (authError || !user) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        // Get session details
+        const { data: session, error: sessionError } = await supabase
+            .from('speaking_sessions')
+            .select('*')
+            .eq('id', sessionId)
+            .eq('user_id', user.id)
+            .single();
+
+        if (sessionError || !session) {
+            return NextResponse.json(
+                { success: false, error: 'Session not found' },
+                { status: 404 }
+            );
+        }
+
+        // Get sentences for this session (would be stored in session data)
+        const { data: sentences } = await supabase
+            .from('sentences')
+            .select('*')
+            .limit(10);
+
+        return NextResponse.json({
+            success: true,
+            session,
+            sentences: sentences || []
         });
 
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ detail: 'Failed to get next item' }));
-            return NextResponse.json(
-                { success: false, error: error.detail || 'Failed to get next item' },
-                { status: response.status }
-            );
-        }
-
-        const data = await response.json();
-        return NextResponse.json(data);
-
-    } catch (e: any) {
-        console.error('[Practice Next API]', e);
+    } catch (error: any) {
+        console.error('[Practice Session GET API]', error);
         return NextResponse.json(
-            { success: false, error: e.message || 'Internal server error' },
+            { success: false, error: error.message || 'Internal server error' },
             { status: 500 }
         );
     }
 }
 
-// Record an attempt
+/**
+ * POST /api/practice/session/{session_id}
+ * Record a practice attempt
+ */
 export async function POST(
     req: NextRequest,
     { params }: { params: { session_id: string } }
 ) {
     try {
-        const { session_id } = params;
+        const sessionId = params.session_id;
 
-        if (!session_id) {
+        // Get user from authorization header
+        const authHeader = req.headers.get('authorization');
+        if (!authHeader?.startsWith('Bearer ')) {
             return NextResponse.json(
-                { success: false, error: 'session_id is required' },
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        const token = authHeader.split(' ')[1];
+        
+        // Verify token with Supabase
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                auth: {
+                    autoRefreshToken: false,
+                    persistSession: false
+                }
+            }
+        );
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+        
+        if (authError || !user) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        // Parse body
+        const body = await req.json();
+        const { sentence, word, score } = body;
+
+        if (!sentence || !word || score === undefined) {
+            return NextResponse.json(
+                { success: false, error: 'sentence, word, and score are required' },
                 { status: 400 }
             );
         }
 
-        const body = await req.json();
+        // Record attempt using local service
+        const result = await recordPracticeAttempt(user.id, sessionId, sentence, word, score);
 
-        // Forward to FastAPI backend
-        const response = await fetch(`${FASTAPI_URL}/api/v1/practice/session/${session_id}/record`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(req.headers.get('authorization') && {
-                    'Authorization': req.headers.get('authorization')!,
-                }),
-            },
-            body: JSON.stringify({
-                ...body,
-                session_id: session_id,
-            }),
-        });
-
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ detail: 'Failed to record attempt' }));
+        if (!result.success) {
             return NextResponse.json(
-                { success: false, error: error.detail || 'Failed to record attempt' },
-                { status: response.status }
+                { success: false, error: result.error },
+                { status: 500 }
             );
         }
 
-        const data = await response.json();
-        return NextResponse.json(data);
+        return NextResponse.json({
+            success: true,
+            attempt: result.attempt
+        });
 
-    } catch (e: any) {
-        console.error('[Practice Record API]', e);
+    } catch (error: any) {
+        console.error('[Practice Session POST API]', error);
         return NextResponse.json(
-            { success: false, error: e.message || 'Internal server error' },
+            { success: false, error: error.message || 'Internal server error' },
             { status: 500 }
         );
     }
 }
 
-// Delete/end a session
+/**
+ * DELETE /api/practice/session/{session_id}
+ * End a practice session
+ */
 export async function DELETE(
     req: NextRequest,
     { params }: { params: { session_id: string } }
 ) {
     try {
-        const { session_id } = params;
+        const sessionId = params.session_id;
 
-        if (!session_id) {
+        // Get user from authorization header
+        const authHeader = req.headers.get('authorization');
+        if (!authHeader?.startsWith('Bearer ')) {
             return NextResponse.json(
-                { success: false, error: 'session_id is required' },
-                { status: 400 }
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
             );
         }
 
-        // Forward to FastAPI backend
-        const response = await fetch(`${FASTAPI_URL}/api/v1/practice/session/${session_id}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(req.headers.get('authorization') && {
-                    'Authorization': req.headers.get('authorization')!,
-                }),
-            },
+        const token = authHeader.split(' ')[1];
+        
+        // Verify token with Supabase
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                auth: {
+                    autoRefreshToken: false,
+                    persistSession: false
+                }
+            }
+        );
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+        
+        if (authError || !user) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        // End session using local service
+        const result = await endPracticeSession(user.id, sessionId);
+
+        if (!result.success) {
+            return NextResponse.json(
+                { success: false, error: result.error },
+                { status: 500 }
+            );
+        }
+
+        return NextResponse.json({
+            success: true
         });
 
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ detail: 'Failed to end session' }));
-            return NextResponse.json(
-                { success: false, error: error.detail || 'Failed to end session' },
-                { status: response.status }
-            );
-        }
-
-        const data = await response.json();
-        return NextResponse.json(data);
-
-    } catch (e: any) {
-        console.error('[Practice End Session API]', e);
+    } catch (error: any) {
+        console.error('[Practice Session DELETE API]', error);
         return NextResponse.json(
-            { success: false, error: e.message || 'Internal server error' },
+            { success: false, error: error.message || 'Internal server error' },
             { status: 500 }
         );
     }
