@@ -66,7 +66,7 @@ function ContentDatabase() {
                 unit.slug.toLowerCase().includes(searchQuery.toLowerCase());
             return matchesStatus && matchesSearch;
         });
-    }, [items, states, filterStatus, searchQuery, userLevel]);
+    }, [items, states, filterStatus, searchQuery]);
 
     const tabs = [
         { id: 'all', label: 'ALL', icon: Layers, color: '#4A4E69' },

@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### System Verification & Bug Fixes (2026-03-03)
+
+#### Fixed
+- **TypeScript Errors**: Fixed multiple type errors in admin service and pages
+  - Fixed `resolveAbuseAlert` signature to accept object parameter `{ resolution_notes, status }`
+  - Fixed `getSystemHealth` return type to match expected `HealthData` interface
+  - Added missing stub exports: `getUserAgentTraces`, `getUserEpisodicMemory`, `getUserSemanticMemory`
+  - Added missing stub exports: `getRateLimitOverrides`, `createRateLimitOverride`
+  - Fixed reading dashboard to use array directly instead of `data.history`
+
+- **Backend Lint Errors**: Fixed 19 ruff lint errors in FastAPI
+  - Added missing imports: `Depends`, `require_permission`, `AdminPermission` in admin.py
+  - Added missing imports: `Depends`, `require_auth` in sentences.py
+  - Removed unused imports from decks.py, admin_security.py, video_dictation.py
+  - Fixed f-strings without placeholders in admin_service.py
+  - Fixed unused variable assignments in session.py
+
+#### Known Issues
+- **CORS Errors**: Frontend attempting to call FastAPI backend directly (architecture violation)
+  - Memory endpoints fail due to CORS policy
+  - SRS endpoints return 404 (need migration to Next.js)
+- **Lesson Start**: Button click does not navigate (requires investigation)
+
 ### Phase 2: Ownership Correction (COMPLETE)
 
 **Status**: All service migrations completed on 2026-03-03

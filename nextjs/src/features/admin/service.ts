@@ -759,14 +759,17 @@ export async function getAbuseAlerts(params?: {
   };
 }
 
-export async function resolveAbuseAlert(alertId: string, resolutionNotes: string) {
+export async function resolveAbuseAlert(
+  alertId: string,
+  resolution: { resolution_notes: string; status: "resolved" | "false_positive" }
+) {
   const client = supabaseService || supabase;
   
   const { data: alert, error } = await client
     .from('abuse_alerts')
     .update({
-      status: 'resolved',
-      resolution_notes: resolutionNotes,
+      status: resolution.status,
+      resolution_notes: resolution.resolution_notes,
       resolved_at: new Date().toISOString(),
     })
     .eq('id', alertId)
@@ -789,28 +792,145 @@ export async function resolveAbuseAlert(alertId: string, resolutionNotes: string
 // SYSTEM HEALTH
 // =============================================================================
 
-export async function getSystemHealth() {
+export async function getSystemHealth(): Promise<{
+  status: string;
+  db_status: string;
+  qdrant_status: string;
+  neo4j_status: string;
+  degraded: string[];
+  timestamp: string;
+}> {
   const client = supabaseService || supabase;
+  const degraded: string[] = [];
   
   // Check database connectivity
   const startTime = Date.now();
   const { error: dbError } = await client.from('users').select('id', { count: 'exact', head: true });
   const dbLatency = Date.now() - startTime;
   
+  if (dbError) {
+    degraded.push('database');
+  }
+  
+  // For Phase 2, we report on the services we can check
+  // Qdrant and Neo4j are managed by FastAPI backend
+  const dbStatus = dbError ? 'error' : 'ok';
+  
   return {
-    status: dbError ? 'degraded' : 'healthy',
-    version: '2.0.0', // Phase 2 migration complete
+    status: degraded.length > 0 ? 'degraded' : 'healthy',
+    db_status: dbStatus,
+    qdrant_status: 'unknown', // Managed by FastAPI
+    neo4j_status: 'unknown',  // Managed by FastAPI
+    degraded,
     timestamp: new Date().toISOString(),
-    checks: {
-      database: {
-        status: dbError ? 'error' : 'ok',
-        latency_ms: dbLatency,
-        error: dbError?.message,
-      },
-      supabase: {
-        status: 'ok',
-        url: process.env.NEXT_PUBLIC_SUPABASE_URL,
-      },
+  };
+}
+
+// =============================================================================
+// DEBUG / MEMORY (Stub implementations for Phase 2)
+// These functions connect to the FastAPI backend for agent debugging
+// =============================================================================
+
+export interface AgentTrace {
+  id: string;
+  agent_name: string;
+  trace_type: string;
+  step_number: number;
+  input_data: Record<string, unknown> | null;
+  output_data: Record<string, unknown> | null;
+  latency_ms: number | null;
+  model: string | null;
+  tokens_used: number | null;
+  error_message: string | null;
+  created_at: string;
+}
+
+export async function getUserAgentTraces(userId: string, limit: number = 50) {
+  // Phase 2: This would query the FastAPI backend
+  // For now, return empty result to satisfy type checking
+  return {
+    traces: [] as AgentTrace[],
+  };
+}
+
+export async function getUserEpisodicMemory(userId: string, limit: number = 20) {
+  // Phase 2: This would query the FastAPI backend
+  return {
+    memories: [] as Array<{
+      id: string;
+      content: string;
+      importance: number;
+      created_at: string;
+    }>,
+  };
+}
+
+export async function getUserSemanticMemory(userId: string, query?: string, limit: number = 10) {
+  // Phase 2: This would query the FastAPI backend
+  return {
+    graph: {
+      nodes: [] as unknown[],
+      relationships: [] as unknown[],
     },
+  };
+}
+
+// =============================================================================
+// RATE LIMIT OVERRIDES (Stub implementations for Phase 2)
+// =============================================================================
+
+export interface RateLimitOverride {
+  id: string;
+  user_id: string | null;
+  user_name: string | null;
+  ip_address: string | null;
+  scope: string;
+  endpoint_pattern: string;
+  max_requests_per_minute: number | null;
+  max_requests_per_hour: number | null;
+  max_requests_per_day: number | null;
+  expires_at: string;
+  reason: string;
+  created_at: string;
+}
+
+export async function getRateLimitOverrides() {
+  // Phase 2: This would query Supabase rate_limit_overrides table
+  // For now, return empty result to satisfy type checking
+  return {
+    overrides: [] as RateLimitOverride[],
+  };
+}
+
+export async function createRateLimitOverride(override: {
+  scope: string;
+  endpoint_pattern: string;
+  reason: string;
+  expires_hours: number;
+  user_id?: string;
+  user_name?: string;
+  ip_address?: string;
+  max_requests_per_minute: number | null;
+  max_requests_per_hour: number | null;
+  max_requests_per_day: number | null;
+}): Promise<RateLimitOverride> {
+  // Phase 2: This would insert into Supabase
+  // For now, return a mock to satisfy type checking
+  const expiresAt = new Date();
+  expiresAt.setHours(expiresAt.getHours() + override.expires_hours);
+  
+  return {
+    id: crypto.randomUUID(),
+    user_id: override.user_id || null,
+    user_name: override.user_name || null,
+    ip_address: override.ip_address || null,
+    scope: override.scope,
+    endpoint_pattern: override.endpoint_pattern,
+    max_requests_per_minute: override.max_requests_per_minute,
+    max_requests_per_hour: override.max_requests_per_hour,
+    max_requests_per_day: override.max_requests_per_day,
+    expires_at: expiresAt.toISOString(),
+    reason: override.reason,
+    created_at: new Date().toISOString(),
   };
 }

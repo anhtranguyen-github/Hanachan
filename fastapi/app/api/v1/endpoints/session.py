@@ -119,7 +119,7 @@ async def get_session(
       is trusted to have been validated by the BFF layer.
     """
     # Verify ownership
-    s = await _assert_session_owner(session_id, user_id)
+    await _assert_session_owner(session_id, user_id)
 
     info = await run_in_threadpool(sess_mem.to_session_info, session_id)
     if info is None:
@@ -156,7 +156,7 @@ async def update_session(
       is trusted to have been validated by the BFF layer.
     """
     # Session ownership verified by _assert_session_owner
-    s = await _assert_session_owner(session_id, user_id)
+    await _assert_session_owner(session_id, user_id)
 
     ok = await run_in_threadpool(
         sess_mem.update_session_meta, session_id, req.title, req.metadata
@@ -185,7 +185,7 @@ async def end_session(
       is trusted to have been validated by the BFF layer.
     """
     # Session ownership verified by _assert_session_owner
-    s = await _assert_session_owner(session_id, user_id)
+    await _assert_session_owner(session_id, user_id)
 
     data = await run_in_threadpool(sess_mem.end_session, session_id)
     if data is None:

@@ -3,7 +3,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-const MEMORY_API_BASE = process.env.MEMORY_API_URL ?? 'http://localhost:8765';
+// Architecture Note: Direct FastAPI calls removed per Phase 2 migration
+// Use Next.js API routes instead of calling FastAPI directly
 
 function getSupabase(cookieStore: any) {
     return createServerClient(
@@ -43,9 +44,9 @@ export async function addSentenceAction(japaneseRaw: string, englishRaw: string)
         return { success: false, error: error.message };
     }
 
-    // 2. Trigger annotation via the backend API
+    // 2. Trigger annotation via Next.js API route (architecture: no direct FastAPI calls)
     try {
-        const annotRes = await fetch(`${MEMORY_API_BASE}/sentences/annotate`, {
+        const annotRes = await fetch('/api/sentences/annotate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

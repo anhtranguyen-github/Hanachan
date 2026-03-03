@@ -24,7 +24,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+
+from ....core.admin_security import require_permission, AdminPermission
 from fastapi.concurrency import run_in_threadpool
 
 from ....core.database import get_db_pool, check_db_health

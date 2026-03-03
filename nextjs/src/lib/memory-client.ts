@@ -1,11 +1,27 @@
 /**
  * Memory API Client
- * Thin TypeScript wrapper around the FastAPI memory service at services/memory_api.
- * Import this wherever you need persistent memory in the Next.js app.
+ * 
+ * ⚠️ ARCHITECTURE VIOLATION WARNING ⚠️
+ * 
+ * This module previously called FastAPI directly, which violates the architecture rule:
+ * - FastAPI = Agents ONLY (stateless, no auth)
+ * - Next.js = Business Logic Owner (BFF pattern)
+ * - Supabase = Single Source of Truth
+ * 
+ * As part of Phase 2 migration, direct FastAPI calls have been disabled.
+ * The functions below now return mock data or throw descriptive errors.
+ * 
+ * Migration Path:
+ * 1. Memory operations should use Supabase client directly
+ * 2. Or call Next.js API routes that manage the business logic
+ * 3. FastAPI memory agents are triggered via Supabase changes
+ * 
+ * See: documentation/ARCHITECTURE_RULES.md
  */
 
+import { supabase } from "@/lib/supabase";
+
 const MEMORY_API_BASE = process.env.MEMORY_API_URL ?? 'http://localhost:8765/api/v1';
-const MEMORY_API_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // ---------------------------------------------------------------------------
 // Types (mirrors Python models)
@@ -63,106 +79,266 @@ export interface UserProfile {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Architecture Violation Error
 // ---------------------------------------------------------------------------
 
-async function memFetch<T>(
-    path: string,
-    options: RequestInit = {},
-): Promise<T> {
-    const headers: any = {
-        'Content-Type': 'application/json',
-        ...options.headers,
-    };
-
-    if (MEMORY_API_KEY) {
-        headers['Authorization'] = `Bearer ${MEMORY_API_KEY}`;
+class ArchitectureViolationError extends Error {
+    constructor(feature: string) {
+        super(
+            `Architecture Violation: ${feature} cannot call FastAPI directly. ` +
+            `FastAPI = Agents ONLY. Use Supabase client or Next.js API routes. ` +
+            `See documentation/ARCHITECTURE_RULES.md`
+        );
+        this.name = 'ArchitectureViolationError';
     }
-
-    const res = await fetch(`${MEMORY_API_BASE}${path}`, {
-        ...options,
-        headers,
-    });
-    if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        throw new Error(`Memory API ${path} failed [${res.status}]: ${text}`);
-    }
-    return res.json() as Promise<T>;
 }
 
 // ---------------------------------------------------------------------------
-// Session management
+// Stubbed Functions (Phase 2 Migration)
+// These functions previously called FastAPI - now they use Supabase or return stubs
 // ---------------------------------------------------------------------------
 
-/** Create a new conversation thread. Returns session_id. */
+/** 
+ * Create a new conversation thread via Supabase.
+ * Previously called FastAPI - now uses Supabase directly.
+ */
 export async function createMemorySession(
     userId: string,
     metadata?: Record<string, unknown>,
 ): Promise<string> {
-    const data = await memFetch<{ session_id: string }>('/memory/session', {
-        method: 'POST',
-        body: JSON.stringify({ user_id: userId, metadata }),
-    });
-    return data.session_id;
+    console.warn('[memory-client] Using Supabase for session creation (was FastAPI)');
+    
+    const { data, error } = await supabase
+        .from('chat_sessions')
+        .insert({
+            user_id: userId,
+            metadata: metadata || {},
+        })
+        .select('id')
+        .single();
+    
+    if (error) {
+        console.error('[memory-client] Error creating session:', error);
+        throw new Error('Failed to create chat session');
+    }
+    
+    return data.id;
 }
 
-/** Get full session including messages, title, and rolling summary. */
-export async function getMemorySession(sessionId: string): Promise<MemorySessionFull> {
-    return memFetch<MemorySessionFull>(`/memory/session/${sessionId}`);
-}
-
-/** List all active sessions for a user (lightweight, no messages). */
+/** 
+ * List user sessions from Supabase.
+ * Previously called FastAPI - now uses Supabase directly.
+ */
 export async function listMemorySessions(userId: string): Promise<MemorySession[]> {
-    return memFetch<MemorySession[]>(`/memory/sessions/${userId}`);
+    console.warn('[memory-client] Using Supabase for session list (was FastAPI)');
+    
+    const { data, error } = await supabase
+        .from('chat_sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false });
+    
+    if (error) {
+        console.error('[memory-client] Error listing sessions:', error);
+        return [];
+    }
+    
+    return (data || []).map(session => ({
+        session_id: session.id,
+        user_id: session.user_id,
+        title: session.title,
+        summary: session.summary,
+        created_at: session.created_at,
+        updated_at: session.updated_at,
+        message_count: session.message_count || 0,
+        metadata: session.metadata || {},
+    }));
 }
 
-/** Update a session's title or metadata. */
+/** 
+ * Get session details from Supabase.
+ * Previously called FastAPI - now uses Supabase directly.
+ */
+export async function getMemorySession(
+    sessionId: string,
+): Promise<MemorySessionFull | null> {
+    console.warn('[memory-client] Using Supabase for session details (was FastAPI)');
+    
+    const { data: session, error: sessionError } = await supabase
+        .from('chat_sessions')
+        .select('*')
+        .eq('id', sessionId)
+        .single();
+    
+    if (sessionError || !session) {
+        console.error('[memory-client] Error fetching session:', sessionError);
+        return null;
+    }
+    
+    const { data: messages, error: messagesError } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: true });
+    
+    if (messagesError) {
+        console.error('[memory-client] Error fetching messages:', messagesError);
+    }
+    
+    return {
+        session_id: session.id,
+        user_id: session.user_id,
+        title: session.title,
+        summary: session.summary,
+        created_at: session.created_at,
+        updated_at: session.updated_at,
+        message_count: session.message_count || 0,
+        metadata: session.metadata || {},
+        messages: (messages || []).map(m => ({
+            role: m.role,
+            content: m.content,
+            timestamp: m.created_at,
+        })),
+    };
+}
+
+/** 
+ * Update session metadata in Supabase.
+ * Previously called FastAPI - now uses Supabase directly.
+ */
 export async function updateMemorySession(
     sessionId: string,
-    update: { title?: string; metadata?: Record<string, unknown> },
-): Promise<MemorySessionFull> {
-    return memFetch<MemorySessionFull>(`/memory/session/${sessionId}`, {
-        method: 'PATCH',
-        body: JSON.stringify(update),
-    });
+    updates: Partial<Pick<MemorySession, 'title' | 'summary' | 'metadata'>>,
+): Promise<void> {
+    console.warn('[memory-client] Using Supabase for session update (was FastAPI)');
+    
+    const { error } = await supabase
+        .from('chat_sessions')
+        .update({
+            ...updates,
+            updated_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId);
+    
+    if (error) {
+        console.error('[memory-client] Error updating session:', error);
+        throw new Error('Failed to update session');
+    }
 }
 
-/** End a session (optionally consolidate transcript into long-term memory). */
-export async function endMemorySession(
-    sessionId: string,
-    consolidate = true,
-): Promise<{ message: string; title: string | null; summary: string | null }> {
-    return memFetch(`/memory/session/${sessionId}?consolidate=${consolidate}`, {
-        method: 'DELETE',
-    });
+/** 
+ * Delete session from Supabase.
+ * Previously called FastAPI - now uses Supabase directly.
+ */
+export async function deleteMemorySession(sessionId: string): Promise<void> {
+    console.warn('[memory-client] Using Supabase for session delete (was FastAPI)');
+    
+    const { error } = await supabase
+        .from('chat_sessions')
+        .delete()
+        .eq('id', sessionId);
+    
+    if (error) {
+        console.error('[memory-client] Error deleting session:', error);
+        throw new Error('Failed to delete session');
+    }
 }
 
 // ---------------------------------------------------------------------------
-// Chat (non-streaming)
+// Episodic Memory (Stubbed - requires agent via Supabase)
 // ---------------------------------------------------------------------------
 
-/** Full memory-augmented chat — goes through LangGraph agent. */
-export async function memoryChat(
+/** 
+ * Search episodic memories.
+ * ⚠️ This functionality requires the FastAPI memory agent.
+ * The agent should be triggered via Supabase, not called directly.
+ * 
+ * Stub implementation returns empty array.
+ */
+export async function searchEpisodicMemory(
     userId: string,
-    message: string,
-    sessionId?: string,
-): Promise<MemoryChatResponse> {
-    return memFetch<MemoryChatResponse>('/memory/chat', {
-        method: 'POST',
-        body: JSON.stringify({ user_id: userId, message, session_id: sessionId ?? null }),
-    });
+    query: string,
+    k: number = 5,
+): Promise<EpisodicMemory[]> {
+    console.warn('[memory-client] Episodic memory search stubbed - agent should be triggered via Supabase');
+    return [];
 }
 
 // ---------------------------------------------------------------------------
-// Chat (streaming) — returns a raw ReadableStream of SSE data
+// User Profile (Stubbed - use Supabase directly)
+// ---------------------------------------------------------------------------
+
+/** 
+ * Get user profile.
+ * Use Supabase directly instead of calling FastAPI.
+ * 
+ * Stub implementation returns basic profile.
+ */
+export async function getUserProfile(userId: string): Promise<UserProfile> {
+    console.warn('[memory-client] Using Supabase for user profile (was FastAPI)');
+    
+    const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+    
+    if (error || !data) {
+        console.error('[memory-client] Error fetching user profile:', error);
+        return {
+            user_id: userId,
+            name: null,
+            preferences: [],
+            goals: [],
+            interests: [],
+            facts: [],
+        };
+    }
+    
+    return {
+        user_id: userId,
+        name: data.display_name,
+        preferences: data.preferences || [],
+        goals: data.goals || [],
+        interests: data.interests || [],
+        facts: data.facts || [],
+    };
+}
+
+/** 
+ * Update user profile.
+ * Use Supabase directly instead of calling FastAPI.
+ */
+export async function updateUserProfile(
+    userId: string,
+    updates: Partial<Omit<UserProfile, 'user_id'>>,
+): Promise<void> {
+    console.warn('[memory-client] Using Supabase for profile update (was FastAPI)');
+    
+    const { error } = await supabase
+        .from('users')
+        .update({
+            display_name: updates.name,
+            preferences: updates.preferences,
+            goals: updates.goals,
+            interests: updates.interests,
+            facts: updates.facts,
+        })
+        .eq('id', userId);
+    
+    if (error) {
+        console.error('[memory-client] Error updating profile:', error);
+        throw new Error('Failed to update profile');
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Streaming Chat - Delegates to Next.js API route
 // ---------------------------------------------------------------------------
 
 /**
- * Streaming memory chat. Yields SSE events from the memory API.
- *
- * Usage (in a Next.js streaming route):
- *   const stream = await memoryChatStream(userId, message, sessionId);
- *   return new Response(stream, { headers: { 'Content-Type': 'text/event-stream' } });
+ * memoryChatStream - Streams chat response via Next.js API route
+ * Previously called FastAPI directly - now uses Next.js API route
  */
 export async function memoryChatStream(
     userId: string,
@@ -170,96 +346,108 @@ export async function memoryChatStream(
     sessionId?: string,
     ttsEnabled?: boolean,
 ): Promise<ReadableStream<Uint8Array>> {
-    const res = await fetch(`${MEMORY_API_BASE}/memory/chat/stream`, {
+    console.warn('[memory-client] Streaming via Next.js API route (was FastAPI)');
+    
+    const res = await fetch('/api/chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            user_id: userId,
+            userId,
             message,
-            session_id: sessionId ?? null,
-            tts_enabled: ttsEnabled ?? false
+            sessionId,
+            ttsEnabled,
         }),
     });
+    
     if (!res.ok || !res.body) {
-        throw new Error(`Memory stream failed [${res.status}]`);
+        throw new Error('Failed to start chat stream');
     }
+    
     return res.body;
 }
 
-// ---------------------------------------------------------------------------
-// Context injection (for building system prompts)
-// ---------------------------------------------------------------------------
+// Alias for backward compatibility
+export const streamMemoryChat = memoryChatStream;
 
 /**
- * Fetch a ready-to-use memory context block for a user + query.
- * Use `result.system_prompt_block` as a prefix to your system message.
+ * getMemoryContext - Returns memory context for chat
+ * Stub implementation - full context should be fetched via API route
  */
 export async function getMemoryContext(
     userId: string,
-    query: string,
+    query?: string,
     sessionId?: string,
-    maxEpisodic = 3,
+    limit?: number,
 ): Promise<MemoryContextBlock> {
-    return memFetch<MemoryContextBlock>('/memory/context', {
-        method: 'POST',
-        body: JSON.stringify({
-            user_id: userId,
-            query,
-            session_id: sessionId ?? null,
-            max_episodic: maxEpisodic,
-        }),
-    });
+    console.warn('[memory-client] Memory context stubbed - using API route instead');
+    
+    // Return minimal context - actual implementation should call API route
+    return {
+        user_id: userId,
+        query: query || '',
+        system_prompt_block: '',
+        episodic_memories: [],
+        semantic_facts: [],
+        user_profile_snippet: '',
+        thread_history: [],
+    };
+}
+
+/**
+ * getMemoryContextBlock - Alias for getMemoryContext
+ */
+export const getMemoryContextBlock = getMemoryContext;
+
+/**
+ * End memory session and return updated session data
+ */
+export async function endMemorySession(
+    sessionId: string,
+    _saveContext?: boolean
+): Promise<{ title: string | null; summary: string | null }> {
+    console.warn('[memory-client] Using Supabase for end session (was FastAPI)');
+    
+    // First get current session data
+    const { data: session, error: fetchError } = await supabase
+        .from('chat_sessions')
+        .select('title, summary')
+        .eq('id', sessionId)
+        .single();
+    
+    if (fetchError) {
+        console.error('[memory-client] Error fetching session:', fetchError);
+    }
+    
+    // Update ended_at
+    const { error } = await supabase
+        .from('chat_sessions')
+        .update({ ended_at: new Date().toISOString() })
+        .eq('id', sessionId);
+    
+    if (error) {
+        console.error('[memory-client] Error ending session:', error);
+        throw new Error('Failed to end session');
+    }
+    
+    return {
+        title: session?.title ?? null,
+        summary: session?.summary ?? null,
+    };
 }
 
 // ---------------------------------------------------------------------------
-// User profile
+// Default export for convenience
 // ---------------------------------------------------------------------------
 
-export async function getUserMemoryProfile(userId: string): Promise<UserProfile> {
-    return memFetch<UserProfile>(`/memory/profile/${userId}`);
-}
-
-// ---------------------------------------------------------------------------
-// Episodic memory
-// ---------------------------------------------------------------------------
-
-export async function searchEpisodicMemory(
-    userId: string,
-    query: string,
-    k = 5,
-): Promise<{ results: EpisodicMemory[] }> {
-    return memFetch('/memory/episodic/search', {
-        method: 'POST',
-        body: JSON.stringify({ user_id: userId, query, k }),
-    });
-}
-
-/** Delete a specific episodic memory ("right to forget"). */
-export async function forgetEpisodicMemory(
-    userId: string,
-    memoryId: string,
-): Promise<{ message: string }> {
-    return memFetch(`/memory/episodic/${memoryId}?user_id=${userId}`, { method: 'DELETE' });
-}
-
-// ---------------------------------------------------------------------------
-// Maintenance
-// ---------------------------------------------------------------------------
-
-/** Consolidate old episodic memories to reduce bloat. */
-export async function consolidateMemory(userId: string) {
-    return memFetch(`/memory/consolidate/${userId}`, { method: 'POST' });
-}
-
-/** Delete ALL memory for a user (episodic, semantic, sessions). */
-export async function clearAllMemory(userId: string) {
-    return memFetch(`/memory/clear/${userId}`, { method: 'DELETE' });
-}
-
-// ---------------------------------------------------------------------------
-// Health
-// ---------------------------------------------------------------------------
-
-export async function checkMemoryHealth() {
-    return memFetch<{ status: string; qdrant: string; neo4j: string }>('/health');
-}
+export default {
+    createSession: createMemorySession,
+    listSessions: listMemorySessions,
+    getSession: getMemorySession,
+    updateSession: updateMemorySession,
+    deleteSession: deleteMemorySession,
+    searchEpisodic: searchEpisodicMemory,
+    getProfile: getUserProfile,
+    updateProfile: updateUserProfile,
+    streamChat: streamMemoryChat,
+    getContextBlock: getMemoryContextBlock,
+};

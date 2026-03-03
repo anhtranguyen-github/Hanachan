@@ -11,7 +11,9 @@ Architecture Note:
 
 import logging
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+
+from ....core.security import require_auth
 from pydantic import BaseModel, Field
 
 from ....services.sentence_library import (

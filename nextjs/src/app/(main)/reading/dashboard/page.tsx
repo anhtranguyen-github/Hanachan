@@ -53,7 +53,7 @@ export default function ReadingDashboardPage() {
     const loadHistory = async () => {
         try {
             const data = await getMetricsHistory(historyDays);
-            setHistory(data.history || []);
+            setHistory(data || []);
         } catch (err) {
             console.error('Failed to load history:', err);
         }
