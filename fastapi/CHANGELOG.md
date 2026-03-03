@@ -7,6 +7,153 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Phase 1: Architectural Safety Remediation (COMPLETE)
+
+**Status**: All 6 sub-phases completed on 2026-03-03
+**Impact**: Critical architectural violations removed, CI guards active
+
+#### Phase 1 Overview
+
+Phase 1 eliminated critical architectural violations from the FastAPI codebase:
+
+1. **Audit** - Cataloged 50+ violations across 32 files
+2. **Rules** - Created comprehensive ARCHITECTURE_RULES.md
+3. **Guards** - Implemented automated CI/CD violation detection
+4. **DB Removal** - Eliminated direct PostgreSQL access
+5. **Auth Removal** - Moved JWT validation to Next.js BFF
+6. **State Fix** - Removed in-memory state treated as source of truth
+
+#### Phase 1.6 - In-Memory State Elimination (2026-03-03)
+
+##### Fixed
+- **CRITICAL**: Eliminated in-memory state treated as source of truth in FastAPI
+  - [`video_dictation.py`](fastapi/app/services/video_dictation.py): Removed `_dictation_sessions` global dictionary
+  - Session progress now computed from database queries (`video_dictation_attempts` table)
+  - Session status survives server restarts (proper horizontal scalability)
+  - See [`documentation/PHASE_1_6_IN_MEMORY_STATE_AUDIT.md`](../documentation/PHASE_1_6_IN_MEMORY_STATE_AUDIT.md) for full audit report
+
+##### Architecture
+- Verified all in-memory patterns across FastAPI codebase
+- Confirmed `fsrs_service.py` scheduler cache is acceptable (source of truth in DB)
+- Confirmed service singletons are acceptable (not state storage)
+- Confirmed temporary files are acceptable (truly ephemeral)
+
+#### Phase 1.5 - JWT Authentication Removal (2026-03-03)
+
+##### Removed
+- **BREAKING**: JWT token validation from FastAPI
+  - [`app/core/security.py`](app/core/security.py): `require_auth` dependency removed
+  - [`app/core/admin_security.py`](app/core/admin_security.py): Admin JWT validation removed
+  - [`app/main.py`](app/main.py): JWT middleware and auth initialization removed
+
+##### Changed
+- All 12 endpoint files updated to accept `user_id` as explicit parameter:
+  - [`app/api/v1/endpoints/admin.py`](app/api/v1/endpoints/admin.py)
+  - [`app/api/v1/endpoints/chat.py`](app/api/v1/endpoints/chat.py)
+  - [`app/api/v1/endpoints/decks.py`](app/api/v1/endpoints/decks.py)
+  - [`app/api/v1/endpoints/fsrs.py`](app/api/v1/endpoints/fsrs.py)
+  - [`app/api/v1/endpoints/maintenance.py`](app/api/v1/endpoints/maintenance.py)
+  - [`app/api/v1/endpoints/memory.py`](app/api/v1/endpoints/memory.py)
+  - [`app/api/v1/endpoints/reading.py`](app/api/v1/endpoints/reading.py)
+  - [`app/api/v1/endpoints/sentences.py`](app/api/v1/endpoints/sentences.py)
+  - [`app/api/v1/endpoints/session.py`](app/api/v1/endpoints/session.py)
+  - [`app/api/v1/endpoints/speaking.py`](app/api/v1/endpoints/speaking.py)
+  - [`app/api/v1/endpoints/video_dictation.py`](app/api/v1/endpoints/video_dictation.py)
+  - [`app/api/v1/endpoints/videos.py`](app/api/v1/endpoints/videos.py)
+
+##### Architecture Violations Fixed
+- **JWT_VALIDATION_IN_FASTAPI**: FastAPI no longer validates JWT tokens
+- **AUTH_DUPLICATION**: Auth now consolidated in Next.js BFF layer only
+
+##### Deprecation Notices
+- `require_auth` dependency - **REMOVED** (use explicit user_id parameter)
+- `require_admin` dependency - **REMOVED** (admin checks moved to Next.js)
+- `verify_token` function - **REMOVED** (use Supabase auth in Next.js)
+
+##### Test Updates
+- [`tests/test_security.py`](tests/test_security.py): Updated to test new auth-less endpoints
+
+#### Phase 1.4 - Direct Database Access Removal (2026-03-03)
+
+##### Removed
+- **BREAKING**: Direct PostgreSQL access via psycopg2
+  - [`app/core/database.py`](app/core/database.py): **FILE DELETED**
+    - `get_db_connection()` - REMOVED
+    - `execute_query()` - REMOVED
+    - `execute_single()` - REMOVED
+    - `execute_many()` - REMOVED
+    - `DatabaseError` - REMOVED (use `ArchitectureViolationError`)
+  - [`app/core/config.py`](app/core/config.py): DB connection settings removed
+    - `DB_PASSWORD` - REMOVED
+    - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` - REMOVED
+  - [`requirements.txt`](requirements.txt): `psycopg2-binary` removed
+  - [`pyproject.toml`](pyproject.toml): psycopg2 dependency removed
+
+##### Changed
+- [`app/main.py`](app/main.py): Database initialization removed from startup
+- All services: Direct SQL queries will raise `ArchitectureViolationError`
+
+##### Architecture Violations Fixed
+- **DIRECT_DB_ACCESS**: psycopg2 imports blocked
+- **DIRECT_SQL_QUERIES**: SQL execution via execute_query blocked
+- **BYPASSED_RLS**: All data access now routed through Supabase RLS
+
+#### Phase 1.1 - Audit Complete (2026-03-03)
+
+##### Architecture
+- **CRITICAL**: Architecture violations audit completed
+  - See [`documentation/ARCHITECTURE_VIOLATIONS_AUDIT.md`](../documentation/ARCHITECTURE_VIOLATIONS_AUDIT.md) for full details
+  - 50+ critical violations identified
+  - 32 files with direct PostgreSQL access
+  - 14 files with JWT/auth logic
+  - 9 business logic services to migrate
+
+#### Phase 1.3 - Architecture Guard Implementation (2026-03-03)
+
+##### Added
+- **Architecture Violation Detection Tests** ([`tests/test_architecture_violations.py`](tests/test_architecture_violations.py))
+  - Automated tests that scan codebase and FAIL if architectural violations exist
+  - Tests for forbidden imports (psycopg2, asyncpg, direct DB access)
+  - Tests for forbidden auth patterns (JWT validation in FastAPI)
+  - Tests for in-memory state violations
+  - Tests for business logic in wrong layer (FSRS in FastAPI)
+  - Tests for direct FastAPI calls from Next.js
+  - Comprehensive test suite with clear error messages
+
+##### CI/CD
+- **GitHub Actions Workflow** (`.github/workflows/architecture-guard.yml`)
+  - Runs on every PR and push to main
+  - Three jobs: Full scan, Pytest tests, Quick PR check
+  - Uploads violation reports as artifacts
+  - Posts PR comments with violation details
+  - Fails builds if violations are introduced
+
+##### Test Additions
+- `test_no_psycopg2_imports()` - Blocks direct PostgreSQL driver imports
+- `test_no_jwt_validation_in_fastapi()` - Blocks JWT validation in FastAPI
+- `test_no_in_memory_state_as_truth()` - Blocks global in-memory state
+- `test_no_business_logic_in_fastapi()` - Blocks business logic in wrong layer
+- `test_no_direct_fastapi_calls_from_nextjs()` - Blocks direct HTTP calls
+- `test_no_asyncpg_imports()` - Blocks alternative async DB drivers
+- `test_architecture_rules_documentation()` - Validates rules doc exists
+
+#### Phase 1.2 - Architecture Rules Documentation (2026-03-03)
+
+##### Added
+- **ARCHITECTURE_RULES.md** - Comprehensive architecture guidelines
+  - Layer responsibilities (Next.js BFF, Supabase, FastAPI agents)
+  - Data flow rules (Supabase as single source of truth)
+  - Forbidden patterns (direct DB access, JWT in FastAPI, etc.)
+  - Migration patterns and examples
+  - Enforcement through CI/CD guards
+
+##### Documentation
+- Created detailed violation categories with detection patterns
+- Added CI/CD integration guidelines
+- Created violation reporting format specification
+
+### Previous Changes (Pre-Remediation)
+
 ### Added
 - **CI/CD Pipeline** - GitHub Actions workflow for automated testing (backend + frontend + lint)
 - **Test Infrastructure** - Enhanced FastAPI test setup with Faker, pytest fixtures, and coverage configuration

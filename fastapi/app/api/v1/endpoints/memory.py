@@ -4,13 +4,19 @@ Fixes:
   Issue #1  — JWT authentication on all endpoints
   Issue #6  — run_in_threadpool for sync code
   Issue #14 — no raw exception strings in responses
+
+Architecture Note:
+  Auth removed from FastAPI per architecture rules.
+  FastAPI = Agents ONLY (stateless, no auth)
+  Auth handled by Supabase/Next.js (BFF pattern)
+  user_id passed in request body/query from trusted Next.js layer
 """
 
 from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 
 from ....schemas.context import ContextRequest, ContextResponse
@@ -31,7 +37,6 @@ from ....services.memory import episodic_memory as ep_mem
 from ....services.memory import semantic_memory as sem_mem
 from ....services.memory import session_memory as sess_mem
 from ....agents.user_profile import build_user_profile, profile_to_system_prompt
-from ....core.security import require_auth, require_own_user
 from ....core.rate_limit import limiter
 from ....core.config import settings
 
@@ -45,13 +50,13 @@ router = APIRouter()
 async def get_chat_context(
     request: Request,
     req: ContextRequest,
-    token: dict = Depends(require_auth),
 ):
-    """Primary chatbot integration endpoint."""
-    # Ownership: user can only fetch their own context
-    if req.user_id != token.get("sub") and token.get("role") != "service_role":
-        raise HTTPException(status_code=403, detail="Forbidden")
+    """Primary chatbot integration endpoint.
 
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id in request body
+      is trusted to have been validated by the BFF layer.
+    """
     try:
         ep_results = await run_in_threadpool(
             ep_mem.search_episodic_memory, req.user_id, req.query, req.max_episodic
@@ -127,10 +132,13 @@ async def get_chat_context(
 async def search_episodic(
     request: Request,
     req: EpisodicSearchRequest,
-    token: dict = Depends(require_auth),
 ):
-    if req.user_id != token.get("sub") and token.get("role") != "service_role":
-        raise HTTPException(status_code=403, detail="Forbidden")
+    """Search episodic memory.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id in request body
+      is trusted to have been validated by the BFF layer.
+    """
     results = await run_in_threadpool(
         ep_mem.search_episodic_memory, req.user_id, req.query, req.k
     )
@@ -142,10 +150,13 @@ async def search_episodic(
 async def add_episodic(
     request: Request,
     req: AddEpisodicRequest,
-    token: dict = Depends(require_auth),
 ):
-    if req.user_id != token.get("sub") and token.get("role") != "service_role":
-        raise HTTPException(status_code=403, detail="Forbidden")
+    """Add episodic memory.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id in request body
+      is trusted to have been validated by the BFF layer.
+    """
     pid = await run_in_threadpool(ep_mem.add_episodic_memory, req.user_id, req.text)
     return AddEpisodicResponse(user_id=req.user_id, text=req.text, id=pid)
 
@@ -153,11 +164,14 @@ async def add_episodic(
 @router.delete("/episodic/{memory_id}", response_model=ClearResponse, tags=["Episodic"])
 async def forget_episodic(
     memory_id: str,
-    user_id: str = Query(...),
-    token: dict = Depends(require_auth),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
-    if user_id != token.get("sub") and token.get("role") != "service_role":
-        raise HTTPException(status_code=403, detail="Forbidden")
+    """Delete a specific episodic memory.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id in query param
+      is trusted to have been validated by the BFF layer.
+    """
     try:
         await run_in_threadpool(ep_mem.delete_episodic_memory_by_id, memory_id)
     except Exception as exc:
@@ -170,8 +184,14 @@ async def forget_episodic(
 
 @router.delete("/episodic/clear", response_model=ClearResponse, tags=["Episodic"])
 async def clear_episodic(
-    user_id: str = Depends(require_own_user),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
+    """Clear all episodic memories for a user.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id in query param
+      is trusted to have been validated by the BFF layer.
+    """
     await run_in_threadpool(ep_mem.clear_episodic_memory, user_id)
     return ClearResponse(
         user_id=user_id, message=f"All episodic memories cleared for '{user_id}'."
@@ -183,10 +203,13 @@ async def clear_episodic(
 )
 async def search_semantic(
     req: SemanticSearchRequest,
-    token: dict = Depends(require_auth),
 ):
-    if req.user_id != token.get("sub") and token.get("role") != "service_role":
-        raise HTTPException(status_code=403, detail="Forbidden")
+    """Search semantic memory.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id in request body
+      is trusted to have been validated by the BFF layer.
+    """
     keywords = [w for w in req.query.split() if len(w) > 2]
     results = await run_in_threadpool(
         sem_mem.search_semantic_memory, req.user_id, keywords
@@ -197,10 +220,13 @@ async def search_semantic(
 @router.post("/semantic/add", response_model=AddSemanticResponse, tags=["Semantic"])
 async def add_semantic(
     req: AddSemanticRequest,
-    token: dict = Depends(require_auth),
 ):
-    if req.user_id != token.get("sub") and token.get("role") != "service_role":
-        raise HTTPException(status_code=403, detail="Forbidden")
+    """Add semantic memory nodes and relationships.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id in request body
+      is trusted to have been validated by the BFF layer.
+    """
     n, r = await run_in_threadpool(
         sem_mem.add_nodes_and_relationships, req.user_id, req.nodes, req.relationships
     )
@@ -211,8 +237,14 @@ async def add_semantic(
 
 @router.delete("/semantic/clear", response_model=ClearResponse, tags=["Semantic"])
 async def clear_semantic(
-    user_id: str = Depends(require_own_user),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
+    """Clear all semantic memory for a user.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id in query param
+      is trusted to have been validated by the BFF layer.
+    """
     await run_in_threadpool(sem_mem.clear_semantic_memory, user_id)
     return ClearResponse(
         user_id=user_id, message=f"Semantic graph cleared for '{user_id}'."
@@ -221,8 +253,14 @@ async def clear_semantic(
 
 @router.get("/profile/{user_id}", response_model=UserProfileSchema, tags=["Profile"])
 async def get_user_profile(
-    user_id: str = Depends(require_own_user),
+    user_id: str,
 ):
+    """Get user profile.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id in path
+      is trusted to have been validated by the BFF layer.
+    """
     try:
         return await run_in_threadpool(build_user_profile, user_id)
     except Exception as exc:

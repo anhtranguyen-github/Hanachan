@@ -8,6 +8,12 @@ Fixes:
   Issue #13 — sync LangGraph dispatched to thread pool
   Issue #14 — no raw exception strings in responses
   Issue #19 — streaming timeouts
+
+Architecture Note:
+  Auth removed from FastAPI per architecture rules.
+  FastAPI = Agents ONLY (stateless, no auth)
+  Auth handled by Supabase/Next.js (BFF pattern)
+  user_id passed in request body from trusted Next.js layer
 """
 
 from __future__ import annotations
@@ -17,13 +23,12 @@ import json
 import logging
 from typing import AsyncGenerator
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
 from ....schemas.chat import ChatRequest, ChatResponse
 from ....agents.memory_agent import run_chat, memory_agent
-from ....core.security import require_auth
 from ....core.rate_limit import limiter
 from ....core.config import settings
 from langchain_core.messages import HumanMessage
@@ -35,12 +40,13 @@ router = APIRouter()
 
 @router.post("/chat", response_model=ChatResponse, tags=["Chat"])
 @limiter.limit(f"{settings.rate_limit_per_minute}/minute")
-async def chat(request: Request, req: ChatRequest, token: dict = Depends(require_auth)):
-    """Memory-augmented chat (non-streaming)."""
-    # Issue #8: user_id must match the JWT subject, unless it is a service_role bypass
-    if req.user_id != token.get("sub") and token.get("role") != "service_role":
-        raise HTTPException(status_code=403, detail="user_id does not match token")
+async def chat(request: Request, req: ChatRequest):
+    """Memory-augmented chat (non-streaming).
 
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id in request body
+      is trusted to have been validated by the BFF layer.
+    """
     try:
         result = await run_in_threadpool(
             run_chat,
@@ -72,13 +78,13 @@ async def chat(request: Request, req: ChatRequest, token: dict = Depends(require
 async def chat_stream(
     request: Request,
     req: ChatRequest,
-    token: dict = Depends(require_auth),
 ):
-    """Streaming version of /chat using the new iterative LangGraph."""
-    # Issue #8: user_id must match the JWT subject, unless it is a service_role bypass
-    if req.user_id != token.get("sub") and token.get("role") != "service_role":
-        raise HTTPException(status_code=403, detail="user_id does not match token")
+    """Streaming version of /chat using the new iterative LangGraph.
 
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id in request body
+      is trusted to have been validated by the BFF layer.
+    """
     async def event_stream() -> AsyncGenerator[str, None]:
         # Initialize state
         initial_state = {

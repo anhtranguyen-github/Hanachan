@@ -5,6 +5,12 @@ These endpoints manage speaking practice sessions:
 - Create a new practice session based on learned words
 - Get next practice item with adaptive difficulty
 - Record pronunciation attempts for adaptive feedback
+
+Architecture Note:
+  Auth removed from FastAPI per architecture rules.
+  FastAPI = Agents ONLY (stateless, no auth)
+  Auth handled by Supabase/Next.js (BFF pattern)
+  user_id passed in request body/query from trusted Next.js layer
 """
 
 from __future__ import annotations
@@ -12,7 +18,7 @@ from __future__ import annotations
 import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 
 from ....core.rate_limit import limiter
@@ -29,7 +35,6 @@ from ....schemas.speaking import (
 )
 from ....services import speaking_practice as sp_service
 from ....core.database import execute_single
-from ....core.security import require_auth
 
 logger = logging.getLogger(__name__)
 
@@ -41,12 +46,14 @@ router = APIRouter()
 async def create_practice_session(
     request: Request,
     req: CreatePracticeSessionRequest,
-    token: dict = Depends(require_auth),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
     """
     Create a new speaking practice session in the database.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
-    user_id = token.get("sub")
     
     # Create session using the service
     result = await run_in_threadpool(
@@ -83,18 +90,19 @@ async def create_practice_session(
 async def get_next_practice_item(
     request: Request,
     session_id: UUID,
-    token: dict = Depends(require_auth),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
     """
     Get the next sentence in the practice session from the database.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
-    user_id = token.get("sub")
-    
     # Get session from DB
     session_data = await run_in_threadpool(sp_service.get_session, session_id)
     if not session_data or session_data.get("status") != "active":
         raise HTTPException(status_code=404, detail="Active session not found")
-    
+
     # Verify ownership
     if str(session_data.get("user_id")) != user_id:
         raise HTTPException(status_code=403, detail="Forbidden")
@@ -126,18 +134,19 @@ async def record_attempt(
     request: Request,
     session_id: UUID,
     req: RecordAttemptRequest,
-    token: dict = Depends(require_auth),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
     """
     Record a pronunciation attempt and update session state in the database.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
-    user_id = token.get("sub")
-    
     # Get session
     session_data = await run_in_threadpool(sp_service.get_session, session_id)
     if not session_data or session_data.get("status") != "active":
         raise HTTPException(status_code=404, detail="Active session not found")
-    
+
     # Verify ownership
     if str(session_data.get("user_id")) != user_id:
         raise HTTPException(status_code=403, detail="Forbidden")
@@ -198,12 +207,14 @@ async def record_attempt(
 @limiter.limit("5/minute")
 async def get_practice_stats(
     request: Request,
-    token: dict = Depends(require_auth),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
     """
     Get the user's speaking practice statistics from the database.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
-    user_id = token.get("sub")
     stats = await run_in_threadpool(sp_service.get_speaking_stats, user_id)
     return PracticeStatsResponse(**stats)
 
@@ -211,10 +222,13 @@ async def get_practice_stats(
 @router.delete("/session/{session_id}", tags=["Speaking"])
 async def end_practice_session(
     session_id: UUID,
-    token: dict = Depends(require_auth),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
-    """End a speaking practice session in the database."""
-    user_id = token.get("sub")
+    """End a speaking practice session in the database.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+    """
     
     session_data = await run_in_threadpool(sp_service.get_session, session_id)
     if not session_data:

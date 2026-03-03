@@ -1,12 +1,21 @@
+"""
+Video API Endpoints
+
+Architecture Note:
+  Auth removed from FastAPI per architecture rules.
+  FastAPI = Agents ONLY (stateless, no auth)
+  Auth handled by Supabase/Next.js (BFF pattern)
+  user_id passed in request body/query from trusted Next.js layer
+"""
+
 import yt_dlp
 import logging
 import ipaddress
 import socket
 from typing import Any, Dict, Optional
 from urllib.parse import urlparse
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Query
 
-from ....core.security import require_auth
 from ....services.video_embeddings import get_video_embeddings_service
 from ....services.fsrs_service import get_fsrs_service
 
@@ -41,18 +50,21 @@ def is_safe_url(url: str) -> bool:
 @router.post("/{video_id}/embeddings")
 async def generate_video_embeddings(
     video_id: str,
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Generate semantic embeddings for a video.
     This enables similarity search and recommendation features.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
     service = get_video_embeddings_service()
     result = service.generate_video_embeddings(video_id)
-    
+
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("error", "Failed to generate embeddings"))
-    
+
     return result
 
 
@@ -61,11 +73,14 @@ async def search_videos(
     query: str,
     jlpt_level: Optional[int] = Query(None, ge=1, le=5),
     limit: int = Query(10, ge=1, le=50),
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Search videos by semantic similarity to a query.
-    
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+
     Args:
         query: Search query (can be topic, vocabulary, or grammar point)
         jlpt_level: Optional JLPT level filter
@@ -74,7 +89,7 @@ async def search_videos(
     service = get_video_embeddings_service()
     results = service.search_videos(
         query=query,
-        user_id=str(user["id"]),
+        user_id=user_id,
         jlpt_level=jlpt_level,
         limit=limit
     )
@@ -90,10 +105,13 @@ async def search_videos(
 async def get_similar_videos(
     video_id: str,
     limit: int = Query(5, ge=1, le=20),
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Find videos similar to the given video.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
     service = get_video_embeddings_service()
     results = service.find_similar_videos(video_id, limit=limit)
@@ -108,14 +126,17 @@ async def get_similar_videos(
 @router.get("/recommendations")
 async def get_video_recommendations(
     limit: int = Query(5, ge=1, le=20),
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Get personalized video recommendations based on learning progress.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
     service = get_video_embeddings_service()
-    results = service.get_recommended_videos(str(user["id"]), limit=limit)
-    
+    results = service.get_recommended_videos(user_id, limit=limit)
+
     return {
         "results": [r.model_dump() for r in results],
         "total": len(results)
@@ -127,37 +148,40 @@ async def get_video_learning_segments(
     video_id: str,
     vocabulary: str = Query(..., description="Comma-separated vocabulary to find"),
     context_window: int = Query(2, ge=0, le=5),
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Get video segments containing specific vocabulary.
-    
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+
     Args:
         vocabulary: Comma-separated list of words/kanji to find
         context_window: Number of segments before/after to include
     """
     from ....services.learning_service import search_kus
-    
+
     service = get_video_embeddings_service()
-    
+
     # Parse vocabulary into KU IDs
     vocab_items = [v.strip() for v in vocabulary.split(",")]
     ku_ids = []
-    
+
     for vocab in vocab_items:
         ku_results = search_kus(vocab, limit=1)
         if ku_results:
             ku_ids.append(str(ku_results[0]["id"]))
-    
+
     if not ku_ids:
         raise HTTPException(status_code=400, detail=f"Could not find knowledge units for: {vocabulary}")
-    
+
     segments = service.get_video_segments_for_learning(
         video_id=video_id,
         target_ku_ids=ku_ids,
         context_window=context_window
     )
-    
+
     return {
         "segments": segments,
         "target_vocabulary": vocab_items,
@@ -169,23 +193,26 @@ async def get_video_learning_segments(
 async def submit_video_review(
     video_id: str,
     rating: int = Query(..., ge=1, le=4),
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Submit an FSRS review for a video.
-    
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
+
     Args:
         rating: 1=Again, 2=Hard, 3=Good, 4=Easy
     """
     service = get_fsrs_service()
     result = service.submit_review(
-        user_id=str(user["id"]),
+        user_id=user_id,
         item_id=video_id,
         item_type="video",
         rating=rating,
         facet="content"
     )
-    
+
     return {
         "success": True,
         "result": result.model_dump()
@@ -195,16 +222,19 @@ async def submit_video_review(
 @router.get("/{video_id}/fsrs-status")
 async def get_video_fsrs_status(
     video_id: str,
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ) -> Dict[str, Any]:
     """
     Get FSRS learning status for a video.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
     from ....core.database import execute_single
-    
+
     status = execute_single(
         """
-        SELECT 
+        SELECT
             content_state as state,
             content_stability as stability,
             content_difficulty as difficulty,
@@ -216,26 +246,29 @@ async def get_video_fsrs_status(
         FROM public.user_video_progress
         WHERE user_id = %s AND video_id = %s
         """,
-        (str(user["id"]), video_id)
+        (user_id, video_id)
     )
-    
+
     if not status:
         return {
             "state": "new",
             "message": "Video not started yet"
         }
-    
+
     return dict(status)
 
 
 @router.get("/transcript/{youtube_id}")
 async def get_video_transcript(
     youtube_id: str,
-    user: Dict[str, Any] = Depends(require_auth)
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
     """
     Fetch the Japanese transcript for a given YouTube video ID.
     If multiple languages exist, attempts to fetch 'ja'.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
     try:
         ydl_opts = {

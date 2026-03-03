@@ -1,97 +1,131 @@
 """
 Tests for the security / authentication module.
+
+Architecture Note:
+  JWT authentication has been REMOVED from FastAPI per architecture rules.
+  These tests verify that auth functions now raise ArchitectureViolationError.
+  Auth must be handled by Supabase/Next.js (BFF pattern).
 """
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
-
 import pytest
 from fastapi import HTTPException
-from fastapi.security import HTTPAuthorizationCredentials
 
 
-def test_service_role_key_bypasses_jwt():
-    """The Supabase service role key should bypass JWT validation."""
-    from app.core.security import require_auth
-    from app.core.config import settings
+class TestArchitectureViolationError:
+    """Test that auth functions raise ArchitectureViolationError."""
 
-    creds = HTTPAuthorizationCredentials(
-        scheme="Bearer",
-        credentials=settings.supabase_service_key,
-    )
-    result = require_auth(creds)
-    assert result["role"] == "service_role"
-    assert result["sub"] == "service_role"
+    def test_require_auth_raises_architecture_violation(self):
+        """require_auth should raise ArchitectureViolationError."""
+        from app.core.security import require_auth, ArchitectureViolationError
 
+        with pytest.raises(ArchitectureViolationError) as exc_info:
+            require_auth()
 
-def test_missing_bearer_token_raises_401(client):
-    """Requests without Authorization header should get 401."""
-    import asyncio
+        assert exc_info.value.status_code == 500
+        assert "Architecture Violation" in str(exc_info.value.detail)
+        assert "JWT authentication is not allowed" in str(exc_info.value.detail)
 
-    async def _run():
-        from httpx import AsyncClient, ASGITransport
-        from app.main import app
+    def test_require_own_user_raises_architecture_violation(self):
+        """require_own_user should raise ArchitectureViolationError."""
+        from app.core.security import require_own_user, ArchitectureViolationError
 
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
-            response = await ac.post(
-                "/api/v1/memory/episodic/search",
-                json={"user_id": "u1", "query": "test"},
-            )
-        return response
+        with pytest.raises(ArchitectureViolationError) as exc_info:
+            require_own_user(user_id="user-123")
 
-    response = asyncio.get_event_loop().run_until_complete(_run())
-    assert response.status_code == 401
+        assert exc_info.value.status_code == 500
+        assert "Architecture Violation" in str(exc_info.value.detail)
+
+    def test_architecture_violation_is_http_exception(self):
+        """ArchitectureViolationError should be an HTTPException."""
+        from app.core.security import ArchitectureViolationError
+
+        # Verify it can be caught as HTTPException
+        with pytest.raises(HTTPException):
+            raise ArchitectureViolationError("test message")
 
 
-def test_invalid_token_raises_401():
-    """An invalid JWT token should raise 401."""
-    from app.core.security import require_auth
-    from jwt.exceptions import PyJWKClientError
+class TestAdminSecurityArchitectureViolation:
+    """Test that admin auth functions raise ArchitectureViolationError."""
 
-    creds = HTTPAuthorizationCredentials(
-        scheme="Bearer",
-        credentials="invalid.token.here",
-    )
+    @pytest.mark.asyncio
+    async def test_require_admin_raises_architecture_violation(self):
+        """require_admin should raise ArchitectureViolationError."""
+        from app.core.admin_security import require_admin, ArchitectureViolationError
 
-    # Mock JWKS client to raise PyJWKClientError (what require_auth catches)
-    with patch("app.core.security._get_jwks_client") as mock_jwks:
-        mock_client = MagicMock()
-        mock_client.get_signing_key_from_jwt.side_effect = PyJWKClientError("JWKS unavailable")
-        mock_jwks.return_value = mock_client
+        with pytest.raises(ArchitectureViolationError) as exc_info:
+            await require_admin()
 
-        with pytest.raises(HTTPException) as exc_info:
-            require_auth(creds)
+        assert exc_info.value.status_code == 500
+        assert "Architecture Violation" in str(exc_info.value.detail)
 
-        assert exc_info.value.status_code == 401
+    @pytest.mark.asyncio
+    async def test_require_permission_raises_architecture_violation(self):
+        """require_permission should raise ArchitectureViolationError."""
+        from app.core.admin_security import require_permission, AdminPermission, ArchitectureViolationError
 
+        permission_checker = require_permission(AdminPermission.VIEW_USERS)
 
-def test_require_own_user_allows_matching_user():
-    """require_own_user should allow access when user_id matches token sub."""
-    from app.core.security import require_own_user
+        with pytest.raises(ArchitectureViolationError) as exc_info:
+            await permission_checker()
 
-    payload = {"sub": "user-123", "role": "authenticated"}
-    result = require_own_user(user_id="user-123", payload=payload)
-    assert result == "user-123"
+        assert exc_info.value.status_code == 500
+        assert "Architecture Violation" in str(exc_info.value.detail)
 
+    @pytest.mark.asyncio
+    async def test_get_admin_context_raises_architecture_violation(self):
+        """get_admin_context should raise ArchitectureViolationError."""
+        from app.core.admin_security import get_admin_context, ArchitectureViolationError
 
-def test_require_own_user_blocks_different_user():
-    """require_own_user should block access when user_id doesn't match token sub."""
-    from app.core.security import require_own_user
+        with pytest.raises(ArchitectureViolationError) as exc_info:
+            await get_admin_context()
 
-    payload = {"sub": "user-456", "role": "authenticated"}
-
-    with pytest.raises(HTTPException) as exc_info:
-        require_own_user(user_id="user-123", payload=payload)
-
-    assert exc_info.value.status_code == 403
+        assert exc_info.value.status_code == 500
+        assert "Architecture Violation" in str(exc_info.value.detail)
 
 
-def test_require_own_user_allows_service_role():
-    """require_own_user should allow service_role to access any user's data."""
-    from app.core.security import require_own_user
+class TestSecurityExports:
+    """Test that security modules export expected symbols."""
 
-    payload = {"sub": "service_role", "role": "service_role"}
-    result = require_own_user(user_id="any-user-id", payload=payload)
-    assert result == "any-user-id"
+    def test_security_module_exports(self):
+        """security.py should export expected symbols."""
+        from app.core import security
+
+        # These should be exported for backward compatibility
+        assert hasattr(security, "ArchitectureViolationError")
+        assert hasattr(security, "require_auth")
+        assert hasattr(security, "require_own_user")
+
+        # Verify ArchitectureViolationError is the new error type
+        assert security.ArchitectureViolationError is not None
+
+    def test_admin_security_module_exports(self):
+        """admin_security.py should export expected symbols."""
+        from app.core import admin_security
+
+        # These should be exported for backward compatibility
+        assert hasattr(admin_security, "ArchitectureViolationError")
+        assert hasattr(admin_security, "AdminRole")
+        assert hasattr(admin_security, "AdminPermission")
+        assert hasattr(admin_security, "AdminContext")
+        assert hasattr(admin_security, "require_admin")
+        assert hasattr(admin_security, "require_permission")
+
+
+class TestDeprecationWarnings:
+    """Test that deprecation warnings are emitted."""
+
+    def test_require_auth_emits_deprecation_warning(self):
+        """require_auth should emit a DeprecationWarning."""
+        import warnings
+        from app.core.security import require_auth
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            with pytest.raises(Exception):
+                require_auth()
+
+            # Check that a DeprecationWarning was emitted
+            deprecation_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
+            assert len(deprecation_warnings) > 0
+            assert "deprecated" in str(deprecation_warnings[0].message).lower()

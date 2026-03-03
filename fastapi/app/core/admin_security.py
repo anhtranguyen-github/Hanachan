@@ -1,30 +1,61 @@
 """
-Admin Security Layer — Role-based access control for the Admin Control Plane.
+Admin Security Layer — DEPRECATED / ARCHITECTURE VIOLATION
 
-Implements:
-- Admin role validation
-- Permission checking
-- Admin audit logging
-- User suspension verification
+⚠️  ADMIN AUTHENTICATION HAS BEEN REMOVED FROM FASTAPI PER ARCHITECTURE RULES ⚠️
+
+Architecture Rule:
+  FastAPI = Agents ONLY (stateless, no auth)
+  Admin auth must be handled by Supabase/Next.js (BFF pattern)
+
+Why:
+  - FastAPI must be stateless agents with no auth per architecture
+  - Admin auth must be handled by Supabase/Next.js (BFF pattern)
+  - Removes auth duplication between layers
+  - Security: Auth in wrong layer bypasses RLS enforcement
+  - Complexity: Duplicate auth logic in multiple layers
+  - Maintenance: JWT validation in FastAPI requires secret management
+
+What to do instead:
+  - Admin endpoints should be called through Next.js BFF
+  - Next.js validates admin permissions via Supabase
+  - FastAPI receives pre-validated requests with user_id
+
+Migration Path:
+  - All admin endpoints should move to Next.js or be proxied through it
+  - FastAPI admin functions remain for internal use but without auth checks
 """
 
 from __future__ import annotations
 
 import logging
+import warnings
 from datetime import datetime, timezone
 from enum import Enum
 from functools import wraps
-from typing import Optional, Callable
+from typing import Optional, Callable, Any
 
-from fastapi import Depends, HTTPException, Request
-from fastapi.security import HTTPBearer
+from fastapi import HTTPException, Request
 
 from .database import get_db_pool
-from .security import require_auth
 
 logger = logging.getLogger(__name__)
 
-_bearer = HTTPBearer()
+
+class ArchitectureViolationError(HTTPException):
+    """
+    Raised when code attempts to use admin authentication in FastAPI.
+
+    This is an architecture violation - admin auth must be handled by Next.js/Supabase.
+    """
+
+    def __init__(self, detail: Optional[str] = None):
+        message = detail or (
+            "Architecture Violation: Admin authentication is not allowed in FastAPI. "
+            "Admin auth must be handled by Supabase/Next.js (BFF pattern). "
+            "Admin endpoints should be called through Next.js BFF. "
+            "See documentation/01_ARCHITECTURE_OVERVIEW.md for details."
+        )
+        super().__init__(status_code=500, detail=message)
 
 
 class AdminRole(str, Enum):
@@ -33,15 +64,6 @@ class AdminRole(str, Enum):
     MODERATOR = "moderator"
     ADMIN = "admin"
     SUPER_ADMIN = "super_admin"
-
-
-# Role hierarchy for permission checking (higher index = more permissions)
-ROLE_HIERARCHY = [
-    AdminRole.VIEWER,
-    AdminRole.MODERATOR,
-    AdminRole.ADMIN,
-    AdminRole.SUPER_ADMIN,
-]
 
 
 class AdminPermission(str, Enum):
@@ -61,42 +83,19 @@ class AdminPermission(str, Enum):
     MANAGE_ADMINS = "manage_admins"
 
 
-# Default permissions per role
-DEFAULT_ROLE_PERMISSIONS: dict[AdminRole, list[AdminPermission]] = {
-    AdminRole.VIEWER: [
-        AdminPermission.VIEW_USERS,
-        AdminPermission.VIEW_COSTS,
-        AdminPermission.VIEW_AUDIT_LOGS,
-        AdminPermission.VIEW_SYSTEM_HEALTH,
-        AdminPermission.VIEW_AI_TRACES,
-        AdminPermission.VIEW_ABUSE_ALERTS,
-    ],
-    AdminRole.MODERATOR: [
-        AdminPermission.VIEW_USERS,
-        AdminPermission.EDIT_USERS,
-        AdminPermission.VIEW_COSTS,
-        AdminPermission.VIEW_AUDIT_LOGS,
-        AdminPermission.VIEW_SYSTEM_HEALTH,
-        AdminPermission.VIEW_AI_TRACES,
-        AdminPermission.VIEW_ABUSE_ALERTS,
-        AdminPermission.MANAGE_ABUSE_ALERTS,
-    ],
-    AdminRole.ADMIN: [
-        AdminPermission.VIEW_USERS,
-        AdminPermission.EDIT_USERS,
-        AdminPermission.SUSPEND_USERS,
-        AdminPermission.VIEW_COSTS,
-        AdminPermission.MANAGE_COST_LIMITS,
-        AdminPermission.VIEW_AUDIT_LOGS,
-        AdminPermission.VIEW_SYSTEM_HEALTH,
-        AdminPermission.MANAGE_RATE_LIMITS,
-        AdminPermission.VIEW_AI_TRACES,
-        AdminPermission.MANAGE_AI_CONFIG,
-        AdminPermission.VIEW_ABUSE_ALERTS,
-        AdminPermission.MANAGE_ABUSE_ALERTS,
-    ],
-    AdminRole.SUPER_ADMIN: list(AdminPermission),  # All permissions
-}
+def _emit_deprecation_warning(func_name: str) -> None:
+    """Emit a deprecation warning for auth functions."""
+    warnings.warn(
+        f"{func_name}() is deprecated. "
+        "Admin authentication has been removed from FastAPI per architecture rules. "
+        "Admin auth must be handled by Supabase/Next.js (BFF pattern).",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+    logger.warning(
+        "admin_auth_deprecation_warning",
+        extra={"function": func_name, "violation": "Admin auth in FastAPI"},
+    )
 
 
 async def is_admin(user_id: str) -> bool:
@@ -136,7 +135,7 @@ async def has_permission(user_id: str, permission: AdminPermission) -> bool:
     role = await get_admin_role(user_id)
     if not role:
         return False
-    
+
     # Check explicit permissions first
     pool = get_db_pool()
     async with pool.acquire() as conn:
@@ -151,9 +150,48 @@ async def has_permission(user_id: str, permission: AdminPermission) -> bool:
             explicit_perms = row["permissions"]
             if permission.value in explicit_perms:
                 return True
-    
+
     # Fall back to role-based permissions
-    return permission in DEFAULT_ROLE_PERMISSIONS.get(role, [])
+    return permission in _get_default_role_permissions().get(role, [])
+
+
+def _get_default_role_permissions() -> dict[AdminRole, list[AdminPermission]]:
+    """Get default permissions per role."""
+    return {
+        AdminRole.VIEWER: [
+            AdminPermission.VIEW_USERS,
+            AdminPermission.VIEW_COSTS,
+            AdminPermission.VIEW_AUDIT_LOGS,
+            AdminPermission.VIEW_SYSTEM_HEALTH,
+            AdminPermission.VIEW_AI_TRACES,
+            AdminPermission.VIEW_ABUSE_ALERTS,
+        ],
+        AdminRole.MODERATOR: [
+            AdminPermission.VIEW_USERS,
+            AdminPermission.EDIT_USERS,
+            AdminPermission.VIEW_COSTS,
+            AdminPermission.VIEW_AUDIT_LOGS,
+            AdminPermission.VIEW_SYSTEM_HEALTH,
+            AdminPermission.VIEW_AI_TRACES,
+            AdminPermission.VIEW_ABUSE_ALERTS,
+            AdminPermission.MANAGE_ABUSE_ALERTS,
+        ],
+        AdminRole.ADMIN: [
+            AdminPermission.VIEW_USERS,
+            AdminPermission.EDIT_USERS,
+            AdminPermission.SUSPEND_USERS,
+            AdminPermission.VIEW_COSTS,
+            AdminPermission.MANAGE_COST_LIMITS,
+            AdminPermission.VIEW_AUDIT_LOGS,
+            AdminPermission.VIEW_SYSTEM_HEALTH,
+            AdminPermission.MANAGE_RATE_LIMITS,
+            AdminPermission.VIEW_AI_TRACES,
+            AdminPermission.MANAGE_AI_CONFIG,
+            AdminPermission.VIEW_ABUSE_ALERTS,
+            AdminPermission.MANAGE_ABUSE_ALERTS,
+        ],
+        AdminRole.SUPER_ADMIN: list(AdminPermission),  # All permissions
+    }
 
 
 async def check_suspension(user_id: str) -> Optional[dict]:
@@ -181,67 +219,56 @@ async def check_suspension(user_id: str) -> Optional[dict]:
         return None
 
 
-async def require_admin(
-    token: dict = Depends(require_auth),
-) -> dict:
+async def require_admin(*args, **kwargs) -> dict:
     """
-    Dependency to require admin access.
-    Returns the token payload if user is an admin.
+    DEPRECATED: Admin authentication is no longer supported in FastAPI.
+
+    This function now raises ArchitectureViolationError.
+
+    Architecture Rule:
+      FastAPI = Agents ONLY (stateless, no auth)
+      Admin auth must be handled by Supabase/Next.js (BFF pattern)
+
+    Instead:
+      - Call admin endpoints through Next.js BFF
+      - Next.js validates admin permissions via Supabase
+      - FastAPI receives pre-validated requests
+
+    Raises:
+        ArchitectureViolationError: Always raised to prevent admin auth usage in FastAPI
     """
-    user_id = token.get("sub")
-    
-    # Service role bypass
-    if token.get("role") == "service_role":
-        return token
-    
-    if not user_id or user_id == "service_role":
-        raise HTTPException(status_code=403, detail="Admin access required")
-    
-    if not await is_admin(user_id):
-        logger.warning("admin_access_denied", extra={"user_id": user_id})
-        raise HTTPException(status_code=403, detail="Admin access required")
-    
-    # Check if user is suspended
-    suspension = await check_suspension(user_id)
-    if suspension:
-        logger.warning("admin_access_suspended", extra={
-            "user_id": user_id,
-            "suspension_id": suspension["suspension_id"]
-        })
-        raise HTTPException(
-            status_code=403,
-            detail=f"Account suspended: {suspension['reason']}"
+    _emit_deprecation_warning("require_admin")
+    raise ArchitectureViolationError(
+        "require_admin() is deprecated and removed. "
+        "Admin authentication is not allowed in FastAPI per architecture rules. "
+        "Admin auth must be handled by Supabase/Next.js (BFF pattern). "
+        "Call admin endpoints through Next.js BFF which validates permissions."
+    )
+
+
+def require_permission(permission: AdminPermission):
+    """
+    DEPRECATED: Admin permission checking is no longer supported in FastAPI.
+
+    This function now raises ArchitectureViolationError.
+
+    Architecture Rule:
+      FastAPI = Agents ONLY (stateless, no auth)
+      Admin permissions must be handled by Supabase/Next.js (BFF pattern)
+
+    Raises:
+        ArchitectureViolationError: Always raised to prevent admin auth usage in FastAPI
+    """
+    _emit_deprecation_warning("require_permission")
+
+    async def checker(*args, **kwargs) -> dict:
+        raise ArchitectureViolationError(
+            "require_permission() is deprecated and removed. "
+            "Admin permission checking is not allowed in FastAPI per architecture rules. "
+            "Admin auth must be handled by Supabase/Next.js (BFF pattern). "
+            f"Permission '{permission.value}' should be checked by Next.js BFF."
         )
-    
-    return token
 
-
-async def require_permission(permission: AdminPermission):
-    """
-    Factory for dependencies that require specific admin permissions.
-    Usage: Depends(require_permission(AdminPermission.VIEW_USERS))
-    """
-    async def checker(token: dict = Depends(require_auth)) -> dict:
-        user_id = token.get("sub")
-        
-        # Service role bypass
-        if token.get("role") == "service_role":
-            return token
-        
-        if not user_id:
-            raise HTTPException(status_code=403, detail="Admin access required")
-        
-        if not await has_permission(user_id, permission):
-            logger.warning("admin_permission_denied", extra={
-                "user_id": user_id,
-                "permission": permission.value
-            })
-            raise HTTPException(
-                status_code=403,
-                detail=f"Permission required: {permission.value}"
-            )
-        
-        return token
     return checker
 
 
@@ -293,7 +320,7 @@ async def log_admin_action(
 
 class AdminContext:
     """Context object for admin operations containing user info and audit trail."""
-    
+
     def __init__(
         self,
         user_id: str,
@@ -304,15 +331,15 @@ class AdminContext:
         self.role = role
         self.request = request
         self.action_logs: list[dict] = []
-    
+
     async def has_permission(self, permission: AdminPermission) -> bool:
         """Check if this admin context has a specific permission."""
         # Service role has all permissions
         if self.role == AdminRole.SUPER_ADMIN:
             return True
-        
-        return permission in DEFAULT_ROLE_PERMISSIONS.get(self.role, [])
-    
+
+        return permission in _get_default_role_permissions().get(self.role, [])
+
     async def log_action(
         self,
         action: str,
@@ -325,7 +352,7 @@ class AdminContext:
         """Log an action within this context."""
         ip_address = None
         user_agent = None
-        
+
         if self.request:
             # Get client IP, considering X-Forwarded-For
             forwarded_for = self.request.headers.get("x-forwarded-for")
@@ -333,9 +360,9 @@ class AdminContext:
                 ip_address = forwarded_for.split(",")[0].strip()
             else:
                 ip_address = self.request.client.host if self.request.client else None
-            
+
             user_agent = self.request.headers.get("user-agent")
-        
+
         await log_admin_action(
             admin_user_id=self.user_id,
             action=action,
@@ -347,7 +374,7 @@ class AdminContext:
             ip_address=ip_address,
             user_agent=user_agent,
         )
-        
+
         self.action_logs.append({
             "action": action,
             "target_type": target_type,
@@ -356,40 +383,58 @@ class AdminContext:
         })
 
 
-async def get_admin_context(
-    request: Request,
-    token: dict = Depends(require_admin),
-) -> AdminContext:
-    """Dependency to get an AdminContext for the current request."""
-    user_id = token.get("sub")
-    role = await get_admin_role(user_id)
-    
-    if not role:
-        raise HTTPException(status_code=403, detail="Admin role not found")
-    
-    return AdminContext(user_id=user_id, role=role, request=request)
+async def get_admin_context(*args, **kwargs) -> AdminContext:
+    """
+    DEPRECATED: Admin context creation is no longer supported in FastAPI.
+
+    This function now raises ArchitectureViolationError.
+
+    Raises:
+        ArchitectureViolationError: Always raised to prevent admin auth usage in FastAPI
+    """
+    _emit_deprecation_warning("get_admin_context")
+    raise ArchitectureViolationError(
+        "get_admin_context() is deprecated and removed. "
+        "Admin context management is not allowed in FastAPI per architecture rules. "
+        "Admin auth must be handled by Supabase/Next.js (BFF pattern)."
+    )
 
 
 def admin_permission_required(permission: AdminPermission):
     """
-    Decorator for requiring admin permissions on endpoint functions.
-    Note: This is for internal use; prefer Depends(require_permission(...)) for endpoints.
+    DEPRECATED: Admin permission decorator is no longer supported in FastAPI.
+
+    This decorator now raises ArchitectureViolationError when the wrapped function is called.
+
+    Raises:
+        ArchitectureViolationError: Always raised to prevent admin auth usage in FastAPI
     """
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs):
-            # Extract token from kwargs if passed
-            token = kwargs.get("token")
-            if not token:
-                raise HTTPException(status_code=403, detail="Authentication required")
-            
-            user_id = token.get("sub")
-            if not await has_permission(user_id, permission):
-                raise HTTPException(
-                    status_code=403,
-                    detail=f"Permission required: {permission.value}"
-                )
-            
-            return await func(*args, **kwargs)
+            _emit_deprecation_warning("admin_permission_required")
+            raise ArchitectureViolationError(
+                "admin_permission_required() is deprecated and removed. "
+                "Admin permission checking is not allowed in FastAPI per architecture rules. "
+                f"Permission '{permission.value}' should be checked by Next.js BFF."
+            )
         return wrapper
     return decorator
+
+
+# Backward compatibility: keep exports
+__all__ = [
+    "AdminRole",
+    "AdminPermission",
+    "AdminContext",
+    "ArchitectureViolationError",
+    "is_admin",
+    "get_admin_role",
+    "has_permission",
+    "check_suspension",
+    "require_admin",
+    "require_permission",
+    "log_admin_action",
+    "get_admin_context",
+    "admin_permission_required",
+]

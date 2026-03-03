@@ -1,0 +1,259 @@
+# Architecture Guard - CI/CD Workflow
+#
+# This workflow runs architecture violation checks on every PR and push to main.
+# It enforces the architectural rules defined in documentation/ARCHITECTURE_RULES.md
+#
+# If violations are found, the workflow will fail and block the PR/merge.
+
+name: Architecture Guard
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'fastapi/**'
+      - 'nextjs/**'
+      - 'scripts/architecture-guard.py'
+      - '.github/workflows/architecture-guard.yml'
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - 'fastapi/**'
+      - 'nextjs/**'
+      - 'scripts/architecture-guard.py'
+      - '.github/workflows/architecture-guard.yml'
+
+jobs:
+  # =============================================================================
+  # Architecture Violation Check
+  # =============================================================================
+  architecture-check:
+    name: Architecture Compliance Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      # -------------------------------------------------------------------------
+      # Checkout code
+      # -------------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better change detection
+
+      # -------------------------------------------------------------------------
+      # Setup Python
+      # -------------------------------------------------------------------------
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # -------------------------------------------------------------------------
+      # Run Architecture Guard
+      # -------------------------------------------------------------------------
+      - name: Run Architecture Guard
+        id: guard
+        run: |
+          echo "::group::Architecture Guard Scan"
+          python scripts/architecture-guard.py --format text
+          EXIT_CODE=$?
+          echo "::endgroup::"
+          exit $EXIT_CODE
+
+      # -------------------------------------------------------------------------
+      # Generate JSON report (for artifacts)
+      # -------------------------------------------------------------------------
+      - name: Generate violation report
+        if: failure()
+        run: |
+          python scripts/architecture-guard.py --format json --output architecture-violations.json || true
+
+      # -------------------------------------------------------------------------
+      # Upload violation report as artifact
+      # -------------------------------------------------------------------------
+      - name: Upload violation report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: architecture-violations
+          path: architecture-violations.json
+          retention-days: 30
+
+      # -------------------------------------------------------------------------
+      # Post PR comment with violations
+      # -------------------------------------------------------------------------
+      - name: Comment PR with violations
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let violations = [];
+            
+            try {
+              const report = JSON.parse(fs.readFileSync('architecture-violations.json', 'utf8'));
+              violations = report.violations || [];
+            } catch (e) {
+              console.log('Could not read violations report');
+            }
+            
+            // Group violations by rule
+            const byRule = {};
+            violations.forEach(v => {
+              if (!byRule[v.rule]) byRule[v.rule] = [];
+              byRule[v.rule].push(v);
+            });
+            
+            let body = '## ❌ Architecture Violations Detected\n\n';
+            body += 'This PR contains code that violates our architectural rules.\n';
+            body += 'Please review and fix the following issues before merging.\n\n';
+            body += 'See [ARCHITECTURE_RULES.md](../blob/main/documentation/ARCHITECTURE_RULES.md) for details.\n\n';
+            
+            body += `**Total Violations:** ${violations.length}\n\n`;
+            
+            // Summary table
+            body += '### Summary by Rule\n\n';
+            body += '| Rule | Severity | Count |\n';
+            body += '|------|----------|-------|\n';
+            
+            Object.entries(byRule).forEach(([rule, vs]) => {
+              const severity = vs[0].severity;
+              body += `| ${rule} | ${severity} | ${vs.length} |\n`;
+            });
+            
+            body += '\n### Details\n\n';
+            body += '<details>\n<summary>Click to expand violation details</summary>\n\n';
+            
+            Object.entries(byRule).forEach(([rule, vs]) => {
+              body += `\n#### ${rule} (${vs.length} violations)\n\n`;
+              vs.slice(0, 10).forEach(v => {
+                body += `- \`${v.file_path}:${v.line_number}\` - ${v.message}\n`;
+                if (v.code_snippet) {
+                  body += `  \`\`\`python\n  ${v.code_snippet.substring(0, 100)}\n  \`\`\`\n`;
+                }
+              });
+              if (vs.length > 10) {
+                body += `- ... and ${vs.length - 10} more\n`;
+              }
+            });
+            
+            body += '</details>\n';
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Architecture Violations Detected')
+            );
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+  # =============================================================================
+  # Pytest Architecture Tests
+  # =============================================================================
+  pytest-architecture:
+    name: Pytest Architecture Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd fastapi
+          pip install pytest
+
+      - name: Run architecture tests
+        run: |
+          cd fastapi
+          python -m pytest tests/test_architecture_violations.py -v || true
+
+  # =============================================================================
+  # Quick Check (for PRs that only touch specific files)
+  # =============================================================================
+  quick-check:
+    name: Quick Architecture Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          echo "files=$(git diff --name-only origin/${{ github.base_ref }} HEAD | tr '\n' ' ')" >> $GITHUB_OUTPUT
+
+      - name: Check for new violations in changed files
+        run: |
+          echo "Changed files: ${{ steps.changed-files.outputs.files }}"
+          
+          # Run guard and capture output
+          python scripts/architecture-guard.py --format json --output violations.json || true
+          
+          # Check if any violations are in changed files
+          python << 'EOF'
+          import json
+          import sys
+          
+          try:
+              with open('violations.json') as f:
+                  report = json.load(f)
+              
+              changed_files = """${{ steps.changed-files.outputs.files }}""".split()
+              
+              new_violations = []
+              for v in report.get('violations', []):
+                  for changed in changed_files:
+                      if v['file_path'] in changed or changed in v['file_path']:
+                          new_violations.append(v)
+                          break
+              
+              if new_violations:
+                  print(f"\n❌ Found {len(new_violations)} violations in changed files:")
+                  for v in new_violations[:10]:
+                      print(f"  - {v['file_path']}:{v['line_number']} [{v['rule']}]")
+                  if len(new_violations) > 10:
+                      print(f"  ... and {len(new_violations) - 10} more")
+                  sys.exit(1)
+              else:
+                  print("\n✅ No new violations in changed files")
+                  sys.exit(0)
+          except FileNotFoundError:
+              print("Could not read violations report")
+              sys.exit(0)
+          EOF

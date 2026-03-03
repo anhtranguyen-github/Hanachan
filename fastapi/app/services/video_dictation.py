@@ -1,6 +1,10 @@
 """
 Video Dictation Service
 Handles dictation practice sessions for video subtitles
+
+ARCHITECTURE NOTE: All session state is stored in Supabase (PostgreSQL).
+No in-memory state is used as source of truth. Session progress is computed
+from database queries to ensure consistency across server restarts.
 """
 
 from __future__ import annotations
@@ -15,11 +19,6 @@ from ..core.database import get_db_connection
 logger = logging.getLogger(__name__)
 
 
-# In-memory session storage for active dictation sessions
-# In production, this would be Redis or database-backed
-_dictation_sessions: Dict[str, Dict[str, Any]] = {}
-
-
 def create_dictation_session(
     user_id: str,
     video_id: str,
@@ -29,6 +28,7 @@ def create_dictation_session(
     Create a new dictation session for a video.
     
     Returns session data including available subtitles for dictation.
+    All state is persisted to the database; no in-memory storage.
     """
     conn = get_db_connection()
     try:
@@ -94,17 +94,6 @@ def create_dictation_session(
                     "start_time_ms": sub["start_time_ms"],
                     "end_time_ms": sub["end_time_ms"],
                 })
-            
-            # Store session in memory for quick access
-            _dictation_sessions[session_id] = {
-                "user_id": user_id,
-                "video_id": video_id,
-                "subtitles": subtitle_items,
-                "completed_ids": set(),
-                "correct_ids": set(),
-                "current_index": 0,
-                "started_at": datetime.utcnow(),
-            }
             
             return {
                 "success": True,
@@ -173,76 +162,50 @@ def submit_dictation_attempt(
 ) -> Dict[str, Any]:
     """
     Submit a dictation attempt and calculate accuracy.
+    
+    All progress is tracked in the database; no in-memory state is used.
     """
     conn = get_db_connection()
     try:
-        # Get session from memory or database
-        session = _dictation_sessions.get(session_id)
-        
-        if not session:
-            # Try to load from database
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT * FROM video_dictation_sessions WHERE id = %s AND user_id = %s",
-                    (session_id, user_id),
-                )
-                db_session = cur.fetchone()
-                if not db_session:
-                    return {"success": False, "error": "Session not found"}
-                
-                # Load subtitles
-                cur.execute(
-                    """SELECT vs.id, vs.text, vs.tokens 
-                       FROM video_subtitles vs
-                       JOIN video_dictation_attempts vda ON vda.subtitle_id = vs.id
-                       WHERE vda.session_id = %s""",
-                    (session_id,),
-                )
-                attempted = cur.fetchall()
-                
-                session = {
-                    "user_id": user_id,
-                    "video_id": db_session["video_id"],
-                    "subtitles": [],  # Would need to load all
-                    "completed_ids": {str(s["id"]) for s in attempted},
-                    "correct_ids": set(),
-                }
-        
-        if session.get("user_id") != user_id:
-            return {"success": False, "error": "Forbidden"}
-        
-        # Find the target subtitle
-        target_text = None
-        subtitle_start_time = None
-        subtitle_end_time = None
-        
-        for sub in session.get("subtitles", []):
-            if sub.get("id") == subtitle_id:
-                target_text = sub.get("text")
-                subtitle_start_time = sub.get("start_time_ms")
-                subtitle_end_time = sub.get("end_time_ms")
-                break
-        
-        if not target_text:
-            return {"success": False, "error": "Subtitle not found in session"}
-        
-        # Calculate accuracy using simple character comparison
-        is_correct = user_input.strip() == target_text.strip()
-        accuracy_score = calculate_similarity(user_input, target_text)
-        
-        # Count correct characters
-        correct_chars = 0
-        target_chars = list(target_text)
-        input_chars = list(user_input)
-        
-        for i, c in enumerate(input_chars):
-            if i < len(target_chars) and c == target_chars[i]:
-                correct_chars += 1
-        
-        total_chars = len(target_text)
-        
-        # Get existing attempt count for this subtitle
         with conn.cursor() as cur:
+            # Verify session exists and belongs to user
+            cur.execute(
+                "SELECT * FROM video_dictation_sessions WHERE id = %s AND user_id = %s",
+                (session_id, user_id),
+            )
+            db_session = cur.fetchone()
+            if not db_session:
+                return {"success": False, "error": "Session not found"}
+            
+            # Get the target subtitle text
+            cur.execute(
+                "SELECT text, start_time_ms, end_time_ms FROM video_subtitles WHERE id = %s",
+                (subtitle_id,),
+            )
+            subtitle_row = cur.fetchone()
+            if not subtitle_row:
+                return {"success": False, "error": "Subtitle not found"}
+            
+            target_text = subtitle_row["text"]
+            subtitle_start_time = subtitle_row["start_time_ms"]
+            subtitle_end_time = subtitle_row["end_time_ms"]
+            
+            # Calculate accuracy using simple character comparison
+            is_correct = user_input.strip() == target_text.strip()
+            accuracy_score = calculate_similarity(user_input, target_text)
+            
+            # Count correct characters
+            correct_chars = 0
+            target_chars = list(target_text)
+            input_chars = list(user_input)
+            
+            for i, c in enumerate(input_chars):
+                if i < len(target_chars) and c == target_chars[i]:
+                    correct_chars += 1
+            
+            total_chars = len(target_text)
+            
+            # Get existing attempt count for this subtitle
             cur.execute(
                 """SELECT COUNT(*) as attempts 
                    FROM video_dictation_attempts 
@@ -272,27 +235,43 @@ def submit_dictation_attempt(
                 ),
             )
             
-            # Update session stats
-            if session_id in _dictation_sessions:
-                _dictation_sessions[session_id]["completed_ids"].add(subtitle_id)
-                if is_correct:
-                    _dictation_sessions[session_id]["correct_ids"].add(subtitle_id)
+            # Calculate session progress from database
+            cur.execute(
+                """SELECT 
+                    COUNT(DISTINCT subtitle_id) as completed_count,
+                    SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct_count
+                   FROM video_dictation_attempts 
+                   WHERE session_id = %s""",
+                (session_id,),
+            )
+            progress = cur.fetchone()
+            completed = progress["completed_count"] if progress else 0
+            correct_count = progress["correct_count"] if progress else 0
             
-            # Check if session is complete (all subtitles attempted)
-            total = len(_dictation_sessions.get(session_id, {}).get("subtitles", []))
-            completed = len(_dictation_sessions.get(session_id, {}).get("completed_ids", set()))
+            # Get total subtitles from session
+            total = db_session.get("total_subtitles", 0)
             remaining = total - completed if total > 0 else 0
             is_complete = remaining == 0
             
-            # Update session in database if complete
+            # Update session in database with current stats
+            accuracy_percent = int((correct_count / completed) * 100) if completed > 0 else 0
+            
             if is_complete:
-                correct_count = len(_dictation_sessions.get(session_id, {}).get("correct_ids", set()))
-                accuracy_percent = int((correct_count / total) * 100) if total > 0 else 0
-                
                 cur.execute(
                     """UPDATE video_dictation_sessions 
-                       SET completed_at = NOW(), status = 'completed',
-                           correct_count = %s, accuracy_percent = %s
+                       SET completed_at = NOW(), 
+                           status = 'completed',
+                           correct_count = %s, 
+                           accuracy_percent = %s
+                       WHERE id = %s""",
+                    (correct_count, accuracy_percent, session_id),
+                )
+            else:
+                # Update progress even if not complete
+                cur.execute(
+                    """UPDATE video_dictation_sessions 
+                       SET correct_count = %s, 
+                           accuracy_percent = %s
                        WHERE id = %s""",
                     (correct_count, accuracy_percent, session_id),
                 )
@@ -353,26 +332,55 @@ def calculate_similarity(input_text: str, target_text: str) -> int:
 
 
 def get_session_status(user_id: str, session_id: str) -> Optional[Dict[str, Any]]:
-    """Get the current status of a dictation session."""
-    session = _dictation_sessions.get(session_id)
+    """
+    Get the current status of a dictation session.
     
-    if not session or session.get("user_id") != user_id:
+    All data is computed from database queries; no in-memory state.
+    """
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            # Get session info
+            cur.execute(
+                """SELECT * FROM video_dictation_sessions 
+                   WHERE id = %s AND user_id = %s""",
+                (session_id, user_id),
+            )
+            session = cur.fetchone()
+            
+            if not session:
+                return None
+            
+            # Calculate progress from attempts
+            cur.execute(
+                """SELECT 
+                    COUNT(DISTINCT subtitle_id) as completed_count,
+                    SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct_count
+                   FROM video_dictation_attempts 
+                   WHERE session_id = %s""",
+                (session_id,),
+            )
+            progress = cur.fetchone()
+            completed = progress["completed_count"] if progress else 0
+            correct = progress["correct_count"] if progress else 0
+            
+            total = session.get("total_subtitles", 0)
+            accuracy = int((correct / completed) * 100) if completed > 0 else 0
+            
+            return {
+                "session_id": session_id,
+                "video_id": session.get("video_id"),
+                "total_subtitles": total,
+                "completed_count": completed,
+                "correct_count": correct,
+                "accuracy_percent": accuracy,
+                "status": "completed" if completed >= total and total > 0 else "in_progress",
+            }
+    except Exception as e:
+        logger.error(f"Error getting session status: {e}")
         return None
-    
-    total = len(session.get("subtitles", []))
-    completed = len(session.get("completed_ids", set()))
-    correct = len(session.get("correct_ids", set()))
-    accuracy = int((correct / completed) * 100) if completed > 0 else 0
-    
-    return {
-        "session_id": session_id,
-        "video_id": session.get("video_id"),
-        "total_subtitles": total,
-        "completed_count": completed,
-        "correct_count": correct,
-        "accuracy_percent": accuracy,
-        "status": "in_progress" if completed < total else "completed",
-    }
+    finally:
+        conn.close()
 
 
 def get_dictation_stats(user_id: str) -> Dict[str, Any]:
