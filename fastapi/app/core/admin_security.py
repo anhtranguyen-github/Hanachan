@@ -216,7 +216,7 @@ async def require_admin(
     return token
 
 
-def require_permission(permission: AdminPermission):
+async def require_permission(permission: AdminPermission):
     """
     Factory for dependencies that require specific admin permissions.
     Usage: Depends(require_permission(AdminPermission.VIEW_USERS))
