@@ -44,15 +44,18 @@ export async function getDueReviewItems(
     console.log(`${LOG_PREFIX} Getting due items for user:`, userId, options);
 
     let query = supabase
-        .from('user_learning_states')
+        .from('user_fsrs_states')
         .select(`
-            ku_id,
+            item_id,
             facet,
             state,
             next_review,
             knowledge_units!inner(id, type, level, character, meaning)
         `)
         .eq('user_id', userId)
+        .eq('item_type', 'ku')
+        .eq('item_type', 'ku')
+        .neq('state', 'burned')
         .lte('next_review', new Date().toISOString())
         .order('next_review', { ascending: true });
 
@@ -112,7 +115,7 @@ export async function getNewItems(
 
     // Get KUs that user has already started learning
     const { data: learnedIds } = await supabase
-        .from('user_learning_states')
+        .from('user_fsrs_states')
         .select('ku_id')
         .eq('user_id', userId);
 
@@ -314,10 +317,12 @@ export async function submitReviewAnswer(
 
     // Get current learning state
     const { data: currentState } = await supabase
-        .from('user_learning_states')
+        .from('user_fsrs_states')
         .select('*')
         .eq('user_id', userId)
-        .eq('ku_id', card.ku_id)
+        .eq('item_type', 'ku')
+        .eq('item_id', card.ku_id)
+        .eq('item_type', 'ku')
         .eq('facet', card.prompt_variant)
         .maybeSingle();
 
@@ -352,10 +357,11 @@ export async function submitReviewAnswer(
     // Update learning state only if correct (in Learn) or any attempt (in Review)
     // Rule: We create the first state ONLY when corrected the first time.
     const { error } = await supabase
-        .from('user_learning_states')
+        .from('user_fsrs_states')
         .upsert({
             user_id: userId,
-            ku_id: card.ku_id,
+            item_id: card.ku_id,
+            item_type: 'ku',
             facet: card.prompt_variant,
             state: next_state.stage,
             stability: next_state.stability,
@@ -395,14 +401,15 @@ export async function getReviewStats(userId: string): Promise<{
 
     // Get due count
     const { count: dueCount } = await supabase
-        .from('user_learning_states')
+        .from('user_fsrs_states')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
+        .eq('item_type', 'ku')
         .lte('next_review', now);
 
     // Get learned count
     const { count: learnedCount } = await supabase
-        .from('user_learning_states')
+        .from('user_fsrs_states')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId);
 
@@ -413,16 +420,18 @@ export async function getReviewStats(userId: string): Promise<{
 
     // Get burned count
     const { count: burnedCount } = await supabase
-        .from('user_learning_states')
+        .from('user_fsrs_states')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
+        .eq('item_type', 'ku')
         .eq('state', 'burned');
 
     // Due by type calculation...
     const { data: dueByTypeData } = await supabase
-        .from('user_learning_states')
+        .from('user_fsrs_states')
         .select('knowledge_units!inner(type)')
         .eq('user_id', userId)
+        .eq('item_type', 'ku')
         .lte('next_review', now);
 
     const dueByType: Record<string, number> = {

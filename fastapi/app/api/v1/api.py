@@ -1,9 +1,10 @@
 from fastapi import APIRouter
-from .endpoints import chat, session, memory, maintenance, reading, speaking, video_dictation, sentences, videos, fsrs, decks
+from .endpoints import chat, session, memory, maintenance, reading, speaking, video_dictation, sentences, videos, fsrs, admin
 
 api_router = APIRouter()
 api_router.include_router(chat.router, tags=["Chat"])
-api_router.include_router(decks.router, prefix="/decks", tags=["Decks"])
+# Decks API not exposed - Next.js uses direct Supabase access
+# Deck service layer remains for agent tools only
 api_router.include_router(session.router, prefix="/memory", tags=["Session"])
 api_router.include_router(memory.router, prefix="/memory", tags=["Memory"])
 api_router.include_router(maintenance.router, tags=["Maintenance"])
@@ -13,3 +14,4 @@ api_router.include_router(video_dictation.router, prefix="/dictation", tags=["Vi
 api_router.include_router(sentences.router, prefix="/sentences", tags=["Sentences"])
 api_router.include_router(videos.router, prefix="/videos", tags=["Videos"])
 api_router.include_router(fsrs.router, prefix="/fsrs", tags=["FSRS"])
+api_router.include_router(admin.router, prefix="/admin", tags=["Admin"])
