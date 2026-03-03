@@ -6,6 +6,12 @@ Fixes:
   Issue #7  — rate limiting on expensive endpoints
   Issue #12 — nuclear delete requires auth + ownership + confirmation + audit log
   Issue #16 — health endpoint reflects real-time service status
+
+Architecture Note:
+  Auth removed from FastAPI per architecture rules.
+  FastAPI = Agents ONLY (stateless, no auth)
+  Auth handled by Supabase/Next.js (BFF pattern)
+  user_id passed in request body/query from trusted Next.js layer
 """
 
 from __future__ import annotations
@@ -13,7 +19,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 
 from ....schemas.memory import (
@@ -27,7 +33,6 @@ from ....services.memory import episodic_memory as ep_mem
 from ....services.memory import semantic_memory as sem_mem
 from ....services.memory import session_memory as sess_mem
 from ....services.memory.consolidation import consolidate_memories
-from ....core.security import require_auth, require_own_user
 from ....core.rate_limit import limiter
 from ....core.database import check_db_health
 
@@ -43,10 +48,12 @@ async def health_live():
 
 
 @router.get("/health/detailed", response_model=HealthResponse, tags=["System"])
-async def health_detailed(request: Request, token: dict = Depends(require_auth)):
+async def health_detailed(request: Request):
     """Check connectivity to all backend services (real-time, not cached startup state).
 
-    Requires authentication to prevent unauthorized access to internal service status.
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. This endpoint should be called
+      through the Next.js BFF layer which validates admin permissions.
     """
     degraded = getattr(request.app.state, "degraded_services", [])
     qdrant_status = await run_in_threadpool(ep_mem.health_check)
@@ -74,11 +81,15 @@ async def health_detailed(request: Request, token: dict = Depends(require_auth))
 @limiter.limit("2/hour")
 async def run_consolidation(
     request: Request,
-    user_id: str = Depends(require_own_user),
+    user_id: str,
 ):
     """Merge older episodic memories into richer, compressed summaries.
 
     Rate-limited to 2 calls/hour per IP to prevent LLM cost amplification.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id in path
+      is trusted to have been validated by the BFF layer.
     """
     try:
         return await run_in_threadpool(consolidate_memories, user_id)
@@ -91,9 +102,14 @@ async def run_consolidation(
 
 @router.post("/memory/test/seed/{user_id}", tags=["Maintenance"])
 async def seed_test_data(
-    user_id: str = Depends(require_own_user),
+    user_id: str,
 ):
-    """Seed a user with sample episodic and semantic memories for testing."""
+    """Seed a user with sample episodic and semantic memories for testing.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id in path
+      is trusted to have been validated by the BFF layer.
+    """
     await run_in_threadpool(
         ep_mem.add_episodic_memory,
         user_id,
@@ -151,7 +167,7 @@ async def seed_test_data(
 @limiter.limit("1/day")
 async def clear_all_memory(
     request: Request,
-    user_id: str = Depends(require_own_user),
+    user_id: str,
     confirm: str = Query(
         ...,
         description="Must equal 'DELETE_ALL_MY_DATA' to confirm the irreversible operation.",
@@ -160,10 +176,14 @@ async def clear_all_memory(
     """**Nuclear option** — delete ALL memory (episodic, semantic, sessions) for a user.
 
     Requires:
-    - Valid JWT (authenticated)
-    - user_id matches JWT subject (ownership)
+    - Valid JWT (authenticated) — handled by Next.js/Supabase
+    - user_id matches JWT subject (ownership) — handled by Next.js/Supabase
     - confirm query param = 'DELETE_ALL_MY_DATA'
     - Rate-limited to 1 call/day per IP
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id in path
+      is trusted to have been validated by the BFF layer.
     """
     if confirm != "DELETE_ALL_MY_DATA":
         raise HTTPException(

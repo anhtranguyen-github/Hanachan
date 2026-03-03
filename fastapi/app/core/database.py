@@ -1,123 +1,128 @@
 """
-Database — ThreadedConnectionPool for PostgreSQL.
-Fixes Issues #2 (no pool), #3 (hardcoded credentials), #4 (silent write failures).
+Database — REMOVED direct PostgreSQL access.
+
+BREAKING CHANGE: Direct PostgreSQL access has been removed from FastAPI.
+Per architecture rules, all database access must go through Supabase client.
+
+Migration guide:
+- Use Supabase client instead of direct DB connections
+- See ARCHITECTURE_RULES.md for detailed migration guidance
+- For local development, use the Supabase CLI to access the database
 """
 
 from __future__ import annotations
 
 import logging
-from contextlib import contextmanager
+import warnings
 from typing import Any, Dict, List, Optional
-
-from psycopg2 import pool as pg_pool
-from psycopg2.extras import RealDictCursor
-
-from .config import settings
 
 logger = logging.getLogger(__name__)
 
-_pool: pg_pool.ThreadedConnectionPool | None = None
+# Pool is no longer used - kept as None for backward compatibility
+_pool = None
+
+
+class DirectDBAccessError(RuntimeError):
+    """Raised when code attempts to use direct PostgreSQL access.
+    
+    Direct database access is no longer allowed. Use Supabase client instead.
+    """
+    pass
+
+
+def _deprecation_warning(func_name: str) -> None:
+    """Emit a deprecation warning for removed database functions."""
+    warnings.warn(
+        f"{func_name}() is deprecated. Direct PostgreSQL access has been removed. "
+        "Use Supabase client instead. See ARCHITECTURE_RULES.md for migration guidance.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+    logger.error(
+        "direct_db_access_attempted",
+        extra={
+            "function": func_name,
+            "message": "Direct DB access blocked - use Supabase client instead",
+        },
+    )
 
 
 def init_pool() -> None:
-    """Initialise the connection pool at application startup.
-
-    Raises on failure — the caller (lifespan) must treat this as a hard error.
+    """DEPRECATED: Connection pool initialization removed.
+    
+    This function is kept for backward compatibility but does nothing.
+    Direct PostgreSQL access is no longer allowed.
+    
+    Raises:
+        DirectDBAccessError: If the application attempts to use DB operations.
     """
-    global _pool
-    _pool = pg_pool.ThreadedConnectionPool(
-        minconn=2,
-        maxconn=10,  # stay well under Supabase's 60-conn limit
-        host=settings.db_host,
-        port=settings.db_port,
-        database=settings.db_name,
-        user=settings.db_user,
-        password=settings.db_password,
-        connect_timeout=5,  # fail fast if DB is unreachable
-    )
-    logger.info("DB connection pool initialised (min=2, max=10)")
+    _deprecation_warning("init_pool")
+    logger.info("DB connection pool initialization skipped (direct access removed)")
 
 
 def close_pool() -> None:
-    """Close all connections in the pool at shutdown."""
-    global _pool
-    if _pool is not None:
-        _pool.closeall()
-        _pool = None
-        logger.info("DB connection pool closed")
+    """DEPRECATED: Connection pool closure - no-op.
+    
+    This function is kept for backward compatibility but does nothing.
+    """
+    _deprecation_warning("close_pool")
+    pass
 
 
-@contextmanager
 def get_db():
-    """Yield a connection from the pool; commit on success, rollback on error."""
-    if _pool is None:
-        raise RuntimeError(
-            "Database pool not initialized. Call init_pool() at application startup."
-        )
-    conn = _pool.getconn()
-    try:
-        yield conn
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        _pool.putconn(conn)
+    """DEPRECATED: Database connection context manager removed.
+    
+    Raises:
+        DirectDBAccessError: Always raised to prevent direct DB access.
+    """
+    _deprecation_warning("get_db")
+    raise DirectDBAccessError(
+        "Direct database access has been removed. "
+        "Use Supabase client instead. "
+        "See ARCHITECTURE_RULES.md for migration guidance."
+    )
 
 
 def execute_query(
     query: str, params: Optional[tuple] = None, fetch: bool = True
 ) -> Optional[List[Dict[str, Any]]]:
-    """Execute a query using a pooled connection.
-
-    - fetch=True  → returns list of dicts
-    - fetch=False → commits the write and returns None
-    Exceptions propagate to the caller; no silent swallowing.
+    """DEPRECATED: Direct query execution removed.
+    
+    Raises:
+        DirectDBAccessError: Always raised to prevent direct DB access.
     """
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(query, params)
-            if fetch:
-                return [dict(r) for r in cur.fetchall()]
-            return None
+    _deprecation_warning("execute_query")
+    raise DirectDBAccessError(
+        "Direct database access has been removed. "
+        "Use Supabase client instead. "
+        "See ARCHITECTURE_RULES.md for migration guidance."
+    )
 
 
 def execute_single(
     query: str, params: Optional[tuple] = None
 ) -> Optional[Dict[str, Any]]:
-    """Execute a query and return the first row, or None."""
-    results = execute_query(query, params)
-    return results[0] if results else None
+    """DEPRECATED: Single row query execution removed.
+    
+    Raises:
+        DirectDBAccessError: Always raised to prevent direct DB access.
+    """
+    _deprecation_warning("execute_single")
+    raise DirectDBAccessError(
+        "Direct database access has been removed. "
+        "Use Supabase client instead. "
+        "See ARCHITECTURE_RULES.md for migration guidance."
+    )
 
 
 def check_db_health() -> str:
-    """Return 'ok' if the DB pool is reachable, otherwise an error string."""
-    try:
-        execute_query("SELECT 1", fetch=True)
-        return "ok"
-    except Exception as exc:
-        return f"error: {exc}"
-
-
-def get_db_connection():
-    """DEPRECATED: Use get_db() context manager instead.
-    Returns a raw connection from the pool.
-    """
-    if _pool is None:
-        raise RuntimeError(
-            "Database pool not initialized. Call init_pool() at application startup."
-        )
-    return _pool.getconn()
-
-
-def get_db_pool():
-    """Return the connection pool for asyncpg-style access patterns.
+    """Return health status without direct DB access.
     
-    This function returns the pool for use with asyncpg-compatible code.
-    The pool supports acquire() method for getting connections.
+    Since direct DB access has been removed, this returns a status
+    indicating that health checks should use Supabase client instead.
+    
+    Returns:
+        str: 'degraded' indicating DB health must be checked via Supabase
     """
-    if _pool is None:
-        raise RuntimeError(
-            "Database pool not initialized. Call init_pool() at application startup."
-        )
-    return _pool
+    _deprecation_warning("check_db_health")
+    return "degraded: use Supabase client for health checks"

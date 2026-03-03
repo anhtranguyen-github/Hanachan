@@ -5,13 +5,19 @@ These endpoints manage dictation practice sessions for video subtitles:
 - Create a new dictation session for a video
 - Submit dictation attempts
 - Get session status and statistics
+
+Architecture Note:
+  Auth removed from FastAPI per architecture rules.
+  FastAPI = Agents ONLY (stateless, no auth)
+  Auth handled by Supabase/Next.js (BFF pattern)
+  user_id passed in request body/query from trusted Next.js layer
 """
 
 from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from uuid import UUID
 
@@ -29,7 +35,6 @@ from ....schemas.video_dictation import (
     DictationAttemptResult,
 )
 from ....services import video_dictation as vd_service
-from ....core.security import require_auth
 
 logger = logging.getLogger(__name__)
 
@@ -45,31 +50,32 @@ router = APIRouter()
 async def create_dictation_session(
     request: Request,
     req: CreateDictationSessionRequest,
-    token: dict = Depends(require_auth),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
     """
     Create a new dictation practice session for a video.
-    
+
     This endpoint:
     1. Loads subtitles for the specified video
     2. Filters based on user settings (JLPT level, length, etc.)
     3. Creates a session for tracking progress
     4. Returns subtitles for dictation practice
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
-    user_id = token.get("sub")
-    
     # Convert Pydantic settings to dict
     settings_dict = None
     if req.settings:
         settings_dict = req.settings.model_dump()
-    
+
     result = await run_in_threadpool(
         vd_service.create_dictation_session,
         user_id,
         req.video_id,
         settings_dict,
     )
-    
+
     if not result.get("success"):
         return DictationSessionResponse(
             success=False,
@@ -79,12 +85,12 @@ async def create_dictation_session(
             total_subtitles=0,
             error=result.get("error", "Failed to create session"),
         )
-    
+
     # Convert subtitles to response format
     subtitles = [
         DictationSubtitleItem(**s) for s in result.get("subtitles", [])
     ]
-    
+
     return DictationSessionResponse(
         success=True,
         session_id=result.get("session_id"),
@@ -104,19 +110,20 @@ async def submit_dictation_attempt(
     request: Request,
     session_id: UUID,
     req: SubmitDictationAttemptRequest,
-    token: dict = Depends(require_auth),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
     """
     Submit a dictation attempt for a subtitle.
-    
+
     This endpoint:
     1. Compares user input to the target subtitle text
     2. Calculates accuracy score
     3. Records the attempt in the database
     4. Returns feedback on the attempt
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
-    user_id = token.get("sub")
-    
     result = await run_in_threadpool(
         vd_service.submit_dictation_attempt,
         user_id,
@@ -125,13 +132,13 @@ async def submit_dictation_attempt(
         req.user_input,
         req.time_taken_ms,
     )
-    
+
     if not result.get("success"):
         raise HTTPException(
             status_code=400,
             detail=result.get("error", "Failed to submit attempt"),
         )
-    
+
     attempt_result = result.get("result")
     if attempt_result:
         # Remove internal timing fields from response
@@ -146,7 +153,7 @@ async def submit_dictation_attempt(
         )
     else:
         attempt_result_response = None
-    
+
     return SubmitDictationAttemptResponse(
         success=True,
         result=attempt_result_response,
@@ -164,18 +171,19 @@ async def submit_dictation_attempt(
 async def get_session_status(
     request: Request,
     session_id: UUID,
-    token: dict = Depends(require_auth),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
     """
     Get the current status of a dictation session.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
-    user_id = token.get("sub")
-    
     status = vd_service.get_session_status(user_id, session_id)
-    
+
     if not status:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     return DictationSessionStatusResponse(
         session_id=status.get("session_id"),
         video_id=status.get("video_id"),
@@ -195,18 +203,19 @@ async def get_session_status(
 @limiter.limit("5/minute")
 async def get_dictation_stats(
     request: Request,
-    token: dict = Depends(require_auth),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
     """
     Get the user's dictation practice statistics.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
-    user_id = token.get("sub")
-    
     stats = await run_in_threadpool(
         vd_service.get_dictation_stats,
         user_id,
     )
-    
+
     return DictationStatsResponse(
         total_sessions=stats.get("total_sessions", 0),
         total_attempts=stats.get("total_attempts", 0),
@@ -223,13 +232,14 @@ async def get_dictation_stats(
 )
 async def end_dictation_session(
     session_id: UUID,
-    token: dict = Depends(require_auth),
+    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
 ):
     """
     End/abandon a dictation session.
+
+    Architecture Note:
+      Auth is handled by Next.js/Supabase. user_id is trusted.
     """
-    # user_id unused for now
-    
     # For now, just acknowledge the request
     # In production, would update session status in database
     return {

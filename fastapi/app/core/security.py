@@ -1,96 +1,132 @@
 """
-JWT Authentication — validates Supabase-issued tokens.
-Uses RS256 (asymmetric) for token verification.
+JWT Authentication — DEPRECATED / ARCHITECTURE VIOLATION
+
+⚠️  AUTHENTICATION HAS BEEN REMOVED FROM FASTAPI PER ARCHITECTURE RULES ⚠️
+
+Architecture Rule:
+  FastAPI = Agents ONLY (stateless, no auth)
+  Auth must be handled by Supabase/Next.js (BFF pattern)
+
+Why:
+  - FastAPI must be stateless agents with no auth per architecture
+  - Auth must be handled by Supabase/Next.js (BFF pattern)
+  - Removes auth duplication between layers
+  - Security: Auth in wrong layer bypasses RLS enforcement
+  - Complexity: Duplicate auth logic in multiple layers
+  - Maintenance: JWT validation in FastAPI requires secret management
+
+What to do instead:
+  - Pass user_id in request body/query params
+  - Trust that Next.js has already validated auth via Supabase
+  - FastAPI endpoints now accept user_id directly from trusted sources
 """
 
 from __future__ import annotations
 
 import logging
+import warnings
 from typing import Optional
 
-import jwt  # PyJWT
-from fastapi import Depends, HTTPException, Security
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jwt import PyJWKClient, PyJWKClientError
-
-from .config import settings
+from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
 
-_bearer = HTTPBearer()
 
-# Cache for JWKS client to avoid refetching keys on every request
-_jwks_client: Optional[PyJWKClient] = None
+class ArchitectureViolationError(HTTPException):
+    """
+    Raised when code attempts to use JWT authentication in FastAPI.
 
-# RS256 only - HS256 fallback removed for security
+    This is an architecture violation - auth must be handled by Next.js/Supabase.
+    """
+
+    def __init__(self, detail: Optional[str] = None):
+        message = detail or (
+            "Architecture Violation: JWT authentication is not allowed in FastAPI. "
+            "Auth must be handled by Supabase/Next.js (BFF pattern). "
+            "Pass user_id in request body instead of using JWT tokens. "
+            "See documentation/01_ARCHITECTURE_OVERVIEW.md for details."
+        )
+        super().__init__(status_code=500, detail=message)
 
 
-def _get_jwks_client() -> PyJWKClient:
-    """Get or create a cached JWKS client for token verification."""
-    global _jwks_client
-    if _jwks_client is None:
-        # Supabase JWKS endpoint - usually doesn't need apikey if correctly configured
-        jwks_url = f"{settings.supabase_url}/auth/v1/.well-known/jwks.json"
-        _jwks_client = PyJWKClient(jwks_url, cache_keys=True)
-    return _jwks_client
-
-
-def _decode_token_asymmetric(credentials: str) -> dict:
-    """Decode using Asymmetric key (ES256/RS256 with JWKS)."""
-    jwks_client = _get_jwks_client()
-    signing_key = jwks_client.get_signing_key_from_jwt(credentials)
-    return jwt.decode(
-        credentials,
-        signing_key.key,
-        algorithms=["RS256", "ES256"],
-        audience="authenticated",
+def _emit_deprecation_warning(func_name: str) -> None:
+    """Emit a deprecation warning for auth functions."""
+    warnings.warn(
+        f"{func_name}() is deprecated. "
+        "JWT authentication has been removed from FastAPI per architecture rules. "
+        "Pass user_id directly in request body. "
+        "Auth must be handled by Supabase/Next.js (BFF pattern).",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+    logger.warning(
+        "auth_deprecation_warning",
+        extra={"function": func_name, "violation": "JWT auth in FastAPI"},
     )
 
 
 def require_auth(
-    creds: HTTPAuthorizationCredentials = Security(_bearer),
+    *args,
+    **kwargs,
 ) -> dict:
-    """Validate the Bearer JWT and return the decoded payload.
-
-    Uses RS256 (asymmetric) with JWKS for token verification.
     """
-    token = creds.credentials
+    DEPRECATED: JWT authentication is no longer supported in FastAPI.
 
-    # 1. Allow Service Role Key (Server-to-Server)
-    # MUST be a dedicated secret, not the public anon 'supabase_key'.
-    if settings.supabase_service_key and token == settings.supabase_service_key:
-        return {"sub": "service_role", "role": "service_role"}
+    This function now raises ArchitectureViolationError.
 
-    # 2. Asymmetric (User JWT - ES256/RS256)
-    try:
-        return _decode_token_asymmetric(token)
-    except PyJWKClientError as e:
-        # JWKS endpoint unavailable - fail hard, no fallback
-        logger.error("rs256_jwks_unavailable", extra={"error": str(e)})
-        raise HTTPException(status_code=401, detail="Token verification unavailable")
-    except jwt.InvalidSignatureError:
-        logger.warning(
-            "rs256_signature_invalid",
-            extra={"token_prefix": token[:20] if token else ""},
-        )
-        raise HTTPException(status_code=401, detail="Invalid token")
-    except jwt.ExpiredSignatureError:
-        logger.warning(
-            "rs256_token_expired", extra={"token_prefix": token[:20] if token else ""}
-        )
-        raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.InvalidTokenError as e:
-        logger.warning("rs256_invalid_token", extra={"error": str(e)})
-        raise HTTPException(status_code=401, detail="Invalid token")
+    Architecture Rule:
+      FastAPI = Agents ONLY (stateless, no auth)
+      Auth must be handled by Supabase/Next.js (BFF pattern)
+
+    Instead:
+      - Pass user_id in request body/query params
+      - Trust that Next.js has already validated auth via Supabase
+
+    Raises:
+        ArchitectureViolationError: Always raised to prevent auth usage in FastAPI
+    """
+    _emit_deprecation_warning("require_auth")
+    raise ArchitectureViolationError(
+        "require_auth() is deprecated and removed. "
+        "JWT authentication is not allowed in FastAPI per architecture rules. "
+        "Auth must be handled by Supabase/Next.js (BFF pattern). "
+        "Pass user_id in request body instead of using JWT tokens."
+    )
 
 
 def require_own_user(
     user_id: str,
-    payload: dict = Depends(require_auth),
+    *args,
+    **kwargs,
 ) -> str:
-    """Ensures the authenticated user can only touch their own data.
-    Allows 'service_role' to bypass this check.
     """
-    if payload.get("role") != "service_role" and payload.get("sub") != user_id:
-        raise HTTPException(status_code=403, detail="Forbidden")
-    return user_id
+    DEPRECATED: User ownership verification is no longer handled in FastAPI.
+
+    This function now raises ArchitectureViolationError.
+
+    Architecture Rule:
+      FastAPI = Agents ONLY (stateless, no auth)
+      Ownership checks must be handled by Supabase/Next.js or via RLS
+
+    Instead:
+      - Pass user_id in request body and trust Next.js validation
+      - Use Supabase Row Level Security (RLS) for data access control
+
+    Raises:
+        ArchitectureViolationError: Always raised to prevent auth usage in FastAPI
+    """
+    _emit_deprecation_warning("require_own_user")
+    raise ArchitectureViolationError(
+        "require_own_user() is deprecated and removed. "
+        "User ownership verification is not handled in FastAPI per architecture rules. "
+        "Auth must be handled by Supabase/Next.js (BFF pattern). "
+        "Pass user_id in request body and rely on Supabase RLS for access control."
+    )
+
+
+# Backward compatibility: keep exports but they now raise errors
+__all__ = [
+    "ArchitectureViolationError",
+    "require_auth",
+    "require_own_user",
+]

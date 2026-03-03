@@ -31,18 +31,11 @@ class Settings(BaseSettings):
     # ElevenLabs
     elevenlabs_api_key: str = ""
 
-    # Supabase
+    # Supabase (required for all database access)
     supabase_url: str = ""
     supabase_key: str = ""
     supabase_service_key: str = Field("", alias="SUPABASE_SERVICE_ROLE_KEY")
     supabase_jwt_secret: str = ""
-
-    # PostgreSQL (direct connection for memory modules)
-    db_host: str = "127.0.0.1"
-    db_port: int = 54422
-    db_name: str = "postgres"
-    db_user: str = "postgres"
-    db_password: str = ""  # No default — must be set in env
 
     # Qdrant (cloud)
     qdrant_url: str = ""
@@ -99,8 +92,8 @@ class Settings(BaseSettings):
             missing.append("SUPABASE_URL")
         if not self.supabase_key:
             missing.append("SUPABASE_KEY")
-        if not self.db_password:
-            missing.append("DB_PASSWORD")
+        # NOTE: DB_PASSWORD removed - direct PostgreSQL access no longer allowed
+        # All DB access must go through Supabase client
         return missing
 
 
