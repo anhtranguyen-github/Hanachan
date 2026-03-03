@@ -13,7 +13,12 @@ import {
     updateReadingConfig as updateReadingConfigService,
     createReadingSession as createReadingSessionService,
     listReadingSessions as listReadingSessionsService,
-    getReadingMetrics as getReadingMetricsService
+    getReadingMetrics as getReadingMetricsService,
+    getReadingSessionById,
+    startReadingSession as startReadingSessionService,
+    completeReadingSession as completeReadingSessionService,
+    submitAnswer as submitAnswerService,
+    getMetricsHistory as getMetricsHistoryService
 } from './readingService';
 
 async function getUserId(): Promise<string> {
@@ -72,24 +77,26 @@ export async function listReadingSessions(options?: {
 }
 
 export async function getReadingSession(sessionId: string): Promise<ReadingSession> {
-    // This would need a getReadingSessionById service function
-    // For now, throwing not implemented
-    throw new Error('getReadingSession not yet migrated to Next.js');
+    const userId = await getUserId();
+    const session = await getReadingSessionById(userId, sessionId);
+    if (!session) throw new Error('Reading session not found');
+    return session;
 }
 
 export async function startReadingSession(sessionId: string): Promise<void> {
-    // This would need to be implemented in the service
-    // For now, it's a no-op
-    console.log('Start reading session:', sessionId);
+    const userId = await getUserId();
+    const result = await startReadingSessionService(userId, sessionId);
+    if (!result) throw new Error('Failed to start reading session');
 }
 
 export async function completeReadingSession(
     sessionId: string,
     totalTimeSeconds: number
 ): Promise<{ score: number; correct_answers: number; total_exercises: number }> {
-    // This would need to be implemented in the service
-    // For now, returning dummy data
-    return { score: 0, correct_answers: 0, total_exercises: 0 };
+    const userId = await getUserId();
+    const result = await completeReadingSessionService(userId, sessionId, totalTimeSeconds);
+    if (!result) throw new Error('Failed to complete reading session');
+    return result;
 }
 
 // ─── Exercises ────────────────────────────────────────────────────────────────
@@ -100,9 +107,10 @@ export async function submitAnswer(
     userAnswer: string,
     timeSpentSeconds: number = 0
 ): Promise<AnswerResult> {
-    // This would need to be implemented in the service
-    // For now, throwing not implemented
-    throw new Error('submitAnswer not yet migrated to Next.js');
+    const userId = await getUserId();
+    const result = await submitAnswerService(userId, exerciseId, questionIndex, userAnswer, timeSpentSeconds);
+    if (!result) throw new Error('Failed to submit answer');
+    return result;
 }
 
 // ─── Metrics ──────────────────────────────────────────────────────────────────
@@ -113,7 +121,6 @@ export async function getReadingMetrics(): Promise<ReadingMetrics> {
 }
 
 export async function getMetricsHistory(days: number = 30) {
-    // This would need to be implemented in the service
-    // For now, returning empty array
-    return [];
+    const userId = await getUserId();
+    return getMetricsHistoryService(userId, days);
 }
