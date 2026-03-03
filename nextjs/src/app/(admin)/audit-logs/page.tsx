@@ -45,6 +45,7 @@ export default function AuditLogsPage() {
 
   useEffect(() => {
     loadLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offset, actionFilter]);
 
   return (

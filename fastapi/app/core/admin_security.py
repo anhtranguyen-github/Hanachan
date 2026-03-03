@@ -32,7 +32,7 @@ import warnings
 from datetime import datetime, timezone
 from enum import Enum
 from functools import wraps
-from typing import Optional, Callable, Any
+from typing import Optional, Callable
 
 from fastapi import HTTPException, Request
 

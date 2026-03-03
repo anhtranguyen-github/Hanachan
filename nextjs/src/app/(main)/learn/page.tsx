@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Loader2, BookOpen, ChevronRight, Target, X, Sparkles, GraduationCap } from 'lucide-react';
 import { fetchNewItems, fetchLevelStats } from '@/features/learning/service';
 import { useUser } from '@/features/auth/AuthContext';
@@ -9,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { clsx } from 'clsx';
 
 export default function LearnOverviewPage() {
+    const router = useRouter();
     const { user, openLoginModal } = useUser();
     const [state, setState] = useState<any>(null);
     const [mounted, setMounted] = useState(false);
@@ -136,7 +138,7 @@ export default function LearnOverviewPage() {
 
                     {hasActiveBatch && (
                         <button
-                            onClick={() => window.location.href = '/learn/session'}
+                            onClick={() => router.push('/learn/session')}
                             data-testid="begin-session-link"
                             className="relative z-10 mt-5 w-full py-4 bg-gradient-to-r from-[#3A6EA5] to-[#2D5A8A] text-white rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] hover:shadow-xl hover:shadow-[#3A6EA5]/25 hover:scale-[1.02] transition-all duration-300 group/btn"
                         >

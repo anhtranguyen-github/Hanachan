@@ -50,10 +50,10 @@ export async function getOrCreateVideo(youtubeId: string): Promise<Video> {
   });
 
   // Try to process subtitles
+  // Architecture: Use Next.js API route instead of direct FastAPI call
   try {
-    const backendUrl = process.env.MEMORY_API_URL || 'http://127.0.0.1:8765';
-    console.log(`[VideoService] Fetching transcripts from ${backendUrl}/api/v1/videos/transcript/${youtubeId}`);
-    const res = await fetch(`${backendUrl}/api/v1/videos/transcript/${youtubeId}`);
+    console.log(`[VideoService] Fetching transcripts via API route for ${youtubeId}`);
+    const res = await fetch(`/api/videos/transcript/${youtubeId}`);
     if (res.ok) {
       const { transcript } = await res.json();
 
