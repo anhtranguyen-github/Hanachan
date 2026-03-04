@@ -64,8 +64,29 @@ class DomainClient:
             return response.json()
 
     # Learning Domain
-    async def get_user_learning_context(self) -> Dict[str, Any]:
-        return await self._get("/learning/context")
+    async def get_learning_progress(self, identifier: str) -> Optional[Dict[str, Any]]:
+        try:
+            return await self._get("/learning/progress", params={"identifier": identifier})
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                return None
+            raise
+
+    async def search_knowledge(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+        return await self._get("/learning/search", params={"q": query, "limit": limit})
+
+    async def submit_review(self, ku_id: str, facet: str, rating: str, wrong_count: int = 0) -> Dict[str, Any]:
+        payload = {
+            "ku_id": ku_id,
+            "facet": facet,
+            "rating": rating,
+            "wrong_count": wrong_count
+        }
+        return await self._post("/learning/review", payload)
+
+    async def add_ku_note(self, ku_id: str, note_content: str) -> Dict[str, Any]:
+        payload = {"ku_id": ku_id, "note_content": note_content}
+        return await self._post("/learning/notes", payload)
 
     # Chat / Session Domain (Moved to Domain SSOT)
     async def upsert_chat_session(self, session_id: str) -> Dict[str, Any]:
