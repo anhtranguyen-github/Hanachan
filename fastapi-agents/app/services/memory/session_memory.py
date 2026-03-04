@@ -5,6 +5,7 @@ Session / Working Memory — Pure Agent Runtime version (calls fastapi-domain).
 from __future__ import annotations
 
 import logging
+import uuid
 from typing import Any, Dict, List, Optional
 from app.core.domain_client import DomainClient
 
@@ -12,9 +13,10 @@ logger = logging.getLogger(__name__)
 
 async def create_session(jwt: str, user_id: str, metadata: Optional[Dict[str, Any]] = None) -> str:
     client = DomainClient(jwt)
+    session_id = str(uuid.uuid4())
     # The domain service handles creation
-    result = await client.upsert_chat_session(str(uuid.uuid4())) # Actually domain should probably generate ID or accept one
-    return result["id"]
+    result = await client.upsert_chat_session(session_id)
+    return result.get("session_id") or session_id
 
 async def get_session(jwt: str, session_id: str) -> Optional[Dict[str, Any]]:
     client = DomainClient(jwt)

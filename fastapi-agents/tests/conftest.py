@@ -45,7 +45,6 @@ def mock_external_services():
         # app.core.database removed
         patch("app.services.memory.episodic_memory.init_qdrant", return_value=None),
         patch("app.services.memory.semantic_memory.init_neo4j", return_value=None),
-        patch("app.services.memory.session_memory.shutdown_bg_executor", return_value=None),
     ):
         yield
 
