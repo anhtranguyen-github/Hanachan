@@ -1,3 +1,8 @@
+from __future__ import annotations
+from typing import Any, Dict
+from supabase import Client
+from app.api.deps import get_current_user, get_user_client
+from fastapi import Depends
 """
 Chat endpoints.
 Fixes:
@@ -15,9 +20,6 @@ Architecture Note:
   Auth handled by Supabase/Next.js (BFF pattern)
   user_id passed in request body from trusted Next.js layer
 """
-
-from __future__ import annotations
-
 
 import json
 import logging
@@ -40,30 +42,37 @@ router = APIRouter()
 
 @router.post("/chat", response_model=ChatResponse, tags=["Chat"])
 @limiter.limit(f"{settings.rate_limit_per_minute}/minute")
-async def chat(request: Request, req: ChatRequest):
+async def chat(
+    request: Request,
+    req: ChatRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """Memory-augmented chat (non-streaming).
 
     Architecture Note:
       Auth is handled by Next.js/Supabase. user_id in request body
       is trusted to have been validated by the BFF layer.
     """
+    user_id = current_user["id"]
+    if str(req.user_id) != str(user_id):
+          raise HTTPException(status_code=400, detail="Invalid user_id in request body")
     try:
         result = await run_in_threadpool(
             run_chat,
-            user_id=req.user_id,
+            user_id=user_id,
             message=req.message,
             session_id=req.session_id,
         )
     except Exception as exc:
         logger.error(
             "chat_error",
-            extra={"user_id": req.user_id, "error": str(exc)},
+            extra={"user_id": user_id, "error": str(exc)},
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Chat processing failed")
 
     return ChatResponse(
-        user_id=req.user_id,
+        user_id=user_id,
         session_id=req.session_id,
         message=req.message,
         response=result["response"],
@@ -78,17 +87,17 @@ async def chat(request: Request, req: ChatRequest):
 async def chat_stream(
     request: Request,
     req: ChatRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    """Streaming version of /chat using the new iterative LangGraph.
-
-    Architecture Note:
-      Auth is handled by Next.js/Supabase. user_id in request body
-      is trusted to have been validated by the BFF layer.
-    """
+    """Streaming version of /chat using the new iterative LangGraph."""
+    user_id = current_user["id"]
+    if str(req.user_id) != str(user_id):
+          raise HTTPException(status_code=400, detail="Invalid user_id in request body")
+    
     async def event_stream() -> AsyncGenerator[str, None]:
         # Initialize state
         initial_state = {
-            "user_id": req.user_id,
+            "user_id": user_id,
             "session_id": req.session_id,
             "user_input": req.message,
             "messages": [HumanMessage(content=req.message)],
@@ -106,7 +115,7 @@ async def chat_stream(
             # We use astream to yield updates from the graph
             async for event in memory_agent.astream(
                 initial_state,
-                config={"configurable": {"thread_id": req.session_id or req.user_id}},
+                config={"configurable": {"thread_id": req.session_id or user_id}},
             ):
                 # We can yield "meta" events for planning/tools
                 for node_name, state_update in event.items():
@@ -131,7 +140,7 @@ async def chat_stream(
 
         except Exception as exc:
             logger.error(
-                "stream_graph_error", extra={"user_id": req.user_id, "error": str(exc)}
+                "stream_graph_error", extra={"user_id": user_id, "error": str(exc)}
             )
             yield f"data: {json.dumps({'type': 'error', 'message': f'Processing failed: {str(exc)}'})}\n\n"
 

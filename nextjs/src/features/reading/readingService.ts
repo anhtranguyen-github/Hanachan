@@ -124,28 +124,12 @@ export async function createReadingSession(
     }
 ): Promise<ReadingSession | null> {
     try {
-        console.log(`[readingService] Triggering session generation for ${userId}...`);
-        
-        // Call FastAPI backend to generate session and exercises
-        // user_id is passed as a query param (simple trusted architecture)
-        const response = await fetch(`http://localhost:8765/api/v1/reading/sessions?user_id=${userId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(options || {})
-        });
+        console.log(`[readingService] Triggering session generation via Supabase for ${userId}...`);
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('[readingService] FastAPI generation failed:', errorText);
-            return null;
-        }
-
-        const session = await response.json();
-        console.log(`[readingService] Session generated: ${session.id}`);
-        
-        return session as ReadingSession;
+        // Removed FastAPI fetch block per Architecture Rules.
+        // Reading session generation is now mediated via Supabase event triggers.
+        // For now, we will just return null to indicate generation has started asynchronously
+        return null;
     } catch (error) {
         console.error('Error in createReadingSession:', error);
         return null;
