@@ -5,7 +5,8 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any, Tuple
 from pydantic import BaseModel, Field
 
-from app.core.supabase import supabase
+from app.core.supabase import get_service_client
+supabase = get_service_client()
 from app.core.llm import make_embedding_model
 
 logger = logging.getLogger(__name__)

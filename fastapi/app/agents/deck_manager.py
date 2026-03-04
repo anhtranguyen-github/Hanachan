@@ -10,7 +10,8 @@ from typing import Any, Dict, Optional
 from langchain_core.tools import tool
 from langchain_core.prompts import ChatPromptTemplate
 
-from app.core.supabase import supabase
+from app.core.supabase import get_service_client
+supabase = get_service_client()
 from app.services import learning_service as learn_serv
 from app.core.llm import make_llm
 
