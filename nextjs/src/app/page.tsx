@@ -319,8 +319,8 @@ export default function HomePage() {
                                     <span className="text-[10px] font-mono text-gray-400 uppercase tracking-tighter">Live Agent Logic</span>
                                 </div>
                                 <code className="text-[11px] text-[#CDB4DB] font-mono leading-tight">
-                                    PLAN: ["retrieve_episodic", "check_deck_status"]<br />
-                                    FOUND: "User interest in N3 Weather vocabulary"
+                                    {'PLAN: ["retrieve_episodic", "check_deck_status"]'}<br />
+                                    {'FOUND: "User interest in N3 Weather vocabulary"'}
                                 </code>
                             </div>
                         </div>
