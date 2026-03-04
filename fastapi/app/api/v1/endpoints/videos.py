@@ -16,8 +16,8 @@ from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 from fastapi import APIRouter, HTTPException, Query
 
-from ....services.video_embeddings import get_video_embeddings_service
-from ....services.fsrs_service import get_fsrs_service
+from app.services.video_embeddings import get_video_embeddings_service
+from app.services.fsrs_service import get_fsrs_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -160,7 +160,7 @@ async def get_video_learning_segments(
         vocabulary: Comma-separated list of words/kanji to find
         context_window: Number of segments before/after to include
     """
-    from ....services.learning_service import search_kus
+    from app.services.learning_service import search_kus
 
     service = get_video_embeddings_service()
 
@@ -230,7 +230,7 @@ async def get_video_fsrs_status(
     Architecture Note:
       Auth is handled by Next.js/Supabase. user_id is trusted.
     """
-    from ....core.database import execute_single
+    from app.core.database import execute_single
 
     status = execute_single(
         """

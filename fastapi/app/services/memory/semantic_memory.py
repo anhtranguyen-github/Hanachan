@@ -10,8 +10,8 @@ from typing import Any, Dict, List
 
 from neo4j import GraphDatabase, Driver
 
-from ...core.config import settings
-from ...schemas.memory import KnowledgeGraph, Node, Relationship
+from app.core.config import settings
+from app.schemas.memory import KnowledgeGraph, Node, Relationship
 
 logger = logging.getLogger(__name__)
 

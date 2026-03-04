@@ -10,9 +10,9 @@ from typing import Any, Dict, List
 
 from langchain_core.prompts import ChatPromptTemplate
 
-from ..services.memory import semantic_memory as sem_mem
-from ..core.llm import make_llm
-from ..schemas.memory import UserProfile
+from app.services.memory import semantic_memory as sem_mem
+from app.core.llm import make_llm
+from app.schemas.memory import UserProfile
 
 logger = logging.getLogger(__name__)
 

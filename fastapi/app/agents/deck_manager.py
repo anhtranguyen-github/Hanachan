@@ -10,9 +10,9 @@ from typing import Any, Dict, Optional
 from langchain_core.tools import tool
 from langchain_core.prompts import ChatPromptTemplate
 
-from ..core.supabase import supabase
-from ..services import learning_service as learn_serv
-from ..core.llm import make_llm
+from app.core.supabase import supabase
+from app.services import learning_service as learn_serv
+from app.core.llm import make_llm
 
 logger = logging.getLogger(__name__)
 

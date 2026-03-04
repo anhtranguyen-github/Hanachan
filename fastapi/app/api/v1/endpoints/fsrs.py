@@ -12,7 +12,7 @@ Architecture Note:
 from typing import Any, Dict, Optional
 from fastapi import APIRouter, HTTPException, Query
 
-from ....services.fsrs_service import get_fsrs_service
+from app.services.fsrs_service import get_fsrs_service
 
 router = APIRouter()
 

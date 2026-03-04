@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
-from .session import SessionMessage, SessionSummary
-from .memory import EpisodicMemory
+from app.schemas.session import SessionMessage, SessionSummary
+from app.schemas.memory import EpisodicMemory
 
 
 class ContextRequest(BaseModel):

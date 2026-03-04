@@ -21,15 +21,15 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
 import uuid
 
-from ....schemas.session import (
+from app.schemas.session import (
     CreateSessionRequest,
     CreateSessionResponse,
     UpdateSessionRequest,
     EndSessionResponse,
     SessionSummary,
 )
-from ....services.memory import session_memory as sess_mem
-from ....services.memory import episodic_memory as ep_mem
+from app.services.memory import session_memory as sess_mem
+from app.services.memory import episodic_memory as ep_mem
 
 logger = logging.getLogger(__name__)
 

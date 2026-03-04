@@ -13,7 +13,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-from .config import settings
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 

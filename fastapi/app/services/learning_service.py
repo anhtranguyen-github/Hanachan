@@ -5,8 +5,8 @@ Learning Service — interacts with PostgreSQL to fetch KU definitions and user 
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
-from ..schemas.learning import KUStatus
-from ..core.supabase import supabase
+from app.schemas.learning import KUStatus
+from app.core.supabase import supabase
 
 def get_ku_by_character(character: str) -> Optional[Dict[str, Any]]:
     """Find a Knowledge Unit by its character (e.g., '桜')."""

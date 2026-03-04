@@ -15,8 +15,8 @@ import secrets
 from typing import Any, Dict, List, Optional, TypedDict
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from ..core.llm import make_llm
-from ..core.supabase import supabase
+from app.core.llm import make_llm
+from app.core.supabase import supabase
 
 logger = logging.getLogger(__name__)
 

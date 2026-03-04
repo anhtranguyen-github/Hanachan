@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from pydantic import BaseModel
 
-from ..core.supabase import supabase
+from app.core.supabase import supabase
 
 
 # FSRS-4.5 Default Parameters (19 weights)

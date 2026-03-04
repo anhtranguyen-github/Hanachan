@@ -4,8 +4,8 @@ from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
 
-from ..core.supabase import supabase
-from ..core.llm import make_embedding_model, make_llm
+from app.core.supabase import supabase
+from app.core.llm import make_embedding_model, make_llm
 
 logger = logging.getLogger(__name__)
 
