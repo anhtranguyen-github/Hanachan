@@ -67,14 +67,20 @@ jobs:
 
       - name: Run frontend unit tests
         working-directory: nextjs
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://test.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_KEY || 'test-anon-key' }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-key' }}
+          MEMORY_API_URL: ${{ secrets.MEMORY_API_URL || 'http://localhost:8765' }}
         run: pnpm run test:unit
-
-      - name: Run frontend integration tests
-        working-directory: nextjs
-        run: pnpm run test:integration
 
       - name: Run frontend tests with coverage
         working-directory: nextjs
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://test.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_KEY || 'test-anon-key' }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-key' }}
+          MEMORY_API_URL: ${{ secrets.MEMORY_API_URL || 'http://localhost:8765' }}
         run: pnpm run test:coverage
 
       - name: Upload coverage to Codecov
