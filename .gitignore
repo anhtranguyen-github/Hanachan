@@ -21,6 +21,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
 # local env files
 .env*.local
@@ -59,11 +60,30 @@ test-results/
 playwright-report/
 .next_clean/
 
+# agent-generated test files, images, and reports
+test_agent_backend.py
+test_complex_backend.py
+backend_qa_report.md
+scenarios.md
+answer_quality_report.txt
+planner_failure_patterns.txt
+qa_checklist.txt
+complex_qa_results.json
+runs.json
+chat_test*.png
+screenshots/
+/*.png
+/*.jpg
+/*.jpeg
+/*.gif
+/*.webp
+/*.svg
+null
+
 processed_data/
 
 src/db/local.db
 dbsu/raw_data/content_grammar.json
-data_flattened/
 data_flattened/
 data_v7/
 data_v6/
@@ -104,5 +124,4 @@ temp/
 .kilocode/
 .kiro/
 skills-lock.json
-docs/
 documentation/

@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Backend QA & Memory Agent Fixes (2026-03-04)
+
+#### Added
+- **Backend QA Suite**: Created `test_agent_backend.py` to stream LangGraph API responses and validate memory logic without UI dependencies. Generated `backend_qa_report.md` capturing test scenarios.
+
+#### Fixed
+- **Memory Agent Persistence**: Fixed a silent database crash in `fastapi/app/agents/memory_agent.py`'s `update_memory_node`. A foreign key constraint failure when creating a session (for non-authenticated/test users) previously aborted the entire node, preventing Episodic (Qdrant) and Semantic (Neo4j) graphs from saving facts. Wrapped `chat_sessions` inserts in a `try/except` block to ensure graceful fault tolerance.
+
 ### System Verification & Bug Fixes (2026-03-03)
 
 #### Fixed

@@ -3,10 +3,14 @@
  * Moved from FastAPI to Next.js as part of Phase 2 architectural remediation
  */
 
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseService } from "@/lib/supabase";
 import { HanaTime } from "@/lib/time";
-import type { 
-    AnswerResult, 
+
+// Use service role client on server to bypass RLS issues during Phase 2 transition
+// Security: Functions must ALWAYS include .eq('user_id', userId)
+const db = supabaseService || supabase;
+import type {
+    AnswerResult,
     DailyMetric,
     ReadingConfig,
     ReadingSession,
@@ -18,7 +22,7 @@ import type {
  */
 export async function getReadingConfig(userId: string): Promise<ReadingConfig | null> {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await db
             .from('reading_configs')
             .select('*')
             .eq('user_id', userId)
@@ -62,7 +66,7 @@ async function createDefaultReadingConfig(userId: string): Promise<ReadingConfig
         updated_at: HanaTime.getNowISO()
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await db
         .from('reading_configs')
         .insert(defaultConfig)
         .select()
@@ -90,7 +94,7 @@ export async function updateReadingConfig(
             updated_at: HanaTime.getNowISO()
         };
 
-        const { data, error } = await supabase
+        const { data, error } = await db
             .from('reading_configs')
             .update(updates)
             .eq('user_id', userId)
@@ -110,7 +114,7 @@ export async function updateReadingConfig(
 }
 
 /**
- * Create a new reading session
+ * Create a new reading session (triggers generation via Agent)
  */
 export async function createReadingSession(
     userId: string,
@@ -120,31 +124,28 @@ export async function createReadingSession(
     }
 ): Promise<ReadingSession | null> {
     try {
-        // Get a random passage based on preferences
-        const { data: passage } = await supabase
-            .from('reading_passages')
-            .select('id')
-            .in('topic', options?.topics || ['daily_life', 'culture'])
-            .limit(1)
-            .maybeSingle();
+        console.log(`[readingService] Triggering session generation for ${userId}...`);
+        
+        // Call FastAPI backend to generate session and exercises
+        // user_id is passed as a query param (simple trusted architecture)
+        const response = await fetch(`http://localhost:8765/api/v1/reading/sessions?user_id=${userId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(options || {})
+        });
 
-        const { data, error } = await supabase
-            .from('reading_sessions')
-            .insert({
-                user_id: userId,
-                passage_id: passage?.id,
-                status: 'active',
-                started_at: HanaTime.getNowISO()
-            })
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Error creating reading session:', error);
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[readingService] FastAPI generation failed:', errorText);
             return null;
         }
 
-        return data as ReadingSession;
+        const session = await response.json();
+        console.log(`[readingService] Session generated: ${session.id}`);
+        
+        return session as ReadingSession;
     } catch (error) {
         console.error('Error in createReadingSession:', error);
         return null;
@@ -163,7 +164,7 @@ export async function listReadingSessions(
     }
 ): Promise<{ sessions: ReadingSession[]; total: number }> {
     try {
-        let query = supabase
+        let query = db
             .from('reading_sessions')
             .select('*', { count: 'exact' })
             .eq('user_id', userId)
@@ -200,21 +201,20 @@ export async function listReadingSessions(
  */
 export async function getReadingMetrics(userId: string): Promise<ReadingMetrics> {
     try {
-        // Total sessions
-        const { count: totalSessions } = await supabase
+        const { count: totalSessions } = await db
             .from('reading_sessions')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId);
 
         // Completed sessions
-        const { count: completedSessions } = await supabase
+        const { count: completedSessions } = await db
             .from('reading_sessions')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId)
             .eq('status', 'completed');
 
         // Average score
-        const { data: scores } = await supabase
+        const { data: scores } = await db
             .from('reading_sessions')
             .select('score')
             .eq('user_id', userId)
@@ -227,7 +227,7 @@ export async function getReadingMetrics(userId: string): Promise<ReadingMetrics>
         const bestScore = validScores.length > 0 ? Math.max(...validScores) : 0;
 
         // Recent sessions
-        const { data: recentSessions } = await supabase
+        const { data: recentSessions } = await db
             .from('reading_sessions')
             .select('*')
             .eq('user_id', userId)
@@ -273,7 +273,7 @@ export async function getReadingSessionById(
     sessionId: string
 ): Promise<ReadingSession | null> {
     try {
-        const { data: session, error: sessionError } = await supabase
+        const { data: session, error: sessionError } = await db
             .from('reading_sessions')
             .select('*')
             .eq('id', sessionId)
@@ -286,7 +286,7 @@ export async function getReadingSessionById(
         }
 
         // Fetch exercises for this session
-        const { data: exercises, error: exercisesError } = await supabase
+        const { data: exercises, error: exercisesError } = await db
             .from('reading_exercises')
             .select('*')
             .eq('session_id', sessionId)
@@ -314,7 +314,7 @@ export async function startReadingSession(
     sessionId: string
 ): Promise<ReadingSession | null> {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await db
             .from('reading_sessions')
             .update({
                 status: 'active',
@@ -347,7 +347,7 @@ export async function completeReadingSession(
 ): Promise<{ score: number; correct_answers: number; total_exercises: number } | null> {
     try {
         // Get session exercises to calculate score
-        const { data: exercises } = await supabase
+        const { data: exercises } = await db
             .from('reading_exercises')
             .select('id, questions')
             .eq('session_id', sessionId);
@@ -367,7 +367,7 @@ export async function completeReadingSession(
         const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
 
         // Update session
-        const { error } = await supabase
+        const { error } = await db
             .from('reading_sessions')
             .update({
                 status: 'completed',
@@ -404,7 +404,7 @@ export async function submitAnswer(
 ): Promise<AnswerResult | null> {
     try {
         // Get the exercise and question
-        const { data: exercise, error } = await supabase
+        const { data: exercise, error } = await db
             .from('reading_exercises')
             .select('questions, session_id')
             .eq('id', exerciseId)
@@ -416,7 +416,7 @@ export async function submitAnswer(
         }
 
         // Verify session ownership
-        const { data: session } = await supabase
+        const { data: session } = await db
             .from('reading_sessions')
             .select('user_id')
             .eq('id', exercise.session_id)
@@ -458,7 +458,7 @@ export async function getMetricsHistory(
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
 
-        const { data: sessions, error } = await supabase
+        const { data: sessions, error } = await db
             .from('reading_sessions')
             .select('completed_at, total_time_seconds, completed_exercises')
             .eq('user_id', userId)

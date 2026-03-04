@@ -1,4 +1,6 @@
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseService } from "@/lib/supabase";
+
+const db = supabaseService || supabase;
 import { Deck, DeckCreate, DeckItem } from "./types";
 
 export const deckService = {

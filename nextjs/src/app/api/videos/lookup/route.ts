@@ -2,27 +2,32 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { lookupWord } from '@/features/video/service';
 
-async function getUserId(req: NextRequest): Promise<string | null> {
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.replace('Bearer ', '');
-  if (!token) return null;
-
-  const supabase = createClient(
+function getSupabase(cookieStore: any) {
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: `Bearer ${token}` } } }
+    {
+      cookies: {
+        get(name: string) { return cookieStore.get(name)?.value; },
+      },
+    }
   );
+}
 
+async function getUserId(): Promise<string | null> {
+  const cookieStore = await cookies();
+  const supabase = getSupabase(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
   return user?.id || null;
 }
 
 export async function GET(req: NextRequest) {
   try {
-    const userId = await getUserId(req);
+    const userId = await getUserId();
     const { searchParams } = new URL(req.url);
     const word = searchParams.get('word');
 
