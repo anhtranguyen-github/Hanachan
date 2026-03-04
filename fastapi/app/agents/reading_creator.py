@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional, TypedDict
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from ..core.llm import make_llm
-from ..core.database import execute_query
+from ..core.supabase import supabase
 
 logger = logging.getLogger(__name__)
 
@@ -78,73 +78,95 @@ def get_user_learning_context(user_id: str, config: ReadingConfig) -> Dict[str, 
     """
     try:
         # Get mastered vocabulary
-        vocab_rows = execute_query(
-            """
-            SELECT ku.id, ku.character, ku.meaning, ku.jlpt, ku.level,
-                   vd.reading, uls.state, uls.reps
-            FROM public.user_learning_states uls
-            JOIN public.knowledge_units ku ON ku.id = uls.ku_id
-            LEFT JOIN public.vocabulary_details vd ON vd.ku_id = ku.id
-            WHERE uls.user_id = %s
-              AND ku.type = 'vocabulary'
-              AND uls.facet = 'meaning'
-              AND uls.state IN ('review', 'burned')
-            ORDER BY uls.reps DESC
-            LIMIT 100
-            """,
-            (user_id,),
-        )
+        vocab_res = supabase.table("user_learning_states") \
+            .select("state, reps, knowledge_units!inner(*, vocabulary_details(*))") \
+            .eq("user_id", user_id) \
+            .eq("knowledge_units.type", "vocabulary") \
+            .eq("facet", "meaning") \
+            .in_("state", ["review", "burned"]) \
+            .order("reps", desc=True) \
+            .limit(100) \
+            .execute()
+            
+        vocab_rows = []
+        for r in vocab_res.data:
+            ku = r["knowledge_units"]
+            vd = ku.get("vocabulary_details", {}) or {}
+            reading = vd.get("reading") if isinstance(vd, dict) else (vd[0].get("reading") if vd else None)
+            vocab_rows.append({
+                "id": ku["id"],
+                "character": ku["character"],
+                "meaning": ku["meaning"],
+                "jlpt": ku["jlpt"],
+                "level": ku["level"],
+                "reading": reading,
+                "state": r["state"],
+                "reps": r["reps"]
+            })
 
         # Get mastered grammar
-        grammar_rows = execute_query(
-            """
-            SELECT ku.id, ku.character, ku.meaning, ku.jlpt, ku.level,
-                   gd.structure, uls.state, uls.reps
-            FROM public.user_learning_states uls
-            JOIN public.knowledge_units ku ON ku.id = uls.ku_id
-            LEFT JOIN public.grammar_details gd ON gd.ku_id = ku.id
-            WHERE uls.user_id = %s
-              AND ku.type = 'grammar'
-              AND uls.facet = 'meaning'
-              AND uls.state IN ('review', 'burned')
-            ORDER BY uls.reps DESC
-            LIMIT 50
-            """,
-            (user_id,),
-        )
+        grammar_res = supabase.table("user_learning_states") \
+            .select("state, reps, knowledge_units!inner(*, grammar_details(*))") \
+            .eq("user_id", user_id) \
+            .eq("knowledge_units.type", "grammar") \
+            .eq("facet", "meaning") \
+            .in_("state", ["review", "burned"]) \
+            .order("reps", desc=True) \
+            .limit(50) \
+            .execute()
+
+        grammar_rows = []
+        for r in grammar_res.data:
+            ku = r["knowledge_units"]
+            gd = ku.get("grammar_details", {}) or {}
+            structure = gd.get("structure") if isinstance(gd, dict) else (gd[0].get("structure") if gd else None)
+            grammar_rows.append({
+                "id": ku["id"],
+                "character": ku["character"],
+                "meaning": ku["meaning"],
+                "jlpt": ku["jlpt"],
+                "level": ku["level"],
+                "structure": structure,
+                "state": r["state"],
+                "reps": r["reps"]
+            })
 
         # Get mastered kanji
-        kanji_rows = execute_query(
-            """
-            SELECT ku.id, ku.character, ku.meaning, ku.jlpt, ku.level,
-                   uls.state, uls.reps
-            FROM public.user_learning_states uls
-            JOIN public.knowledge_units ku ON ku.id = uls.ku_id
-            WHERE uls.user_id = %s
-              AND ku.type = 'kanji'
-              AND uls.facet = 'meaning'
-              AND uls.state IN ('review', 'burned')
-            ORDER BY uls.reps DESC
-            LIMIT 80
-            """,
-            (user_id,),
-        )
+        kanji_res = supabase.table("user_learning_states") \
+            .select("state, reps, knowledge_units!inner(*)") \
+            .eq("user_id", user_id) \
+            .eq("knowledge_units.type", "kanji") \
+            .eq("facet", "meaning") \
+            .in_("state", ["review", "burned"]) \
+            .order("reps", desc=True) \
+            .limit(80) \
+            .execute()
+
+        kanji_rows = []
+        for r in kanji_res.data:
+            ku = r["knowledge_units"]
+            kanji_rows.append({
+                "id": ku["id"],
+                "character": ku["character"],
+                "meaning": ku["meaning"],
+                "jlpt": ku["jlpt"],
+                "level": ku["level"],
+                "state": r["state"],
+                "reps": r["reps"]
+            })
 
         # Get user level
-        user_row = execute_query(
-            "SELECT level FROM public.users WHERE id = %s",
-            (user_id,),
-        )
-        user_level = user_row[0]["level"] if user_row else 1
+        user_res = supabase.table("users").select("level").eq("id", user_id).execute()
+        user_level = user_res.data[0]["level"] if user_res.data else 1
 
         return {
             "user_level": user_level,
-            "vocab": vocab_rows or [],
-            "grammar": grammar_rows or [],
-            "kanji": kanji_rows or [],
-            "vocab_count": len(vocab_rows or []),
-            "grammar_count": len(grammar_rows or []),
-            "kanji_count": len(kanji_rows or []),
+            "vocab": vocab_rows,
+            "grammar": grammar_rows,
+            "kanji": kanji_rows,
+            "vocab_count": len(vocab_rows),
+            "grammar_count": len(grammar_rows),
+            "kanji_count": len(kanji_rows),
         }
     except Exception as e:
         logger.error(f"Failed to get user learning context: {e}")

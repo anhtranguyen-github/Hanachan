@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from typing import List, Dict, Any
 
-from ..core.database import execute_query, get_db
+from ..core.supabase import supabase
 
 logger = logging.getLogger(__name__)
 
@@ -42,27 +42,41 @@ class Annotation:
 
 def _load_vocab_lookup() -> Dict[str, Dict[str, Any]]:
     """Load all vocabulary KUs keyed by character, longest first."""
-    rows = execute_query(
-        "SELECT id, character FROM knowledge_units "
-        "WHERE type = 'vocabulary' AND character IS NOT NULL AND character != '' "
-        "ORDER BY length(character) DESC"
-    )
+    # We can't do length(character) directly in simple select, but we can fetch and sort
+    res = supabase.table("knowledge_units") \
+        .select("id, character") \
+        .eq("type", "vocabulary") \
+        .not_.is_("character", "null") \
+        .execute()
+    
+    rows = res.data or []
+    # filter out empty characters
+    rows = [r for r in rows if r["character"] != '']
+    # sort by length descending
+    rows.sort(key=lambda x: len(x["character"]), reverse=True)
+    
     lookup: Dict[str, Dict[str, Any]] = {}
-    for r in (rows or []):
+    for r in rows:
         char = r["character"]
-        if char not in lookup:  # keep first (longest wins if dupes)
+        if char not in lookup:
             lookup[char] = {"id": str(r["id"]), "type": "vocabulary"}
     return lookup
 
 
 def _load_kanji_lookup() -> Dict[str, Dict[str, Any]]:
     """Load all kanji KUs keyed by single character."""
-    rows = execute_query(
-        "SELECT id, character FROM knowledge_units "
-        "WHERE type = 'kanji' AND character IS NOT NULL AND length(character) = 1"
-    )
+    res = supabase.table("knowledge_units") \
+        .select("id, character") \
+        .eq("type", "kanji") \
+        .not_.is_("character", "null") \
+        .execute()
+    
+    rows = res.data or []
+    # filter for length 1
+    rows = [r for r in rows if len(r["character"]) == 1]
+    
     lookup: Dict[str, Dict[str, Any]] = {}
-    for r in (rows or []):
+    for r in rows:
         char = r["character"]
         if char not in lookup:
             lookup[char] = {"id": str(r["id"]), "type": "kanji"}
@@ -143,8 +157,6 @@ def annotate_sentence(sentence_id: str, japanese_raw: str) -> List[Dict[str, Any
     """
     Annotate a sentence by matching vocab and kanji from the knowledge_units table.
     Writes results to sentence_knowledge and returns the annotation list.
-
-    Grammar detection: TODO — will be a separate service.
     """
     logger.info(f"Annotating sentence {sentence_id}: {japanese_raw[:50]}...")
 
@@ -158,27 +170,23 @@ def annotate_sentence(sentence_id: str, japanese_raw: str) -> List[Dict[str, Any
     annotations = _match_sentence(japanese_raw, vocab_lookup, kanji_lookup)
     logger.info(f"Found {len(annotations)} annotations for sentence {sentence_id}")
 
+    # Clear old annotations
+    supabase.table("sentence_knowledge").delete().eq("sentence_id", sentence_id).execute()
+
     if not annotations:
         return []
 
-    # Write to sentence_knowledge (upsert to handle re-annotation)
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            # Clear old annotations for this sentence
-            cur.execute(
-                "DELETE FROM sentence_knowledge WHERE sentence_id = %s",
-                (sentence_id,)
-            )
-
-            # Insert new annotations
-            for ann in annotations:
-                cur.execute(
-                    "INSERT INTO sentence_knowledge (sentence_id, ku_id, position_start, position_end) "
-                    "VALUES (%s, %s, %s, %s) "
-                    "ON CONFLICT (sentence_id, ku_id) DO UPDATE "
-                    "SET position_start = EXCLUDED.position_start, position_end = EXCLUDED.position_end",
-                    (sentence_id, ann.ku_id, ann.start, ann.end),
-                )
+    # Insert new annotations
+    insert_data = [
+        {
+            "sentence_id": sentence_id,
+            "ku_id": ann.ku_id,
+            "position_start": ann.start,
+            "position_end": ann.end
+        }
+        for ann in annotations
+    ]
+    supabase.table("sentence_knowledge").insert(insert_data).execute()
 
     # Return structured result
     return [
@@ -195,23 +203,21 @@ def annotate_sentence(sentence_id: str, japanese_raw: str) -> List[Dict[str, Any
 
 def get_sentence_annotations(sentence_id: str) -> List[Dict[str, Any]]:
     """Fetch existing annotations for a sentence."""
-    rows = execute_query(
-        "SELECT sk.ku_id, sk.position_start, sk.position_end, "
-        "       ku.type AS ku_type, ku.character, ku.slug "
-        "FROM sentence_knowledge sk "
-        "JOIN knowledge_units ku ON ku.id = sk.ku_id "
-        "WHERE sk.sentence_id = %s "
-        "ORDER BY sk.position_start",
-        (sentence_id,)
-    )
+    res = supabase.table("sentence_knowledge") \
+        .select("ku_id, position_start, position_end, ku:knowledge_units(type, character, slug)") \
+        .eq("sentence_id", sentence_id) \
+        .order("position_start") \
+        .execute()
+    
+    rows = res.data or []
     return [
         {
             "ku_id": str(r["ku_id"]),
-            "ku_type": r["ku_type"],
-            "character": r["character"],
-            "slug": r["slug"],
+            "ku_type": r["ku"]["type"],
+            "character": r["ku"]["character"],
+            "slug": r["ku"]["slug"],
             "position_start": r["position_start"],
             "position_end": r["position_end"],
         }
-        for r in (rows or [])
+        for r in rows
     ]

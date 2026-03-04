@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from pydantic import BaseModel
 
-from ..core.database import execute_query, execute_single
+from ..core.supabase import supabase
 
 
 # FSRS-4.5 Default Parameters (19 weights)
@@ -170,13 +170,6 @@ class FSRSScheduler:
     ) -> FSRSReviewResult:
         """
         Schedule the next review based on current state and user rating.
-        
-        Args:
-            current_state: Current FSRS state
-            rating: User's self-assessment (1-4)
-        
-        Returns:
-            Updated FSRS state with next review scheduled
         """
         now = datetime.now(timezone.utc)
         
@@ -225,9 +218,6 @@ class FSRSScheduler:
     def get_retrievability(self, stability: float, days_since_review: float) -> float:
         """
         Calculate the probability of recalling an item.
-        
-        R = exp(ln(0.9) * t / S)
-        Where t = days since last review, S = stability
         """
         if stability <= 0 or days_since_review < 0:
             return 1.0
@@ -249,37 +239,27 @@ class FSRSService:
     
     def get_user_settings(self, user_id: str) -> FSRSSettings:
         """Get FSRS settings for a user. Creates defaults if not exists."""
-        query = """
-            SELECT 
-                user_id,
-                ARRAY[w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14, w15, w16, w17, w18] as w,
-                daily_new_cards,
-                daily_review_limit,
-                learning_steps,
-                relearning_steps,
-                graduation_interval,
-                easy_interval,
-                interval_modifier,
-                show_answer_timer,
-                auto_play_audio
-            FROM public.user_fsrs_settings
-            WHERE user_id = %s
-        """
-        result = execute_single(query, (user_id,))
+        result = supabase.table("user_fsrs_settings") \
+            .select("*, w0,w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11,w12,w13,w14,w15,w16,w17,w18") \
+            .eq("user_id", user_id) \
+            .execute()
         
-        if result:
+        if result.data:
+            data = result.data[0]
+            # Construct weights array
+            w = [data[f"w{i}"] for i in range(19)]
             return FSRSSettings(
-                user_id=str(result["user_id"]),
-                w=result["w"],
-                daily_new_cards=result["daily_new_cards"],
-                daily_review_limit=result["daily_review_limit"],
-                learning_steps=result["learning_steps"],
-                relearning_steps=result["relearning_steps"],
-                graduation_interval=result["graduation_interval"],
-                easy_interval=result["easy_interval"],
-                interval_modifier=result["interval_modifier"],
-                show_answer_timer=result["show_answer_timer"],
-                auto_play_audio=result["auto_play_audio"]
+                user_id=str(data["user_id"]),
+                w=w,
+                daily_new_cards=data["daily_new_cards"],
+                daily_review_limit=data["daily_review_limit"],
+                learning_steps=data["learning_steps"],
+                relearning_steps=data["relearning_steps"],
+                graduation_interval=data["graduation_interval"],
+                easy_interval=data["easy_interval"],
+                interval_modifier=data["interval_modifier"],
+                show_answer_timer=data["show_answer_timer"],
+                auto_play_audio=data["auto_play_audio"]
             )
         
         # Create default settings
@@ -288,16 +268,10 @@ class FSRSService:
     
     def _create_default_settings(self, user_id: str) -> None:
         """Create default FSRS settings for a user."""
-        query = """
-            INSERT INTO public.user_fsrs_settings (user_id)
-            VALUES (%s)
-            ON CONFLICT (user_id) DO NOTHING
-        """
-        execute_query(query, (user_id,), fetch=False)
+        supabase.table("user_fsrs_settings").upsert({"user_id": user_id}).execute()
     
     def update_user_settings(self, user_id: str, settings: Dict[str, Any]) -> FSRSSettings:
         """Update FSRS settings for a user."""
-        # Build dynamic update query
         allowed_fields = {
             'w', 'daily_new_cards', 'daily_review_limit', 'learning_steps',
             'relearning_steps', 'graduation_interval', 'easy_interval',
@@ -314,18 +288,11 @@ class FSRSService:
             for i, val in enumerate(w[:19]):
                 updates[f'w{i}'] = val
         
-        fields = ', '.join([f"{k} = %s" for k in updates.keys()])
-        values = list(updates.values()) + [user_id]
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
         
-        query = f"""
-            UPDATE public.user_fsrs_settings
-            SET {fields}, updated_at = NOW()
-            WHERE user_id = %s
-            RETURNING *
-        """  # noqa: S608
-        execute_query(query, tuple(values), fetch=False)
+        supabase.table("user_fsrs_settings").update(updates).eq("user_id", user_id).execute()
         
-        # Clear cached scheduler to pick up new weights
+        # Clear cached scheduler
         if user_id in self._user_schedulers:
             del self._user_schedulers[user_id]
         
@@ -338,43 +305,25 @@ class FSRSService:
         limit: int = 20
     ) -> List[FSRSSchedule]:
         """Get items due for review for a user."""
-        query = """
-            SELECT 
-                user_id,
-                item_id,
-                item_type,
-                facet,
-                state,
-                stability,
-                difficulty,
-                reps,
-                lapses,
-                last_review,
-                next_review
-            FROM public.user_fsrs_states
-            WHERE user_id = %s 
-            AND next_review <= NOW() + INTERVAL '1 day'
-        """
-        params = [user_id]
+        query = supabase.table("user_fsrs_states") \
+            .select("*") \
+            .eq("user_id", user_id) \
+            .lte("next_review", (datetime.now(timezone.utc) + timedelta(days=1)).isoformat())
         
         if item_type:
-            query += " AND item_type = %s"
-            params.append(item_type)
+            query = query.eq("item_type", item_type)
         
-        query += " ORDER BY next_review ASC LIMIT %s"
-        params.append(limit)
-        
-        results = execute_query(query, tuple(params))
+        result = query.order("next_review", desc=False).limit(limit).execute()
         
         schedules = []
         now = datetime.now(timezone.utc)
         
-        for row in results:
-            next_review = row["next_review"]
-            if next_review.tzinfo is None:
-                next_review = next_review.replace(tzinfo=timezone.utc)
+        for row in result.data or []:
+            next_review_str = row["next_review"]
+            # Parse isoformat string to datetime
+            next_review = datetime.fromisoformat(next_review_str.replace("Z", "+00:00"))
             
-            # Calculate priority score based on lateness
+            # Calculate priority score
             days_overdue = max(0, (now - next_review).total_seconds() / 86400)
             priority_score = days_overdue + (1.0 / max(1, row["stability"]))
             
@@ -391,47 +340,38 @@ class FSRSService:
     
     def get_learning_summary(self, user_id: str) -> Dict[str, Any]:
         """Get summary of user's learning state."""
-        query = """
-            SELECT 
-                item_type,
-                state,
-                COUNT(*) as count,
-                AVG(stability) as avg_stability,
-                AVG(difficulty) as avg_difficulty
-            FROM public.user_fsrs_states
-            WHERE user_id = %s
-            GROUP BY item_type, state
-        """
-        results = execute_query(query, (user_id,))
+        # Supabase doesn't support complex aggregations directly in Python SDK yet,
+        # but we can do multiple queries or rely on the data we have.
+        result = supabase.table("user_fsrs_states").select("item_type, state, stability, difficulty").eq("user_id", user_id).execute()
+        data = result.data or []
         
         summary = {
             "by_type": {},
             "by_state": {"new": 0, "learning": 0, "review": 0, "relearning": 0, "burned": 0},
-            "total": 0,
+            "total": len(data),
             "due_today": 0
         }
         
-        for row in results:
+        now = datetime.now(timezone.utc).isoformat()
+        
+        for row in data:
             item_type = row["item_type"]
             state = row["state"]
-            count = row["count"]
             
             if item_type not in summary["by_type"]:
                 summary["by_type"][item_type] = {"total": 0, "states": {}}
             
-            summary["by_type"][item_type]["total"] += count
-            summary["by_type"][item_type]["states"][state] = count
-            summary["by_state"][state] += count
-            summary["total"] += count
-        
-        # Count due today
-        due_query = """
-            SELECT COUNT(*) as due_count
-            FROM public.user_fsrs_states
-            WHERE user_id = %s AND next_review <= NOW() + INTERVAL '1 day'
-        """
-        due_result = execute_single(due_query, (user_id,))
-        summary["due_today"] = due_result["due_count"] if due_result else 0
+            summary["by_type"][item_type]["total"] += 1
+            summary["by_type"][item_type]["states"][state] = summary["by_type"][item_type]["states"].get(state, 0) + 1
+            summary["by_state"][state] = summary["by_state"].get(state, 0) + 1
+            
+        # Count due today separately if needed for accuracy
+        due_res = supabase.table("user_fsrs_states") \
+            .select("count", count="exact") \
+            .eq("user_id", user_id) \
+            .lte("next_review", (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()) \
+            .execute()
+        summary["due_today"] = due_res.count if due_res.count is not None else 0
         
         return summary
     
@@ -444,17 +384,22 @@ class FSRSService:
         facet: str = "meaning"
     ) -> FSRSReviewResult:
         """Submit a review and update the schedule."""
-        # Get user's scheduler with custom weights
         scheduler = self._get_user_scheduler(user_id)
         
-        # Get current state
-        current = execute_single(
-            """SELECT * FROM public.user_fsrs_states 
-               WHERE user_id = %s AND item_id = %s AND item_type = %s AND facet = %s""",
-            (user_id, item_id, item_type, facet)
-        )
+        current_res = supabase.table("user_fsrs_states") \
+            .select("*") \
+            .eq("user_id", user_id) \
+            .eq("item_id", item_id) \
+            .eq("item_type", item_type) \
+            .eq("facet", facet) \
+            .execute()
         
-        if current:
+        if current_res.data:
+            current = current_res.data[0]
+            # Handle timestamps
+            last_review = datetime.fromisoformat(current["last_review"].replace("Z", "+00:00")) if current.get("last_review") else None
+            next_review = datetime.fromisoformat(current["next_review"].replace("Z", "+00:00")) if current.get("next_review") else None
+            
             state = FSRSState(
                 user_id=user_id,
                 item_id=item_id,
@@ -465,11 +410,10 @@ class FSRSService:
                 difficulty=current["difficulty"],
                 reps=current["reps"],
                 lapses=current["lapses"],
-                last_review=current["last_review"],
-                next_review=current["next_review"]
+                last_review=last_review,
+                next_review=next_review
             )
         else:
-            # New item
             state = FSRSState(
                 user_id=user_id,
                 item_id=item_id,
@@ -482,62 +426,70 @@ class FSRSService:
                 lapses=0
             )
         
-        # Calculate new schedule using user's custom scheduler
         result = scheduler.schedule_review(state, rating)
         
-        # Save to database
-        now = datetime.now(timezone.utc)
-        execute_query(
-            """
-            INSERT INTO public.user_fsrs_states 
-                (user_id, item_id, item_type, facet, state, stability, difficulty, 
-                 reps, lapses, last_review, next_review, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (user_id, item_id, item_type, facet) DO UPDATE SET
-                state = EXCLUDED.state,
-                stability = EXCLUDED.stability,
-                difficulty = EXCLUDED.difficulty,
-                reps = EXCLUDED.reps,
-                lapses = EXCLUDED.lapses,
-                last_review = EXCLUDED.last_review,
-                next_review = EXCLUDED.next_review,
-                updated_at = EXCLUDED.updated_at
-            """,
-            (user_id, item_id, item_type, facet, result.state, result.stability,
-             result.difficulty, result.reps, result.lapses, now, result.next_review,
-             now, now),
-            fetch=False
-        )
+        now = datetime.now(timezone.utc).isoformat()
         
-        # Log the review
-        execute_query(
-            """
-            INSERT INTO public.fsrs_review_logs
-                (user_id, item_id, item_type, facet, rating, state, stability, 
-                 difficulty, interval_days, reviewed_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """,
-            (user_id, item_id, item_type, facet, rating, result.state,
-             result.stability, result.difficulty, result.interval_days, now),
-            fetch=False
-        )
+        upsert_data = {
+            "user_id": user_id,
+            "item_id": item_id,
+            "item_type": item_type,
+            "facet": facet,
+            "state": result.state,
+            "stability": result.stability,
+            "difficulty": result.difficulty,
+            "reps": result.reps,
+            "lapses": result.lapses,
+            "last_review": now,
+            "next_review": result.next_review.isoformat(),
+            "updated_at": now
+        }
+        
+        supabase.table("user_fsrs_states").upsert(upsert_data, on_conflict="user_id,item_id,item_type,facet").execute()
+        
+        # Log review
+        log_data = {
+            "user_id": user_id,
+            "item_id": item_id,
+            "item_type": item_type,
+            "facet": facet,
+            "rating": rating,
+            "state": result.state,
+            "stability": result.stability,
+            "difficulty": result.difficulty,
+            "interval_days": result.interval_days,
+            "reviewed_at": now
+        }
+        supabase.table("fsrs_review_logs").insert(log_data).execute()
         
         return result
     
+    def get_review_logs(
+        self,
+        user_id: str,
+        item_type: Optional[str] = None,
+        limit: int = 50
+    ) -> List[Dict[str, Any]]:
+        """Get review history for a user."""
+        query = supabase.table("fsrs_review_logs") \
+            .select("item_id, item_type, facet, rating, state, stability, difficulty, interval_days, reviewed_at") \
+            .eq("user_id", user_id)
+            
+        if item_type:
+            query = query.eq("item_type", item_type)
+            
+        result = query.order("reviewed_at", desc=True).limit(limit).execute()
+        return result.data or []
+
     def should_teach_or_review(self, user_id: str) -> Tuple[str, Dict[str, Any]]:
         """
         Decide whether the user should learn new content or review existing items.
-        
-        Returns:
-            Tuple of (action, details) where action is 'teach', 'review', or 'mixed'
         """
         summary = self.get_learning_summary(user_id)
         due_count = summary["due_today"]
         review_count = summary["by_state"].get("review", 0)
         learning_count = summary["by_state"].get("learning", 0)
-        # new_count removed - was unused
         
-        # If many items are due, prioritize review
         if due_count >= 10:
             return ("review", {
                 "reason": "Many items due for review",
@@ -545,7 +497,6 @@ class FSRSService:
                 "suggested_reviews": min(due_count, 20)
             })
         
-        # If user has items in learning state, continue with mixed approach
         if learning_count > 0:
             return ("mixed", {
                 "reason": "Active learning in progress",
@@ -554,7 +505,6 @@ class FSRSService:
                 "suggested_new": 3
             })
         
-        # If user has few items in review, teach new content
         if review_count < 20:
             return ("teach", {
                 "reason": "Building initial knowledge base",
@@ -562,7 +512,6 @@ class FSRSService:
                 "suggested_new": min(5, 20 - review_count)
             })
         
-        # Default to review-heavy mix
         return ("mixed", {
             "reason": "Maintaining knowledge",
             "review_count": review_count,
@@ -570,8 +519,6 @@ class FSRSService:
             "suggested_reviews": min(due_count, 15),
             "suggested_new": 2
         })
-
-
 # Singleton instance
 _fsrs_service: Optional[FSRSService] = None
 
