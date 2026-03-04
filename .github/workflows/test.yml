@@ -42,7 +42,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          files: ./fastapi/coverage.xml
+          files: ./fastapi-agents/coverage.xml
           flags: backend
 
   # Next.js Frontend Tests

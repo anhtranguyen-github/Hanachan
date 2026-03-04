@@ -38,8 +38,8 @@ from app.schemas.session import SessionMessage
 from app.schemas.memory import UserProfile as UserProfileSchema
 from app.services.memory import episodic_memory as ep_mem
 from app.services.memory import semantic_memory as sem_mem
-from app.services.memory import session_memory as sess_mem
 from app.agents.user_profile import build_user_profile, profile_to_system_prompt
+from app.core.domain_client import DomainClient
 from app.core.rate_limit import limiter
 from app.core.config import settings
 
@@ -85,11 +85,16 @@ async def get_chat_context(
         thread_msgs = []
         thread_text = ""
         if req.session_id:
-            raw = await run_in_threadpool(sess_mem.get_messages, req.session_id)
+            domain = DomainClient(current_user["jwt"])
+            raw = await domain.get_chat_messages(req.session_id)
             thread_msgs = raw[-10:]
-            thread_text = await run_in_threadpool(
-                sess_mem.get_thread_context_text, req.session_id, 10
-            )
+            
+            recent = thread_msgs # use for context
+            lines = []
+            for m in recent:
+                prefix = "User" if m["role"] == "user" else "Assistant"
+                lines.append(f"{prefix}: {m['content']}")
+            thread_text = "\n".join(lines)
 
         block = (
             f"## Memory Context for user '{user_id}'\n\n"

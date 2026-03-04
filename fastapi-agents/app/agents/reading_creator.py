@@ -16,8 +16,7 @@ from typing import Any, Dict, List, Optional, TypedDict
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from app.core.llm import make_llm
-from app.core.supabase import get_service_client
-supabase = get_service_client()
+from app.core.domain_client import DomainClient
 
 logger = logging.getLogger(__name__)
 
@@ -72,105 +71,16 @@ class ReadingExercise(TypedDict):
 # ---------------------------------------------------------------------------
 
 
-def get_user_learning_context(user_id: str, config: ReadingConfig) -> Dict[str, Any]:
+async def get_user_learning_context(jwt: str) -> Dict[str, Any]:
     """
     Fetch user's current learning status to inform content generation.
-    Returns vocabulary, grammar, and kanji the user has learned.
+    Returns vocabulary, grammar, and kanji the user has learned via Domain Service.
     """
     try:
-        # Get mastered vocabulary
-        vocab_res = supabase.table("user_learning_states") \
-            .select("state, reps, knowledge_units!inner(*, vocabulary_details(*))") \
-            .eq("user_id", user_id) \
-            .eq("knowledge_units.type", "vocabulary") \
-            .eq("facet", "meaning") \
-            .in_("state", ["review", "burned"]) \
-            .order("reps", desc=True) \
-            .limit(100) \
-            .execute()
-            
-        vocab_rows = []
-        for r in vocab_res.data:
-            ku = r["knowledge_units"]
-            vd = ku.get("vocabulary_details", {}) or {}
-            reading = vd.get("reading") if isinstance(vd, dict) else (vd[0].get("reading") if vd else None)
-            vocab_rows.append({
-                "id": ku["id"],
-                "character": ku["character"],
-                "meaning": ku["meaning"],
-                "jlpt": ku["jlpt"],
-                "level": ku["level"],
-                "reading": reading,
-                "state": r["state"],
-                "reps": r["reps"]
-            })
-
-        # Get mastered grammar
-        grammar_res = supabase.table("user_learning_states") \
-            .select("state, reps, knowledge_units!inner(*, grammar_details(*))") \
-            .eq("user_id", user_id) \
-            .eq("knowledge_units.type", "grammar") \
-            .eq("facet", "meaning") \
-            .in_("state", ["review", "burned"]) \
-            .order("reps", desc=True) \
-            .limit(50) \
-            .execute()
-
-        grammar_rows = []
-        for r in grammar_res.data:
-            ku = r["knowledge_units"]
-            gd = ku.get("grammar_details", {}) or {}
-            structure = gd.get("structure") if isinstance(gd, dict) else (gd[0].get("structure") if gd else None)
-            grammar_rows.append({
-                "id": ku["id"],
-                "character": ku["character"],
-                "meaning": ku["meaning"],
-                "jlpt": ku["jlpt"],
-                "level": ku["level"],
-                "structure": structure,
-                "state": r["state"],
-                "reps": r["reps"]
-            })
-
-        # Get mastered kanji
-        kanji_res = supabase.table("user_learning_states") \
-            .select("state, reps, knowledge_units!inner(*)") \
-            .eq("user_id", user_id) \
-            .eq("knowledge_units.type", "kanji") \
-            .eq("facet", "meaning") \
-            .in_("state", ["review", "burned"]) \
-            .order("reps", desc=True) \
-            .limit(80) \
-            .execute()
-
-        kanji_rows = []
-        for r in kanji_res.data:
-            ku = r["knowledge_units"]
-            kanji_rows.append({
-                "id": ku["id"],
-                "character": ku["character"],
-                "meaning": ku["meaning"],
-                "jlpt": ku["jlpt"],
-                "level": ku["level"],
-                "state": r["state"],
-                "reps": r["reps"]
-            })
-
-        # Get user level
-        user_res = supabase.table("users").select("level").eq("id", user_id).execute()
-        user_level = user_res.data[0]["level"] if user_res.data else 1
-
-        return {
-            "user_level": user_level,
-            "vocab": vocab_rows,
-            "grammar": grammar_rows,
-            "kanji": kanji_rows,
-            "vocab_count": len(vocab_rows),
-            "grammar_count": len(grammar_rows),
-            "kanji_count": len(kanji_rows),
-        }
+        client = DomainClient(jwt)
+        return await client.get_user_learning_context()
     except Exception as e:
-        logger.error(f"Failed to get user learning context: {e}")
+        logger.error(f"Failed to get user learning context from domain service: {e}")
         return {
             "user_level": 1,
             "vocab": [],
@@ -367,16 +277,17 @@ PASSAGE_LENGTH_CHARS = {
 # ---------------------------------------------------------------------------
 
 
-def generate_reading_exercise(
+async def generate_reading_exercise(
     user_id: str,
     config: ReadingConfig,
+    jwt: str,
     topic: Optional[str] = None,
 ) -> ReadingExercise:
     """
     Generate a single reading exercise for the user based on their learning status.
     """
-    # 1. Get user learning context
-    context = get_user_learning_context(user_id, config)
+    # 1. Get user learning context (now via Domain Service)
+    context = await get_user_learning_context(jwt)
 
     # 2. Select featured content
     featured = select_featured_content(context, config)
@@ -506,9 +417,10 @@ def generate_reading_exercise(
     return exercise
 
 
-def generate_reading_session(
+async def generate_reading_session(
     user_id: str,
     config: ReadingConfig,
+    jwt: str,
 ) -> List[ReadingExercise]:
     """
     Generate a full reading session with multiple exercises.
@@ -527,7 +439,7 @@ def generate_reading_session(
 
     for i, topic in enumerate(topics):
         try:
-            exercise = generate_reading_exercise(user_id, config, topic)
+            exercise = await generate_reading_exercise(user_id, config, jwt, topic)
             exercises.append(exercise)
             logger.info(
                 f"Generated exercise {i + 1}/{num_exercises} for user {user_id}"

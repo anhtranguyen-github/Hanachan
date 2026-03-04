@@ -97,7 +97,6 @@ async def lifespan(app: FastAPI):
 
     # Shutdown: close all pools and executors
     # NOTE: close_pool() removed - no direct DB connections to clean up
-    sess_mem.shutdown_bg_executor()
     logger.info("shutdown_complete")
 
 

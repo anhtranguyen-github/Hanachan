@@ -10,7 +10,6 @@ from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException, Query, Request, Depends
 from fastapi.concurrency import run_in_threadpool
-from supabase import Client
 
 from app.schemas.memory import (
     ClearResponse,
@@ -21,10 +20,9 @@ from app.schemas.memory import (
 )
 from app.services.memory import episodic_memory as ep_mem
 from app.services.memory import semantic_memory as sem_mem
-from app.services.memory import session_memory as sess_mem
 from app.services.memory.consolidation import consolidate_memories
 from app.core.rate_limit import limiter
-from app.api.deps import get_current_user, get_user_client
+from app.api.deps import get_current_user
 
 logger = logging.getLogger(__name__)
 

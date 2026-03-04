@@ -94,12 +94,12 @@ cleanup_port "$FRONTEND_PORT"
 # Backend
 ########################################
 log "🚀 Starting backend on port $BACKEND_PORT"
-cd "$ROOT_DIR/fastapi"
+cd "$ROOT_DIR/fastapi-agents"
 
 uv run python -m uvicorn app.main:app \
   --host 0.0.0.0 \
   --port "$BACKEND_PORT" \
-  > "$ROOT_DIR/fastapi/server.log" 2>&1 &
+  > "$ROOT_DIR/fastapi-agents/server.log" 2>&1 &
 
 BACKEND_PID=$!
 

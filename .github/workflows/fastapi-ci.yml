@@ -4,17 +4,17 @@ on:
   push:
     branches: ["**"]
     paths:
-      - "fastapi/**"
+      - "fastapi-agents/**"
       - ".github/workflows/fastapi-ci.yml"
   pull_request:
     branches: ["**"]
     paths:
-      - "fastapi/**"
+      - "fastapi-agents/**"
       - ".github/workflows/fastapi-ci.yml"
 
 defaults:
   run:
-    working-directory: fastapi
+    working-directory: fastapi-agents
 
 jobs:
   # ── Lint ────────────────────────────────────────────────────────────────────
@@ -125,7 +125,7 @@ jobs:
         uses: codecov/codecov-action@v4
         if: matrix.python-version == '3.11'
         with:
-          files: fastapi/coverage.xml
+          files: fastapi-agents/coverage.xml
           flags: fastapi
           fail_ci_if_error: false
         env:
