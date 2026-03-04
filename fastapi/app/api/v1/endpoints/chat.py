@@ -27,10 +27,10 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
-from ....schemas.chat import ChatRequest, ChatResponse
-from ....agents.memory_agent import run_chat, memory_agent
-from ....core.rate_limit import limiter
-from ....core.config import settings
+from app.schemas.chat import ChatRequest, ChatResponse
+from app.agents.memory_agent import run_chat, memory_agent
+from app.core.rate_limit import limiter
+from app.core.config import settings
 from langchain_core.messages import HumanMessage
 
 logger = logging.getLogger(__name__)

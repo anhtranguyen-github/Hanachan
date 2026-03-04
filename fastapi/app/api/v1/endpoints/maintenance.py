@@ -22,19 +22,19 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 
-from ....schemas.memory import (
+from app.schemas.memory import (
     ClearResponse,
     HealthResponse,
     ConsolidationResult,
     Node,
     Relationship,
 )
-from ....services.memory import episodic_memory as ep_mem
-from ....services.memory import semantic_memory as sem_mem
-from ....services.memory import session_memory as sess_mem
-from ....services.memory.consolidation import consolidate_memories
-from ....core.rate_limit import limiter
-from ....core.database import check_db_health
+from app.services.memory import episodic_memory as ep_mem
+from app.services.memory import semantic_memory as sem_mem
+from app.services.memory import session_memory as sess_mem
+from app.services.memory.consolidation import consolidate_memories
+from app.core.rate_limit import limiter
+from app.core.database import check_db_health
 
 logger = logging.getLogger(__name__)
 

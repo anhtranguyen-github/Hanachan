@@ -12,11 +12,11 @@ from langchain_core.prompts import ChatPromptTemplate
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 
-from . import episodic_memory as ep_mem
-from ...core.config import settings
-from ...core.database import get_db
-from ...core.llm import make_llm
-from ...schemas.memory import ConsolidationResult, EpisodicMemory
+from app.services.memory import episodic_memory as ep_mem
+from app.core.config import settings
+from app.core.database import get_db
+from app.core.llm import make_llm
+from app.schemas.memory import ConsolidationResult, EpisodicMemory
 
 logger = logging.getLogger(__name__)
 

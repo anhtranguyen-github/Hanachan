@@ -21,10 +21,10 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 
-from ....core.rate_limit import limiter
-from ....core.config import settings
+from app.core.rate_limit import limiter
+from app.core.config import settings
 
-from ....schemas.speaking import (
+from app.schemas.speaking import (
     CreatePracticeSessionRequest,
     PracticeSessionResponse,
     NextPracticeItemResponse,
@@ -33,8 +33,8 @@ from ....schemas.speaking import (
     PracticeStatsResponse,
     PracticeSentenceSchema,
 )
-from ....services import speaking_practice as sp_service
-from ....core.database import execute_single
+from app.services import speaking_practice as sp_service
+from app.core.database import execute_single
 
 logger = logging.getLogger(__name__)
 

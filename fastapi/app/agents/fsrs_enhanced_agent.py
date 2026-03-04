@@ -18,19 +18,19 @@ from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage, AIMe
 from langchain_core.tools import tool
 from langgraph.graph import StateGraph, END
 
-from ..core.llm import make_llm
-from ..services.fsrs_service import get_fsrs_service
-from ..services.sentence_library import (
+from app.core.llm import make_llm
+from app.services.fsrs_service import get_fsrs_service
+from app.services.sentence_library import (
     get_sentence_library_service,
     SentenceCreate,
 )
-from ..services.video_embeddings import get_video_embeddings_service
-from ..services.memory import session_memory as sess_mem
-from ..services import learning_service as learn_serv
-from .memory_agent import (
+from app.services.video_embeddings import get_video_embeddings_service
+from app.services.memory import session_memory as sess_mem
+from app.services import learning_service as learn_serv
+from app.agents.memory_agent import (
     TOOLS as BASE_TOOLS
 )
-from .deck_manager import DECK_TOOLS
+from app.agents.deck_manager import DECK_TOOLS
 
 logger = logging.getLogger(__name__)
 

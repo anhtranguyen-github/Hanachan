@@ -12,9 +12,9 @@ from typing import Any, Dict, List, Optional
 
 from langchain_core.prompts import ChatPromptTemplate
 
-from ...core.llm import make_llm
-from ...schemas.session import SessionInfo, SessionMessage, SessionSummary
-from ...core.supabase import supabase
+from app.core.llm import make_llm
+from app.schemas.session import SessionInfo, SessionMessage, SessionSummary
+from app.core.supabase import supabase
 
 logger = logging.getLogger(__name__)
 

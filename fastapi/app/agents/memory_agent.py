@@ -18,13 +18,13 @@ from langgraph.graph import StateGraph, END
 import os
 from elevenlabs.client import ElevenLabs
 
-from ..services.memory import episodic_memory as ep_mem
-from ..services.memory import semantic_memory as sem_mem
-from ..services.memory import session_memory as sess_mem
-from ..services import learning_service as learn_serv
-from ..agents.deck_manager import DECK_TOOLS
-from ..core.llm import make_llm
-from ..schemas.memory import KnowledgeGraph
+from app.services.memory import episodic_memory as ep_mem
+from app.services.memory import semantic_memory as sem_mem
+from app.services.memory import session_memory as sess_mem
+from app.services import learning_service as learn_serv
+from app.agents.deck_manager import DECK_TOOLS
+from app.core.llm import make_llm
+from app.schemas.memory import KnowledgeGraph
 
 logger = logging.getLogger(__name__)
 
@@ -146,7 +146,7 @@ def get_recent_reviews(limit: int = 5, user_id: str = "INJECTED") -> str:
     Use this if the user asks 'What did I just study?' or 'How did my last session go?'.
     """
     try:
-        from ..core.supabase import supabase
+        from app.core.supabase import supabase
         
         # We need to join with knowledge_units for display names.
         # Supabase Python client handles joins via query syntax.
@@ -440,7 +440,7 @@ def update_memory_node(state: AgentState) -> Dict[str, Any]:
             if not existing:
                 from datetime import datetime, timezone
                 now = datetime.now(timezone.utc).isoformat()
-                from ..core.supabase import supabase
+                from app.core.supabase import supabase
                 supabase.table("chat_sessions").upsert({
                     "id": session_id,
                     "user_id": user_id,
@@ -482,7 +482,7 @@ def update_memory_node(state: AgentState) -> Dict[str, Any]:
         )
         
         if note_check and note_check.has_note and note_check.character_or_slug and note_check.note_content:
-            from ..services.learning_service import search_kus, add_ku_note
+            from app.services.learning_service import search_kus, add_ku_note
             # Find the actual KU ID
             candidates = search_kus(note_check.character_or_slug, limit=1)
             if candidates:

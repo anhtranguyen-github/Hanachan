@@ -8,12 +8,12 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
-from ....core.supabase import supabase
-from ....agents.reading_creator import (
+from app.core.supabase import supabase
+from app.agents.reading_creator import (
     ReadingConfig,
     generate_reading_session,
 )
-from ....core.rate_limit import limiter
+from app.core.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/reading", tags=["Reading"])
@@ -175,7 +175,7 @@ async def create_reading_session(
         override = {k: v for k, v in body.config_override.model_dump().items() if v is not None}
         config.update(override)
 
-    from ....agents.reading_creator import get_user_learning_context
+    from app.agents.reading_creator import get_user_learning_context
     context = get_user_learning_context(user_id, config)
 
     generation_context = {

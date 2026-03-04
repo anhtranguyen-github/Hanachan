@@ -29,8 +29,8 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_openai import OpenAIEmbeddings
 
-from ..core.config import settings
-from ..core.llm import make_embedding_model
+from app.core.config import settings
+from app.core.llm import make_embedding_model
 
 logger = logging.getLogger(__name__)
 

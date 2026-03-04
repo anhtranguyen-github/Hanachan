@@ -12,10 +12,10 @@ from typing import List
 from fastapi import APIRouter, HTTPException, Query, Request
 from uuid import UUID
 
-from ....core.rate_limit import limiter
-from ....core.config import settings
-from ....services.deck_service import get_deck_service
-from ....schemas.decks import Deck, DeckCreate, DeckItem, DeckItemCreate
+from app.core.rate_limit import limiter
+from app.core.config import settings
+from app.services.deck_service import get_deck_service
+from app.schemas.decks import Deck, DeckCreate, DeckItem, DeckItemCreate
 
 router = APIRouter()
 

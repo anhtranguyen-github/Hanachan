@@ -36,7 +36,7 @@ from typing import Optional, Callable
 
 from fastapi import HTTPException, Request
 
-from .database import get_db_pool
+from app.core.database import get_db_pool
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 
 from supabase import create_client, Client
-from .config import settings
+from app.core.config import settings
 
 def get_supabase() -> Client:
     """Return a Supabase client using service role key (for server-side bypass)."""

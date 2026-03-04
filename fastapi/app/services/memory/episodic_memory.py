@@ -12,9 +12,9 @@ from langchain_openai import OpenAIEmbeddings
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 
-from ...core.config import settings
-from ...core.llm import make_embedding_model
-from ...schemas.memory import EpisodicMemory
+from app.core.config import settings
+from app.core.llm import make_embedding_model
+from app.schemas.memory import EpisodicMemory
 
 
 # ---------------------------------------------------------------------------
