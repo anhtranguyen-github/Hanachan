@@ -39,12 +39,12 @@ jobs:
         run: uv pip install ruff
 
       - name: Run ruff security check
-        run: uv run ruff check app/ --select S --output-format=github
+        run: PYTHONPATH=. uv run ruff check app/ --select S --output-format=github
 
       - name: Run bandit security scan
         run: |
           uv pip install bandit
-          uv run bandit -r app/ -ll
+          PYTHONPATH=. uv run bandit -r app/ -ll
 
   # ── Type Check ──────────────────────────────────────────────────────────────
   typecheck:
@@ -68,7 +68,7 @@ jobs:
         run: uv pip install mypy
 
       - name: Run mypy
-        run: uv run mypy app/ --ignore-missing-imports --no-strict-optional
+        run: PYTHONPATH=. uv run mypy app/ --ignore-missing-imports --no-strict-optional
         continue-on-error: true  # Non-blocking until type coverage improves
 
   # ── Tests ───────────────────────────────────────────────────────────────────
@@ -98,6 +98,7 @@ jobs:
 
       - name: Run pytest
         env:
+          PYTHONPATH: .
           OPENAI_API_KEY: sk-test-key
           SUPABASE_URL: https://test.supabase.co
           SUPABASE_KEY: test-anon-key

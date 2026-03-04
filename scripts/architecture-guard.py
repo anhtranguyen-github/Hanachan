@@ -235,6 +235,7 @@ class ArchitectureGuard:
             (r"^\s*from\s+app\.core\.database", "FORBIDDEN_CORE_IMPORT"),
             (r"^\s*from\s+core\.security", "FORBIDDEN_CORE_IMPORT"),
             (r"^\s*from\s+\.\.core\.security", "FORBIDDEN_CORE_IMPORT"),
+            (r"^\s*from\s+app\.core\.security", "FORBIDDEN_CORE_IMPORT"),
         ]
 
         for pattern, rule_id in patterns:
