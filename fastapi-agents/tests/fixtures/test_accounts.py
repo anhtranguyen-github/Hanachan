@@ -93,7 +93,7 @@ def get_test_admin_headers() -> dict:
 # ==========================================
 
 # Pytest fixtures are only available when pytest is installed
-# Use: from fastapi.tests.fixtures import test_user_id
+# Use: from tests.fixtures import test_user_id
 
 try:
     import pytest

@@ -25,15 +25,15 @@ This document tracks all issues addressed in the codebase refactoring.
 | #19 | Streaming timeouts | `chat.py` |
 | #20 | Structured JSON logging + RequestIdMiddleware | `logging.py`, `main.py` |
 | #21 | CSP hardening (removed unsafe-eval) | `nextjs/next.config.js` |
-| #22 | Speaking Practice Session Persistence | `fastapi/app/services/speaking_practice.py`, `fastapi/app/api/v1/endpoints/speaking.py` |
-| #23 | SQL Injection mitigation (column whitelisting) | `fastapi/app/api/v1/endpoints/reading.py` |
-| #24 | Authentication Bypass Fix (SUPABASE_SERVICE_KEY) | `fastapi/app/core/security.py`, `config.py` |
+| #22 | Speaking Practice Session Persistence | `fastapi-agents/app/services/speaking_practice.py`, `fastapi-agents/app/api/v1/endpoints/speaking.py` |
+| #23 | SQL Injection mitigation (column whitelisting) | `fastapi-agents/app/api/v1/endpoints/reading.py` |
+| #24 | Authentication Bypass Fix (SUPABASE_SERVICE_KEY) | `fastapi-agents/app/core/security.py`, `config.py` |
 | #25 | XSS Protection via HTML Sanitization | `nextjs/src/components/shared/RichTextRenderer.tsx`, `reading/session/[id]/page.tsx`, `grammar/[slug]/page.tsx` |
-| #26 | Learning Modules Authentication Hardening | `fastapi/app/api/v1/endpoints/sentences.py`, `reading.py` |
-| #27 | Rate Limiting Expansion across learning APIs | `fastapi/app/api/v1/endpoints/speaking.py`, `video_dictation.py`, `reading.py` |
-| #28 | Next.js Server Segmentation Fault on Japanese Tokenization | `nextjs/src/features/video/service.ts`, `fastapi/app/api/v1/endpoints/videos.py` |
-| #29 | Video Transcript YouTube Anti-bot Blocks | `fastapi/app/api/v1/endpoints/videos.py` |
-| #30 | English Transcript Pollution | `fastapi/app/api/v1/endpoints/videos.py` |
+| #26 | Learning Modules Authentication Hardening | `fastapi-agents/app/api/v1/endpoints/sentences.py`, `reading.py` |
+| #27 | Rate Limiting Expansion across learning APIs | `fastapi-agents/app/api/v1/endpoints/speaking.py`, `video_dictation.py`, `reading.py` |
+| #28 | Next.js Server Segmentation Fault on Japanese Tokenization | `nextjs/src/features/video/service.ts`, `fastapi-agents/app/api/v1/endpoints/videos.py` |
+| #29 | Video Transcript YouTube Anti-bot Blocks | `fastapi-agents/app/api/v1/endpoints/videos.py` |
+| #30 | English Transcript Pollution | `fastapi-agents/app/api/v1/endpoints/videos.py` |
 
 ## Detailed Fixes
 

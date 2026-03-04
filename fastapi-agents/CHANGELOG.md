@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Backend QA Suite**: Created `test_agent_backend.py` to stream LangGraph API responses and validate memory logic without frontend UI.
 
 #### Fixed
-- **Memory Agent Persistence**: Fixed unhandled PostgreSQL constraint crashes in `fastapi/app/agents/memory_agent.py`'s `update_memory_node` to ensure Qdrant and Neo4j memory graphs populate even if Postgres session updates fail.
+- **Memory Agent Persistence**: Fixed unhandled PostgreSQL constraint crashes in `fastapi-agents/app/agents/memory_agent.py`'s `update_memory_node` to ensure Qdrant and Neo4j memory graphs populate even if Postgres session updates fail.
 
 ### Phase 2: Direct Tool Migration (2026-03-04)
 
@@ -53,7 +53,7 @@ Phase 1 eliminated critical architectural violations from the FastAPI codebase:
 
 ##### Fixed
 - **CRITICAL**: Eliminated in-memory state treated as source of truth in FastAPI
-  - [`video_dictation.py`](fastapi/app/services/video_dictation.py): Removed `_dictation_sessions` global dictionary
+  - [`video_dictation.py`](fastapi-agents/app/services/video_dictation.py): Removed `_dictation_sessions` global dictionary
   - Session progress now computed from database queries (`video_dictation_attempts` table)
   - Session status survives server restarts (proper horizontal scalability)
   - See [`documentation/PHASE_1_6_IN_MEMORY_STATE_AUDIT.md`](../documentation/PHASE_1_6_IN_MEMORY_STATE_AUDIT.md) for full audit report

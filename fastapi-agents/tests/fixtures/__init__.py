@@ -4,8 +4,8 @@ Test Fixtures for Hanachan FastAPI Tests
 This module provides reusable test fixtures and helpers.
 
 Usage:
-    from fastapi.tests.fixtures import TEST_USER_ID, TEST_ADMIN_ID
-    from fastapi.tests.fixtures import get_test_user_headers, get_test_admin_headers
+    from tests.fixtures import TEST_USER_ID, TEST_ADMIN_ID
+    from tests.fixtures import get_test_user_headers, get_test_admin_headers
 """
 
 from .test_accounts import (

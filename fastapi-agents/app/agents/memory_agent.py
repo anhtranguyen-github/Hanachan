@@ -46,6 +46,7 @@ class AgentState(TypedDict):
     generation: str
     audio_file: Optional[str]
     tts_enabled: bool
+    jwt: str
     # For return compatibility
     thread_context: str
     retrieved_episodic: str
@@ -140,34 +141,23 @@ def append_to_learning_notes(identifier: str, note_content: str, user_id: str = 
     ku_id = str(results[0]["id"])
     learn_serv.add_ku_note(user_id, ku_id, note_content)
 @tool
-def get_recent_reviews(limit: int = 5, user_id: str = "INJECTED") -> str:
+async def get_recent_reviews(jwt: str, limit: int = 5, user_id: str = "INJECTED") -> str:
     """Retrieve the most recent words or characters the user has reviewed.
     Use this if the user asks 'What did I just study?' or 'How did my last session go?'.
     """
     try:
-        from app.core.supabase import get_service_client
-        supabase = get_service_client()
+        from app.core.domain_client import DomainClient
+        client = DomainClient(jwt)
         
-        # We need to join with knowledge_units for display names.
-        # Supabase Python client handles joins via query syntax.
-        result = supabase.table("fsrs_review_logs") \
-            .select("item_id, item_type, facet, rating, reviewed_at, knowledge_units(character, meaning)") \
-            .eq("user_id", user_id) \
-            .order("reviewed_at", desc=True) \
-            .limit(limit) \
-            .execute()
-            
-        results = result.data or []
+        # Call Domain Service for intent-based data
+        results = await client._get("/learning/recent-reviews", params={"limit": limit})
+        
         if not results:
             return "No recent reviews found."
             
         lines = [f"Recent reviews for user {user_id}:"]
         for r in results:
-            display_name = "Other Item"
-            if r["item_type"] == "ku" and r.get("knowledge_units"):
-                ku = r["knowledge_units"]
-                display_name = f"{ku.get('character')} ({ku.get('meaning')})"
-            
+            display_name = r.get("display_name", "Other Item")
             lines.append(f"• {display_name} - Rating: {r['rating']} ({r['reviewed_at']})")
         return "\n".join(lines)
     except Exception as e:
@@ -211,8 +201,11 @@ def tools_node(state: AgentState) -> Dict[str, Any]:
             "add_to_deck",
             "remove_from_deck",
             "view_deck_contents",
+            "submit_reading_answer",
         ]:
             args["user_id"] = user_id
+            if "jwt" in tool_map[tool_name].args:
+                args["jwt"] = state["jwt"]
 
         # Find the tool and invoke
         tool_map = {t.name: t for t in TOOLS}
@@ -255,16 +248,25 @@ PLANNER_PROMPT = ChatPromptTemplate.from_messages(
 )
 
 
-def planner_node(state: AgentState) -> Dict[str, Any]:
+async def planner_node(state: AgentState) -> Dict[str, Any]:
     """Decides what the agent should do next (call tools or generate)."""
     llm = make_llm().bind_tools(TOOLS)
 
-    # Pre-fetch thread context for the prompt
-    thread_text = (
-        sess_mem.get_thread_context_text(state["session_id"], last_n=5)
-        if state.get("session_id")
-        else "No active session."
-    )
+    # Pre-fetch thread context for the prompt (via Domain Service)
+    thread_text = "(no active session)"
+    if state.get("session_id"):
+        from app.core.domain_client import DomainClient
+        client = DomainClient(state["jwt"])
+        try:
+            messages = await client.get_chat_messages(state["session_id"])
+            recent = messages[-5:]
+            lines = []
+            for m in recent:
+                prefix = "User" if m["role"] == "user" else "Assistant"
+                lines.append(f"{prefix}: {m['content']}")
+            thread_text = "\n".join(lines)
+        except Exception:
+            thread_text = "Failed to retrieve session context."
 
     chain = PLANNER_PROMPT | llm
     response = chain.invoke(
@@ -368,8 +370,8 @@ def generator_node(state: AgentState) -> Dict[str, Any]:
     return {"generation": response.content}
 
 
-def tts_node(state: AgentState) -> Dict[str, Any]:
-    """Generates voice for the final response using ElevenLabs SDK and stores it on Supabase."""
+async def tts_node(state: AgentState) -> Dict[str, Any]:
+    """Generates voice for the final response using ElevenLabs SDK and stores it via Domain Service."""
     if not state.get("tts_enabled", True):
         return {"audio_file": None}
         
@@ -377,9 +379,10 @@ def tts_node(state: AgentState) -> Dict[str, Any]:
         try:
             import uuid
             from app.core.config import settings
-            from supabase import create_client
+            from app.core.domain_client import DomainClient
 
             # Use native ElevenLabs client for reliability on SDK ^2.0
+            from elevenlabs.client import ElevenLabs
             client = ElevenLabs(api_key=settings.elevenlabs_api_key)
             
             # Fetch audio stream
@@ -397,20 +400,9 @@ def tts_node(state: AgentState) -> Dict[str, Any]:
                     f.write(chunk)
             
             if os.path.exists(temp_file):
-                # Initialize supabase client
-                supabase = create_client(settings.supabase_url, settings.supabase_key)
-                
-                # Upload to public tts_audio bucket
-                file_name = f"{uuid.uuid4()}.wav"
-                
-                supabase.storage.from_("tts_audio").upload(
-                    path=file_name,
-                    file=temp_file,
-                    file_options={"content-type": "audio/wav"}
-                )
-                
-                # Retrieve the public URL
-                public_url = supabase.storage.from_("tts_audio").get_public_url(file_name)
+                # Call Domain Service for storage (PURE AGENT RUNTIME)
+                client = DomainClient(state["jwt"])
+                public_url = await client.upload_audio(temp_file)
                 
                 # Cleanup temporary file
                 try:
@@ -420,38 +412,31 @@ def tts_node(state: AgentState) -> Dict[str, Any]:
                     
                 return {"audio_file": public_url}
         except Exception as e:
-            logger.error(f"ElevenLabs TTS (or Supabase upload) failed: {e}")
+            logger.error(f"ElevenLabs TTS (or Domain upload) failed: {e}")
             return {"audio_file": None}
     return {}
 
 
-def update_memory_node(state: AgentState) -> Dict[str, Any]:
-    """Final node to persist the side effects (episodic/semantic update)."""
+async def update_memory_node(state: AgentState) -> Dict[str, Any]:
+    """Final node to persist the side effects (episodic/semantic update) via Domain Service."""
     user_id = state["user_id"]
+    jwt_token = state["jwt"]
     session_id = state.get("session_id")
     user_input = state["user_input"]
     output = state["generation"]
 
-    # 1. Update Session Memory
+    from app.core.domain_client import DomainClient
+    domain = DomainClient(jwt_token)
+
+    # 1. Update Session Memory (via Domain SSOT)
     if session_id:
         try:
             # Ensure session exists in DB before adding messages
-            existing = sess_mem.get_session(session_id)
-            if not existing:
-                from datetime import datetime, timezone
-                now = datetime.now(timezone.utc).isoformat()
-                from app.core.supabase import get_service_client
-                supabase = get_service_client()
-                supabase.table("chat_sessions").upsert({
-                    "id": session_id,
-                    "user_id": user_id,
-                    "created_at": now,
-                    "updated_at": now
-                }).execute()
-            sess_mem.add_message(session_id, "user", user_input)
-            sess_mem.add_message(session_id, "assistant", output)
+            await domain.upsert_chat_session(session_id)
+            await domain.add_chat_message(session_id, "user", user_input)
+            await domain.add_chat_message(session_id, "assistant", output)
         except Exception as e:
-            logger.error(f"Failed to persist chat_session or message: {e}")
+            logger.error(f"Failed to persist chat_session or message via Domain: {e}")
 
     # 2. Extract and Update Memory Layers (Episodic & Semantic)
     # We use a secondary LLM call to summarize and extract facts
@@ -559,8 +544,9 @@ memory_agent = _build_graph()
 # ---------------------------------------------------------------------------
 
 
-def run_chat(
+async def run_chat(
     user_id: str,
+    jwt: str,
     message: str,
     session_id: Optional[str] = None,
     tts_enabled: bool = True,
@@ -570,6 +556,7 @@ def run_chat(
     # Initialize state
     initial_state = {
         "user_id": user_id,
+        "jwt": jwt,
         "session_id": session_id,
         "user_input": message,
         "messages": [HumanMessage(content=message)],
@@ -582,10 +569,8 @@ def run_chat(
         "retrieved_semantic": "",
     }
 
-    result = memory_agent.invoke(initial_state)
+    result = await memory_agent.ainvoke(initial_state)
 
-    # Extract metadata for returning to the frontend if needed
-    # (Note: In this iterative version, we'd need to parse ToolMessages to populate these fields perfectly)
     return {
         "response": result["generation"],
         "audio_file": result.get("audio_file"),

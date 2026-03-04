@@ -49,7 +49,7 @@ Open [http://localhost:3000](http://localhost:3000)
 ```bash
 # 1. Copy and configure environment files
 cp nextjs/.env.example nextjs/.env
-cp fastapi/.env.example fastapi/.env
+cp fastapi-agents/.env.example fastapi-agents/.env
 
 # 2. Edit the .env files with your credentials
 # See Environment Variables section below
@@ -69,7 +69,7 @@ docker compose down
 | Service | Port | Description |
 |---------|------|-------------|
 | nextjs | 3000 | Next.js frontend |
-| fastapi | 8765 | FastAPI backend API |
+| fastapi-agents | 8765 | FastAPI backend API |
 
 ### Docker Commands
 
@@ -86,21 +86,21 @@ docker compose down
 # View logs
 docker compose logs -f
 docker compose logs -f nextjs
-docker compose logs -f fastapi
+docker compose logs -f fastapi-agents
 
 # Restart a specific service
-docker compose restart fastapi
+docker restart fastapi-agents
 
 # Shell into a container
 docker compose exec nextjs sh
-docker compose exec fastapi bash
+docker compose exec fastapi-agents bash
 ```
 
 ### Running Tests with Docker
 
 ```bash
 # Run FastAPI tests
-docker compose --profile test run --rm fastapi-test
+docker compose --profile test run --rm fastapi-agents-test
 
 # Run Next.js tests
 docker compose --profile test run --rm nextjs-test
@@ -115,7 +115,7 @@ docker compose --profile test run --rm nextjs-test
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-MEMORY_API_URL=http://fastapi:8765
+MEMORY_API_URL=http://fastapi-agents:8765
 OPENAI_API_KEY=your_openai_key
 
 # Optional
@@ -123,7 +123,7 @@ AZURE_SPEECH_KEY=your_azure_key
 AZURE_SPEECH_REGION=eastus
 ```
 
-#### FastAPI (fastapi/.env)
+#### FastAPI (fastapi-agents/.env)
 
 ```env
 # Required
@@ -171,6 +171,6 @@ docker compose -f docker-compose.yml up -d
 
 ```
 nextjs/     # Frontend
-fastapi/    # Backend
+fastapi-agents/    # Backend
 database/   # Schema
 ```

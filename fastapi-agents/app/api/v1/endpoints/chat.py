@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import Any, Dict
-from supabase import Client
-from app.api.deps import get_current_user, get_user_client
+from app.api.deps import get_current_user
 from fastapi import Depends
 """
 Chat endpoints.
@@ -57,9 +56,9 @@ async def chat(
     if str(req.user_id) != str(user_id):
           raise HTTPException(status_code=400, detail="Invalid user_id in request body")
     try:
-        result = await run_in_threadpool(
-            run_chat,
+        result = await run_chat(
             user_id=user_id,
+            jwt=current_user["jwt"],
             message=req.message,
             session_id=req.session_id,
         )
@@ -98,6 +97,7 @@ async def chat_stream(
         # Initialize state
         initial_state = {
             "user_id": user_id,
+            "jwt": current_user["jwt"],
             "session_id": req.session_id,
             "user_input": req.message,
             "messages": [HumanMessage(content=req.message)],

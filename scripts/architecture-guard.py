@@ -83,43 +83,43 @@ class ArchitectureGuard:
             "description": "Direct PostgreSQL driver imports are forbidden",
             "message": "Direct psycopg2/asyncpg import is forbidden. Use Supabase client instead.",
             "severity": "ERROR",
-            "applies_to": ["fastapi/**/*.py"],
+            "applies_to": ["fastapi-agents/**/*.py"],
         },
         "FORBIDDEN_CORE_IMPORT": {
             "description": "Importing core.database or core.security is forbidden",
             "message": "Import from core.database/core.security is forbidden. Use Supabase client instead.",
             "severity": "ERROR",
-            "applies_to": ["fastapi/**/*.py"],
+            "applies_to": ["fastapi-agents/**/*.py"],
         },
         "FORBIDDEN_JWT_VALIDATION": {
             "description": "JWT validation in FastAPI is forbidden",
             "message": "JWT validation in FastAPI is forbidden. Auth must flow through Next.js + Supabase.",
             "severity": "ERROR",
-            "applies_to": ["fastapi/**/*.py"],
+            "applies_to": ["fastapi-agents/**/*.py"],
         },
         "IN_MEMORY_STATE": {
             "description": "In-memory state as source of truth",
             "message": "In-memory state is forbidden. Use Supabase for persistent state.",
             "severity": "ERROR",
-            "applies_to": ["fastapi/**/*.py"],
+            "applies_to": ["fastapi-agents/**/*.py"],
         },
         "BUSINESS_LOGIC_IN_FASTAPI": {
             "description": "Business logic should be in Next.js, not FastAPI",
             "message": "Business logic (FSRS/scheduling) should be in Next.js, not FastAPI.",
             "severity": "ERROR",
-            "applies_to": ["fastapi/**/*.py"],
+            "applies_to": ["fastapi-agents/**/*.py"],
         },
         "DIRECT_SQL": {
             "description": "Direct SQL execution is forbidden",
             "message": "Direct SQL execution is forbidden. Use Supabase client with RLS.",
             "severity": "ERROR",
-            "applies_to": ["fastapi/**/*.py"],
+            "applies_to": ["fastapi-agents/**/*.py"],
         },
         "CRUD_SERVICE_IN_FASTAPI": {
             "description": "CRUD services should not exist in FastAPI",
             "message": "CRUD services should not exist in FastAPI. FastAPI should only have agents.",
             "severity": "ERROR",
-            "applies_to": ["fastapi/**/*.py"],
+            "applies_to": ["fastapi-agents/**/*.py"],
         },
         # Next.js Rules
         "DIRECT_FASTAPI_CALL": {
@@ -133,7 +133,7 @@ class ArchitectureGuard:
             "description": "Global in-memory cache variables",
             "message": "Global in-memory caches will not persist across deployments.",
             "severity": "WARNING",
-            "applies_to": ["fastapi/**/*.py"],
+            "applies_to": ["fastapi-agents/**/*.py"],
         },
     }
 
@@ -160,7 +160,7 @@ class ArchitectureGuard:
 
     def _scan_fastapi(self) -> None:
         """Scan FastAPI directory for violations."""
-        fastapi_dir = self.project_root / "fastapi"
+        fastapi_dir = self.project_root / "fastapi-agents"
         if not fastapi_dir.exists():
             print(f"Warning: FastAPI directory not found at {fastapi_dir}")
             return

@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Backend QA Suite**: Created `test_agent_backend.py` to stream LangGraph API responses and validate memory logic without UI dependencies. Generated `backend_qa_report.md` capturing test scenarios.
 
 #### Fixed
-- **Memory Agent Persistence**: Fixed a silent database crash in `fastapi/app/agents/memory_agent.py`'s `update_memory_node`. A foreign key constraint failure when creating a session (for non-authenticated/test users) previously aborted the entire node, preventing Episodic (Qdrant) and Semantic (Neo4j) graphs from saving facts. Wrapped `chat_sessions` inserts in a `try/except` block to ensure graceful fault tolerance.
+- **Memory Agent Persistence**: Fixed a silent database crash in `fastapi-agents/app/agents/memory_agent.py`'s `update_memory_node`. A foreign key constraint failure when creating a session (for non-authenticated/test users) previously aborted the entire node, preventing Episodic (Qdrant) and Semantic (Neo4j) graphs from saving facts. Wrapped `chat_sessions` inserts in a `try/except` block to ensure graceful fault tolerance.
 
 ### System Verification & Bug Fixes (2026-03-03)
 
@@ -73,10 +73,10 @@ Phase 2 completed the migration of all business logic from FastAPI to Next.js, e
 - **FastAPI API Router**: Removed all CRUD-style endpoints
   - Removed endpoints: reading, speaking, video_dictation, sentences, videos, fsrs, admin
   - Only agent endpoints remain: chat, memory (session, episodic, semantic), maintenance
-  - Added comprehensive architecture documentation in [`api.py`](fastapi/app/api/v1/api.py)
+  - Added comprehensive architecture documentation in [`api.py`](fastapi-agents/app/api/v1/api.py)
 
 - **FastAPI Services Module**: Removed all service exports
-  - [`__init__.py`](fastapi/app/services/__init__.py) now documents the migration
+  - [`__init__.py`](fastapi-agents/app/services/__init__.py) now documents the migration
   - No direct DB services are exported from FastAPI
 
 ---
@@ -170,13 +170,13 @@ Phase 1 established architectural guardrails and removed critical violations fro
 
 ##### Security
 - **CRITICAL**: Identified FastAPI JWT authentication bypassing Next.js/Supabase
-  - [`fastapi/app/core/security.py`](fastapi/app/core/security.py:1): Full JWT validation (L1-L93)
+  - [`fastapi-agents/app/core/security.py`](fastapi-agents/app/core/security.py:1): Full JWT validation (L1-L93)
   - 14 endpoint files using `require_auth` dependency
   - Violates "auth flows through Next.js + Supabase" principle
 
 ##### Architecture
 - **CRITICAL**: Documented violation of "Supabase as Single Source of Truth"
-  - [`fastapi/app/core/database.py`](fastapi/app/core/database.py:1): Direct psycopg2 connection pool
+  - [`fastapi-agents/app/core/database.py`](fastapi-agents/app/core/database.py:1): Direct psycopg2 connection pool
   - 32 files with direct SQL queries bypassing RLS
   - Business logic scattered across FastAPI services
 
@@ -189,7 +189,7 @@ Phase 1 established architectural guardrails and removed critical violations fro
 #### Phase 1.2 - Architecture Guard Implementation (2026-03-03)
 
 ##### Added
-- **Architecture Violation Detection Tests** ([`fastapi/tests/test_architecture_violations.py`](fastapi/tests/test_architecture_violations.py))
+- **Architecture Violation Detection Tests** ([`fastapi-agents/tests/test_architecture_violations.py`](fastapi-agents/tests/test_architecture_violations.py))
   - Automated tests that scan codebase and FAIL if architectural violations exist
   - Tests for forbidden imports (psycopg2, asyncpg, direct DB access)
   - Tests for forbidden auth patterns (JWT validation in FastAPI)
@@ -235,10 +235,10 @@ Phase 1 established architectural guardrails and removed critical violations fro
 
 ##### Removed
 - **BREAKING**: Direct PostgreSQL access via psycopg2 from FastAPI core
-  - [`fastapi/app/core/database.py`](fastapi/app/core/database.py): Connection pool and query utilities removed
-  - [`fastapi/app/core/config.py`](fastapi/app/core/config.py): DB_PASSWORD and database connection settings removed
-  - [`fastapi/requirements.txt`](fastapi/requirements.txt): psycopg2-binary dependency removed
-  - [`fastapi/pyproject.toml`](fastapi/pyproject.toml): psycopg2 dependency removed from package config
+  - [`fastapi-agents/app/core/database.py`](fastapi-agents/app/core/database.py): Connection pool and query utilities removed
+  - [`fastapi-agents/app/core/config.py`](fastapi-agents/app/core/config.py): DB_PASSWORD and database connection settings removed
+  - [`fastapi-agents/requirements.txt`](fastapi-agents/requirements.txt): psycopg2-binary dependency removed
+  - [`fastapi-agents/pyproject.toml`](fastapi-agents/pyproject.toml): psycopg2 dependency removed from package config
 
 ##### Changed
 - All database access now routed through Supabase client
@@ -248,9 +248,9 @@ Phase 1 established architectural guardrails and removed critical violations fro
 
 ##### Removed
 - **BREAKING**: JWT token validation from FastAPI
-  - [`fastapi/app/core/security.py`](fastapi/app/core/security.py): `require_auth` dependency and JWT validation removed
-  - [`fastapi/app/core/admin_security.py`](fastapi/app/core/admin_security.py): Admin JWT validation removed
-  - All 12 endpoint files in [`fastapi/app/api/v1/endpoints/`](fastapi/app/api/v1/endpoints/): JWT dependencies removed
+  - [`fastapi-agents/app/core/security.py`](fastapi-agents/app/core/security.py): `require_auth` dependency and JWT validation removed
+  - [`fastapi-agents/app/core/admin_security.py`](fastapi-agents/app/core/admin_security.py): Admin JWT validation removed
+  - All 12 endpoint files in [`fastapi-agents/app/api/v1/endpoints/`](fastapi-agents/app/api/v1/endpoints/): JWT dependencies removed
 
 ##### Changed
 - Endpoints now accept `user_id` as explicit parameter instead of extracting from JWT
@@ -261,7 +261,7 @@ Phase 1 established architectural guardrails and removed critical violations fro
 
 ##### Fixed
 - **CRITICAL**: Eliminated in-memory state treated as source of truth
-  - [`fastapi/app/services/video_dictation.py`](fastapi/app/services/video_dictation.py): Removed `_dictation_sessions` global dictionary
+  - [`fastapi-agents/app/services/video_dictation.py`](fastapi-agents/app/services/video_dictation.py): Removed `_dictation_sessions` global dictionary
   - Session progress now computed from database queries (`video_dictation_attempts` table)
   - Session status now survives server restarts (enables horizontal scalability)
 
@@ -300,21 +300,21 @@ Phase 1 established architectural guardrails and removed critical violations fro
 - [`documentation/ARCHITECTURE_VIOLATIONS_AUDIT.md`](documentation/ARCHITECTURE_VIOLATIONS_AUDIT.md)
 - [`documentation/ARCHITECTURE_RULES.md`](documentation/ARCHITECTURE_RULES.md)
 - [`documentation/PHASE_1_6_IN_MEMORY_STATE_AUDIT.md`](documentation/PHASE_1_6_IN_MEMORY_STATE_AUDIT.md)
-- [`fastapi/tests/test_architecture_violations.py`](fastapi/tests/test_architecture_violations.py)
+- [`fastapi-agents/tests/test_architecture_violations.py`](fastapi-agents/tests/test_architecture_violations.py)
 - [`scripts/architecture-guard.py`](scripts/architecture-guard.py)
 - [`.github/workflows/architecture-guard.yml`](.github/workflows/architecture-guard.yml)
 
 #### Modified (Phase 1)
-- [`fastapi/app/core/database.py`](fastapi/app/core/database.py) - **REMOVED**
-- [`fastapi/app/core/config.py`](fastapi/app/core/config.py) - DB settings removed
-- [`fastapi/app/main.py`](fastapi/app/main.py) - DB initialization removed
-- [`fastapi/app/core/security.py`](fastapi/app/core/security.py) - JWT validation removed
-- [`fastapi/app/core/admin_security.py`](fastapi/app/core/admin_security.py) - Admin auth removed
-- [`fastapi/app/api/v1/endpoints/*.py`](fastapi/app/api/v1/endpoints/) - All 12 files updated
-- [`fastapi/app/services/video_dictation.py`](fastapi/app/services/video_dictation.py) - In-memory state removed
-- [`fastapi/requirements.txt`](fastapi/requirements.txt) - psycopg2 removed
-- [`fastapi/pyproject.toml`](fastapi/pyproject.toml) - psycopg2 removed
-- [`fastapi/tests/test_security.py`](fastapi/tests/test_security.py) - Tests updated
+- [`fastapi-agents/app/core/database.py`](fastapi-agents/app/core/database.py) - **REMOVED**
+- [`fastapi-agents/app/core/config.py`](fastapi-agents/app/core/config.py) - DB settings removed
+- [`fastapi-agents/app/main.py`](fastapi-agents/app/main.py) - DB initialization removed
+- [`fastapi-agents/app/core/security.py`](fastapi-agents/app/core/security.py) - JWT validation removed
+- [`fastapi-agents/app/core/admin_security.py`](fastapi-agents/app/core/admin_security.py) - Admin auth removed
+- [`fastapi-agents/app/api/v1/endpoints/*.py`](fastapi-agents/app/api/v1/endpoints/) - All 12 files updated
+- [`fastapi-agents/app/services/video_dictation.py`](fastapi-agents/app/services/video_dictation.py) - In-memory state removed
+- [`fastapi-agents/requirements.txt`](fastapi-agents/requirements.txt) - psycopg2 removed
+- [`fastapi-agents/pyproject.toml`](fastapi-agents/pyproject.toml) - psycopg2 removed
+- [`fastapi-agents/tests/test_security.py`](fastapi-agents/tests/test_security.py) - Tests updated
 
 ---
 
@@ -334,5 +334,5 @@ Phase 1 established architectural guardrails and removed critical violations fro
 
 ## [1.x.x] - Pre-Remediation
 
-See [fastapi/CHANGELOG.md](fastapi/CHANGELOG.md) for detailed FastAPI changes prior to architectural remediation.
+See [fastapi-agents/CHANGELOG.md](fastapi-agents/CHANGELOG.md) for detailed FastAPI changes prior to architectural remediation.
 
