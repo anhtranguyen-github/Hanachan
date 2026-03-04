@@ -139,6 +139,7 @@ class ArchitectureScanner:
             (r"PyJWKClient", "FORBIDDEN_JWT_VALIDATION", "JWT validation in FastAPI is forbidden. Auth must flow through Next.js + Supabase."),
             (r"from\s+core\.security\s+import", "FORBIDDEN_AUTH_IMPORT", "Import from core.security is forbidden. Use Supabase RLS instead."),
             (r"from\s+\.\.core\.security\s+import", "FORBIDDEN_AUTH_IMPORT", "Import from core.security is forbidden. Use Supabase RLS instead."),
+            (r"from\s+app\.core\.security\s+import", "FORBIDDEN_AUTH_IMPORT", "Import from core.security is forbidden. Use Supabase RLS instead."),
         ]
 
         for pattern, rule, message in jwt_patterns:
