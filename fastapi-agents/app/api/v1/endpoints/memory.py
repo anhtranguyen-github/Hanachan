@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Any, Dict
 from supabase import Client
-from app.api.deps import get_current_user, get_user_client
+from app.api.deps import get_current_user
 from fastapi import Depends
 """
 Memory endpoints.

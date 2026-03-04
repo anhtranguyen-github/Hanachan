@@ -114,6 +114,12 @@ class DomainClient:
             response.raise_for_status()
             return response.json()
 
+    async def delete_chat_session(self, session_id: str) -> Dict[str, Any]:
+        async with httpx.AsyncClient() as client:
+            response = await client.delete(f"{self.base_url}/chat/sessions/{session_id}", headers=self.headers)
+            response.raise_for_status()
+            return response.json()
+
     # Storage Domain
     async def upload_audio(self, file_path: str) -> str:
         """Uploads a local file to domain's managed storage and returns public URL."""
