@@ -7,12 +7,12 @@
  * data access through Supabase client (RLS-protected)
  */
 
-import { supabase, supabaseService } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { HanaTime } from "@/lib/time";
 
 // Use service role client on server to bypass RLS issues during Phase 2 transition
 // Security: Functions must ALWAYS include .eq('user_id', userId)
-const db = supabaseService || supabase;
+const db = supabase;
 import { addDays } from 'date-fns';
 
 // FSRS-4.5 Default Parameters (19 weights)

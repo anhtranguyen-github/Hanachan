@@ -1,5 +1,5 @@
 
-import { supabase, supabaseService } from './supabase';
+import { supabase } from './supabase';
 
 const ensureObject = (val: any) => (Array.isArray(val) ? val[0] : val);
 
@@ -181,7 +181,7 @@ export async function getGrammarData(slug: string) {
     const decoded = decodeURIComponent(slug);
     const canonical = decoded.includes(':') ? decoded : `grammar:${decoded}`;
 
-    const client = supabaseService || supabase;
+    const client = supabase;
     let kuQuery = client
         .from('knowledge_units')
         .select(`
