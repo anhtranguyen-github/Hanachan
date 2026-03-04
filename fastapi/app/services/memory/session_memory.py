@@ -14,13 +14,12 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from ...core.llm import make_llm
 from ...schemas.session import SessionInfo, SessionMessage, SessionSummary
-from ...core.database import execute_query, execute_single
+from ...core.supabase import supabase
 
 logger = logging.getLogger(__name__)
 
 # Thread pool for fire-and-forget background LLM work
 _bg_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="llm-bg")
-
 
 def shutdown_bg_executor() -> None:
     """Shutdown the background executor gracefully. Call on application shutdown."""
@@ -94,32 +93,35 @@ def _update_summary(existing: str, user_msg: str, assistant_msg: str) -> str:
 
 def create_session(user_id: str, metadata: Optional[Dict[str, Any]] = None) -> str:
     session_id = str(uuid.uuid4())
-    now = datetime.now(timezone.utc)
-
-    execute_query(
-        "INSERT INTO public.chat_sessions (id, user_id, title, created_at, updated_at) "
-        "VALUES (%s, %s, %s, %s, %s)",
-        (session_id, user_id, None, now, now),
-        fetch=False,
-    )
+    
+    data = {
+        "id": session_id,
+        "user_id": user_id,
+        "metadata": metadata or {}
+    }
+    
+    result = supabase.table("chat_sessions").insert(data).execute()
+    if not result.data:
+        logger.error(f"Failed to create session in Supabase: {result}")
+        raise RuntimeError("Failed to create chat session")
 
     return session_id
 
 
 def get_session(session_id: str) -> Optional[Dict[str, Any]]:
-    return execute_single(
-        "SELECT * FROM public.chat_sessions WHERE id = %s", (session_id,)
-    )
+    result = supabase.table("chat_sessions").select("*").eq("id", session_id).execute()
+    return result.data[0] if result.data else None
 
 
 def list_sessions(user_id: str) -> List[SessionSummary]:
-    sessions = execute_query(
-        "SELECT s.*, "
-        "(SELECT count(*) FROM public.chat_messages m WHERE m.session_id = s.id) "
-        "AS message_count "
-        "FROM public.chat_sessions s WHERE s.user_id = %s ORDER BY s.updated_at DESC",
-        (user_id,),
-    )
+    # We need to get message counts too. 
+    # Since we can't easily do subqueries in Supabase JS/Python client without RPC, 
+    # we'll fetch sessions first.
+    result = supabase.table("chat_sessions") \
+        .select("*, chat_messages(count)") \
+        .eq("user_id", user_id) \
+        .order("updated_at", desc=True) \
+        .execute()
 
     return [
         SessionSummary(
@@ -127,12 +129,12 @@ def list_sessions(user_id: str) -> List[SessionSummary]:
             user_id=s["user_id"],
             title=s.get("title"),
             summary=s.get("summary"),
-            created_at=s["created_at"].isoformat(),
-            updated_at=s["updated_at"].isoformat(),
-            message_count=s["message_count"],
+            created_at=s["created_at"],
+            updated_at=s["updated_at"],
+            message_count=s.get("chat_messages", [{}])[0].get("count", 0),
             metadata=s.get("metadata") or {},
         )
-        for s in sessions
+        for s in result.data
     ]
 
 
@@ -141,56 +143,30 @@ def update_session_meta(
     title: Optional[str] = None,
     metadata: Optional[Dict[str, Any]] = None,
 ) -> bool:
-    # Check if session exists first
-    session = get_session(session_id)
-    if not session:
-        return False
+    updates: Dict[str, Any] = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if title:
+        updates["title"] = title
+    if metadata:
+        updates["metadata"] = metadata
 
-    now = datetime.now(timezone.utc)
-    if title and metadata:
-        execute_query(
-            "UPDATE public.chat_sessions SET title = %s, updated_at = %s WHERE id = %s",
-            (title, now, session_id),
-            fetch=False,
-        )
-    elif title:
-        execute_query(
-            "UPDATE public.chat_sessions SET title = %s, updated_at = %s WHERE id = %s",
-            (title, now, session_id),
-            fetch=False,
-        )
-    elif metadata:
-        execute_query(
-            "UPDATE public.chat_sessions SET updated_at = %s WHERE id = %s",
-            (now, session_id),
-            fetch=False,
-        )
-    else:
-        execute_query(
-            "UPDATE public.chat_sessions SET updated_at = %s WHERE id = %s",
-            (now, session_id),
-            fetch=False,
-        )
-    return True
+    result = supabase.table("chat_sessions").update(updates).eq("id", session_id).execute()
+    return len(result.data) > 0
 
 
 def end_session(session_id: str) -> Optional[Dict[str, Any]]:
     session = to_session_info(session_id)
     if not session:
         return None
-    execute_query(
-        "DELETE FROM public.chat_sessions WHERE id = %s", (session_id,), fetch=False
-    )
+    
+    # In V2, 'end_session' might just mean setting an 'ended_at' or just deleting
+    # The original code deleted it.
+    supabase.table("chat_sessions").delete().eq("id", session_id).execute()
     return session.model_dump()
 
 
 def delete_all_sessions(user_id: str) -> int:
-    result = execute_query(
-        "DELETE FROM public.chat_sessions WHERE user_id = %s RETURNING id",
-        (user_id,),
-        fetch=True,
-    )
-    return len(result) if result else 0
+    result = supabase.table("chat_sessions").delete().eq("user_id", user_id).execute()
+    return len(result.data) if result.data else 0
 
 
 # ---------------------------------------------------------------------------
@@ -199,25 +175,25 @@ def delete_all_sessions(user_id: str) -> int:
 
 
 def add_message(session_id: str, role: str, content: str) -> bool:
-    now = datetime.now(timezone.utc)
-    # Ensure the session exists first (auto-create if missing)
+    # Ensure the session exists first
     session = get_session(session_id)
     if not session:
-        # We need the user_id; try to get it from the agent state context
-        # For now, create with a placeholder - the chat endpoint sets user_id
         logger.warning(f"Session {session_id} not found, skipping message persistence.")
         return True
-    execute_query(
-        "INSERT INTO public.chat_messages (session_id, role, content, created_at) "
-        "VALUES (%s, %s, %s, %s)",
-        (session_id, role, content, now),
-        fetch=False,
-    )
-    execute_query(
-        "UPDATE public.chat_sessions SET updated_at = %s WHERE id = %s",
-        (now, session_id),
-        fetch=False,
-    )
+
+    data = {
+        "session_id": session_id,
+        "role": role,
+        "content": content
+    }
+    
+    supabase.table("chat_messages").insert(data).execute()
+    
+    # Update session updated_at
+    supabase.table("chat_sessions") \
+        .update({"updated_at": datetime.now(timezone.utc).isoformat()}) \
+        .eq("id", session_id) \
+        .execute()
 
     if role == "assistant":
         # Retrieve last user message for context
@@ -236,7 +212,7 @@ def add_message(session_id: str, role: str, content: str) -> bool:
 def _update_session_metadata(
     session_id: str, user_msg: str, assistant_msg: str
 ) -> None:
-    """Background task: generate title + rolling summary. Failures are logged, not raised."""
+    """Background task: generate title + rolling summary."""
     try:
         session = get_session(session_id)
         if not session:
@@ -250,11 +226,10 @@ def _update_session_metadata(
             session.get("summary") or "", user_msg, assistant_msg
         )
         if updated_summary:
-            execute_query(
-                "UPDATE public.chat_sessions SET summary = %s WHERE id = %s",
-                (updated_summary, session_id),
-                fetch=False,
-            )
+            supabase.table("chat_sessions") \
+                .update({"summary": updated_summary}) \
+                .eq("id", session_id) \
+                .execute()
     except Exception as exc:
         logger.error(
             "session_meta_update_failed",
@@ -263,16 +238,16 @@ def _update_session_metadata(
 
 
 def get_messages(session_id: str) -> List[Dict[str, str]]:
-    messages = execute_query(
-        "SELECT role, content, created_at as timestamp FROM public.chat_messages "
-        "WHERE session_id = %s ORDER BY created_at",
-        (session_id,),
-    )
-    if not messages:
-        return []
+    result = supabase.table("chat_messages") \
+        .select("role, content, created_at") \
+        .eq("session_id", session_id) \
+        .order("created_at") \
+        .execute()
+        
+    messages = result.data or []
     for m in messages:
-        if isinstance(m.get("timestamp"), datetime):
-            m["timestamp"] = m["timestamp"].isoformat()
+        if "created_at" in m:
+            m["timestamp"] = m.pop("created_at")
     return messages
 
 
@@ -310,9 +285,10 @@ def to_session_info(session_id: str) -> Optional[SessionInfo]:
         user_id=s["user_id"],
         title=s.get("title"),
         summary=s.get("summary"),
-        created_at=s["created_at"].isoformat(),
-        updated_at=s["updated_at"].isoformat(),
+        created_at=s["created_at"],
+        updated_at=s["updated_at"],
         message_count=len(messages),
         messages=messages,
         metadata=s.get("metadata") or {},
     )
+

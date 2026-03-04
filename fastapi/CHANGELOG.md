@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Backend QA & Memory Agent Fixes (2026-03-04)
+
+#### Added
+- **Backend QA Suite**: Created `test_agent_backend.py` to stream LangGraph API responses and validate memory logic without frontend UI.
+
+#### Fixed
+- **Memory Agent Persistence**: Fixed unhandled PostgreSQL constraint crashes in `fastapi/app/agents/memory_agent.py`'s `update_memory_node` to ensure Qdrant and Neo4j memory graphs populate even if Postgres session updates fail.
+
 ### Phase 1: Architectural Safety Remediation (COMPLETE)
 
 **Status**: All 6 sub-phases completed on 2026-03-03

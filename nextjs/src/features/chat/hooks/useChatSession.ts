@@ -281,20 +281,13 @@ export function useChatSession(userId?: string, conversationId?: string) {
 
     const createNewConversation = useCallback(async () => {
         if (!userId) return null;
-        // Create Supabase session
-        const id = crypto.randomUUID();
-        try {
-            await createSessionAction(id, userId);
-        } catch (error) {
-            console.error('createSessionAction failed:', error);
-        }
         // Reset memory session so next message creates a fresh one
         memorySessionIdRef.current = null;
         setSessionTitle(null);
         setSessionSummary(null);
         setActiveMemorySession(null);
         setMessages([]);
-        return id;
+        return null;
     }, [userId]);
 
     const endCurrentThread = useCallback(async () => {
