@@ -42,8 +42,7 @@ os.environ.setdefault("ALLOWED_ORIGINS", '["http://localhost:3000"]')
 def mock_external_services():
     """Mock all external service connections for the entire test session."""
     with (
-        patch("app.core.database.init_pool", return_value=None),
-        patch("app.core.database.close_pool", return_value=None),
+        # app.core.database removed
         patch("app.services.memory.episodic_memory.init_qdrant", return_value=None),
         patch("app.services.memory.semantic_memory.init_neo4j", return_value=None),
         patch("app.services.memory.session_memory.shutdown_bg_executor", return_value=None),
@@ -56,6 +55,32 @@ async def app():
     """Create the FastAPI application instance for testing."""
     # Import after env vars are set
     from app.main import app as fastapi_app
+    from app.api.deps import get_current_user
+    from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+    from fastapi import Depends, HTTPException
+    import base64
+    import json
+    
+    security = HTTPBearer()
+    
+    def mock_get_current_user(token: HTTPAuthorizationCredentials = Depends(security)):
+        if token.credentials == "test-service-key-32-chars-at-least-wow":
+             return {"id": "service_role", "email": "service@example.com", "jwt": token.credentials}
+        if "test-signature" not in token.credentials:
+            raise HTTPException(status_code=401, detail="Invalid token signature")
+        parts = token.credentials.split(".")
+        if len(parts) >= 2:
+            try:
+                # Add padding back if necessary
+                payload_b64 = parts[1]
+                payload_b64 += "=" * ((4 - len(payload_b64) % 4) % 4)
+                payload = json.loads(base64.urlsafe_b64decode(payload_b64))
+                return {"id": payload.get("sub", "test-user-123"), "email": "test@example.com", "jwt": token.credentials}
+            except Exception:
+                pass
+        return {"id": "test-user-123", "email": "test@example.com", "jwt": token.credentials}
+
+    fastapi_app.dependency_overrides[get_current_user] = mock_get_current_user
     return fastapi_app
 
 

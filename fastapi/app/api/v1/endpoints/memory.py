@@ -1,3 +1,8 @@
+from __future__ import annotations
+from typing import Any, Dict
+from supabase import Client
+from app.api.deps import get_current_user, get_user_client
+from fastapi import Depends
 """
 Memory endpoints.
 Fixes:
@@ -11,8 +16,6 @@ Architecture Note:
   Auth handled by Supabase/Next.js (BFF pattern)
   user_id passed in request body/query from trusted Next.js layer
 """
-
-from __future__ import annotations
 
 import logging
 
@@ -50,22 +53,21 @@ router = APIRouter()
 async def get_chat_context(
     request: Request,
     req: ContextRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    """Primary chatbot integration endpoint.
-
-    Architecture Note:
-      Auth is handled by Next.js/Supabase. user_id in request body
-      is trusted to have been validated by the BFF layer.
-    """
+    """Primary chatbot integration endpoint."""
+    user_id = current_user["id"]
+    if str(req.user_id) != str(user_id):
+         raise HTTPException(status_code=400, detail="Invalid user_id in request body")
     try:
         ep_results = await run_in_threadpool(
-            ep_mem.search_episodic_memory, req.user_id, req.query, req.max_episodic
+            ep_mem.search_episodic_memory, user_id, req.query, req.max_episodic
         )
         ep_text = "\n".join(f"- {m.text}" for m in ep_results) or "(none)"
 
         keywords = [w for w in req.query.split() if len(w) > 3][:8]
         sem_results = await run_in_threadpool(
-            sem_mem.search_semantic_memory, req.user_id, keywords
+            sem_mem.search_semantic_memory, user_id, keywords
         )
         sem_text = (
             "\n".join(
@@ -77,7 +79,7 @@ async def get_chat_context(
             or "(none)"
         )
 
-        profile = await run_in_threadpool(build_user_profile, req.user_id)
+        profile = await run_in_threadpool(build_user_profile, user_id)
         profile_snippet = profile_to_system_prompt(profile)
 
         thread_msgs = []
@@ -90,7 +92,7 @@ async def get_chat_context(
             )
 
         block = (
-            f"## Memory Context for user '{req.user_id}'\n\n"
+            f"## Memory Context for user '{user_id}'\n\n"
             f"### User Profile\n{profile_snippet}\n\n"
             f"### Relevant Past Conversations\n{ep_text}\n\n"
             f"### Known Facts (Knowledge Graph)\n{sem_text}"
@@ -99,7 +101,7 @@ async def get_chat_context(
             block += f"\n\n### Current Thread\n{thread_text}"
 
         return ContextResponse(
-            user_id=req.user_id,
+            user_id=user_id,
             query=req.query,
             system_prompt_block=block,
             episodic_memories=ep_results,
@@ -119,7 +121,7 @@ async def get_chat_context(
     except Exception as exc:
         logger.error(
             "context_error",
-            extra={"user_id": req.user_id, "error": str(exc)},
+            extra={"user_id": user_id, "error": str(exc)},
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Context retrieval failed")
@@ -132,17 +134,16 @@ async def get_chat_context(
 async def search_episodic(
     request: Request,
     req: EpisodicSearchRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    """Search episodic memory.
-
-    Architecture Note:
-      Auth is handled by Next.js/Supabase. user_id in request body
-      is trusted to have been validated by the BFF layer.
-    """
+    """Search episodic memory."""
+    user_id = current_user["id"]
+    if str(req.user_id) != str(user_id):
+          raise HTTPException(status_code=400, detail="Invalid user_id in request body")
     results = await run_in_threadpool(
-        ep_mem.search_episodic_memory, req.user_id, req.query, req.k
+        ep_mem.search_episodic_memory, user_id, req.query, req.k
     )
-    return EpisodicSearchResponse(user_id=req.user_id, query=req.query, results=results)
+    return EpisodicSearchResponse(user_id=user_id, query=req.query, results=results)
 
 
 @router.post("/episodic/add", response_model=AddEpisodicResponse, tags=["Episodic"])
@@ -150,28 +151,23 @@ async def search_episodic(
 async def add_episodic(
     request: Request,
     req: AddEpisodicRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    """Add episodic memory.
-
-    Architecture Note:
-      Auth is handled by Next.js/Supabase. user_id in request body
-      is trusted to have been validated by the BFF layer.
-    """
-    pid = await run_in_threadpool(ep_mem.add_episodic_memory, req.user_id, req.text)
-    return AddEpisodicResponse(user_id=req.user_id, text=req.text, id=pid)
+    """Add episodic memory."""
+    user_id = current_user["id"]
+    if str(req.user_id) != str(user_id):
+         raise HTTPException(status_code=400, detail="Invalid user_id in request body")
+    pid = await run_in_threadpool(ep_mem.add_episodic_memory, user_id, req.text)
+    return AddEpisodicResponse(user_id=user_id, text=req.text, id=pid)
 
 
 @router.delete("/episodic/{memory_id}", response_model=ClearResponse, tags=["Episodic"])
 async def forget_episodic(
     memory_id: str,
-    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    """Delete a specific episodic memory.
-
-    Architecture Note:
-      Auth is handled by Next.js/Supabase. user_id in query param
-      is trusted to have been validated by the BFF layer.
-    """
+    """Delete a specific episodic memory."""
+    user_id = current_user["id"]
     try:
         await run_in_threadpool(ep_mem.delete_episodic_memory_by_id, memory_id)
     except Exception as exc:
@@ -184,14 +180,10 @@ async def forget_episodic(
 
 @router.delete("/episodic/clear", response_model=ClearResponse, tags=["Episodic"])
 async def clear_episodic(
-    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    """Clear all episodic memories for a user.
-
-    Architecture Note:
-      Auth is handled by Next.js/Supabase. user_id in query param
-      is trusted to have been validated by the BFF layer.
-    """
+    """Clear all episodic memories for a user."""
+    user_id = current_user["id"]
     await run_in_threadpool(ep_mem.clear_episodic_memory, user_id)
     return ClearResponse(
         user_id=user_id, message=f"All episodic memories cleared for '{user_id}'."
@@ -203,64 +195,54 @@ async def clear_episodic(
 )
 async def search_semantic(
     req: SemanticSearchRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    """Search semantic memory.
-
-    Architecture Note:
-      Auth is handled by Next.js/Supabase. user_id in request body
-      is trusted to have been validated by the BFF layer.
-    """
+    """Search semantic memory."""
+    user_id = current_user["id"]
+    if str(req.user_id) != str(user_id):
+         raise HTTPException(status_code=400, detail="Invalid user_id in request body")
     keywords = [w for w in req.query.split() if len(w) > 2]
     results = await run_in_threadpool(
-        sem_mem.search_semantic_memory, req.user_id, keywords
+        sem_mem.search_semantic_memory, user_id, keywords
     )
-    return SemanticSearchResponse(user_id=req.user_id, query=req.query, results=results)
+    return SemanticSearchResponse(user_id=user_id, query=req.query, results=results)
 
 
 @router.post("/semantic/add", response_model=AddSemanticResponse, tags=["Semantic"])
 async def add_semantic(
     req: AddSemanticRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    """Add semantic memory nodes and relationships.
-
-    Architecture Note:
-      Auth is handled by Next.js/Supabase. user_id in request body
-      is trusted to have been validated by the BFF layer.
-    """
+    """Add semantic memory nodes and relationships."""
+    user_id = current_user["id"]
+    if str(req.user_id) != str(user_id):
+         raise HTTPException(status_code=400, detail="Invalid user_id in request body")
     n, r = await run_in_threadpool(
-        sem_mem.add_nodes_and_relationships, req.user_id, req.nodes, req.relationships
+        sem_mem.add_nodes_and_relationships, user_id, req.nodes, req.relationships
     )
     return AddSemanticResponse(
-        user_id=req.user_id, nodes_added=n, relationships_added=r
+        user_id=user_id, nodes_added=n, relationships_added=r
     )
 
 
 @router.delete("/semantic/clear", response_model=ClearResponse, tags=["Semantic"])
 async def clear_semantic(
-    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    """Clear all semantic memory for a user.
-
-    Architecture Note:
-      Auth is handled by Next.js/Supabase. user_id in query param
-      is trusted to have been validated by the BFF layer.
-    """
+    """Clear all semantic memory for a user."""
+    user_id = current_user["id"]
     await run_in_threadpool(sem_mem.clear_semantic_memory, user_id)
     return ClearResponse(
         user_id=user_id, message=f"Semantic graph cleared for '{user_id}'."
     )
 
 
-@router.get("/profile/{user_id}", response_model=UserProfileSchema, tags=["Profile"])
+@router.get("/profile", response_model=UserProfileSchema, tags=["Profile"])
 async def get_user_profile(
-    user_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user),
 ):
-    """Get user profile.
-
-    Architecture Note:
-      Auth is handled by Next.js/Supabase. user_id in path
-      is trusted to have been validated by the BFF layer.
-    """
+    """Get user profile."""
+    user_id = current_user["id"]
     try:
         return await run_in_threadpool(build_user_profile, user_id)
     except Exception as exc:

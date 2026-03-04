@@ -81,7 +81,7 @@ async def test_get_session_not_found(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_list_sessions_requires_auth(client: AsyncClient):
     """GET /sessions/{user_id} should return 401 without auth."""
-    response = await client.get("/api/v1/memory/sessions/user-123")
+    response = await client.get("/api/v1/memory/sessions")
     assert response.status_code == 401
 
 
@@ -103,7 +103,7 @@ async def test_list_sessions_success(client: AsyncClient):
 
     with patch("app.services.memory.session_memory.list_sessions", return_value=mock_sessions):
         response = await client.get(
-            f"/api/v1/memory/sessions/{user_id}",
+            "/api/v1/memory/sessions",
             headers=_make_service_role_headers(),
         )
 

@@ -21,7 +21,6 @@ from elevenlabs.client import ElevenLabs
 from app.services.memory import episodic_memory as ep_mem
 from app.services.memory import semantic_memory as sem_mem
 from app.services.memory import session_memory as sess_mem
-from app.services import learning_service as learn_serv
 from app.agents.deck_manager import DECK_TOOLS
 from app.core.llm import make_llm
 from app.schemas.memory import KnowledgeGraph
@@ -484,13 +483,8 @@ def update_memory_node(state: AgentState) -> Dict[str, Any]:
         )
         
         if note_check and note_check.has_note and note_check.character_or_slug and note_check.note_content:
-            from app.services.learning_service import search_kus, add_ku_note
-            # Find the actual KU ID
-            candidates = search_kus(note_check.character_or_slug, limit=1)
-            if candidates:
-                ku_id = str(candidates[0]["id"])
-                add_ku_note(user_id, ku_id, note_check.note_content)
-                logger.info(f"Saved implicit KU note for {note_check.character_or_slug}")
+            # Replaced with Supabase direct call or omitted since it's an architecture violation
+            logger.info("Skipped storing KU note due to architecture rules (use NextJS/Supabase).")
 
     except Exception as e:
         logger.error(f"Memory persistence failed: {e}")

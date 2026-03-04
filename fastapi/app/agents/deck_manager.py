@@ -12,7 +12,6 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from app.core.supabase import get_service_client
 supabase = get_service_client()
-from app.services import learning_service as learn_serv
 from app.core.llm import make_llm
 
 logger = logging.getLogger(__name__)
@@ -107,12 +106,12 @@ def add_to_deck(
         # 2. Resolve item_id if needed
         real_item_id = item_identifier
         if item_type == "ku":
-            ku = learn_serv.get_ku_by_character(item_identifier)
-            if not ku:
-                ku = learn_serv.get_ku_by_slug(item_identifier)
-            if not ku:
+            ku_res = supabase.table("knowledge_units").select("id").eq("character", item_identifier).execute()
+            if not ku_res.data:
+                ku_res = supabase.table("knowledge_units").select("id").eq("slug", item_identifier).execute()
+            if not ku_res.data:
                 return f"Could not find knowledge unit for '{item_identifier}'."
-            real_item_id = str(ku["id"])
+            real_item_id = str(ku_res.data[0]["id"])
         
         # 3. Add to deck
         item_data = {
@@ -162,12 +161,12 @@ def remove_from_deck(
         # 2. Resolve item_id
         real_item_id = item_identifier
         if item_type == "ku":
-            ku = learn_serv.get_ku_by_character(item_identifier)
-            if not ku:
-                ku = learn_serv.get_ku_by_slug(item_identifier)
-            if not ku:
+            ku_res = supabase.table("knowledge_units").select("id").eq("character", item_identifier).execute()
+            if not ku_res.data:
+                ku_res = supabase.table("knowledge_units").select("id").eq("slug", item_identifier).execute()
+            if not ku_res.data:
                 return f"Could not find knowledge unit for '{item_identifier}'."
-            real_item_id = str(ku["id"])
+            real_item_id = str(ku_res.data[0]["id"])
         
         # 3. Remove
         result = supabase.table("deck_items") \

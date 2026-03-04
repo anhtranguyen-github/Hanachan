@@ -21,7 +21,7 @@
 
 import { supabase } from "@/lib/supabase";
 
-const MEMORY_API_BASE = process.env.MEMORY_API_URL ?? 'http://localhost:8765/api/v1';
+const MEMORY_API_BASE = process.env.MEMORY_API_URL ?? '';
 
 // ---------------------------------------------------------------------------
 // Types (mirrors Python models)
