@@ -14,7 +14,7 @@ from qdrant_client.http import models as qmodels
 
 from app.services.memory import episodic_memory as ep_mem
 from app.core.config import settings
-from app.core.database import get_db
+# app.core.database replaced with Supabase Client
 from app.core.llm import make_llm
 from app.schemas.memory import ConsolidationResult, EpisodicMemory
 
@@ -73,42 +73,10 @@ def _consolidate_batch(
 
 
 def consolidate_memories(user_id: str) -> ConsolidationResult:
-    """Run consolidation for a user, protected by a PostgreSQL advisory lock.
-
-    If another consolidation is already running for this user the call returns
-    immediately with a "in progress" message rather than duplicating work.
+    """Run consolidation for a user.
     """
-    # Derive a stable 31-bit integer key from the user_id
-    lock_key = int(hashlib.md5(user_id.encode(), usedforsecurity=False).hexdigest(), 16) % (2**31)
-
-    # Use a single connection for both lock acquisition and release
-    # so that the lock is held on the same connection for release
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT pg_try_advisory_lock(%s)", (lock_key,))
-            acquired = cur.fetchone()[0]
-
-            if not acquired:
-                logger.info(
-                    "consolidation_skipped_locked",
-                    extra={"user_id": user_id},
-                )
-                return ConsolidationResult(
-                    user_id=user_id,
-                    memories_before=0,
-                    memories_after=0,
-                    batches_merged=0,
-                    message="Consolidation already in progress for this user.",
-                )
-
-            try:
-                # Run consolidation while holding the lock on this connection
-                result = _do_consolidate(user_id)
-                return result
-            finally:
-                # Release the lock using the same connection
-                cur.execute("SELECT pg_advisory_unlock(%s)", (lock_key,))
-
+    logger.info("consolidation_started", extra={"user_id": user_id})
+    return _do_consolidate(user_id)
 
 def _do_consolidate(user_id: str) -> ConsolidationResult:
     all_memories = ep_mem.list_episodic_memories(user_id, limit=200)

@@ -12,7 +12,7 @@ def test_settings_load_from_env():
 
     assert settings.openai_api_key == "sk-test-key"
     assert settings.supabase_url == "https://test.supabase.co"
-    assert settings.db_host == "localhost"
+    
 
 
 def test_settings_allowed_origins_default():
@@ -31,7 +31,7 @@ def test_settings_allowed_origins_parse_json_string():
         openai_api_key="key",
         supabase_url="https://x.supabase.co",
         supabase_key="key",
-        db_password="pw",
+        
         allowed_origins='["http://localhost:3000","https://example.com"]',
     )
     assert "http://localhost:3000" in s.allowed_origins
@@ -46,13 +46,13 @@ def test_settings_validate_required_missing_fields():
         openai_api_key="",
         supabase_url="",
         supabase_key="",
-        db_password="",
+        
     )
     missing = s.validate_required()
     assert "OPENAI_API_KEY" in missing
     assert "SUPABASE_URL" in missing
     assert "SUPABASE_KEY" in missing
-    assert "DB_PASSWORD" in missing
+    
 
 
 def test_settings_validate_required_all_present():
@@ -63,7 +63,7 @@ def test_settings_validate_required_all_present():
         openai_api_key="sk-test",
         supabase_url="https://x.supabase.co",
         supabase_key="anon-key",
-        db_password="password",
+        
     )
     missing = s.validate_required()
     assert missing == []
@@ -77,7 +77,7 @@ def test_settings_trusted_proxies_parse_csv():
         openai_api_key="key",
         supabase_url="https://x.supabase.co",
         supabase_key="key",
-        db_password="pw",
+        
         trusted_proxies="10.0.0.1,10.0.0.2",
     )
     assert "10.0.0.1" in s.trusted_proxies

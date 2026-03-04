@@ -1,3 +1,8 @@
+from __future__ import annotations
+from typing import Any, Dict
+from supabase import Client
+from app.api.deps import get_current_user, get_user_client
+from fastapi import Depends
 """
 Session endpoints.
 Fixes:
@@ -12,14 +17,12 @@ Architecture Note:
   user_id passed in request body/query from trusted Next.js layer
 """
 
-from __future__ import annotations
-
 import logging
 from typing import List
+import uuid
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
-import uuid
 
 from app.schemas.session import (
     CreateSessionRequest,
@@ -52,7 +55,7 @@ def _normalize_user_id(value: str) -> str:
 
 async def _assert_session_owner(
     session_id: str,
-    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
+    user_id: str,
 ) -> dict:
     """Raise 403 if the session doesn't belong to the user.
 
@@ -88,6 +91,7 @@ async def _assert_session_owner(
 @router.post("/session", response_model=CreateSessionResponse, tags=["Session"])
 async def create_session(
     req: CreateSessionRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     """Start a new conversation thread for a user.
 
@@ -95,13 +99,18 @@ async def create_session(
       Auth is handled by Next.js/Supabase. user_id in request body
       is trusted to have been validated by the BFF layer.
     """
+    user_id = current_user["id"]
+    # Ensure they only create a session for themselves
+    if str(req.user_id) != str(user_id):
+         raise HTTPException(status_code=400, detail="Invalid user_id in request body")
+         
     session_id = await run_in_threadpool(
-        sess_mem.create_session, req.user_id, req.metadata
+        sess_mem.create_session, user_id, req.metadata
     )
     s = await run_in_threadpool(sess_mem.get_session, session_id)
     return CreateSessionResponse(
         session_id=session_id,
-        user_id=req.user_id,
+        user_id=user_id,
         title=None,
         created_at=s["created_at"],
     )
@@ -110,14 +119,10 @@ async def create_session(
 @router.get("/session/{session_id}", tags=["Session"])
 async def get_session(
     session_id: str,
-    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
+    current_user: Dict[str, Any] = Depends(get_current_user),
 ):
-    """Get full session info including all messages, title, and rolling summary.
-
-    Architecture Note:
-      Auth is handled by Next.js/Supabase. user_id in query param
-      is trusted to have been validated by the BFF layer.
-    """
+    """Get full session info including all messages, title, and rolling summary."""
+    user_id = current_user["id"]
     # Verify ownership
     await _assert_session_owner(session_id, user_id)
 
@@ -129,17 +134,13 @@ async def get_session(
 
 
 @router.get(
-    "/sessions/{user_id}", response_model=List[SessionSummary], tags=["Session"]
+    "/sessions", response_model=List[SessionSummary], tags=["Session"]
 )
 async def list_sessions(
-    user_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user),
 ):
-    """List all active sessions for a user (summaries only, no message bodies).
-
-    Architecture Note:
-      Auth is handled by Next.js/Supabase. user_id in path
-      is trusted to have been validated by the BFF layer.
-    """
+    """List all active sessions for a user (summaries only, no message bodies)."""
+    user_id = current_user["id"]
     return await run_in_threadpool(sess_mem.list_sessions, user_id)
 
 
@@ -147,14 +148,10 @@ async def list_sessions(
 async def update_session(
     session_id: str,
     req: UpdateSessionRequest,
-    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
+    current_user: Dict[str, Any] = Depends(get_current_user),
 ):
-    """Manually update a session's title or metadata.
-
-    Architecture Note:
-      Auth is handled by Next.js/Supabase. user_id in query param
-      is trusted to have been validated by the BFF layer.
-    """
+    """Manually update a session's title or metadata."""
+    user_id = current_user["id"]
     # Session ownership verified by _assert_session_owner
     await _assert_session_owner(session_id, user_id)
 
@@ -172,18 +169,14 @@ async def update_session(
 )
 async def end_session(
     session_id: str,
-    user_id: str = Query(..., description="User ID (validated by Next.js/Supabase)"),
+    current_user: Dict[str, Any] = Depends(get_current_user),
     consolidate: bool = Query(
         True,
         description="If true, the full session transcript is written to long-term episodic memory.",
     ),
 ):
-    """End a session (thread).
-
-    Architecture Note:
-      Auth is handled by Next.js/Supabase. user_id in query param
-      is trusted to have been validated by the BFF layer.
-    """
+    """End a session (thread)."""
+    user_id = current_user["id"]
     # Session ownership verified by _assert_session_owner
     await _assert_session_owner(session_id, user_id)
 
