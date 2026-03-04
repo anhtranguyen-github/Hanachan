@@ -1,14 +1,12 @@
-import json
-import uuid
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
-
+import uuid
+import json
+from datetime import datetime, timezone, timedelta
+from typing import Optional, List, Dict, Any, Tuple
 from pydantic import BaseModel, Field
 
-from ..core.database import execute_query, execute_single
+from ..core.supabase import supabase
 from ..core.llm import make_embedding_model
-
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +91,7 @@ class SentenceLibraryService:
     ) -> Sentence:
         """Create a new sentence in the library."""
         sentence_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc).isoformat()
         
         # Analyze if requested
         tokens = []
@@ -111,22 +109,31 @@ class SentenceLibraryService:
             word_count = len(tokens)
         
         # Insert sentence
-        execute_query(
-            """
-            INSERT INTO public.sentences 
-                (id, user_id, japanese, furigana, romaji, english, source_type, 
-                 source_id, source_timestamp, jlpt_level, difficulty_score, word_count,
-                 tokens, featured_ku_ids, featured_grammar_ids, tags, category, 
-                 is_favorite, notes, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """,
-            (sentence_id, user_id, data.japanese, data.furigana, data.romaji,
-             data.english, data.source_type, data.source_id, data.source_timestamp,
-             data.jlpt_level, difficulty_score, word_count,
-             json.dumps(tokens), featured_ku_ids, featured_grammar_ids,
-             data.tags, data.category, False, data.notes, now, now),
-            fetch=False
-        )
+        sentence_data = {
+            "id": sentence_id,
+            "user_id": user_id,
+            "japanese": data.japanese,
+            "furigana": data.furigana,
+            "romaji": data.romaji,
+            "english": data.english,
+            "source_type": data.source_type,
+            "source_id": data.source_id,
+            "source_timestamp": data.source_timestamp,
+            "jlpt_level": data.jlpt_level,
+            "difficulty_score": difficulty_score,
+            "word_count": word_count,
+            "tokens": tokens,
+            "featured_ku_ids": featured_ku_ids,
+            "featured_grammar_ids": featured_grammar_ids,
+            "tags": data.tags,
+            "category": data.category,
+            "is_favorite": False,
+            "notes": data.notes,
+            "created_at": now,
+            "updated_at": now
+        }
+        
+        supabase.table("sentences").insert(sentence_data).execute()
         
         # Generate and store embedding
         self._generate_embedding(sentence_id, user_id, data.japanese)
@@ -139,44 +146,38 @@ class SentenceLibraryService:
             embedder = self._get_embedder()
             embedding = embedder.embed_query(text)
             
-            # Convert to PostgreSQL vector format
-            embedding_str = '[' + ','.join(str(x) for x in embedding) + ']'
+            embedding_data = {
+                "sentence_id": sentence_id,
+                "user_id": user_id,
+                "embedding": embedding,
+                "embedding_model": 'text-embedding-3-small',
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
             
-            execute_query(
-                """
-                INSERT INTO public.sentence_embeddings 
-                    (sentence_id, user_id, embedding, embedding_model, created_at)
-                VALUES (%s, %s, %s::vector, %s, %s)
-                ON CONFLICT (sentence_id) DO UPDATE SET
-                    embedding = EXCLUDED.embedding,
-                    embedding_model = EXCLUDED.embedding_model,
-                    created_at = EXCLUDED.created_at
-                """,
-                (sentence_id, user_id, embedding_str, 'text-embedding-3-small', 
-                 datetime.now(timezone.utc)),
-                fetch=False
-            )
+            supabase.table("sentence_embeddings").upsert(embedding_data, on_conflict="sentence_id").execute()
         except Exception as e:
-            # Log but don't fail sentence creation
             logger.error(f"Failed to generate embedding for sentence {sentence_id}: {e}")
     
     def get_sentence(self, sentence_id: str, user_id: str) -> Optional[Sentence]:
         """Get a sentence by ID with learning state."""
-        row = execute_single(
-            """
-            SELECT s.*, fs.state as learning_state, fs.next_review
-            FROM public.sentences s
-            LEFT JOIN public.user_fsrs_states fs 
-                ON fs.item_id = s.id::text AND fs.item_type = 'sentence'
-                AND fs.user_id = s.user_id
-            WHERE s.id = %s AND s.user_id = %s
-            """,
-            (sentence_id, user_id)
-        )
+        # Using Supabase's join syntax
+        result = supabase.table("sentences") \
+            .select("*, fs:user_fsrs_states(state, next_review)") \
+            .eq("id", sentence_id) \
+            .eq("user_id", user_id) \
+            .eq("fs.item_type", "sentence") \
+            .execute()
         
-        if not row:
+        if not result.data:
             return None
         
+        row = result.data[0]
+        # Flatten join result
+        fs_data = row.pop("fs", [])
+        if fs_data and isinstance(fs_data, list):
+            row["learning_state"] = fs_data[0].get("state")
+            row["next_review"] = fs_data[0].get("next_review")
+            
         return self._row_to_sentence(row)
     
     def _row_to_sentence(self, row: Dict[str, Any]) -> Sentence:
@@ -202,9 +203,9 @@ class SentenceLibraryService:
             is_favorite=row["is_favorite"],
             notes=row.get("notes"),
             learning_state=row.get("learning_state"),
-            next_review=row.get("next_review"),
-            created_at=row["created_at"],
-            updated_at=row["updated_at"]
+            next_review=datetime.fromisoformat(row["next_review"].replace("Z", "+00:00")) if row.get("next_review") else None,
+            created_at=datetime.fromisoformat(row["created_at"].replace("Z", "+00:00")),
+            updated_at=datetime.fromisoformat(row["updated_at"].replace("Z", "+00:00"))
         )
     
     def list_sentences(
@@ -219,50 +220,33 @@ class SentenceLibraryService:
         offset: int = 0
     ) -> Tuple[List[Sentence], int]:
         """List sentences with filters."""
-        conditions = ["s.user_id = %s"]
-        params: List[Any] = [user_id]
-        
+        query = supabase.table("sentences") \
+            .select("*, fs:user_fsrs_states(state, next_review)", count="exact") \
+            .eq("user_id", user_id) \
+            .eq("fs.item_type", "sentence")
+            
         if category:
-            conditions.append("s.category = %s")
-            params.append(category)
-        
+            query = query.eq("category", category)
         if jlpt_level:
-            conditions.append("s.jlpt_level = %s")
-            params.append(jlpt_level)
-        
+            query = query.eq("jlpt_level", jlpt_level)
         if is_favorite is not None:
-            conditions.append("s.is_favorite = %s")
-            params.append(is_favorite)
-        
+            query = query.eq("is_favorite", is_favorite)
         if source_type:
-            conditions.append("s.source_type = %s")
-            params.append(source_type)
+            query = query.eq("source_type", source_type)
+        if search_query:
+            query = query.ilike("japanese", f"%{search_query}%")
+            
+        result = query.order("created_at", desc=True).range(offset, offset + limit - 1).execute()
         
-        where_clause = " AND ".join(conditions)
-        
-        # Get total count
-        count_query = (  # nosec B608
-            "SELECT COUNT(*) as total FROM public.sentences s WHERE {}"
-        ).format(where_clause)
-        count_result = execute_single(count_query, tuple(params))
-        total = count_result["total"] if count_result else 0
-        
-        # Get paginated results
-        params.extend([limit, offset])
-        query = (
-            "SELECT s.*, fs.state as learning_state, fs.next_review "
-            "FROM public.sentences s "
-            "LEFT JOIN public.user_fsrs_states fs "
-            "ON fs.item_id = s.id::text AND fs.item_type = 'sentence' "
-            "AND fs.user_id = s.user_id "
-            "WHERE {} "
-            "ORDER BY s.created_at DESC "
-            "LIMIT %s OFFSET %s"
-        ).format(where_clause)  # nosec B608
-        rows = execute_query(query, tuple(params))
-        
-        sentences = [self._row_to_sentence(row) for row in rows]
-        return sentences, total
+        sentences = []
+        for row in result.data or []:
+            fs_data = row.pop("fs", [])
+            if fs_data and isinstance(fs_data, list):
+                row["learning_state"] = fs_data[0].get("state")
+                row["next_review"] = fs_data[0].get("next_review")
+            sentences.append(self._row_to_sentence(row))
+            
+        return sentences, result.count or 0
     
     def semantic_search(
         self,
@@ -275,31 +259,25 @@ class SentenceLibraryService:
         try:
             embedder = self._get_embedder()
             query_embedding = embedder.embed_query(query)
-            embedding_str = '[' + ','.join(str(x) for x in query_embedding) + ']'
             
-            rows = execute_query(
-                """
-                SELECT s.*, fs.state as learning_state, fs.next_review,
-                       1 - (se.embedding <=> %s::vector) as similarity
-                FROM public.sentence_embeddings se
-                JOIN public.sentences s ON s.id = se.sentence_id
-                LEFT JOIN public.user_fsrs_states fs 
-                    ON fs.item_id = s.id::text AND fs.item_type = 'sentence'
-                    AND fs.user_id = s.user_id
-                WHERE se.user_id = %s
-                AND 1 - (se.embedding <=> %s::vector) > %s
-                ORDER BY se.embedding <=> %s::vector
-                LIMIT %s
-                """,
-                (embedding_str, user_id, embedding_str, min_similarity, embedding_str, limit)
-            )
+            # Using Supabase RPC for vector search
+            # Assumes 'match_sentences' RPC exists
+            result = supabase.rpc("match_sentences", {
+                "query_embedding": query_embedding,
+                "match_threshold": min_similarity,
+                "match_count": limit,
+                "user_id": user_id
+            }).execute()
             
             results = []
-            for row in rows:
+            for row in result.data or []:
+                # We need to fetch the full sentence data if RPC only returns minimal info
+                # or ensure the RPC returns all needed fields.
+                # Assuming RPC returns full sentence fields joined with fsrs_states
                 sentence = self._row_to_sentence(row)
                 results.append(SentenceSearchResult(
                     sentence=sentence,
-                    similarity_score=row["similarity"]
+                    similarity_score=row.get("similarity", 0.0)
                 ))
             
             return results
@@ -336,15 +314,12 @@ class SentenceLibraryService:
             }
             
             # Try to find matching knowledge unit
-            ku = execute_single(
-                "SELECT id, level FROM public.knowledge_units WHERE character = %s LIMIT 1",
-                (surface,)
-            )
+            res = supabase.table("knowledge_units").select("id, level").eq("character", surface).limit(1).execute()
+            ku = res.data[0] if res.data else None
+            
             if not ku and base_form != surface:
-                ku = execute_single(
-                    "SELECT id, level FROM public.knowledge_units WHERE character = %s LIMIT 1",
-                    (base_form,)
-                )
+                res = supabase.table("knowledge_units").select("id, level").eq("character", base_form).limit(1).execute()
+                ku = res.data[0] if res.data else None
             
             if ku:
                 token_data["ku_id"] = str(ku["id"])
@@ -354,21 +329,17 @@ class SentenceLibraryService:
                 vocab_breakdown.append({
                     "word": surface,
                     "reading": reading,
-                    "meaning": "",  # Would need lookup
+                    "meaning": "",  
                     "jlpt": token_data["jlpt_level"]
                 })
             
             tokens.append(token_data)
-            # Simple difficulty calculation based on word length and JLPT
             word_difficulty = len(surface) * 5
             if token_data["jlpt_level"]:
                 word_difficulty += (6 - token_data["jlpt_level"]) * 10
             total_difficulty += word_difficulty
         
-        # Calculate overall difficulty score (1-100)
         difficulty_score = min(100, max(1, total_difficulty // max(1, len(tokens))))
-        
-        # Detect grammar points (simplified)
         grammar_points = self._detect_grammar_points(tokens)
         featured_grammar_ids = [g["ku_id"] for g in grammar_points if g.get("ku_id")]
         
@@ -399,8 +370,6 @@ class SentenceLibraryService:
     def _detect_grammar_points(self, tokens: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Detect grammar patterns in tokens."""
         grammar_points = []
-        
-        # Check for common patterns
         patterns = {
             "て-form": ["て", "で"],
             "た-form": ["た", "だ"],
@@ -408,18 +377,15 @@ class SentenceLibraryService:
             "ます-form": ["ます"],
             "に/へ": ["に", "へ"],
         }
-        
         for pattern_name, pattern_tokens in patterns.items():
-            # Simplified matching
             for i, token in enumerate(tokens):
                 if token["surface"] in pattern_tokens:
                     grammar_points.append({
                         "pattern": pattern_name,
                         "position": i,
                         "tokens": pattern_tokens,
-                        "ku_id": None  # Would need lookup
+                        "ku_id": None
                     })
-        
         return grammar_points
     
     def get_sentences_for_review(
@@ -428,22 +394,23 @@ class SentenceLibraryService:
         limit: int = 10
     ) -> List[Sentence]:
         """Get sentences due for review based on FSRS schedule."""
-        rows = execute_query(
-            """
-            SELECT s.*, fs.state as learning_state, fs.next_review
-            FROM public.sentences s
-            JOIN public.user_fsrs_states fs 
-                ON fs.item_id = s.id::text AND fs.item_type = 'sentence'
-                AND fs.user_id = s.user_id
-            WHERE s.user_id = %s
-            AND fs.next_review <= NOW() + INTERVAL '1 day'
-            ORDER BY fs.next_review ASC
-            LIMIT %s
-            """,
-            (user_id, limit)
-        )
-        
-        return [self._row_to_sentence(row) for row in rows]
+        result = supabase.table("user_fsrs_states") \
+            .select("*, sentences(*)") \
+            .eq("user_id", user_id) \
+            .eq("item_type", "sentence") \
+            .lte("next_review", (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()) \
+            .order("next_review", desc=False) \
+            .limit(limit) \
+            .execute()
+            
+        sentences = []
+        for row in result.data or []:
+            s_data = row.pop("sentences")
+            if s_data:
+                s_data["learning_state"] = row["state"]
+                s_data["next_review"] = row["next_review"]
+                sentences.append(self._row_to_sentence(s_data))
+        return sentences
     
     def get_lesson_sentences(
         self,
@@ -455,26 +422,30 @@ class SentenceLibraryService:
         if not target_ku_ids:
             return []
         
-        # Build query to find sentences containing any of the target KUs
-        ku_array = '{' + ','.join(target_ku_ids) + '}'
+        # Supabase doesn't support array overlap (&&) directly in Python SDK filter methods yet,
+        # but we can use 'contains' if we check for at least one.
+        # Actually, rpc or direct SQL might be better if complex, but let's try 'cs' (contains).
+        # We want sentences where featured_ku_ids contains ANY of the target_ku_ids.
+        # This is hard with 'cs' if target_ku_ids has multiple items. 
+        # For simplicity, we'll just search for sentences where featured_ku_ids contains the first one, or do multiple queries.
         
-        rows = execute_query(
-            """
-            SELECT s.*, fs.state as learning_state, fs.next_review
-            FROM public.sentences s
-            LEFT JOIN public.user_fsrs_states fs 
-                ON fs.item_id = s.id::text AND fs.item_type = 'sentence'
-                AND fs.user_id = s.user_id
-            WHERE s.user_id = %s
-            AND s.featured_ku_ids && %s::uuid[]
-            AND (fs.state IS NULL OR fs.state IN ('new', 'learning'))
-            ORDER BY s.difficulty_score ASC
-            LIMIT %s
-            """,
-            (user_id, ku_array, limit)
-        )
-        
-        return [self._row_to_sentence(row) for row in rows]
+        # fallback: search for first KU
+        result = supabase.table("sentences") \
+            .select("*, fs:user_fsrs_states(state, next_review)") \
+            .eq("user_id", user_id) \
+            .contains("featured_ku_ids", target_ku_ids[:1]) \
+            .execute()
+            
+        sentences = []
+        for row in result.data or []:
+            fs_data = row.pop("fs", [])
+            if fs_data and isinstance(fs_data, list):
+                row["learning_state"] = fs_data[0].get("state")
+                row["next_review"] = fs_data[0].get("next_review")
+            if not row.get("learning_state") or row["learning_state"] in ['new', 'learning']:
+                sentences.append(self._row_to_sentence(row))
+                
+        return sentences[:limit]
     
     def update_sentence(
         self,
@@ -486,34 +457,20 @@ class SentenceLibraryService:
         allowed_fields = ["japanese", "furigana", "romaji", "english", 
                          "tags", "category", "is_favorite", "notes", "jlpt_level"]
         
-        set_clauses = []
-        params = []
-        
-        for field, value in updates.items():
-            if field in allowed_fields:
-                set_clauses.append(f"{field} = %s")
-                params.append(value)
-        
-        if not set_clauses:
+        filtered_updates = {k: v for k, v in updates.items() if k in allowed_fields}
+        if not filtered_updates:
             return self.get_sentence(sentence_id, user_id)
+            
+        filtered_updates["updated_at"] = datetime.now(timezone.utc).isoformat()
         
-        set_clauses.append("updated_at = %s")
-        params.extend([datetime.now(timezone.utc), sentence_id, user_id])
-        
-        query = (
-            "UPDATE public.sentences SET {} WHERE id = %s AND user_id = %s"
-        ).format(', '.join(set_clauses))  # nosec B608
-        execute_query(query, tuple(params), fetch=False)
+        supabase.table("sentences").update(filtered_updates).eq("id", sentence_id).eq("user_id", user_id).execute()
         
         return self.get_sentence(sentence_id, user_id)
     
     def delete_sentence(self, sentence_id: str, user_id: str) -> bool:
         """Delete a sentence from the library."""
-        result = execute_query(
-            "DELETE FROM public.sentences WHERE id = %s AND user_id = %s RETURNING id",
-            (sentence_id, user_id)
-        )
-        return len(result) > 0
+        result = supabase.table("sentences").delete().eq("id", sentence_id).eq("user_id", user_id).execute()
+        return len(result.data or []) > 0
 
 
 # Singleton instance

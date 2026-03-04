@@ -145,27 +145,34 @@ def get_recent_reviews(limit: int = 5, user_id: str = "INJECTED") -> str:
     """Retrieve the most recent words or characters the user has reviewed.
     Use this if the user asks 'What did I just study?' or 'How did my last session go?'.
     """
-    from ..core.database import execute_query
-    
-    query = """
-        SELECT l.item_id, l.item_type, l.facet, l.rating, l.reviewed_at,
-               CASE 
-                 WHEN l.item_type = 'ku' THEN (SELECT character || ' (' || meaning || ')' FROM knowledge_units WHERE id = l.item_id)
-                 ELSE 'Other Item'
-               END as display_name
-        FROM fsrs_review_logs l
-        WHERE l.user_id = %s
-        ORDER BY l.reviewed_at DESC
-        LIMIT %s
-    """
-    results = execute_query(query, (user_id, limit))
-    if not results:
-        return "No recent reviews found."
+    try:
+        from ..core.supabase import supabase
         
-    lines = [f"Recent reviews for user {user_id}:"]
-    for r in results:
-        lines.append(f"• {r['display_name']} - Rating: {r['rating']} ({r['reviewed_at']})")
-    return "\n".join(lines)
+        # We need to join with knowledge_units for display names.
+        # Supabase Python client handles joins via query syntax.
+        result = supabase.table("fsrs_review_logs") \
+            .select("item_id, item_type, facet, rating, reviewed_at, knowledge_units(character, meaning)") \
+            .eq("user_id", user_id) \
+            .order("reviewed_at", desc=True) \
+            .limit(limit) \
+            .execute()
+            
+        results = result.data or []
+        if not results:
+            return "No recent reviews found."
+            
+        lines = [f"Recent reviews for user {user_id}:"]
+        for r in results:
+            display_name = "Other Item"
+            if r["item_type"] == "ku" and r.get("knowledge_units"):
+                ku = r["knowledge_units"]
+                display_name = f"{ku.get('character')} ({ku.get('meaning')})"
+            
+            lines.append(f"• {display_name} - Rating: {r['rating']} ({r['reviewed_at']})")
+        return "\n".join(lines)
+    except Exception as e:
+        logger.error(f"Error getting recent reviews: {e}")
+        return f"Failed to retrieve recent reviews: {str(e)}"
 
 
 # Tool list for the Planner

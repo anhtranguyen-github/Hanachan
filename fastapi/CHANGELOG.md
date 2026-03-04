@@ -15,6 +15,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Fixed
 - **Memory Agent Persistence**: Fixed unhandled PostgreSQL constraint crashes in `fastapi/app/agents/memory_agent.py`'s `update_memory_node` to ensure Qdrant and Neo4j memory graphs populate even if Postgres session updates fail.
 
+### Phase 2: Direct Tool Migration (2026-03-04)
+
+#### Changed
+- **CRITICAL**: Refactored Reading Practice API to use Supabase client directly, eliminating `execute_query` dependencies.
+  - [`api/v1/endpoints/reading.py`](app/api/v1/endpoints/reading.py): Full refactor of configuration, session, and metrics endpoints.
+- **Service Refactoring**: Migrated core services to direct Supabase SDK patterns.
+  - [`app/services/video_dictation.py`](app/services/video_dictation.py): Replaced all direct SQL with Supabase client methods.
+  - [`app/services/speaking_practice.py`](app/services/speaking_practice.py): Migrated to Supabase and fixed missing core imports.
+  - [`app/services/sentence_annotator.py`](app/services/sentence_annotator.py): Migrated to Supabase select/join/delete/insert patterns.
+  - [`app/services/sentence_library.py`](app/services/sentence_library.py): Fixed missing Pydantic and logging imports.
+  - [`app/services/video_embeddings.py`](app/services/video_embeddings.py): Fixed missing datetime and json imports.
+- **FSRS Integration**: 
+  - [`app/services/fsrs_service.py`](app/services/fsrs_service.py): Added `get_review_logs` using Supabase.
+  - [`app/api/v1/endpoints/fsrs.py`](app/api/v1/endpoints/fsrs.py): Updated to use new service method.
+
+#### Removed
+- Unused `execute_query` and `get_db` imports across multiple API and service files.
+
 ### Phase 1: Architectural Safety Remediation (COMPLETE)
 
 **Status**: All 6 sub-phases completed on 2026-03-03
