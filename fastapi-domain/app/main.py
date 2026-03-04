@@ -1,5 +1,5 @@
-from fastapi import FastAPI
 from .adapters.http.reading import router as reading_router
+from .adapters.http.learning import router as learning_router
 
 app = FastAPI(
     title="Hanachan Domain Service",
@@ -9,6 +9,7 @@ app = FastAPI(
 
 # Register routers
 app.include_router(reading_router, prefix="/api/v1")
+app.include_router(learning_router, prefix="/api/v1")
 
 @app.get("/health")
 def health_check():
