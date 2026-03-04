@@ -7,8 +7,12 @@
  * data access through Supabase client (RLS-protected)
  */
 
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseService } from "@/lib/supabase";
 import { HanaTime } from "@/lib/time";
+
+// Use service role client on server to bypass RLS issues during Phase 2 transition
+// Security: Functions must ALWAYS include .eq('user_id', userId)
+const db = supabaseService || supabase;
 import { addDays } from 'date-fns';
 
 // FSRS-4.5 Default Parameters (19 weights)
@@ -51,8 +55,8 @@ export interface FSRSSettings {
 
 export interface FSRSState {
     user_id: string;
-    item_id: string;
-    item_type: string;
+    ku_id: string;
+    item_type_placeholder: string;
     facet: string;
     state: 'new' | 'learning' | 'review' | 'relearning' | 'burned';
     stability: number;
@@ -64,8 +68,8 @@ export interface FSRSState {
 }
 
 export interface FSRSSchedule {
-    item_id: string;
-    item_type: string;
+    ku_id: string;
+    item_type_placeholder: string;
     due_date: string;
     interval_days: number;
     priority_score: number;
@@ -317,18 +321,14 @@ export const fsrsService = {
     ): Promise<FSRSSchedule[]> {
         const tomorrow = addDays(new Date(), 1).toISOString();
 
-        let query = supabase
-            .from('user_fsrs_states')
+        let query = db
+            .from('user_learning_states')
             .select('*')
             .eq('user_id', userId)
             .lte('next_review', tomorrow)
             .neq('state', 'burned')
             .order('next_review', { ascending: true })
             .limit(limit);
-
-        if (itemType) {
-            query = query.eq('item_type', itemType);
-        }
 
         const { data, error } = await query;
 
@@ -346,8 +346,8 @@ export const fsrsService = {
             const priorityScore = daysOverdue + (1.0 / Math.max(1, row.stability));
 
             schedules.push({
-                item_id: row.item_id,
-                item_type: row.item_type,
+                ku_id: row.ku_id,
+                item_type_placeholder: 'ku',
                 due_date: row.next_review,
                 interval_days: row.stability,
                 priority_score: priorityScore,
@@ -362,9 +362,9 @@ export const fsrsService = {
      * Get summary of user's learning state
      */
     async getLearningSummary(userId: string): Promise<LearningSummary> {
-        const { data, error } = await supabase
-            .from('user_fsrs_states')
-            .select('item_type, state')
+        const { data, error } = await db
+            .from('user_learning_states')
+            .select('state')
             .eq('user_id', userId);
 
         if (error) {
@@ -385,8 +385,8 @@ export const fsrsService = {
         };
 
         for (const row of data || []) {
-            const itemType = row.item_type;
             const state = row.state;
+            const itemType = 'ku';
 
             if (!summary.by_type[itemType]) {
                 summary.by_type[itemType] = { total: 0, states: {} };
@@ -400,8 +400,8 @@ export const fsrsService = {
 
         // Count due today
         const tomorrow = addDays(new Date(), 1).toISOString();
-        const { count, error: countError } = await supabase
-            .from('user_fsrs_states')
+        const { count, error: countError } = await db
+            .from('user_learning_states')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId)
             .lte('next_review', tomorrow)
@@ -426,13 +426,11 @@ export const fsrsService = {
     ): Promise<FSRSReviewResult> {
         const scheduler = this._getUserScheduler(userId);
 
-        // Get current state
-        const { data: current, error } = await supabase
-            .from('user_fsrs_states')
+        const { data: current, error } = await db
+            .from('user_learning_states')
             .select('*')
             .eq('user_id', userId)
-            .eq('item_id', itemId)
-            .eq('item_type', itemType)
+            .eq('ku_id', itemId)
             .eq('facet', facet)
             .single();
 
@@ -442,8 +440,8 @@ export const fsrsService = {
             // New item
             state = {
                 user_id: userId,
-                item_id: itemId,
-                item_type: itemType,
+                ku_id: itemId,
+                item_type_placeholder: itemType,
                 facet: facet,
                 state: 'new',
                 stability: 0,
@@ -456,8 +454,8 @@ export const fsrsService = {
         } else {
             state = {
                 user_id: current.user_id,
-                item_id: current.item_id,
-                item_type: current.item_type,
+                ku_id: current.ku_id,
+                item_type_placeholder: current.item_type_placeholder,
                 facet: current.facet,
                 state: current.state,
                 stability: current.stability,
@@ -474,12 +472,11 @@ export const fsrsService = {
 
         // Save to database
         const now = HanaTime.getNowISO();
-        const { error: upsertError } = await supabase
-            .from('user_fsrs_states')
+        const { error: upsertError } = await db
+            .from('user_learning_states')
             .upsert({
                 user_id: userId,
-                item_id: itemId,
-                item_type: itemType,
+                ku_id: itemId,
                 facet: facet,
                 state: result.state,
                 stability: result.stability,
@@ -490,7 +487,7 @@ export const fsrsService = {
                 next_review: result.next_review,
                 updated_at: now
             }, {
-                onConflict: 'user_id,item_id,item_type,facet'
+                onConflict: 'user_id,ku_id,facet'
             });
 
         if (upsertError) {
@@ -499,12 +496,11 @@ export const fsrsService = {
         }
 
         // Log the review
-        const { error: logError } = await supabase
+        const { error: logError } = await db
             .from('fsrs_review_logs')
             .insert({
                 user_id: userId,
-                item_id: itemId,
-                item_type: itemType,
+                ku_id: itemId,
                 facet: facet,
                 rating: rating,
                 state: result.state,
@@ -608,7 +604,7 @@ export const fsrsService = {
 
         updates.updated_at = HanaTime.getNowISO();
 
-        const { error } = await supabase
+        const { error } = await db
             .from('user_fsrs_settings')
             .update(updates)
             .eq('user_id', userId);

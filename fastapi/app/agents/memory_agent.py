@@ -140,7 +140,32 @@ def append_to_learning_notes(identifier: str, note_content: str, user_id: str = 
     
     ku_id = str(results[0]["id"])
     learn_serv.add_ku_note(user_id, ku_id, note_content)
-    return f"Successfully added note to {results[0]['character']} ({results[0]['meaning']})."
+@tool
+def get_recent_reviews(limit: int = 5, user_id: str = "INJECTED") -> str:
+    """Retrieve the most recent words or characters the user has reviewed.
+    Use this if the user asks 'What did I just study?' or 'How did my last session go?'.
+    """
+    from ..core.database import execute_query
+    
+    query = """
+        SELECT l.item_id, l.item_type, l.facet, l.rating, l.reviewed_at,
+               CASE 
+                 WHEN l.item_type = 'ku' THEN (SELECT character || ' (' || meaning || ')' FROM knowledge_units WHERE id = l.item_id)
+                 ELSE 'Other Item'
+               END as display_name
+        FROM fsrs_review_logs l
+        WHERE l.user_id = %s
+        ORDER BY l.reviewed_at DESC
+        LIMIT %s
+    """
+    results = execute_query(query, (user_id, limit))
+    if not results:
+        return "No recent reviews found."
+        
+    lines = [f"Recent reviews for user {user_id}:"]
+    for r in results:
+        lines.append(f"• {r['display_name']} - Rating: {r['rating']} ({r['reviewed_at']})")
+    return "\n".join(lines)
 
 
 # Tool list for the Planner
@@ -148,6 +173,7 @@ TOOLS = [
     get_episodic_memory,
     get_semantic_facts,
     get_user_learning_progress,
+    get_recent_reviews,
     search_knowledge_units,
     append_to_learning_notes,
 ] + DECK_TOOLS
@@ -171,6 +197,7 @@ def tools_node(state: AgentState) -> Dict[str, Any]:
             "get_episodic_memory",
             "get_semantic_facts",
             "get_user_learning_progress",
+            "get_recent_reviews",
             "append_to_learning_notes",
             "create_user_deck",
             "list_my_decks",
@@ -400,23 +427,23 @@ def update_memory_node(state: AgentState) -> Dict[str, Any]:
 
     # 1. Update Session Memory
     if session_id:
-        # Ensure session exists in DB before adding messages
-        existing = sess_mem.get_session(session_id)
-        if not existing:
-            sess_mem.create_session(user_id)
-            # Override the auto-generated ID with our session_id
-            from ..core.database import execute_query
-            from datetime import datetime, timezone
-
-            now = datetime.now(timezone.utc)
-            execute_query(
-                "INSERT INTO public.chat_sessions (id, user_id, created_at, updated_at) "
-                "VALUES (%s, %s, %s, %s) ON CONFLICT (id) DO NOTHING",
-                (session_id, user_id, now, now),
-                fetch=False,
-            )
-        sess_mem.add_message(session_id, "user", user_input)
-        sess_mem.add_message(session_id, "assistant", output)
+        try:
+            # Ensure session exists in DB before adding messages
+            existing = sess_mem.get_session(session_id)
+            if not existing:
+                from datetime import datetime, timezone
+                now = datetime.now(timezone.utc).isoformat()
+                from ..core.supabase import supabase
+                supabase.table("chat_sessions").upsert({
+                    "id": session_id,
+                    "user_id": user_id,
+                    "created_at": now,
+                    "updated_at": now
+                }).execute()
+            sess_mem.add_message(session_id, "user", user_input)
+            sess_mem.add_message(session_id, "assistant", output)
+        except Exception as e:
+            logger.error(f"Failed to persist chat_session or message: {e}")
 
     # 2. Extract and Update Memory Layers (Episodic & Semantic)
     # We use a secondary LLM call to summarize and extract facts

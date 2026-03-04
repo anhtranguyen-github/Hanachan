@@ -6,36 +6,33 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 from ..schemas.learning import KUStatus
-from ..core.database import execute_query, execute_single
-
+from ..core.supabase import supabase
 
 def get_ku_by_character(character: str) -> Optional[Dict[str, Any]]:
     """Find a Knowledge Unit by its character (e.g., '桜')."""
-    return execute_single(
-        "SELECT * FROM public.knowledge_units WHERE character = %s", (character,)
-    )
+    result = supabase.table("knowledge_units").select("*").eq("character", character).execute()
+    return result.data[0] if result.data else None
 
 
 def get_ku_by_slug(slug: str) -> Optional[Dict[str, Any]]:
     """Find a Knowledge Unit by its slug (e.g., 'sakura')."""
-    return execute_single(
-        "SELECT * FROM public.knowledge_units WHERE slug = %s", (slug,)
-    )
+    result = supabase.table("knowledge_units").select("*").eq("slug", slug).execute()
+    return result.data[0] if result.data else None
 
 
 def get_user_learning_state(user_id: str, ku_id: str) -> Optional[Dict[str, Any]]:
     """Fetch the learning state for a specific user and KU."""
-    return execute_single(
-        "SELECT * FROM public.user_learning_states WHERE user_id = %s AND ku_id = %s",
-        (user_id, ku_id),
-    )
+    result = supabase.table("user_learning_states") \
+        .select("*") \
+        .eq("user_id", user_id) \
+        .eq("ku_id", ku_id) \
+        .execute()
+    return result.data[0] if result.data else None
 
 
 def get_ku_status(user_id: str, identifier: str, include_notes: bool = False) -> Optional[KUStatus]:
     """
     Combined helper: find KU and then attach user's learning state.
-    Identifier can be a character or a slug.
-    If include_notes is True, includes the user's personal/agent notes for this KU.
     """
     ku = get_ku_by_character(identifier)
     if not ku:
@@ -69,8 +66,7 @@ def get_ku_status(user_id: str, identifier: str, include_notes: bool = False) ->
     )
 
 def add_ku_note(user_id: str, ku_id: str, new_note: str) -> None:
-    """Append a new note to a user's specific KU state.
-    Creates a new learning state if none exists yet."""
+    """Append a new note to a user's specific KU state."""
     if not new_note or not new_note.strip():
         return
         
@@ -78,29 +74,34 @@ def add_ku_note(user_id: str, ku_id: str, new_note: str) -> None:
     
     if state_data:
         existing_notes = state_data.get("notes") or ""
-        updated_notes = existing_notes + f"\\n- {new_note.strip()}" if existing_notes else f"- {new_note.strip()}"
+        updated_notes = existing_notes + f"\n- {new_note.strip()}" if existing_notes else f"- {new_note.strip()}"
         
-        execute_query(
-            "UPDATE public.user_learning_states SET notes = %s WHERE user_id = %s AND ku_id = %s",
-            (updated_notes, user_id, ku_id),
-            fetch=False
-        )
+        supabase.table("user_learning_states") \
+            .update({"notes": updated_notes}) \
+            .eq("user_id", user_id) \
+            .eq("ku_id", ku_id) \
+            .execute()
     else:
         # Create a new learning state entry with just the notes
         from datetime import datetime, timezone
-        now = datetime.now(timezone.utc)
-        execute_query(
-            "INSERT INTO public.user_learning_states (user_id, ku_id, state, notes, next_review, last_review) "
-            "VALUES (%s, %s, 'new', %s, %s, %s)",
-            (user_id, ku_id, f"- {new_note.strip()}", now, now),
-            fetch=False
-        )
+        now = datetime.now(timezone.utc).isoformat()
+        supabase.table("user_learning_states").insert({
+            "user_id": user_id,
+            "ku_id": ku_id,
+            "state": "new",
+            "notes": f"- {new_note.strip()}",
+            "next_review": now,
+            "last_review": now
+        }).execute()
 
 
 def search_kus(query: str, limit: int = 5) -> List[Dict[str, Any]]:
     """Generic search for KUs by character, slug, or meaning."""
-    return execute_query(
-        "SELECT * FROM public.knowledge_units "
-        "WHERE character = %s OR slug = %s OR meaning ILIKE %s LIMIT %s",
-        (query, query, f"%{query}%", limit),
-    )
+    # We use or filter for character and slug, and ILIKE (Supabase uses 'ilike' operator)
+    result = supabase.table("knowledge_units") \
+        .select("*") \
+        .or_(f"character.eq.{query},slug.eq.{query},meaning.ilike.%{query}%") \
+        .limit(limit) \
+        .execute()
+    return result.data or []
+

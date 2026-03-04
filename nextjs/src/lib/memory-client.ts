@@ -107,7 +107,7 @@ export async function createMemorySession(
     metadata?: Record<string, unknown>,
 ): Promise<string> {
     console.warn('[memory-client] Using Supabase for session creation (was FastAPI)');
-    
+
     const { data, error } = await supabase
         .from('chat_sessions')
         .insert({
@@ -116,12 +116,12 @@ export async function createMemorySession(
         })
         .select('id')
         .single();
-    
+
     if (error) {
         console.error('[memory-client] Error creating session:', error);
         throw new Error('Failed to create chat session');
     }
-    
+
     return data.id;
 }
 
@@ -131,18 +131,18 @@ export async function createMemorySession(
  */
 export async function listMemorySessions(userId: string): Promise<MemorySession[]> {
     console.warn('[memory-client] Using Supabase for session list (was FastAPI)');
-    
+
     const { data, error } = await supabase
         .from('chat_sessions')
         .select('*')
         .eq('user_id', userId)
         .order('updated_at', { ascending: false });
-    
+
     if (error) {
         console.error('[memory-client] Error listing sessions:', error);
         return [];
     }
-    
+
     return (data || []).map(session => ({
         session_id: session.id,
         user_id: session.user_id,
@@ -163,28 +163,28 @@ export async function getMemorySession(
     sessionId: string,
 ): Promise<MemorySessionFull | null> {
     console.warn('[memory-client] Using Supabase for session details (was FastAPI)');
-    
+
     const { data: session, error: sessionError } = await supabase
         .from('chat_sessions')
         .select('*')
         .eq('id', sessionId)
         .single();
-    
+
     if (sessionError || !session) {
         console.error('[memory-client] Error fetching session:', sessionError);
         return null;
     }
-    
+
     const { data: messages, error: messagesError } = await supabase
         .from('chat_messages')
         .select('*')
         .eq('session_id', sessionId)
         .order('created_at', { ascending: true });
-    
+
     if (messagesError) {
         console.error('[memory-client] Error fetching messages:', messagesError);
     }
-    
+
     return {
         session_id: session.id,
         user_id: session.user_id,
@@ -211,7 +211,7 @@ export async function updateMemorySession(
     updates: Partial<Pick<MemorySession, 'title' | 'summary' | 'metadata'>>,
 ): Promise<void> {
     console.warn('[memory-client] Using Supabase for session update (was FastAPI)');
-    
+
     const { error } = await supabase
         .from('chat_sessions')
         .update({
@@ -219,7 +219,7 @@ export async function updateMemorySession(
             updated_at: new Date().toISOString(),
         })
         .eq('id', sessionId);
-    
+
     if (error) {
         console.error('[memory-client] Error updating session:', error);
         throw new Error('Failed to update session');
@@ -232,12 +232,12 @@ export async function updateMemorySession(
  */
 export async function deleteMemorySession(sessionId: string): Promise<void> {
     console.warn('[memory-client] Using Supabase for session delete (was FastAPI)');
-    
+
     const { error } = await supabase
         .from('chat_sessions')
         .delete()
         .eq('id', sessionId);
-    
+
     if (error) {
         console.error('[memory-client] Error deleting session:', error);
         throw new Error('Failed to delete session');
@@ -276,13 +276,13 @@ export async function searchEpisodicMemory(
  */
 export async function getUserProfile(userId: string): Promise<UserProfile> {
     console.warn('[memory-client] Using Supabase for user profile (was FastAPI)');
-    
+
     const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .single();
-    
+
     if (error || !data) {
         console.error('[memory-client] Error fetching user profile:', error);
         return {
@@ -294,7 +294,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile> {
             facts: [],
         };
     }
-    
+
     return {
         user_id: userId,
         name: data.display_name,
@@ -314,7 +314,7 @@ export async function updateUserProfile(
     updates: Partial<Omit<UserProfile, 'user_id'>>,
 ): Promise<void> {
     console.warn('[memory-client] Using Supabase for profile update (was FastAPI)');
-    
+
     const { error } = await supabase
         .from('users')
         .update({
@@ -325,7 +325,7 @@ export async function updateUserProfile(
             facts: updates.facts,
         })
         .eq('id', userId);
-    
+
     if (error) {
         console.error('[memory-client] Error updating profile:', error);
         throw new Error('Failed to update profile');
@@ -346,25 +346,29 @@ export async function memoryChatStream(
     sessionId?: string,
     ttsEnabled?: boolean,
 ): Promise<ReadableStream<Uint8Array>> {
-    console.warn('[memory-client] Streaming via Next.js API route (was FastAPI)');
-    
-    const res = await fetch('/api/chat/stream', {
+    const isServer = typeof window === 'undefined';
+    const baseUrl = isServer ? MEMORY_API_BASE : '';
+    const url = isServer ? `${baseUrl}/chat/stream` : '/api/chat/stream';
+
+    const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            userId,
+            user_id: userId,
             message,
-            sessionId,
-            ttsEnabled,
+            session_id: sessionId,
+            tts_enabled: ttsEnabled,
         }),
     });
-    
+
+
     if (!res.ok || !res.body) {
         throw new Error('Failed to start chat stream');
     }
-    
+
     return res.body;
 }
+
 
 // Alias for backward compatibility
 export const streamMemoryChat = memoryChatStream;
@@ -380,7 +384,7 @@ export async function getMemoryContext(
     limit?: number,
 ): Promise<MemoryContextBlock> {
     console.warn('[memory-client] Memory context stubbed - using API route instead');
-    
+
     // Return minimal context - actual implementation should call API route
     return {
         user_id: userId,
@@ -406,29 +410,29 @@ export async function endMemorySession(
     _saveContext?: boolean
 ): Promise<{ title: string | null; summary: string | null }> {
     console.warn('[memory-client] Using Supabase for end session (was FastAPI)');
-    
+
     // First get current session data
     const { data: session, error: fetchError } = await supabase
         .from('chat_sessions')
         .select('title, summary')
         .eq('id', sessionId)
         .single();
-    
+
     if (fetchError) {
         console.error('[memory-client] Error fetching session:', fetchError);
     }
-    
+
     // Update ended_at
     const { error } = await supabase
         .from('chat_sessions')
         .update({ ended_at: new Date().toISOString() })
         .eq('id', sessionId);
-    
+
     if (error) {
         console.error('[memory-client] Error ending session:', error);
         throw new Error('Failed to end session');
     }
-    
+
     return {
         title: session?.title ?? null,
         summary: session?.summary ?? null,

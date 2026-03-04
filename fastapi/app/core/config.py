@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     # Supabase (required for all database access)
     supabase_url: str = ""
     supabase_key: str = ""
-    supabase_service_key: str = Field("", alias="SUPABASE_SERVICE_ROLE_KEY")
+    supabase_service_key: str = Field("", alias="SUPABASE_SERVICE_KEY")
     supabase_jwt_secret: str = ""
 
     # Qdrant (cloud)
@@ -44,7 +44,7 @@ class Settings(BaseSettings):
 
     # Neo4j (cloud)
     neo4j_uri: str = Field("", alias="NEO4J_URI")
-    neo4j_username: str = Field("", alias="NEO4J_USERNAME")
+    neo4j_user: str = Field("", alias="NEO4J_USER")
     neo4j_password: str = Field("", alias="NEO4J_PASSWORD")
     neo4j_database: str = Field("neo4j", alias="NEO4J_DATABASE")
     aura_instanceid: str = Field("", alias="AURA_INSTANCEID")
