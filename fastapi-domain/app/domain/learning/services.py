@@ -3,7 +3,7 @@ import math
 from datetime import datetime, timedelta
 from typing import Optional, Tuple
 
-from .models import KUStatus, Rating, SRSStage, SRSState
+from app.domain.learning.models import KUStatus, Rating, SRSStage, SRSState
 
 logger = logging.getLogger(__name__)
 

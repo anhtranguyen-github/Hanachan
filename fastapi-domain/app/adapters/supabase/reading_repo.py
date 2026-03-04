@@ -3,8 +3,8 @@ from uuid import UUID
 
 from supabase import Client
 
-from ...domain.reading.models import ReadingExercise, ReadingQuestion, ReadingSession
-from ...ports.repositories import IReadingRepository
+from app.domain.reading.models import ReadingExercise, ReadingQuestion, ReadingSession
+from app.ports.repositories import IReadingRepository
 
 
 class SupabaseReadingRepository(IReadingRepository):

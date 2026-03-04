@@ -35,7 +35,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.youtube.com https://s.ytimg.com https://*.vercel.app; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://*.supabase.co https://*.wanikani.com https://*.bunpro.jp https://img.youtube.com https://*.vercel.app http://127.0.0.1:54421; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self' https://www.youtube.com; connect-src 'self' https://*.supabase.co https://api.elevenlabs.io https://api.openai.com https://*.vercel.app http://127.0.0.1:54421 http://127.0.0.1:8765 http://localhost:8765;",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.youtube.com https://s.ytimg.com https://*.vercel.app; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://*.supabase.co https://*.wanikani.com https://*.bunpro.jp https://img.youtube.com https://*.vercel.app; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self' https://www.youtube.com; connect-src 'self' https://*.supabase.co https://api.elevenlabs.io https://api.openai.com https://*.vercel.app;",
           },
         ],
       },
