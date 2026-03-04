@@ -8,7 +8,7 @@ Usage:
     from tests.fixtures import get_test_user_headers, get_test_admin_headers
 """
 
-from .test_accounts import (
+from tests.fixtures.test_accounts import (
     ALL_TEST_ACCOUNTS,
     TEST_ADMIN,
     TEST_ADMIN_DISPLAY_NAME,
@@ -32,7 +32,7 @@ from .test_accounts import (
 )
 
 try:
-    from .test_accounts import (
+    from tests.fixtures.test_accounts import (
         test_admin_headers,
         test_admin_id,
         test_user_headers,
