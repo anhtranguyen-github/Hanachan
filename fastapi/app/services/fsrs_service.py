@@ -11,7 +11,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from pydantic import BaseModel
 
-from app.core.supabase import supabase
+from app.core.supabase import get_service_client
+supabase = get_service_client()
 
 
 # FSRS-4.5 Default Parameters (19 weights)

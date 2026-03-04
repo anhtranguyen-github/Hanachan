@@ -36,7 +36,8 @@ from typing import Optional, Callable
 
 from fastapi import HTTPException, Request
 
-from app.core.database import get_db_pool
+# from app.core.database import get_db_pool
+def get_db_pool(): raise NotImplementedError()
 
 logger = logging.getLogger(__name__)
 

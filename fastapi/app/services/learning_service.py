@@ -6,7 +6,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 from app.schemas.learning import KUStatus
-from app.core.supabase import supabase
+from app.core.supabase import get_service_client
+supabase = get_service_client()
 
 def get_ku_by_character(character: str) -> Optional[Dict[str, Any]]:
     """Find a Knowledge Unit by its character (e.g., '桜')."""

@@ -16,7 +16,8 @@ from typing import Any, Dict, List, Optional, TypedDict
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from app.core.llm import make_llm
-from app.core.supabase import supabase
+from app.core.supabase import get_service_client
+supabase = get_service_client()
 
 logger = logging.getLogger(__name__)
 

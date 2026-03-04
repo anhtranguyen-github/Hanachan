@@ -14,7 +14,8 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from app.core.llm import make_llm
 from app.schemas.session import SessionInfo, SessionMessage, SessionSummary
-from app.core.supabase import supabase
+from app.core.supabase import get_service_client
+supabase = get_service_client()
 
 logger = logging.getLogger(__name__)
 
