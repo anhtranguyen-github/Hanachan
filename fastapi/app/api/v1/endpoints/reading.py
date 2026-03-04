@@ -1,14 +1,14 @@
-import json
 import logging
 from datetime import datetime, timezone, date, timedelta
-from typing import Any, List, Optional, Literal
+from typing import Any, List, Optional, Literal, Dict
 from uuid import uuid4, UUID
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request, Depends
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
+from supabase import Client
 
-from app.core.supabase import supabase
+from app.api.deps import get_user_client, get_current_user
 from app.agents.reading_creator import (
     ReadingConfig,
     generate_reading_session,
@@ -17,9 +17,6 @@ from app.core.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/reading", tags=["Reading"])
-
-# Architecture Note: Auth handled by Next.js/Supabase
-# user_id is passed directly from the trusted BFF layer
 
 # ---------------------------------------------------------------------------
 # Pydantic Schemas
@@ -56,11 +53,17 @@ class CompleteSessionRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 @router.get("/config")
-async def get_reading_config(user_id: str):
+async def get_reading_config(
+    client: Client = Depends(get_user_client)
+):
     """Get user's reading practice configuration."""
-    res = supabase.table("reading_configs").select("*").eq("user_id", user_id).execute()
+    res = client.table("reading_configs").select(
+        "exercises_per_session, time_limit_minutes, difficulty_level, jlpt_target, "
+        "vocab_weight, grammar_weight, kanji_weight, include_furigana, "
+        "include_translation, passage_length, topic_preferences, auto_generate"
+    ).execute()
+    
     if not res.data:
-        # Return defaults
         return {
             "exercises_per_session": 5,
             "time_limit_minutes": 15,
@@ -80,7 +83,8 @@ async def get_reading_config(user_id: str):
 @router.put("/config")
 async def update_reading_config(
     body: ReadingConfigUpdate,
-    user_id: str,
+    client: Client = Depends(get_user_client),
+    current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     """Create or update user's reading practice configuration."""
     if (
@@ -107,14 +111,14 @@ async def update_reading_config(
         if v is not None and k in ALLOWED_CONFIG_COLUMNS
     }
 
-    res = supabase.table("reading_configs").select("id").eq("user_id", user_id).execute()
+    res = client.table("reading_configs").select("id").execute()
     
     if res.data:
         if update_data:
-            supabase.table("reading_configs").update({
+            client.table("reading_configs").update({
                 **update_data,
                 "updated_at": datetime.now(timezone.utc).isoformat()
-            }).eq("user_id", user_id).execute()
+            }).eq("id", res.data[0]["id"]).execute()
     else:
         defaults = {
             "exercises_per_session": 5,
@@ -128,12 +132,12 @@ async def update_reading_config(
             "passage_length": "medium",
             "topic_preferences": ["daily_life", "culture", "nature"],
             "auto_generate": True,
-            "user_id": user_id
+            "user_id": current_user["id"]
         }
         defaults.update(update_data)
-        supabase.table("reading_configs").insert(defaults).execute()
+        client.table("reading_configs").insert(defaults).execute()
 
-    return await get_reading_config(user_id)
+    return await get_reading_config(client)
 
 # ---------------------------------------------------------------------------
 # Session Endpoints
@@ -144,10 +148,15 @@ async def update_reading_config(
 async def create_reading_session(
     request: Request,
     body: CreateSessionRequest,
-    user_id: str,
+    client: Client = Depends(get_user_client),
+    current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     """Create a new reading session."""
-    res = supabase.table("reading_configs").select("*").eq("user_id", user_id).execute()
+    res = client.table("reading_configs").select(
+        "exercises_per_session, time_limit_minutes, difficulty_level, jlpt_target, "
+        "vocab_weight, grammar_weight, kanji_weight, include_furigana, "
+        "include_translation, passage_length, topic_preferences, auto_generate"
+    ).execute()
     
     config: ReadingConfig = {
         "exercises_per_session": 5,
@@ -165,17 +174,14 @@ async def create_reading_session(
     }
 
     if res.data:
-        row = res.data[0]
-        config.update({
-            k: v for k, v in row.items()
-            if v is not None and k not in ("id", "user_id", "created_at", "updated_at")
-        })
+        config.update({k: v for k, v in res.data[0].items() if v is not None})
 
     if body.config_override:
         override = {k: v for k, v in body.config_override.model_dump().items() if v is not None}
         config.update(override)
 
     from app.agents.reading_creator import get_user_learning_context
+    user_id = current_user["id"]
     context = get_user_learning_context(user_id, config)
 
     generation_context = {
@@ -187,7 +193,7 @@ async def create_reading_session(
     }
 
     session_id = str(uuid4())
-    supabase.table("reading_sessions").insert({
+    client.table("reading_sessions").insert({
         "id": session_id,
         "user_id": user_id,
         "config_snapshot": config,
@@ -202,7 +208,7 @@ async def create_reading_session(
 
     for i, exercise in enumerate(exercises):
         exercise_id = str(uuid4())
-        supabase.table("reading_exercises").insert({
+        client.table("reading_exercises").insert({
             "id": exercise_id,
             "session_id": session_id,
             "passage_ja": exercise["passage_ja"],
@@ -220,19 +226,18 @@ async def create_reading_session(
             "order_index": i,
         }).execute()
 
-    return await get_session_detail(session_id, user_id)
+    return await get_session_detail(UUID(session_id), client)
 
 @router.get("/sessions")
 async def list_reading_sessions(
     status: Optional[str] = Query(None),
     limit: int = Query(10, ge=1, le=50),
     offset: int = Query(0, ge=0),
-    user_id: str = Query(..., description="User ID"),
+    client: Client = Depends(get_user_client),
 ):
     """List user's reading sessions."""
-    query = supabase.table("reading_sessions") \
+    query = client.table("reading_sessions") \
         .select("id, status, total_exercises, completed_exercises, correct_answers, total_time_seconds, score, generated_by, generation_context, started_at, completed_at, created_at", count="exact") \
-        .eq("user_id", user_id) \
         .order("created_at", desc=True) \
         .range(offset, offset + limit - 1)
         
@@ -251,15 +256,21 @@ async def list_reading_sessions(
 @router.get("/sessions/{session_id}")
 async def get_session_detail(
     session_id: UUID,
-    user_id: str = Query(..., description="User ID"),
+    client: Client = Depends(get_user_client),
 ):
     """Get session details with all exercises."""
-    res = supabase.table("reading_sessions").select("*").eq("id", str(session_id)).eq("user_id", user_id).execute()
+    res = client.table("reading_sessions").select(
+        "id, status, total_exercises, completed_exercises, correct_answers, total_time_seconds, score, config_snapshot, created_at"
+    ).eq("id", str(session_id)).execute()
+    
     if not res.data:
         raise HTTPException(status_code=404, detail="Session not found")
 
     session = res.data[0]
-    ex_res = supabase.table("reading_exercises").select("*").eq("session_id", str(session_id)).order("order_index").execute()
+    ex_res = client.table("reading_exercises").select(
+        "id, passage_ja, passage_furigana, passage_en, passage_title, difficulty_level, "
+        "jlpt_level, topic, word_count, questions, order_index, status"
+    ).eq("session_id", str(session_id)).order("order_index").execute()
     
     session["exercises"] = ex_res.data or []
     return session
@@ -267,22 +278,22 @@ async def get_session_detail(
 @router.post("/sessions/{session_id}/start")
 async def start_session(
     session_id: UUID,
-    user_id: str = Query(..., description="User ID"),
+    client: Client = Depends(get_user_client),
 ):
     """Mark a session as active/started."""
-    res = supabase.table("reading_sessions").select("status").eq("id", str(session_id)).eq("user_id", user_id).execute()
+    res = client.table("reading_sessions").select("status").eq("id", str(session_id)).execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="Session not found")
 
     if res.data[0]["status"] != "pending":
         raise HTTPException(status_code=400, detail=f"Session is already {res.data[0]['status']}")
 
-    supabase.table("reading_sessions").update({
+    client.table("reading_sessions").update({
         "status": "active",
         "started_at": datetime.now(timezone.utc).isoformat()
     }).eq("id", str(session_id)).execute()
 
-    supabase.table("reading_exercises").update({"status": "active"}).eq("session_id", str(session_id)).eq("order_index", 0).execute()
+    client.table("reading_exercises").update({"status": "active"}).eq("session_id", str(session_id)).eq("order_index", 0).execute()
 
     return {"message": "Session started", "session_id": session_id}
 
@@ -292,39 +303,46 @@ async def complete_session(
     request: Request,
     session_id: UUID,
     body: CompleteSessionRequest,
-    user_id: str = Query(..., description="User ID"),
+    client: Client = Depends(get_user_client),
+    current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     """Complete a reading session."""
-    res = supabase.table("reading_sessions").select("*").eq("id", str(session_id)).eq("user_id", user_id).execute()
+    res = client.table("reading_sessions").select(
+        "id, total_exercises, correct_answers, completed_exercises"
+    ).eq("id", str(session_id)).execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="Session not found")
 
     session = res.data[0]
-    total = session["total_exercises"] or 1
-    correct = session["correct_answers"] or 0
+    total = session.get("total_exercises") or 1
+    correct = session.get("correct_answers") or 0
     score = round((correct / total) * 100)
 
-    supabase.table("reading_sessions").update({
+    client.table("reading_sessions").update({
         "status": "completed",
         "completed_at": datetime.now(timezone.utc).isoformat(),
         "total_time_seconds": body.total_time_seconds,
         "score": score
     }).eq("id", str(session_id)).execute()
 
+    user_id = current_user["id"]
     today = date.today().isoformat()
-    m_res = supabase.table("reading_metrics").select("*").eq("user_id", user_id).eq("date", today).execute()
+    m_res = client.table("reading_metrics").select(
+        "id, sessions_completed, exercises_completed, total_time_seconds, correct_answers, total_answers, avg_score"
+    ).eq("date", today).execute()
+    
     if m_res.data:
         m = m_res.data[0]
-        supabase.table("reading_metrics").update({
+        client.table("reading_metrics").update({
             "sessions_completed": m["sessions_completed"] + 1,
             "exercises_completed": m["exercises_completed"] + session.get("completed_exercises", 0),
             "total_time_seconds": m["total_time_seconds"] + body.total_time_seconds,
             "correct_answers": m["correct_answers"] + correct,
             "total_answers": m["total_answers"] + total,
             "avg_score": (m["avg_score"] + score) / 2
-        }).eq("user_id", user_id).eq("date", today).execute()
+        }).eq("id", m["id"]).execute()
     else:
-        supabase.table("reading_metrics").insert({
+        client.table("reading_metrics").insert({
             "user_id": user_id,
             "date": today,
             "sessions_completed": 1,
@@ -347,29 +365,32 @@ async def complete_session(
 async def submit_answer(
     exercise_id: UUID,
     body: SubmitAnswerRequest,
-    user_id: str = Query(..., description="User ID"),
+    client: Client = Depends(get_user_client),
+    current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     """Submit an answer for a reading exercise question."""
-    ex_res = supabase.table("reading_exercises").select("*, rs:reading_sessions(*)").eq("id", str(exercise_id)).execute()
+    ex_res = client.table("reading_exercises").select(
+        "session_id, questions, order_index"
+    ).eq("id", str(exercise_id)).execute()
     if not ex_res.data:
         raise HTTPException(status_code=404, detail="Exercise not found")
     
     exercise = ex_res.data[0]
-    if exercise["rs"]["user_id"] != user_id:
-         raise HTTPException(status_code=403, detail="Forbidden")
-
-    questions = exercise["questions"] or []
-    if body.question_index >= len(questions):
+    
+    # We don't check `user_id` on the session manually because RLS prevents reading 
+    # reading_exercises that do not belong to the user's sessions.
+    questions = exercise.get("questions") or []
+    if body.question_index >= len(questions) or body.question_index < 0:
         raise HTTPException(status_code=400, detail="Invalid question index")
 
     question = questions[body.question_index]
     correct_answer = question.get("correct_answer", "")
     is_correct = body.user_answer.strip().lower() == correct_answer.strip().lower()
 
-    supabase.table("reading_answers").insert({
+    client.table("reading_answers").insert({
         "exercise_id": str(exercise_id),
-        "session_id": exercise["session_id"],
-        "user_id": user_id,
+        "session_id": exercise.get("session_id"),
+        "user_id": current_user["id"],
         "question_index": body.question_index,
         "question_type": question.get("type", "multiple_choice"),
         "user_answer": body.user_answer,
@@ -378,28 +399,28 @@ async def submit_answer(
         "time_spent_seconds": body.time_spent_seconds
     }).execute()
 
-    ans_res = supabase.table("reading_answers").select("id", count="exact").eq("exercise_id", str(exercise_id)).eq("user_id", user_id).execute()
+    ans_res = client.table("reading_answers").select("id", count="exact").eq("exercise_id", str(exercise_id)).execute()
     total_questions = len(questions)
     answered = ans_res.count or 0
 
     if answered >= total_questions:
-        supabase.table("reading_exercises").update({
+        client.table("reading_exercises").update({
             "status": "completed",
             "time_spent_seconds": body.time_spent_seconds
         }).eq("id", str(exercise_id)).execute()
 
-        correct_ans_res = supabase.table("reading_answers").select("id", count="exact").eq("exercise_id", str(exercise_id)).eq("is_correct", True).execute()
+        correct_ans_res = client.table("reading_answers").select("id", count="exact").eq("exercise_id", str(exercise_id)).eq("is_correct", True).execute()
         correct_count = correct_ans_res.count or 0
 
-        s_res = supabase.table("reading_sessions").select("completed_exercises, correct_answers").eq("id", exercise["session_id"]).execute()
+        s_res = client.table("reading_sessions").select("id, completed_exercises, correct_answers").eq("id", exercise["session_id"]).execute()
         if s_res.data:
             s_curr = s_res.data[0]
-            supabase.table("reading_sessions").update({
-                "completed_exercises": s_curr["completed_exercises"] + 1,
-                "correct_answers": s_curr["correct_answers"] + correct_count
+            client.table("reading_sessions").update({
+                "completed_exercises": (s_curr.get("completed_exercises") or 0) + 1,
+                "correct_answers": (s_curr.get("correct_answers") or 0) + correct_count
             }).eq("id", exercise["session_id"]).execute()
 
-        supabase.table("reading_exercises").update({"status": "active"}).eq("session_id", exercise["session_id"]).eq("order_index", exercise["order_index"] + 1).eq("status", "pending").execute()
+        client.table("reading_exercises").update({"status": "active"}).eq("session_id", exercise["session_id"]).eq("order_index", exercise["order_index"] + 1).eq("status", "pending").execute()
 
     return {
         "is_correct": is_correct,
@@ -409,9 +430,11 @@ async def submit_answer(
     }
 
 @router.get("/metrics")
-async def get_reading_metrics(user_id: str = Query(..., description="User ID")):
+async def get_reading_metrics(client: Client = Depends(get_user_client)):
     """Get reading practice dashboard metrics."""
-    overall_res = supabase.table("reading_sessions").select("*").eq("user_id", user_id).eq("status", "completed").execute()
+    overall_res = client.table("reading_sessions").select(
+        "completed_exercises, total_time_seconds, score"
+    ).eq("status", "completed").execute()
     overall_data = overall_res.data or []
     
     total_sessions = len(overall_data)
@@ -420,26 +443,25 @@ async def get_reading_metrics(user_id: str = Query(..., description="User ID")):
     avg_score = sum(d.get("score", 0) for d in overall_data) / total_sessions if total_sessions > 0 else 0
     best_score = max((d.get("score", 0) for d in overall_data), default=0)
     
-    pending_res = supabase.table("reading_sessions").select("id").eq("user_id", user_id).in_("status", ["pending", "active"]).execute()
+    pending_res = client.table("reading_sessions").select("id").in_("status", ["pending", "active"]).execute()
     pending_sessions = len(pending_res.data or [])
 
-    recent_res = supabase.table("reading_sessions") \
-        .select("*") \
-        .eq("user_id", user_id) \
+    recent_res = client.table("reading_sessions") \
+        .select("id, status, score, "
+                "total_exercises, completed_exercises, "
+                "created_at, completed_at") \
         .order("created_at", desc=True) \
         .limit(10) \
         .execute()
 
-    daily_res = supabase.table("reading_metrics") \
-        .select("*") \
-        .eq("user_id", user_id) \
+    daily_res = client.table("reading_metrics") \
+        .select("date, exercises_completed, avg_score, total_time_seconds") \
         .order("date") \
         .limit(30) \
         .execute()
 
-    history_res = supabase.table("reading_metrics") \
+    history_res = client.table("reading_metrics") \
         .select("date") \
-        .eq("user_id", user_id) \
         .order("date", desc=True) \
         .execute()
     
@@ -455,9 +477,8 @@ async def get_reading_metrics(user_id: str = Query(..., description="User ID")):
                 else:
                     break
 
-    words_res = supabase.table("reading_exercises") \
-        .select("word_count, rs:reading_sessions!inner(user_id)") \
-        .eq("rs.user_id", user_id) \
+    words_res = client.table("reading_exercises") \
+        .select("word_count") \
         .eq("status", "completed") \
         .execute()
     total_words_read = sum(d.get("word_count", 0) for d in words_res.data or [])
@@ -479,12 +500,11 @@ async def get_reading_metrics(user_id: str = Query(..., description="User ID")):
 @router.get("/metrics/history")
 async def get_metrics_history(
     days: int = Query(30, ge=7, le=365),
-    user_id: str = Query(..., description="User ID"),
+    client: Client = Depends(get_user_client)
 ):
     """Get historical reading metrics."""
-    res = supabase.table("reading_metrics") \
-        .select("*") \
-        .eq("user_id", user_id) \
+    res = client.table("reading_metrics") \
+        .select("date, sessions_completed, exercises_completed, avg_score, total_time_seconds") \
         .order("date") \
         .limit(days) \
         .execute()
