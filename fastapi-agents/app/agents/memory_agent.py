@@ -92,54 +92,76 @@ def get_semantic_facts(keywords: List[str], user_id: str = "INJECTED") -> str:
 
 
 @tool
-def get_user_learning_progress(identifier: str, include_notes: bool = False, user_id: str = "INJECTED") -> str:
+async def get_user_learning_progress(jwt: str, identifier: str, include_notes: bool = False, user_id: str = "INJECTED") -> str:
     """Retrieve live learning stats for a specific Japanese character or slug.
     Identifiers can be Kanji (e.g. '桜'), Slugs (e.g. 'sakura'), or Words.
     If include_notes is True, it will also return the user's personal/agent notes for this item.
     (Note: user_id is handled automatically)
     """
-    status = learn_serv.get_ku_status(user_id, identifier, include_notes=include_notes)
-    if not status:
-        return f"No learning record found for '{identifier}'."
+    try:
+        from app.core.domain_client import DomainClient
+        client = DomainClient(jwt)
+        status_data = await client.get_learning_progress(identifier)
         
-    notes_str = f"Notes:\n{status.notes}\n" if status.notes else "Notes: None\n"
-    
-    return (
-        f"Item: {status.character} ({status.meaning})\n"
-        f"State: {status.state}\n"
-        f"Reps: {status.reps}, Difficulty: {status.difficulty}\n"
-        f"Next Review: {status.next_review or 'Not scheduled'}\n"
-        f"{notes_str}"
-    )
+        if not status_data:
+            return f"No learning record found for '{identifier}'."
+            
+        notes_str = f"Notes:\n{status_data.get('notes')}\n" if status_data.get('notes') else "Notes: None\n"
+        
+        return (
+            f"Item: {status_data.get('character')} ({status_data.get('meaning')})\n"
+            f"State: {status_data.get('state')}\n"
+            f"Reps: {status_data.get('reps')}, Difficulty: {status_data.get('difficulty')}\n"
+            f"Next Review: {status_data.get('next_review') or 'Not scheduled'}\n"
+            f"{notes_str}"
+        )
+    except Exception as e:
+        logger.error(f"Error getting learning progress: {e}")
+        return f"Failed to retrieve learning progress: {str(e)}"
 
 
 @tool
-def search_knowledge_units(query: str) -> str:
+async def search_knowledge_units(jwt: str, query: str) -> str:
     """Search the general Japanese knowledge database for meanings, characters, or slugs.
     Use this if the user asks 'What does X mean?' or 'How do you write Y?'.
     """
-    results = learn_serv.search_kus(query, limit=5)
-    if not results:
-        return f"No knowledge units found for '{query}'."
-    return "\n".join(
-        [
-            f"- {r['character']} ({r['meaning']}) [slug: {r['slug']}, type: {r['type']}]"
-            for r in results
-        ]
-    )
+    try:
+        from app.core.domain_client import DomainClient
+        client = DomainClient(jwt)
+        results = await client.search_knowledge(query, limit=5)
+        
+        if not results:
+            return f"No knowledge units found for '{query}'."
+        return "\n".join(
+            [
+                f"- {r['character']} ({r['meaning']}) [slug: {r['slug']}, type: {r['type']}]"
+                for r in results
+            ]
+        )
+    except Exception as e:
+        logger.error(f"Error searching knowledge: {e}")
+        return f"Failed to search knowledge: {str(e)}"
 
 
 @tool
-def append_to_learning_notes(identifier: str, note_content: str, user_id: str = "INJECTED") -> str:
+async def append_to_learning_notes(jwt: str, identifier: str, note_content: str, user_id: str = "INJECTED") -> str:
     """Appends a personal note, trick, or mnemonic to the user's learning record for a specific Japanese character, slug, or word.
     Use this if the user explicitly asks you to save a note or remember a rule for a specific item.
     """
-    results = learn_serv.search_kus(identifier, limit=1)
-    if not results:
-        return f"Could not find any knowledge unit matching '{identifier}' to save the note to."
-    
-    ku_id = str(results[0]["id"])
-    learn_serv.add_ku_note(user_id, ku_id, note_content)
+    try:
+        from app.core.domain_client import DomainClient
+        client = DomainClient(jwt)
+        
+        results = await client.search_knowledge(identifier, limit=1)
+        if not results:
+            return f"Could not find any knowledge unit matching '{identifier}' to save the note to."
+        
+        ku_id = str(results[0]["id"])
+        await client.add_ku_note(ku_id, note_content)
+        return f"Note successfully added to {results[0]['character']}."
+    except Exception as e:
+        logger.error(f"Error appending note: {e}")
+        return f"Failed to append note: {str(e)}"
 @tool
 async def get_recent_reviews(jwt: str, limit: int = 5, user_id: str = "INJECTED") -> str:
     """Retrieve the most recent words or characters the user has reviewed.
@@ -176,10 +198,11 @@ TOOLS = [
 ] + DECK_TOOLS
 
 
-def tools_node(state: AgentState) -> Dict[str, Any]:
+async def tools_node(state: AgentState) -> Dict[str, Any]:
     """Custom tool node that injects the actual user_id from state into tool calls."""
     user_id = state["user_id"]
     last_msg = state["messages"][-1]
+    tool_map = {t.name: t for t in TOOLS}
 
     if not last_msg.tool_calls:
         return {"messages": []}
@@ -189,12 +212,16 @@ def tools_node(state: AgentState) -> Dict[str, Any]:
         tool_name = tool_call["name"]
         args = tool_call["args"]
 
-        # Inject user_id if needed
+        if tool_name not in tool_map:
+            continue
+
+        # Inject user_id and jwt if needed
         if tool_name in [
             "get_episodic_memory",
             "get_semantic_facts",
             "get_user_learning_progress",
             "get_recent_reviews",
+            "search_knowledge_units",
             "append_to_learning_notes",
             "create_user_deck",
             "list_my_decks",
@@ -203,17 +230,29 @@ def tools_node(state: AgentState) -> Dict[str, Any]:
             "view_deck_contents",
             "submit_reading_answer",
         ]:
-            args["user_id"] = user_id
+            if "user_id" in tool_map[tool_name].args:
+                args["user_id"] = user_id
             if "jwt" in tool_map[tool_name].args:
                 args["jwt"] = state["jwt"]
 
-        # Find the tool and invoke
-        tool_map = {t.name: t for t in TOOLS}
-        if tool_name in tool_map:
-            content = tool_map[tool_name].invoke(args)
+        # Invoke (async or sync)
+        target_tool = tool_map[tool_name]
+        try:
+            if target_tool.is_async:
+                content = await target_tool.ainvoke(args)
+            else:
+                content = target_tool.invoke(args)
+                
             results.append(
                 ToolMessage(
                     tool_call_id=tool_call["id"], content=str(content), name=tool_name
+                )
+            )
+        except Exception as e:
+            logger.error(f"Error in tool {tool_name}: {e}")
+            results.append(
+                ToolMessage(
+                    tool_call_id=tool_call["id"], content=f"Error: {str(e)}", name=tool_name
                 )
             )
 
