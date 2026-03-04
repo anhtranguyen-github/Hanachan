@@ -3,7 +3,7 @@ version: '3.8'
 # ─── Hanachan — Full Stack Docker Compose ────────────────────────────────────
 # Services:
 #   nextjs   — Next.js 14 frontend (port 3000)
-#   fastapi  — FastAPI memory backend (port 8765)
+#   fastapi-agents  — FastAPI memory backend (port 8765)
 #   qdrant   — Vector database (ports 6333, 6334)
 #   neo4j    — Graph database (ports 7474, 7687)
 #
@@ -43,14 +43,16 @@ services:
   # ── FastAPI Memory Backend ───────────────────────────────────────────────────
   fastapi:
     build:
-      context: ./fastapi
+      context: ./fastapi-agents
       dockerfile: Dockerfile
       target: runner
     ports:
       - "8765:8765"
     env_file:
-      - ./fastapi/.env
+      - ./fastapi-agents/.env
     depends_on:
+      domain:
+        condition: service_healthy
       qdrant:
         condition: service_healthy
       neo4j:
@@ -64,6 +66,37 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  # ── FastAPI Domain Service (SSOT) ───────────────────────────────────────────
+  domain:
+    build:
+      context: ./fastapi-domain
+      dockerfile: Dockerfile
+      target: runner
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./fastapi-domain/.env
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/openapi.json')\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── Local Docker Registry ───────────────────────────────────────────────────
+  registry:
+    image: registry:2
+    ports:
+      - "5000:5000"
+    volumes:
+      - registry-data:/var/lib/registry
+    networks:
+      - app-network
+    restart: unless-stopped
 
   # ── Qdrant Vector Database ───────────────────────────────────────────────────
   qdrant:
@@ -111,11 +144,11 @@ services:
   # ── FastAPI Test Runner ──────────────────────────────────────────────────────
   fastapi-test:
     build:
-      context: ./fastapi
+      context: ./fastapi-agents
       dockerfile: Dockerfile
       target: test
     env_file:
-      - ./fastapi/.env
+      - ./fastapi-agents/.env
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test-key}
       - SUPABASE_URL=${SUPABASE_URL:-https://test.supabase.co}
@@ -154,6 +187,7 @@ volumes:
   qdrant-data:
   neo4j-data:
   neo4j-logs:
+  registry-data:
 
 networks:
   app-network:

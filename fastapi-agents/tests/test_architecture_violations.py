@@ -4,7 +4,7 @@ Architecture Violation Detection Tests
 These tests scan the codebase to detect violations of architectural rules.
 They will FAIL if any forbidden patterns are found.
 
-Run with: pytest fastapi/tests/test_architecture_violations.py -v
+Run with: pytest fastapi-agents/tests/test_architecture_violations.py -v
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ class ArchitectureScanner:
 
     def _scan_fastapi(self) -> None:
         """Scan FastAPI codebase for violations."""
-        fastapi_dir = self.project_root / "fastapi"
+        fastapi_dir = self.project_root / "fastapi-agents"
         if not fastapi_dir.exists():
             return
 
@@ -270,7 +270,7 @@ class ArchitectureScanner:
 def scanner() -> ArchitectureScanner:
     """Provide an architecture scanner for tests."""
     # Find project root (parent of fastapi directory)
-    # Path: project_root/fastapi/tests/test_architecture_violations.py
+    # Path: project_root/fastapi-agents/tests/test_architecture_violations.py
     current_file = Path(__file__).resolve()
     project_root = current_file.parent.parent.parent  # Go up to project root
     return ArchitectureScanner(project_root)

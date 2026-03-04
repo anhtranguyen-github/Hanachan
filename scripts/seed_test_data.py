@@ -2,8 +2,8 @@ import os
 import sys
 from datetime import datetime, timezone
 
-# Add fastapi to sys.path to import local modules
-sys.path.append(os.path.join(os.getcwd(), 'fastapi'))
+# Add fastapi-agents to sys.path to import local modules
+sys.path.append(os.path.join(os.getcwd(), 'fastapi-agents'))
 
 from app.core.supabase import supabase
 

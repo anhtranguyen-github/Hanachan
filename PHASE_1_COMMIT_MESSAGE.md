@@ -27,20 +27,20 @@ Files Created:
 - documentation/ARCHITECTURE_VIOLATIONS_AUDIT.md
 - documentation/ARCHITECTURE_RULES.md
 - documentation/PHASE_1_6_IN_MEMORY_STATE_AUDIT.md
-- fastapi/tests/test_architecture_violations.py
+- fastapi-agents/tests/test_architecture_violations.py
 - scripts/architecture-guard.py
 - .github/workflows/architecture-guard.yml
 
 Files Modified:
-- fastapi/app/core/database.py (DELETED)
-- fastapi/app/core/config.py (DB settings removed)
-- fastapi/app/main.py (DB/auth initialization removed)
-- fastapi/app/core/security.py (JWT validation removed)
-- fastapi/app/core/admin_security.py (Admin auth removed)
-- fastapi/app/api/v1/endpoints/*.py (all 12 files - JWT deps removed)
-- fastapi/app/services/video_dictation.py (in-memory state removed)
-- fastapi/requirements.txt (psycopg2 removed)
-- fastapi/pyproject.toml (psycopg2 removed)
-- fastapi/tests/test_security.py (tests updated)
+- fastapi-agents/app/core/database.py (DELETED)
+- fastapi-agents/app/core/config.py (DB settings removed)
+- fastapi-agents/app/main.py (DB/auth initialization removed)
+- fastapi-agents/app/core/security.py (JWT validation removed)
+- fastapi-agents/app/core/admin_security.py (Admin auth removed)
+- fastapi-agents/app/api/v1/endpoints/*.py (all 12 files - JWT deps removed)
+- fastapi-agents/app/services/video_dictation.py (in-memory state removed)
+- fastapi-agents/requirements.txt (psycopg2 removed)
+- fastapi-agents/pyproject.toml (psycopg2 removed)
+- fastapi-agents/tests/test_security.py (tests updated)
 
 Closes: Phase 1 architectural remediation
