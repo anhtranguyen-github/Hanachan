@@ -2,7 +2,7 @@
 // VIDEO LEARNING FEATURE - SERVICE LAYER
 // ==========================================
 
-import { supabase, supabaseService } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import * as db from './db';
 import type {
   Video,
@@ -82,7 +82,7 @@ export async function getOrCreateVideo(youtubeId: string): Promise<Video> {
 
       // Save subtitles
       console.log(`[VideoService] Saving ${subtitleEntries.length} subtitles...`);
-      const client = supabaseService || supabase;
+      const client = supabase;
       // db.ts doesn't expose raw insert, so we do it here via the service key exported in db.ts
       for (let i = 0; i < subtitleEntries.length; i += 100) {
         await client.from('video_subtitles').insert(subtitleEntries.slice(i, i + 100));

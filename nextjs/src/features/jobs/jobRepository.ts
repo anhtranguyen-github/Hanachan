@@ -6,7 +6,7 @@
  * for triggering FastAPI agents through Supabase.
  */
 
-import { supabase, supabaseService } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { HanaTime } from "@/lib/time";
 
 export type JobType = 
@@ -78,7 +78,7 @@ export async function createAgentJob(
   userId: string,
   options: CreateJobOptions
 ): Promise<CreateJobResult> {
-  const client = supabaseService || supabase;
+  const client = supabase;
   
   const idempotencyKey = options.idempotencyKey || generateIdempotencyKey(
     userId,
@@ -134,7 +134,7 @@ export async function createAgentJob(
  * Get job by ID
  */
 export async function getJob(jobId: string): Promise<AgentJob | null> {
-  const client = supabaseService || supabase;
+  const client = supabase;
   
   const { data, error } = await client
     .from('agent_jobs')
@@ -162,7 +162,7 @@ export async function getJobResultByIdempotencyKey(
   errorMessage: string | null;
   isReplay: boolean;
 }> {
-  const client = supabaseService || supabase;
+  const client = supabase;
   
   const { data: job } = await client
     .from('agent_jobs')
@@ -248,7 +248,7 @@ export async function listUserJobs(
     offset?: number;
   } = {}
 ): Promise<{ jobs: AgentJob[]; total: number }> {
-  const client = supabaseService || supabase;
+  const client = supabase;
   
   let query = client
     .from('agent_jobs')
@@ -288,7 +288,7 @@ export async function cancelJob(
   jobId: string,
   userId: string
 ): Promise<boolean> {
-  const client = supabaseService || supabase;
+  const client = supabase;
   
   const { error } = await client
     .from('agent_jobs')
@@ -323,7 +323,7 @@ export async function retryJob(
   jobId: string,
   userId: string
 ): Promise<boolean> {
-  const client = supabaseService || supabase;
+  const client = supabase;
   
   const { error } = await client
     .from('agent_jobs')
