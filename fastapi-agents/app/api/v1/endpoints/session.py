@@ -44,8 +44,4 @@ async def end_session(
 ):
     """Delete session via Domain Service."""
     client = DomainClient(current_user["jwt"])
-    # Assuming Domain has DELETE /chat/sessions/{id}
-    async with httpx.AsyncClient() as http_client:
-        response = await http_client.delete(f"{client.base_url}/chat/sessions/{session_id}", headers=client.headers)
-        response.raise_for_status()
-        return response.json()
+    return await client.delete_chat_session(session_id)
