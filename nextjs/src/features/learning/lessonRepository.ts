@@ -17,7 +17,7 @@ export const lessonRepository = {
             .select('*, kanji_details(*), vocabulary_details(*), grammar_details(*)');
 
         if (learnedIds.length > 0) {
-            query = query.not('id', 'in', learnedIds);
+            query = query.not('id', 'in', `(${learnedIds.join(',')})`);
         }
 
         if (level) {
