@@ -144,39 +144,15 @@ async def get_review_logs(
     Architecture Note:
       Auth is handled by Next.js/Supabase. user_id is trusted.
 
-    Args:
-        item_type: Optional filter by item type
-        limit: Maximum number of logs to return
-    """
-    from ....core.database import execute_query
-
-    query = """
-        SELECT
-            item_id,
-            item_type,
-            facet,
-            rating,
-            state,
-            stability,
-            difficulty,
-            interval_days,
-            reviewed_at
-        FROM public.fsrs_review_logs
-        WHERE user_id = %s
-    """
-    params = [user_id]
-
-    if item_type:
-        query += " AND item_type = %s"
-        params.append(item_type)
-
-    query += " ORDER BY reviewed_at DESC LIMIT %s"
-    params.append(limit)
-
-    rows = execute_query(query, tuple(params))
+    service = get_fsrs_service()
+    logs = service.get_review_logs(
+        user_id=user_id,
+        item_type=item_type,
+        limit=limit
+    )
 
     return {
-        "logs": rows or [],
-        "total": len(rows) if rows else 0,
+        "logs": logs or [],
+        "total": len(logs) if logs else 0,
         "limit": limit
     }
