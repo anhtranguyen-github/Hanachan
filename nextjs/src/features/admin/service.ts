@@ -2,7 +2,7 @@
 // Migrated from FastAPI to Next.js as part of Phase 2 architectural remediation
 // Now uses Supabase directly instead of HTTP calls to FastAPI
 
-import { supabase, supabaseService } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { HanaTime } from "@/lib/time";
 
 // Types
@@ -85,7 +85,7 @@ export interface UserDetails {
 // =============================================================================
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-  const client = supabaseService || supabase;
+  const client = supabase;
   
   // Total users
   const { count: totalUsers } = await client
@@ -170,7 +170,7 @@ export async function listUsers(params?: {
   min_level?: number;
   max_level?: number;
 }): Promise<UserListResult> {
-  const client = supabaseService || supabase;
+  const client = supabase;
   const limit = params?.limit || 50;
   const offset = params?.offset || 0;
   
@@ -276,7 +276,7 @@ export async function listUsers(params?: {
 }
 
 export async function getUserDetails(userId: string): Promise<UserDetails | null> {
-  const client = supabaseService || supabase;
+  const client = supabase;
   
   // Get basic user info
   const { data: user, error } = await client
@@ -396,7 +396,7 @@ export async function suspendUser(userId: string, data: {
   suspension_type: "temporary" | "permanent";
   duration_hours?: number;
 }) {
-  const client = supabaseService || supabase;
+  const client = supabase;
   
   let suspendedUntil = null;
   if (data.suspension_type === 'temporary' && data.duration_hours) {
@@ -431,7 +431,7 @@ export async function suspendUser(userId: string, data: {
 }
 
 export async function liftSuspension(suspensionId: string, reason: string) {
-  const client = supabaseService || supabase;
+  const client = supabase;
   
   const { data: suspension, error } = await client
     .from('user_suspensions')
@@ -462,7 +462,7 @@ export async function liftSuspension(suspensionId: string, reason: string) {
 // =============================================================================
 
 export async function getCostAnalytics(days: number = 30, userId?: string) {
-  const client = supabaseService || supabase;
+  const client = supabase;
   
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
@@ -579,7 +579,7 @@ export async function getCostAnalytics(days: number = 30, userId?: string) {
 }
 
 export async function getUserCostHistory(userId: string, days: number = 30) {
-  const client = supabaseService || supabase;
+  const client = supabase;
   
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
@@ -640,7 +640,7 @@ export async function getAuditLogs(params?: {
   target_id?: string;
   days?: number;
 }) {
-  const client = supabaseService || supabase;
+  const client = supabase;
   
   const limit = params?.limit || 50;
   const offset = params?.offset || 0;
@@ -709,7 +709,7 @@ export async function getAbuseAlerts(params?: {
   severity?: string;
   alert_type?: string;
 }) {
-  const client = supabaseService || supabase;
+  const client = supabase;
   
   const limit = params?.limit || 50;
   const offset = params?.offset || 0;
@@ -763,7 +763,7 @@ export async function resolveAbuseAlert(
   alertId: string,
   resolution: { resolution_notes: string; status: "resolved" | "false_positive" }
 ) {
-  const client = supabaseService || supabase;
+  const client = supabase;
   
   const { data: alert, error } = await client
     .from('abuse_alerts')
@@ -800,7 +800,7 @@ export async function getSystemHealth(): Promise<{
   degraded: string[];
   timestamp: string;
 }> {
-  const client = supabaseService || supabase;
+  const client = supabase;
   const degraded: string[] = [];
   
   // Check database connectivity

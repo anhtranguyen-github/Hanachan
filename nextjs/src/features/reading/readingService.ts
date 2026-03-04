@@ -3,12 +3,12 @@
  * Moved from FastAPI to Next.js as part of Phase 2 architectural remediation
  */
 
-import { supabase, supabaseService } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { HanaTime } from "@/lib/time";
 
 // Use service role client on server to bypass RLS issues during Phase 2 transition
 // Security: Functions must ALWAYS include .eq('user_id', userId)
-const db = supabaseService || supabase;
+const db = supabase;
 import type {
     AnswerResult,
     DailyMetric,

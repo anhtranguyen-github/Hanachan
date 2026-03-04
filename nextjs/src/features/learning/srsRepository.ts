@@ -106,18 +106,19 @@ export const srsRepository = {
 
     // --- Persistent Review Session Tracking ---
 
-    async createReviewSession(userId: string, itemIds: string[]) {
-        const res = await fetch('http://127.0.0.1:8001/api/v1/commands/create-review-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer temp` },
-            body: JSON.stringify({ user_id: userId, item_ids: itemIds })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-            console.error("[srsRepository] Error creating review session:", data);
-            throw new Error(data.message || 'Failed to create review session');
+    async createReviewSession(userId: string, estimatedItemCount: number) {
+        const { data: session, error: sessionError } = await supabase
+            .from('review_sessions')
+            .insert({ user_id: userId, status: 'in_progress', total_items: estimatedItemCount })
+            .select('id')
+            .single();
+
+        if (sessionError) {
+            console.error("[srsRepository] Error creating review session:", sessionError);
+            throw new Error(sessionError.message || 'Failed to create review session');
         }
-        return data.session_id;
+
+        return session;
     },
 
     async createReviewSessionItems(sessionId: string, items: { ku_id: string, facet: string }[]) {

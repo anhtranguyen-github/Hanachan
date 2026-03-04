@@ -2,7 +2,7 @@
 // VIDEO LEARNING FEATURE - DATABASE LAYER
 // ==========================================
 
-import { supabase, supabaseService } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import type {
   Video,
   VideoSubtitle,
@@ -65,7 +65,7 @@ export async function searchVideos(query: string, jlptLevel?: number, limit = 20
 }
 
 export async function upsertVideo(video: Partial<Video> & { youtube_id: string; title: string }): Promise<Video> {
-  const client = supabaseService || supabase;
+  const client = supabase;
   const { data, error } = await client
     .from('videos')
     .upsert(video, { onConflict: 'youtube_id' })
