@@ -1,8 +1,8 @@
 import logging
 import uuid
-import httpx
-from typing import Any, Dict, List
-from fastapi import APIRouter, HTTPException, Depends, Query
+from typing import Any, Dict
+
+from fastapi import APIRouter, Depends
 
 from app.api.deps import get_current_user
 from app.core.domain_client import DomainClient

@@ -4,12 +4,11 @@ All session_memory calls are mocked to avoid DB dependencies.
 """
 from __future__ import annotations
 
-from unittest.mock import patch
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 import pytest
 from httpx import AsyncClient
-
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -69,7 +68,6 @@ async def test_get_session_not_found(client: AsyncClient):
     """GET /session/{id} should return 404 for non-existent sessions."""
     # Simulate DomainClient raising error or returning None
     with patch("app.core.domain_client.DomainClient.get_chat_session") as mocked:
-        import httpx
         from fastapi import HTTPException
         mocked.side_effect = HTTPException(status_code=404, detail="Not found")
         

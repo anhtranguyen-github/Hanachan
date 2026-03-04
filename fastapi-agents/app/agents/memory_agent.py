@@ -6,24 +6,21 @@ Graph: planning -> tools -> reviewer -> decide -> (rewrite -> planning) or (gene
 from __future__ import annotations
 
 import logging
+import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Annotated
+from typing import Annotated, Any, Dict, List, Optional
+
+from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.tools import tool
+from langgraph.graph import END, StateGraph
 from typing_extensions import TypedDict
 
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage
-from langchain_core.tools import tool
-from langgraph.graph import StateGraph, END
-
-import os
-from elevenlabs.client import ElevenLabs
-
-from app.services.memory import episodic_memory as ep_mem
-from app.services.memory import semantic_memory as sem_mem
-from app.services.memory import session_memory as sess_mem
 from app.agents.deck_manager import DECK_TOOLS
 from app.core.llm import make_llm
 from app.schemas.memory import KnowledgeGraph
+from app.services.memory import episodic_memory as ep_mem
+from app.services.memory import semantic_memory as sem_mem
 
 logger = logging.getLogger(__name__)
 
@@ -417,11 +414,12 @@ async def tts_node(state: AgentState) -> Dict[str, Any]:
     if state.get("generation"):
         try:
             import uuid
-            from app.core.config import settings
-            from app.core.domain_client import DomainClient
 
             # Use native ElevenLabs client for reliability on SDK ^2.0
             from elevenlabs.client import ElevenLabs
+
+            from app.core.config import settings
+            from app.core.domain_client import DomainClient
             client = ElevenLabs(api_key=settings.elevenlabs_api_key)
             
             # Fetch audio stream

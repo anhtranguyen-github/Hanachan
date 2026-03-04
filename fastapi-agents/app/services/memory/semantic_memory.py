@@ -8,7 +8,7 @@ import logging
 import re
 from typing import Any, Dict, List
 
-from neo4j import GraphDatabase, Driver
+from neo4j import Driver, GraphDatabase
 
 from app.core.config import settings
 from app.schemas.memory import KnowledgeGraph, Node, Relationship

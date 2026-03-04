@@ -4,7 +4,6 @@ Memory Consolidation Module.
 
 from __future__ import annotations
 
-import hashlib
 import logging
 from typing import List
 
@@ -12,11 +11,12 @@ from langchain_core.prompts import ChatPromptTemplate
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 
-from app.services.memory import episodic_memory as ep_mem
 from app.core.config import settings
+
 # app.core.database replaced with Supabase Client
 from app.core.llm import make_llm
 from app.schemas.memory import ConsolidationResult, EpisodicMemory
+from app.services.memory import episodic_memory as ep_mem
 
 logger = logging.getLogger(__name__)
 

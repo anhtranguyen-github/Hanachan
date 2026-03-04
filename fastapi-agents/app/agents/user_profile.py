@@ -10,9 +10,9 @@ from typing import Any, Dict, List
 
 from langchain_core.prompts import ChatPromptTemplate
 
-from app.services.memory import semantic_memory as sem_mem
 from app.core.llm import make_llm
 from app.schemas.memory import UserProfile
+from app.services.memory import semantic_memory as sem_mem
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ def build_user_profile(user_id: str) -> UserProfile:
     try:
         chain = _PROFILE_PROMPT | make_llm()
         result = chain.invoke({"user_id": user_id, "facts_text": facts_text})
-        text = result.content.strip().lstrip("```json").rstrip("```").strip()
+        text = result.content.strip().removeprefix("```json").removesuffix("```").strip()
         data = json.loads(text)
         return UserProfile(
             user_id=user_id,

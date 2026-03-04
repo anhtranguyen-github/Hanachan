@@ -1,7 +1,9 @@
 from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
-from app.schemas.session import SessionMessage, SessionSummary
+
 from app.schemas.memory import EpisodicMemory
+from app.schemas.session import SessionMessage, SessionSummary
 
 
 class ContextRequest(BaseModel):
