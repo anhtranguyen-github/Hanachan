@@ -146,7 +146,8 @@ def get_recent_reviews(limit: int = 5, user_id: str = "INJECTED") -> str:
     Use this if the user asks 'What did I just study?' or 'How did my last session go?'.
     """
     try:
-        from app.core.supabase import supabase
+        from app.core.supabase import get_service_client
+        supabase = get_service_client()
         
         # We need to join with knowledge_units for display names.
         # Supabase Python client handles joins via query syntax.
@@ -440,7 +441,8 @@ def update_memory_node(state: AgentState) -> Dict[str, Any]:
             if not existing:
                 from datetime import datetime, timezone
                 now = datetime.now(timezone.utc).isoformat()
-                from app.core.supabase import supabase
+                from app.core.supabase import get_service_client
+                supabase = get_service_client()
                 supabase.table("chat_sessions").upsert({
                     "id": session_id,
                     "user_id": user_id,

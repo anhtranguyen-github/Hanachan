@@ -143,6 +143,7 @@ async def get_review_logs(
 
     Architecture Note:
       Auth is handled by Next.js/Supabase. user_id is trusted.
+    """
 
     service = get_fsrs_service()
     logs = service.get_review_logs(
