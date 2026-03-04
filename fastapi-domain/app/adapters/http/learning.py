@@ -4,10 +4,10 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends
 from supabase import Client, create_client
 
-from ...auth.jwt import get_current_user_id
-from ...domain.learning.models import KnowledgeUnit, KUStatus, Rating
-from ...domain.learning.services import LearningService
-from ..supabase.learning_repo import LearningRepository
+from app.auth.jwt import get_current_user_id
+from app.domain.learning.models import KnowledgeUnit, KUStatus, Rating
+from app.domain.learning.services import LearningService
+from app.adapters.supabase.learning_repo import LearningRepository
 
 router = APIRouter(prefix="/learning", tags=["learning"])
 

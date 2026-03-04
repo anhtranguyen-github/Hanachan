@@ -67,7 +67,8 @@ export async function updateSession(request: NextRequest) {
         '/decks',
         '/sentences',
         '/profile',
-        '/api/proxy'
+        '/api/proxy',
+        '/admin'
     ]
     const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))
 

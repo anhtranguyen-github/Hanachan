@@ -1,5 +1,5 @@
-from .errors import InvalidSessionStateError, UnauthorizedSessionAccessError
-from .models import ReadingSession
+from app.domain.reading.errors import InvalidSessionStateError, UnauthorizedSessionAccessError
+from app.domain.reading.models import ReadingSession
 
 
 class ReadingPolicy:

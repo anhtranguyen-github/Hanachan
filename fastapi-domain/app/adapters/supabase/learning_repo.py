@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from supabase import Client
 
-from ...domain.learning.models import KnowledgeUnit, KUStatus
+from app.domain.learning.models import KnowledgeUnit, KUStatus
 
 
 class LearningRepository:

@@ -1,7 +1,7 @@
-from ...ports.repositories import IReadingRepository
-from .errors import QuestionNotFoundError, ReadingDomainError, SessionNotFoundError
-from .models import AnswerResult, AnswerSubmission
-from .policies import ReadingPolicy
+from app.ports.repositories import IReadingRepository
+from app.domain.reading.errors import QuestionNotFoundError, ReadingDomainError, SessionNotFoundError
+from app.domain.reading.models import AnswerResult, AnswerSubmission
+from app.domain.reading.policies import ReadingPolicy
 
 
 class ReadingService:
