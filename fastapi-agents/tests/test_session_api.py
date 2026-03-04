@@ -47,14 +47,11 @@ async def test_create_session_requires_auth(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_create_session_success(client: AsyncClient):
     """POST /session should create a session for the authenticated user."""
-    user_id = "service_role"  # service_role token has sub=service_role
+    user_id = "service_role"
     session_id = "sess-abc-123"
     session_data = _make_session(session_id, user_id)
 
-    with (
-        patch("app.services.memory.session_memory.create_session", return_value=session_id),
-        patch("app.services.memory.session_memory.get_session", return_value=session_data),
-    ):
+    with patch("app.core.domain_client.DomainClient.upsert_chat_session", return_value=session_data):
         response = await client.post(
             "/api/v1/memory/session",
             json={"user_id": user_id},
@@ -70,7 +67,12 @@ async def test_create_session_success(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_session_not_found(client: AsyncClient):
     """GET /session/{id} should return 404 for non-existent sessions."""
-    with patch("app.services.memory.session_memory.get_session", return_value=None):
+    # Simulate DomainClient raising error or returning None
+    with patch("app.core.domain_client.DomainClient.get_chat_session") as mocked:
+        import httpx
+        from fastapi import HTTPException
+        mocked.side_effect = HTTPException(status_code=404, detail="Not found")
+        
         response = await client.get(
             "/api/v1/memory/session/nonexistent-session",
             headers=_make_service_role_headers(),
@@ -101,7 +103,7 @@ async def test_list_sessions_success(client: AsyncClient):
         }
     ]
 
-    with patch("app.services.memory.session_memory.list_sessions", return_value=mock_sessions):
+    with patch("app.core.domain_client.DomainClient.list_chat_sessions", return_value=mock_sessions):
         response = await client.get(
             "/api/v1/memory/sessions",
             headers=_make_service_role_headers(),
@@ -117,9 +119,10 @@ async def test_list_sessions_success(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_end_session_not_found(client: AsyncClient):
     """DELETE /session/{id} should return 404 for non-existent sessions."""
-    with (
-        patch("app.services.memory.session_memory.get_session", return_value=None),
-    ):
+    with patch("app.core.domain_client.DomainClient.delete_chat_session") as mocked:
+        from fastapi import HTTPException
+        mocked.side_effect = HTTPException(status_code=404, detail="Not found")
+        
         response = await client.delete(
             "/api/v1/memory/session/nonexistent-session",
             headers=_make_service_role_headers(),
