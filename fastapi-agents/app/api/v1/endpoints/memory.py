@@ -1,8 +1,33 @@
 from __future__ import annotations
+
+import logging
 from typing import Any, Dict
-from supabase import Client
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool
+
+from app.agents.user_profile import build_user_profile, profile_to_system_prompt
 from app.api.deps import get_current_user
-from fastapi import Depends
+from app.core.config import settings
+from app.core.domain_client import DomainClient
+from app.core.rate_limit import limiter
+from app.schemas.context import ContextRequest, ContextResponse
+from app.schemas.memory import (
+    AddEpisodicRequest,
+    AddEpisodicResponse,
+    AddSemanticRequest,
+    AddSemanticResponse,
+    ClearResponse,
+    EpisodicSearchRequest,
+    EpisodicSearchResponse,
+    SemanticSearchRequest,
+    SemanticSearchResponse,
+)
+from app.schemas.memory import UserProfile as UserProfileSchema
+from app.schemas.session import SessionMessage
+from app.services.memory import episodic_memory as ep_mem
+from app.services.memory import semantic_memory as sem_mem
+
 """
 Memory endpoints.
 Fixes:
@@ -16,32 +41,6 @@ Architecture Note:
   Auth handled by Supabase/Next.js (BFF pattern)
   user_id passed in request body/query from trusted Next.js layer
 """
-
-import logging
-
-from fastapi import APIRouter, HTTPException, Query, Request
-from fastapi.concurrency import run_in_threadpool
-
-from app.schemas.context import ContextRequest, ContextResponse
-from app.schemas.memory import (
-    EpisodicSearchRequest,
-    EpisodicSearchResponse,
-    AddEpisodicRequest,
-    AddEpisodicResponse,
-    SemanticSearchRequest,
-    SemanticSearchResponse,
-    AddSemanticRequest,
-    AddSemanticResponse,
-    ClearResponse,
-)
-from app.schemas.session import SessionMessage
-from app.schemas.memory import UserProfile as UserProfileSchema
-from app.services.memory import episodic_memory as ep_mem
-from app.services.memory import semantic_memory as sem_mem
-from app.agents.user_profile import build_user_profile, profile_to_system_prompt
-from app.core.domain_client import DomainClient
-from app.core.rate_limit import limiter
-from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +57,7 @@ async def get_chat_context(
     """Primary chatbot integration endpoint."""
     user_id = current_user["id"]
     if str(req.user_id) != str(user_id):
-         raise HTTPException(status_code=400, detail="Invalid user_id in request body")
+        raise HTTPException(status_code=400, detail="Invalid user_id in request body")
     try:
         ep_results = await run_in_threadpool(
             ep_mem.search_episodic_memory, user_id, req.query, req.max_episodic
@@ -144,7 +143,7 @@ async def search_episodic(
     """Search episodic memory."""
     user_id = current_user["id"]
     if str(req.user_id) != str(user_id):
-          raise HTTPException(status_code=400, detail="Invalid user_id in request body")
+        raise HTTPException(status_code=400, detail="Invalid user_id in request body")
     results = await run_in_threadpool(
         ep_mem.search_episodic_memory, user_id, req.query, req.k
     )
@@ -161,7 +160,7 @@ async def add_episodic(
     """Add episodic memory."""
     user_id = current_user["id"]
     if str(req.user_id) != str(user_id):
-         raise HTTPException(status_code=400, detail="Invalid user_id in request body")
+        raise HTTPException(status_code=400, detail="Invalid user_id in request body")
     pid = await run_in_threadpool(ep_mem.add_episodic_memory, user_id, req.text)
     return AddEpisodicResponse(user_id=user_id, text=req.text, id=pid)
 
@@ -205,7 +204,7 @@ async def search_semantic(
     """Search semantic memory."""
     user_id = current_user["id"]
     if str(req.user_id) != str(user_id):
-         raise HTTPException(status_code=400, detail="Invalid user_id in request body")
+        raise HTTPException(status_code=400, detail="Invalid user_id in request body")
     keywords = [w for w in req.query.split() if len(w) > 2]
     results = await run_in_threadpool(
         sem_mem.search_semantic_memory, user_id, keywords
@@ -221,7 +220,7 @@ async def add_semantic(
     """Add semantic memory nodes and relationships."""
     user_id = current_user["id"]
     if str(req.user_id) != str(user_id):
-         raise HTTPException(status_code=400, detail="Invalid user_id in request body")
+        raise HTTPException(status_code=400, detail="Invalid user_id in request body")
     n, r = await run_in_threadpool(
         sem_mem.add_nodes_and_relationships, user_id, req.nodes, req.relationships
     )

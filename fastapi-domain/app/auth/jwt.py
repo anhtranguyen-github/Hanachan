@@ -1,7 +1,8 @@
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import jwt, JWTError
 import os
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
 
 security = HTTPBearer()
 
@@ -9,16 +10,17 @@ security = HTTPBearer()
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
 SUPABASE_ALGORITHM = "HS256"
 
+
 async def get_current_user_id(res: HTTPAuthorizationCredentials = Depends(security)) -> str:
     token = res.credentials
     try:
         # NOTE: In production, we'd verify the signature with SUPABASE_JWT_SECRET
         # For this scaffold, we extract the 'sub' claim which is the user_id
         payload = jwt.decode(
-            token, 
-            SUPABASE_JWT_SECRET, 
+            token,
+            SUPABASE_JWT_SECRET,
             algorithms=[SUPABASE_ALGORITHM],
-            options={"verify_aud": False}
+            options={"verify_aud": False},
         )
         user_id: str = payload.get("sub")
         if user_id is None:

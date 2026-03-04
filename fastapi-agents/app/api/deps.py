@@ -1,6 +1,6 @@
-from typing import Any, Dict
 import base64
 import json
+from typing import Any, Dict
 
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer

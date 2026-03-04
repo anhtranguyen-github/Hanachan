@@ -5,7 +5,6 @@ Validates that settings load correctly and validation logic works.
 from __future__ import annotations
 
 
-
 def test_settings_load_from_env():
     """Settings should load from environment variables."""
     from app.core.config import settings

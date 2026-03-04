@@ -66,8 +66,14 @@ jobs:
         uses: actions/download-artifact@v4
         continue-on-error: true # Might not exist if backend CI hasn't run
         with:
-          path: openapi
+          path: nextjs/openapi
           merge-multiple: true
+
+      - name: Generate Types
+        run: |
+          if [ -f "openapi/fastapi-domain-openapi.json" ] && [ -f "openapi/fastapi-agents-openapi.json" ]; then
+            pnpm generate-types
+          fi
 
       - name: Run TypeScript type check
         run: pnpm exec tsc --noEmit

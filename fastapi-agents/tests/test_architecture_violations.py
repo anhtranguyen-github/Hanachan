@@ -9,12 +9,10 @@ Run with: pytest fastapi-agents/tests/test_architecture_violations.py -v
 
 from __future__ import annotations
 
-import ast
-import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Set
+from typing import List
 
 import pytest
 
@@ -410,7 +408,7 @@ def main() -> int:
         violations_by_rule[v.rule].append(v)
 
     print(f"\n{'='*80}")
-    print(f"ARCHITECTURE VIOLATION REPORT")
+    print("ARCHITECTURE VIOLATION REPORT")
     print(f"{'='*80}\n")
 
     total = len(violations)

@@ -13,8 +13,8 @@ from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
 from faker import Faker
+from httpx import ASGITransport, AsyncClient
 
 fake = Faker()
 
@@ -53,12 +53,14 @@ def mock_external_services():
 async def app():
     """Create the FastAPI application instance for testing."""
     # Import after env vars are set
-    from app.main import app as fastapi_app
-    from app.api.deps import get_current_user
-    from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-    from fastapi import Depends, HTTPException
     import base64
     import json
+
+    from fastapi import Depends, HTTPException
+    from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+    from app.api.deps import get_current_user
+    from app.main import app as fastapi_app
     
     security = HTTPBearer()
     

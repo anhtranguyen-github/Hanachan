@@ -20,7 +20,8 @@ Removed endpoints (migrated to Next.js + Supabase):
 """
 
 from fastapi import APIRouter
-from app.api.v1.endpoints import chat, session, memory, maintenance, reading
+
+from app.api.v1.endpoints import chat, maintenance, memory, reading, session
 
 api_router = APIRouter()
 

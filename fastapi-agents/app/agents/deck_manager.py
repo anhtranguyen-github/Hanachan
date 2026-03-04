@@ -9,8 +9,8 @@ import logging
 from typing import Any, Dict, Optional
 from uuid import UUID
 
-from langchain_core.tools import tool
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.tools import tool
 
 from app.core.domain_client import DomainClient
 from app.core.llm import make_llm
@@ -97,7 +97,7 @@ async def add_to_deck(
                 return f"Could not find a deck named '{deck_name_or_id}'. Please list your decks first."
             deck_id = deck['id']
 
-        result = await client.add_to_deck(UUID(deck_id), item_identifier, item_type)
+        await client.add_to_deck(UUID(deck_id), item_identifier, item_type)
         return f"Successfully added {item_type} '{item_identifier}' to deck."
     except Exception as e:
         logger.error(f"Error adding to deck: {e}")
