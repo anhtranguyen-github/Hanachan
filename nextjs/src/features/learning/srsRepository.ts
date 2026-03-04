@@ -52,9 +52,6 @@ export const srsRepository = {
         if (rating) {
             let numRating = 3;
             if (rating === 'again') numRating = 1;
-            else if (rating === 'hard') numRating = 2;
-            else if (rating === 'good') numRating = 3;
-            else if (rating === 'easy') numRating = 4;
             else if (rating === 'pass') numRating = 3;
 
             const { error: logError } = await supabase.from('fsrs_review_logs').insert({

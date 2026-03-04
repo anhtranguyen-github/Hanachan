@@ -1,7 +1,9 @@
-import httpx
 import os
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID
+
+import httpx
+
 
 class DomainClient:
     def __init__(self, jwt: str):
@@ -107,8 +109,10 @@ class DomainClient:
 
     async def update_chat_session(self, session_id: str, title: Optional[str] = None, summary: Optional[str] = None) -> Dict[str, Any]:
         payload = {}
-        if title: payload["title"] = title
-        if summary: payload["summary"] = summary
+        if title:
+            payload["title"] = title
+        if summary:
+            payload["summary"] = summary
         async with httpx.AsyncClient() as client:
             response = await client.patch(f"{self.base_url}/chat/sessions/{session_id}", json=payload, headers=self.headers)
             response.raise_for_status()

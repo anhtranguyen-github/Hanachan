@@ -17,14 +17,13 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.api.v1.api import api_router
 from app.core.config import settings, validate_config
 from app.core.errors import AppError, app_error_handler, unhandled_exception_handler
-from app.core.logging import configure_logging, RequestIdMiddleware
+from app.core.logging import RequestIdMiddleware, configure_logging
 from app.core.rate_limit import limiter, rate_limit_exceeded_handler
-from app.api.v1.api import api_router
 from app.services.memory import episodic_memory as ep_mem
 from app.services.memory import semantic_memory as sem_mem
-from app.services.memory import session_memory as sess_mem
 
 # Configure structured JSON logging before anything else
 configure_logging()

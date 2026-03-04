@@ -5,9 +5,9 @@ Configuration — loads from .env in the project root.
 import os
 from pathlib import Path
 from typing import List, Optional
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import field_validator, Field
 
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Resolve path to the .env that lives in the fastapi root
 # Allow override via ENV_FILE environment variable for container deployments

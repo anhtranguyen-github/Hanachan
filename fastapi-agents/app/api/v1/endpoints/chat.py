@@ -1,7 +1,11 @@
 from __future__ import annotations
+
 from typing import Any, Dict
-from app.api.deps import get_current_user
+
 from fastapi import Depends
+
+from app.api.deps import get_current_user
+
 """
 Chat endpoints.
 Fixes:
@@ -25,14 +29,13 @@ import logging
 from typing import AsyncGenerator
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
-
-from app.schemas.chat import ChatRequest, ChatResponse
-from app.agents.memory_agent import run_chat, memory_agent
-from app.core.rate_limit import limiter
-from app.core.config import settings
 from langchain_core.messages import HumanMessage
+
+from app.agents.memory_agent import memory_agent, run_chat
+from app.core.config import settings
+from app.core.rate_limit import limiter
+from app.schemas.chat import ChatRequest, ChatResponse
 
 logger = logging.getLogger(__name__)
 

@@ -16,7 +16,6 @@ from app.core.config import settings
 from app.core.llm import make_embedding_model
 from app.schemas.memory import EpisodicMemory
 
-
 # ---------------------------------------------------------------------------
 # Singleton client & embedder
 # ---------------------------------------------------------------------------

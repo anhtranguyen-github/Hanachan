@@ -32,9 +32,10 @@ import warnings
 from datetime import datetime, timezone
 from enum import Enum
 from functools import wraps
-from typing import Optional, Callable
+from typing import Callable, Optional
 
 from fastapi import HTTPException, Request
+
 
 # from app.core.database import get_db_pool
 def get_db_pool(): raise NotImplementedError()

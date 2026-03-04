@@ -15,8 +15,9 @@ import secrets
 from typing import Any, Dict, List, Optional, TypedDict
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from app.core.llm import make_llm
+
 from app.core.domain_client import DomainClient
+from app.core.llm import make_llm
 
 logger = logging.getLogger(__name__)
 

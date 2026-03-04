@@ -1,7 +1,9 @@
-from enum import Enum
-from typing import Optional, List, Dict
-from pydantic import BaseModel, Field
 from datetime import datetime
+from enum import Enum
+from typing import Dict, Optional
+
+from pydantic import BaseModel
+
 
 class SRSStage(str, Enum):
     NEW = "new"
@@ -9,9 +11,11 @@ class SRSStage(str, Enum):
     REVIEW = "review"
     BURNED = "burned"
 
+
 class Rating(str, Enum):
     AGAIN = "again"
     PASS = "pass"
+
 
 class SRSState(BaseModel):
     stage: SRSStage = SRSStage.NEW
@@ -19,6 +23,7 @@ class SRSState(BaseModel):
     difficulty: float = 3.0
     reps: int = 0
     lapses: int = 0
+
 
 class KUStatus(BaseModel):
     user_id: str
@@ -37,12 +42,14 @@ class KUStatus(BaseModel):
     meaning: Optional[str] = None
     notes: Optional[str] = None
 
+
 class LearningSummary(BaseModel):
     due_today: int
     learned_count: int
     burned_count: int
     new_items_count: int
     by_type: Dict[str, Dict[str, int]] = {}
+
 
 class KnowledgeUnit(BaseModel):
     id: str

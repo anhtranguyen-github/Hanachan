@@ -1,17 +1,14 @@
 import logging
-from datetime import datetime, timezone
-from typing import Any, List, Optional, Literal, Dict
-from uuid import uuid4, UUID
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from app.api.deps import get_current_user
 from app.agents.reading_creator import (
-    ReadingConfig,
     generate_reading_session,
     get_user_learning_context,
 )
+from app.api.deps import get_current_user
 from app.core.domain_client import DomainClient
 from app.core.rate_limit import limiter
 
@@ -61,7 +58,7 @@ async def create_reading_session(
         config_data.update(body.config_override)
 
     # 2. Get Learning Context from Domain
-    context = await get_user_learning_context(jwt)
+    await get_user_learning_context(jwt)
 
     # 3. Generate content via Agent
     logger.info(f"Generating exercises for user {user_id}")

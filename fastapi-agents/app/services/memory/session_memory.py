@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 import uuid
 from typing import Any, Dict, List, Optional
+
 from app.core.domain_client import DomainClient
 
 logger = logging.getLogger(__name__)
