@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 
-from ..core.supabase import supabase
+from app.core.supabase import supabase
 
 logger = logging.getLogger(__name__)
 

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
-from .config import settings
+from app.core.config import settings
 
 
 def make_llm(temperature: float = 0, streaming: bool = False) -> ChatOpenAI:

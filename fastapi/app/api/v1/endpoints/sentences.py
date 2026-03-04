@@ -13,10 +13,10 @@ import logging
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from ....core.security import require_auth
+from app.core.security import require_auth
 from pydantic import BaseModel, Field
 
-from ....services.sentence_library import (
+from app.services.sentence_library import (
     get_sentence_library_service,
     SentenceCreate,
 )
@@ -282,7 +282,7 @@ async def submit_sentence_review(
     Args:
         rating: 1=Again (forgot), 2=Hard, 3=Good, 4=Easy
     """
-    from ....services.fsrs_service import get_fsrs_service
+    from app.services.fsrs_service import get_fsrs_service
 
     if rating not in [1, 2, 3, 4]:
         raise HTTPException(status_code=400, detail="Rating must be 1-4")

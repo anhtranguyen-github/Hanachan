@@ -19,8 +19,8 @@ import logging
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 
-from ....schemas.context import ContextRequest, ContextResponse
-from ....schemas.memory import (
+from app.schemas.context import ContextRequest, ContextResponse
+from app.schemas.memory import (
     EpisodicSearchRequest,
     EpisodicSearchResponse,
     AddEpisodicRequest,
@@ -31,14 +31,14 @@ from ....schemas.memory import (
     AddSemanticResponse,
     ClearResponse,
 )
-from ....schemas.session import SessionMessage
-from ....schemas.memory import UserProfile as UserProfileSchema
-from ....services.memory import episodic_memory as ep_mem
-from ....services.memory import semantic_memory as sem_mem
-from ....services.memory import session_memory as sess_mem
-from ....agents.user_profile import build_user_profile, profile_to_system_prompt
-from ....core.rate_limit import limiter
-from ....core.config import settings
+from app.schemas.session import SessionMessage
+from app.schemas.memory import UserProfile as UserProfileSchema
+from app.services.memory import episodic_memory as ep_mem
+from app.services.memory import semantic_memory as sem_mem
+from app.services.memory import session_memory as sess_mem
+from app.agents.user_profile import build_user_profile, profile_to_system_prompt
+from app.core.rate_limit import limiter
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 

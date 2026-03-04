@@ -26,11 +26,11 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
-from ....core.admin_security import require_permission, AdminPermission
+from app.core.admin_security import require_permission, AdminPermission
 from fastapi.concurrency import run_in_threadpool
 
-from ....core.database import get_db_pool, check_db_health
-from ....schemas.admin import (
+from app.core.database import get_db_pool, check_db_health
+from app.schemas.admin import (
     AuditLogsResponse,
     AbuseAlertsResponse,
     AdminDashboardStats,
@@ -51,9 +51,9 @@ from ....schemas.admin import (
     UserDetailsResponse,
     UserListResponse,
 )
-from ....services import admin_service
-from ....services.memory import episodic_memory as ep_mem
-from ....services.memory import semantic_memory as sem_mem
+from app.services import admin_service
+from app.services.memory import episodic_memory as ep_mem
+from app.services.memory import semantic_memory as sem_mem
 
 logger = logging.getLogger(__name__)
 
@@ -660,7 +660,7 @@ async def get_user_episodic_memory(
     token: dict = Depends(require_permission(AdminPermission.VIEW_AI_TRACES)),
 ):
     """Get episodic memories for a user (for debugging)."""
-    from ....services.memory.episodic_memory import search_memories
+    from app.services.memory.episodic_memory import search_memories
     
     memories = await run_in_threadpool(search_memories, user_id, "", limit=limit)
     
@@ -679,7 +679,7 @@ async def get_user_semantic_memory(
     token: dict = Depends(require_permission(AdminPermission.VIEW_AI_TRACES)),
 ):
     """Get semantic memory graph for a user (for debugging)."""
-    from ....services.memory.semantic_memory import get_user_graph
+    from app.services.memory.semantic_memory import get_user_graph
     
     graph = await run_in_threadpool(get_user_graph, user_id)
     

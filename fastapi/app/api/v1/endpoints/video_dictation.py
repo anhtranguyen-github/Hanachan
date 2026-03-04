@@ -21,10 +21,10 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from uuid import UUID
 
-from ....core.rate_limit import limiter
-from ....core.config import settings
+from app.core.rate_limit import limiter
+from app.core.config import settings
 
-from ....schemas.video_dictation import (
+from app.schemas.video_dictation import (
     CreateDictationSessionRequest,
     DictationSessionResponse,
     SubmitDictationAttemptRequest,
@@ -34,7 +34,7 @@ from ....schemas.video_dictation import (
     DictationSubtitleItem,
     DictationAttemptResult,
 )
-from ....services import video_dictation as vd_service
+from app.services import video_dictation as vd_service
 
 logger = logging.getLogger(__name__)
 

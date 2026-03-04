@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID
 
-from ..core.database import get_db_pool
+from app.core.database import get_db_pool
 
 logger = logging.getLogger(__name__)
 

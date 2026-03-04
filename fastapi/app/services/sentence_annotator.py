@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from typing import List, Dict, Any
 
-from ..core.supabase import supabase
+from app.core.supabase import supabase
 
 logger = logging.getLogger(__name__)
 
