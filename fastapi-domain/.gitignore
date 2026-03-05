@@ -1,16 +1,29 @@
+# FastAPI Domain - Local .gitignore
+
+# Python specifics
 __pycache__/
 *.py[cod]
-*.pyo
+*$py.class
+*.so
+.python-version
 .venv/
 venv/
 .env
-.uv
-*.egg-info/
-.pytest_cache/
-.ipynb_checkpoints/
-.ruff_cache/
+.uv/
 
-# Local test files (not for CI)
-local-test/
+# Testing & Quality
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 .coverage
+.coverage.*
 htmlcov/
+*.log
+
+# IDEs
+.vscode/
+.idea/
+
+# Local data
+local-test/
+.secrets.baseline
