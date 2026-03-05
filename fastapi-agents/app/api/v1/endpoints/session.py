@@ -10,6 +10,7 @@ from app.core.domain_client import DomainClient
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Session"])
 
+
 @router.post("/session")
 async def create_session(
     current_user: dict[str, Any] = Depends(get_current_user),
@@ -20,6 +21,7 @@ async def create_session(
     session_id = str(uuid.uuid4())
     return await client.upsert_chat_session(session_id)
 
+
 @router.get("/sessions")
 async def list_sessions(
     current_user: dict[str, Any] = Depends(get_current_user),
@@ -27,6 +29,7 @@ async def list_sessions(
     """Proxy session listing to Domain Service."""
     client = DomainClient(current_user["jwt"])
     return await client.list_chat_sessions()
+
 
 @router.get("/session/{session_id}")
 async def get_session(
@@ -36,6 +39,7 @@ async def get_session(
     """Proxy session detail to Domain Service."""
     client = DomainClient(current_user["jwt"])
     return await client.get_chat_session(session_id)
+
 
 @router.delete("/session/{session_id}")
 async def end_session(

@@ -14,6 +14,7 @@ class ReadingConfig(TypedDict):
     passage_length: str  # 'short' | 'medium' | 'long'
     topic_preferences: list[str]
 
+
 class ReadingQuestion(TypedDict, total=False):
     index: int
     type: str  # 'multiple_choice' | 'true_false' | 'fill_blank' | 'comprehension'
@@ -22,6 +23,7 @@ class ReadingQuestion(TypedDict, total=False):
     options: list[str] | None
     correct_answer: str
     explanation: str
+
 
 class ReadingExercise(TypedDict):
     passage_ja: str

@@ -9,23 +9,21 @@ class AgentJudge:
     """
     Utility class to use an LLM as a judge for evaluating agent behaviors.
     """
-    
+
     def __init__(self):
         import os
 
         from langchain_openai import ChatOpenAI
-        
+
         judge_key = os.environ.get("LLM_JUDGE_API_KEY")
         if judge_key and "sk-test-key" not in judge_key:
-            self.llm = ChatOpenAI(
-                model="gpt-4o",
-                temperature=0,
-                openai_api_key=judge_key
-            )
+            self.llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=judge_key)
         else:
-            self.llm = make_llm(temperature=0) 
-        
-    async def judge_explanation_quality(self, user_input: str, agent_output: str, user_level: str = "N5") -> dict[str, Any]:
+            self.llm = make_llm(temperature=0)
+
+    async def judge_explanation_quality(
+        self, user_input: str, agent_output: str, user_level: str = "N5"
+    ) -> dict[str, Any]:
         """
         Evaluates if the agent's explanation is appropriate for the user's JLPT level.
         """
@@ -49,9 +47,10 @@ class AgentJudge:
             "reasoning": "string"
         }}
         """
-        
+
         response = await self.llm.ainvoke([SystemMessage(content=judge_prompt)])
         import json
+
         try:
             # Basic cleanup if LLM wraps in markdown
             content = response.content.replace("```json", "").replace("```", "").strip()
@@ -84,28 +83,32 @@ class AgentJudge:
             "feedback": "string"
         }}
         """
-        
+
         response = await self.llm.ainvoke([SystemMessage(content=judge_prompt)])
         import json
+
         try:
             content = response.content.replace("```json", "").replace("```", "").strip()
             return json.loads(content)
         except Exception:
             return {"error": "Failed to parse judge output", "raw": response.content}
 
+
 class MockAgentJudge:
     """Mock version of AgentJudge for unit testing without API costs."""
+
     async def judge_explanation_quality(self, **kwargs):
         return {
             "accuracy_score": 5,
             "level_score": 5,
             "warning_detected": True,
-            "reasoning": "Mock evaluation: Perfect."
+            "reasoning": "Mock evaluation: Perfect.",
         }
+
     async def judge_thought_process(self, **kwargs):
         return {
             "logic_score": 5,
             "tool_score": 5,
             "conciseness_score": 5,
-            "feedback": "Mock evaluation: Excellent logic."
+            "feedback": "Mock evaluation: Excellent logic.",
         }

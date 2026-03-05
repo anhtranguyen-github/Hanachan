@@ -18,6 +18,7 @@ from app.core.llm import make_llm
 
 logger = logging.getLogger(__name__)
 
+
 async def get_user_learning_context(jwt: str) -> dict[str, Any]:
     """
     Fetch user's current learning status to inform content generation.
@@ -38,9 +39,8 @@ async def get_user_learning_context(jwt: str) -> dict[str, Any]:
             "kanji_count": 0,
         }
 
-def select_featured_content(
-    context: dict[str, Any], config: ReadingConfig
-) -> dict[str, Any]:
+
+def select_featured_content(context: dict[str, Any], config: ReadingConfig) -> dict[str, Any]:
     """
     Select which vocabulary, grammar, and kanji to feature in the passage
     based on weights and user's learning status.
@@ -59,15 +59,9 @@ def select_featured_content(
         + config.get("grammar_weight", 30)
         + config.get("kanji_weight", 30)
     )
-    vocab_count = max(
-        1, round(total_items * config.get("vocab_weight", 40) / total_weight)
-    )
-    grammar_count = max(
-        1, round(total_items * config.get("grammar_weight", 30) / total_weight)
-    )
-    kanji_count = max(
-        1, round(total_items * config.get("kanji_weight", 30) / total_weight)
-    )
+    vocab_count = max(1, round(total_items * config.get("vocab_weight", 40) / total_weight))
+    grammar_count = max(1, round(total_items * config.get("grammar_weight", 30) / total_weight))
+    kanji_count = max(1, round(total_items * config.get("kanji_weight", 30) / total_weight))
 
     # Sample items (prefer recently learned items for reinforcement)
     selected_vocab = random.sample(vocab_list, min(vocab_count, len(vocab_list)))  # nosec B311
@@ -84,6 +78,7 @@ def select_featured_content(
         "grammar_ids": [g["id"] for g in selected_grammar],
         "kanji_ids": [k["id"] for k in selected_kanji],
     }
+
 
 async def generate_reading_exercise(
     user_id: str,
@@ -146,10 +141,7 @@ async def generate_reading_exercise(
 
     kanji_list_text = (
         "\n".join(
-            [
-                f"- {k.get('character', '')} = {k.get('meaning', '')}"
-                for k in featured["kanji"][:10]
-            ]
+            [f"- {k.get('character', '')} = {k.get('meaning', '')}" for k in featured["kanji"][:10]]
         )
         or "No specific kanji (use hiragana/katakana)"
     )
@@ -196,9 +188,7 @@ async def generate_reading_exercise(
     try:
         data = json.loads(content)
     except json.JSONDecodeError as e:
-        logger.error(
-            f"Failed to parse LLM response as JSON: {e}\nContent: {content[:500]}"
-        )
+        logger.error(f"Failed to parse LLM response as JSON: {e}\nContent: {content[:500]}")
         # Return a fallback exercise
         data = _create_fallback_exercise(topic, difficulty, jlpt_target)
 
@@ -208,9 +198,7 @@ async def generate_reading_exercise(
         "passage_furigana": data.get("passage_furigana")
         if config.get("include_furigana")
         else None,
-        "passage_en": data.get("passage_en", "")
-        if config.get("include_translation")
-        else "",
+        "passage_en": data.get("passage_en", "") if config.get("include_translation") else "",
         "passage_title": data.get("passage_title", ""),
         "difficulty_level": difficulty,
         "jlpt_level": jlpt_target,
@@ -223,6 +211,7 @@ async def generate_reading_exercise(
     }
 
     return exercise
+
 
 async def generate_reading_session(
     user_id: str,
@@ -248,9 +237,7 @@ async def generate_reading_session(
         try:
             exercise = await generate_reading_exercise(user_id, config, jwt, topic)
             exercises.append(exercise)
-            logger.info(
-                f"Generated exercise {i + 1}/{num_exercises} for user {user_id}"
-            )
+            logger.info(f"Generated exercise {i + 1}/{num_exercises} for user {user_id}")
         except Exception as e:
             logger.error(f"Failed to generate exercise {i + 1}: {e}")
             # Add fallback
@@ -258,6 +245,7 @@ async def generate_reading_session(
             exercises.append(_create_fallback_exercise(topic, "N3", jlpt))
 
     return exercises
+
 
 def _level_to_jlpt(level: int) -> int:
     """Convert curriculum level to approximate JLPT level."""
@@ -272,9 +260,8 @@ def _level_to_jlpt(level: int) -> int:
     else:
         return 1
 
-def _create_fallback_exercise(
-    topic: str, difficulty: str, jlpt_level: int
-) -> dict[str, Any]:
+
+def _create_fallback_exercise(topic: str, difficulty: str, jlpt_level: int) -> dict[str, Any]:
     """Create a simple fallback exercise when LLM fails."""
     return {
         "passage_title": "日本語の練習",

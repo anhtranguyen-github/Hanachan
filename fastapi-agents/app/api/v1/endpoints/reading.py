@@ -15,15 +15,18 @@ from app.core.rate_limit import limiter
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/reading", tags=["Reading"])
 
+
 class ReadingConfigUpdate(BaseModel):
     exercises_per_session: int | None = Field(None, ge=1, le=20)
     # ... other fields if needed for override
     difficulty_level: str | None = None
     topic_preferences: list[str] | None = None
 
+
 class CreateSessionRequest(BaseModel):
     config_override: dict[str, Any] | None = None
     topics: list[str] | None = None
+
 
 @router.post("/sessions")
 @limiter.limit("5/minute")
@@ -68,15 +71,13 @@ async def create_reading_session(
     # 4. Persist to Domain
     # We send the whole payload to Domain to handle persistence in one go
     # (assuming Domain has an endpoint to accept a pre-generated session)
-    payload = {
-        "user_id": user_id,
-        "config_snapshot": config_data,
-        "exercises": exercises
-    }
-    
+    payload = {"user_id": user_id, "config_snapshot": config_data, "exercises": exercises}
+
     try:
         result = await client._post("/reading/sessions/generated", payload)
         return result
     except Exception as e:
         logger.error(f"Failed to persist generated session to Domain: {e}")
-        raise HTTPException(status_code=500, detail="Failed to save generated content to Domain Service")
+        raise HTTPException(
+            status_code=500, detail="Failed to save generated content to Domain Service"
+        )

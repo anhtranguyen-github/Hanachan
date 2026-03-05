@@ -11,7 +11,7 @@ Architecture:
 
 Removed endpoints (migrated to Next.js + Supabase):
 - /reading/* → Next.js reading feature
-- /practice/speaking/* → Next.js speaking feature  
+- /practice/speaking/* → Next.js speaking feature
 - /dictation/* → Next.js video feature
 - /sentences/* → Next.js sentence feature
 - /videos/* → Next.js video feature

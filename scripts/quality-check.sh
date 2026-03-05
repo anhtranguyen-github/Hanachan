@@ -34,6 +34,16 @@ done
 
 echo ""
 echo "----------------------------------------------------------------"
+echo "🔍 Checking Frontend: nextjs"
+echo "----------------------------------------------------------------"
+cd "$REPO_ROOT/nextjs"
+echo "✅ Running ESLint..."
+pnpm lint
+echo "✅ Running TypeScript Check..."
+pnpm exec tsc --noEmit
+
+echo ""
+echo "----------------------------------------------------------------"
 echo "🛠️  Running Custom Scanners"
 echo "----------------------------------------------------------------"
 cd "$REPO_ROOT"

@@ -7,6 +7,7 @@ from mcp.client.sse import sse_client
 
 logger = logging.getLogger(__name__)
 
+
 class MCPDomainClient:
     def __init__(self, jwt: str):
         self.jwt = jwt
@@ -20,7 +21,7 @@ class MCPDomainClient:
                 async with ClientSession(read, write) as session:
                     await session.initialize()
                     result = await session.call_tool(tool_name, arguments)
-                    
+
                     if result.content:
                         return result.content[0].text
                     return None

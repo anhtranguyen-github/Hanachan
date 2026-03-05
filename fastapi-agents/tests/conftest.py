@@ -5,6 +5,7 @@ Uses httpx.AsyncClient with the FastAPI app in test mode.
 External services (Supabase, Qdrant, Neo4j, OpenAI) are mocked so tests
 run without any real credentials or network access.
 """
+
 from __future__ import annotations
 
 import os
@@ -43,6 +44,7 @@ os.environ.setdefault("ALLOWED_ORIGINS", '["http://localhost:3000"]')
 
 # ── Patch external services before app import ────────────────────────────────
 
+
 @pytest.fixture(scope="session", autouse=True)
 def mock_external_services():
     """Mock all external service connections for the entire test session."""
@@ -66,12 +68,12 @@ async def app():
 
     from app.api.deps import get_current_user
     from app.main import app as fastapi_app
-    
+
     security = HTTPBearer()
-    
+
     def mock_get_current_user(token: HTTPAuthorizationCredentials = Depends(security)):
         if token.credentials == "test-service-key-32-chars-at-least-wow":
-             return {"id": "service_role", "email": "service@example.com", "jwt": token.credentials}
+            return {"id": "service_role", "email": "service@example.com", "jwt": token.credentials}
         if "test-signature" not in token.credentials:
             raise HTTPException(status_code=401, detail="Invalid token signature")
         parts = token.credentials.split(".")
@@ -81,7 +83,11 @@ async def app():
                 payload_b64 = parts[1]
                 payload_b64 += "=" * ((4 - len(payload_b64) % 4) % 4)
                 payload = json.loads(base64.urlsafe_b64decode(payload_b64))
-                return {"id": payload.get("sub", "test-user-123"), "email": "test@example.com", "jwt": token.credentials}
+                return {
+                    "id": payload.get("sub", "test-user-123"),
+                    "email": "test@example.com",
+                    "jwt": token.credentials,
+                }
             except Exception:
                 pass
         return {"id": "test-user-123", "email": "test@example.com", "jwt": token.credentials}
@@ -102,18 +108,25 @@ async def client(app) -> AsyncGenerator[AsyncClient, None]:
 
 # ── Auth helpers ─────────────────────────────────────────────────────────────
 
+
 def make_test_token(user_id: str = "test-user-123", role: str = "authenticated") -> str:
     """Generate a test JWT token (not cryptographically valid, for header injection)."""
     import base64
     import json
 
-    header = base64.urlsafe_b64encode(
-        json.dumps({"alg": "HS256", "typ": "JWT"}).encode()
-    ).rstrip(b"=").decode()
+    header = (
+        base64.urlsafe_b64encode(json.dumps({"alg": "HS256", "typ": "JWT"}).encode())
+        .rstrip(b"=")
+        .decode()
+    )
 
-    payload = base64.urlsafe_b64encode(
-        json.dumps({"sub": user_id, "role": role, "aud": "authenticated"}).encode()
-    ).rstrip(b"=").decode()
+    payload = (
+        base64.urlsafe_b64encode(
+            json.dumps({"sub": user_id, "role": role, "aud": "authenticated"}).encode()
+        )
+        .rstrip(b"=")
+        .decode()
+    )
 
     return f"{header}.{payload}.test-signature"
 
@@ -131,6 +144,7 @@ def service_role_headers() -> dict:
 
 
 # ── Test data factories ───────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def sample_user_id() -> str:
@@ -158,8 +172,11 @@ def auth_headers_for_user(sample_user_id: str) -> dict:
 
 # ── Async helpers ─────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
-async def authenticated_client(app, auth_headers_for_user: dict) -> AsyncGenerator[AsyncClient, None]:
+async def authenticated_client(
+    app, auth_headers_for_user: dict
+) -> AsyncGenerator[AsyncClient, None]:
     """An authenticated HTTP client with test user headers."""
     async with AsyncClient(
         transport=ASGITransport(app=app),
@@ -171,19 +188,20 @@ async def authenticated_client(app, auth_headers_for_user: dict) -> AsyncGenerat
 
 # ── Test database helpers ────────────────────────────────────────────────────
 
+
 class MockDatabaseResponse:
     """Mock database response for testing."""
-    
+
     def __init__(self, data: list | dict | None = None, error: str | None = None):
         self._data = data
         self._error = error
-    
+
     @property
     def data(self):
         if self._error:
             raise Exception(self._error)
         return self._data
-    
+
     @property
     def error(self):
         return self._error
@@ -196,6 +214,7 @@ def mock_db_response():
 
 
 # ── Test assertion helpers ───────────────────────────────────────────────────
+
 
 def assert_error_response(response, expected_status: int, expected_message: str | None = None):
     """Assert that a response is an error with the given status and optional message."""

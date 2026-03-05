@@ -254,9 +254,7 @@ def search_semantic_memory(user_id: str, keywords: list[str]) -> list[dict[str, 
                 f"search_semantic_memory results_len: {len(results)}, is_general: {is_general}"
             )
             if (not results or is_general) and len(results) < 10:
-                logger.info(
-                    f"search_semantic_memory entering fallback for user: {user_id}"
-                )
+                logger.info(f"search_semantic_memory entering fallback for user: {user_id}")
                 extra_records = session.run(
                     """
                     MATCH (n:Entity {user_id: $user_id})-[r]-(m)
@@ -327,9 +325,7 @@ def get_graph_schema() -> dict[str, Any]:
     driver = _get_driver()
     with driver.session() as session:
         labels = [r["label"] for r in session.run("CALL db.labels()")]
-        rel_types = [
-            r["relationshipType"] for r in session.run("CALL db.relationshipTypes()")
-        ]
+        rel_types = [r["relationshipType"] for r in session.run("CALL db.relationshipTypes()")]
     return {"node_labels": labels, "relationship_types": rel_types}
 
 

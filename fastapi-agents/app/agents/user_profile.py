@@ -99,9 +99,7 @@ def build_user_profile(user_id: str) -> UserProfile:
             raw_triples=facts,
         )
     except Exception as exc:
-        logger.error(
-            "user_profile_llm_error", extra={"user_id": user_id, "error": str(exc)}
-        )
+        logger.error("user_profile_llm_error", extra={"user_id": user_id, "error": str(exc)})
         return UserProfile(
             user_id=user_id,
             name=None,

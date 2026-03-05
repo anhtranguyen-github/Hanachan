@@ -53,27 +53,34 @@ ALL_TEST_ACCOUNTS = [TEST_USER, TEST_ADMIN]
 # JWT TOKEN HELPERS
 # ==========================================
 
+
 def make_test_token_for_user(user_id: str, role: str = "authenticated") -> str:
     """
     Generate a test JWT token for a specific user.
-    
+
     Args:
         user_id: The user's UUID
         role: The user's role (default: "authenticated")
-        
+
     Returns:
         A test JWT token string
     """
     import base64
     import json
 
-    header = base64.urlsafe_b64encode(
-        json.dumps({"alg": "HS256", "typ": "JWT"}).encode()
-    ).rstrip(b"=").decode()
+    header = (
+        base64.urlsafe_b64encode(json.dumps({"alg": "HS256", "typ": "JWT"}).encode())
+        .rstrip(b"=")
+        .decode()
+    )
 
-    payload = base64.urlsafe_b64encode(
-        json.dumps({"sub": user_id, "role": role, "aud": "authenticated"}).encode()
-    ).rstrip(b"=").decode()
+    payload = (
+        base64.urlsafe_b64encode(
+            json.dumps({"sub": user_id, "role": role, "aud": "authenticated"}).encode()
+        )
+        .rstrip(b"=")
+        .decode()
+    )
 
     return f"{header}.{payload}.test-signature"
 
@@ -85,7 +92,9 @@ def get_test_user_headers() -> dict:
 
 def get_test_admin_headers() -> dict:
     """Get authorization headers for the test admin."""
-    return {"Authorization": f"Bearer {make_test_token_for_user(TEST_ADMIN_ID, role='super_admin')}"}
+    return {
+        "Authorization": f"Bearer {make_test_token_for_user(TEST_ADMIN_ID, role='super_admin')}"
+    }
 
 
 # ==========================================
@@ -103,18 +112,15 @@ try:
         """Fixture providing the test user ID."""
         return TEST_USER_ID
 
-
     @pytest.fixture
     def test_admin_id() -> str:
         """Fixture providing the test admin ID."""
         return TEST_ADMIN_ID
 
-
     @pytest.fixture
     def test_user_headers() -> dict:
         """Fixture providing authorization headers for test user."""
         return get_test_user_headers()
-
 
     @pytest.fixture
     def test_admin_headers() -> dict:
@@ -133,71 +139,70 @@ except ImportError:
 # SUPABASE AUTH HELPERS
 # ==========================================
 
+
 async def sign_in_test_user(supabase_client) -> dict:
     """
     Sign in the test user using Supabase auth.
-    
+
     Args:
         supabase_client: An initialized Supabase client
-        
+
     Returns:
         The auth response from Supabase
     """
-    return await supabase_client.auth.sign_in_with_password({
-        "email": TEST_USER_EMAIL,
-        "password": TEST_USER_PASSWORD,
-    })
+    return await supabase_client.auth.sign_in_with_password(
+        {
+            "email": TEST_USER_EMAIL,
+            "password": TEST_USER_PASSWORD,
+        }
+    )
 
 
 async def sign_in_test_admin(supabase_client) -> dict:
     """
     Sign in the test admin using Supabase auth.
-    
+
     Args:
         supabase_client: An initialized Supabase client
-        
+
     Returns:
         The auth response from Supabase
     """
-    return await supabase_client.auth.sign_in_with_password({
-        "email": TEST_ADMIN_EMAIL,
-        "password": TEST_ADMIN_PASSWORD,
-    })
+    return await supabase_client.auth.sign_in_with_password(
+        {
+            "email": TEST_ADMIN_EMAIL,
+            "password": TEST_ADMIN_PASSWORD,
+        }
+    )
 
 
 # ==========================================
 # VERIFICATION HELPERS
 # ==========================================
 
+
 def verify_test_accounts_exist(db_query_func) -> bool:
     """
     Verify that both test accounts exist in the database.
-    
+
     Args:
         db_query_func: A function that executes a SQL query and returns results
-        
+
     Returns:
         True if both accounts exist, False otherwise
     """
     try:
-        user_result = db_query_func(
-            "SELECT id FROM public.users WHERE id = %s", 
-            (TEST_USER_ID,)
-        )
-        admin_result = db_query_func(
-            "SELECT id FROM public.users WHERE id = %s", 
-            (TEST_ADMIN_ID,)
-        )
+        user_result = db_query_func("SELECT id FROM public.users WHERE id = %s", (TEST_USER_ID,))
+        admin_result = db_query_func("SELECT id FROM public.users WHERE id = %s", (TEST_ADMIN_ID,))
         admin_role_result = db_query_func(
-            "SELECT role FROM public.admin_roles WHERE user_id = %s",
-            (TEST_ADMIN_ID,)
+            "SELECT role FROM public.admin_roles WHERE user_id = %s", (TEST_ADMIN_ID,)
         )
-        
+
         return bool(
-            user_result and 
-            admin_result and 
-            admin_role_result and 
-            admin_role_result[0]["role"] == "super_admin"
+            user_result
+            and admin_result
+            and admin_role_result
+            and admin_role_result[0]["role"] == "super_admin"
         )
     except Exception:
         return False

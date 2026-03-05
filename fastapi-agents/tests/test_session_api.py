@@ -2,6 +2,7 @@
 Tests for the session API endpoints.
 All session_memory calls are mocked to avoid DB dependencies.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -11,6 +12,7 @@ import pytest
 from httpx import AsyncClient
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
+
 
 def _make_session(session_id: str, user_id: str) -> dict:
     return {
@@ -32,6 +34,7 @@ def _make_service_role_headers() -> dict:
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_create_session_requires_auth(client: AsyncClient):
     """POST /session should return 401 without auth."""
@@ -49,7 +52,9 @@ async def test_create_session_success(client: AsyncClient):
     session_id = "sess-abc-123"
     session_data = _make_session(session_id, user_id)
 
-    with patch("app.core.domain_client.DomainClient.upsert_chat_session", return_value=session_data):
+    with patch(
+        "app.core.domain_client.DomainClient.upsert_chat_session", return_value=session_data
+    ):
         response = await client.post(
             "/api/v1/memory/session",
             json={"user_id": user_id},
@@ -68,8 +73,9 @@ async def test_get_session_not_found(client: AsyncClient):
     # Simulate DomainClient raising error or returning None
     with patch("app.core.domain_client.DomainClient.get_chat_session") as mocked:
         from fastapi import HTTPException
+
         mocked.side_effect = HTTPException(status_code=404, detail="Not found")
-        
+
         response = await client.get(
             "/api/v1/memory/session/nonexistent-session",
             headers=_make_service_role_headers(),
@@ -100,7 +106,9 @@ async def test_list_sessions_success(client: AsyncClient):
         }
     ]
 
-    with patch("app.core.domain_client.DomainClient.list_chat_sessions", return_value=mock_sessions):
+    with patch(
+        "app.core.domain_client.DomainClient.list_chat_sessions", return_value=mock_sessions
+    ):
         response = await client.get(
             "/api/v1/memory/sessions",
             headers=_make_service_role_headers(),
@@ -118,8 +126,9 @@ async def test_end_session_not_found(client: AsyncClient):
     """DELETE /session/{id} should return 404 for non-existent sessions."""
     with patch("app.core.domain_client.DomainClient.delete_chat_session") as mocked:
         from fastapi import HTTPException
+
         mocked.side_effect = HTTPException(status_code=404, detail="Not found")
-        
+
         response = await client.delete(
             "/api/v1/memory/session/nonexistent-session",
             headers=_make_service_role_headers(),
