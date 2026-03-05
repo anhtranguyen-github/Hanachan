@@ -103,10 +103,6 @@ services/**/.pytest_cache/
 services/**/.ipynb_checkpoints/
 services/**/*.ipynb_checkpoints/
 
-# Documentation and bulk data (per user request)
-docs/
-data/
-
 # Large files and databases
 *.db
 *.sqlite
