@@ -19,6 +19,7 @@ import pytest
 @dataclass
 class Violation:
     """Represents a single architecture violation."""
+
     file_path: str
     line_number: int
     rule: str
@@ -107,161 +108,294 @@ class ArchitectureScanner:
     def _check_forbidden_imports(self, file_path: Path, content: str) -> None:
         """Check for forbidden imports like psycopg2, asyncpg, core.database."""
         forbidden_patterns = [
-            (r"^\s*import\s+psycopg2", "FORBIDDEN_DB_DRIVER", "Direct psycopg2 import is forbidden. Use Supabase client instead."),
-            (r"^\s*from\s+psycopg2", "FORBIDDEN_DB_DRIVER", "Direct psycopg2 import is forbidden. Use Supabase client instead."),
-            (r"^\s*import\s+asyncpg", "FORBIDDEN_DB_DRIVER", "Direct asyncpg import is forbidden. Use Supabase client instead."),
-            (r"^\s*from\s+asyncpg", "FORBIDDEN_DB_DRIVER", "Direct asyncpg import is forbidden. Use Supabase client instead."),
-            (r"^\s*from\s+core\.database", "FORBIDDEN_CORE_IMPORT", "Import from core.database is forbidden. Use Supabase client instead."),
-            (r"^\s*from\s+\.\.core\.database", "FORBIDDEN_CORE_IMPORT", "Import from core.database is forbidden. Use Supabase client instead."),
-            (r"^\s*from\s+app\.core\.database", "FORBIDDEN_CORE_IMPORT", "Import from core.database is forbidden. Use Supabase client instead."),
+            (
+                r"^\s*import\s+psycopg2",
+                "FORBIDDEN_DB_DRIVER",
+                "Direct psycopg2 import is forbidden. Use Supabase client instead.",
+            ),
+            (
+                r"^\s*from\s+psycopg2",
+                "FORBIDDEN_DB_DRIVER",
+                "Direct psycopg2 import is forbidden. Use Supabase client instead.",
+            ),
+            (
+                r"^\s*import\s+asyncpg",
+                "FORBIDDEN_DB_DRIVER",
+                "Direct asyncpg import is forbidden. Use Supabase client instead.",
+            ),
+            (
+                r"^\s*from\s+asyncpg",
+                "FORBIDDEN_DB_DRIVER",
+                "Direct asyncpg import is forbidden. Use Supabase client instead.",
+            ),
+            (
+                r"^\s*from\s+core\.database",
+                "FORBIDDEN_CORE_IMPORT",
+                "Import from core.database is forbidden. Use Supabase client instead.",
+            ),
+            (
+                r"^\s*from\s+\.\.core\.database",
+                "FORBIDDEN_CORE_IMPORT",
+                "Import from core.database is forbidden. Use Supabase client instead.",
+            ),
+            (
+                r"^\s*from\s+app\.core\.database",
+                "FORBIDDEN_CORE_IMPORT",
+                "Import from core.database is forbidden. Use Supabase client instead.",
+            ),
         ]
 
         for pattern, rule, message in forbidden_patterns:
             for match in re.finditer(pattern, content, re.MULTILINE):
-                line_num = content[:match.start()].count("\n") + 1
+                line_num = content[: match.start()].count("\n") + 1
                 line_content = content.split("\n")[line_num - 1].strip()
-                self.violations.append(Violation(
-                    file_path=str(file_path.relative_to(self.project_root)),
-                    line_number=line_num,
-                    rule=rule,
-                    message=message,
-                    code_snippet=line_content
-                ))
+                self.violations.append(
+                    Violation(
+                        file_path=str(file_path.relative_to(self.project_root)),
+                        line_number=line_num,
+                        rule=rule,
+                        message=message,
+                        code_snippet=line_content,
+                    )
+                )
 
     def _check_forbidden_jwt(self, file_path: Path, content: str) -> None:
         """Check for JWT validation in FastAPI."""
         jwt_patterns = [
-            (r"jwt\.decode\s*\(", "FORBIDDEN_JWT_VALIDATION", "JWT validation in FastAPI is forbidden. Auth must flow through Next.js + Supabase."),
-            (r"jwt\.verify\s*\(", "FORBIDDEN_JWT_VALIDATION", "JWT validation in FastAPI is forbidden. Auth must flow through Next.js + Supabase."),
-            (r"PyJWKClient", "FORBIDDEN_JWT_VALIDATION", "JWT validation in FastAPI is forbidden. Auth must flow through Next.js + Supabase."),
-            (r"from\s+core\.security\s+import", "FORBIDDEN_AUTH_IMPORT", "Import from core.security is forbidden. Use Supabase RLS instead."),
-            (r"from\s+\.\.core\.security\s+import", "FORBIDDEN_AUTH_IMPORT", "Import from core.security is forbidden. Use Supabase RLS instead."),
-            (r"from\s+app\.core\.security\s+import", "FORBIDDEN_AUTH_IMPORT", "Import from core.security is forbidden. Use Supabase RLS instead."),
+            (
+                r"jwt\.decode\s*\(",
+                "FORBIDDEN_JWT_VALIDATION",
+                "JWT validation in FastAPI is forbidden. Auth must flow through Next.js + Supabase.",
+            ),
+            (
+                r"jwt\.verify\s*\(",
+                "FORBIDDEN_JWT_VALIDATION",
+                "JWT validation in FastAPI is forbidden. Auth must flow through Next.js + Supabase.",
+            ),
+            (
+                r"PyJWKClient",
+                "FORBIDDEN_JWT_VALIDATION",
+                "JWT validation in FastAPI is forbidden. Auth must flow through Next.js + Supabase.",
+            ),
+            (
+                r"from\s+core\.security\s+import",
+                "FORBIDDEN_AUTH_IMPORT",
+                "Import from core.security is forbidden. Use Supabase RLS instead.",
+            ),
+            (
+                r"from\s+\.\.core\.security\s+import",
+                "FORBIDDEN_AUTH_IMPORT",
+                "Import from core.security is forbidden. Use Supabase RLS instead.",
+            ),
+            (
+                r"from\s+app\.core\.security\s+import",
+                "FORBIDDEN_AUTH_IMPORT",
+                "Import from core.security is forbidden. Use Supabase RLS instead.",
+            ),
         ]
 
         for pattern, rule, message in jwt_patterns:
             for match in re.finditer(pattern, content, re.MULTILINE):
-                line_num = content[:match.start()].count("\n") + 1
+                line_num = content[: match.start()].count("\n") + 1
                 line_content = content.split("\n")[line_num - 1].strip()
-                self.violations.append(Violation(
-                    file_path=str(file_path.relative_to(self.project_root)),
-                    line_number=line_num,
-                    rule=rule,
-                    message=message,
-                    code_snippet=line_content
-                ))
+                self.violations.append(
+                    Violation(
+                        file_path=str(file_path.relative_to(self.project_root)),
+                        line_number=line_num,
+                        rule=rule,
+                        message=message,
+                        code_snippet=line_content,
+                    )
+                )
 
     def _check_in_memory_state(self, file_path: Path, content: str) -> None:
         """Check for in-memory state used as source of truth."""
         # Look for global dictionaries/lists that could be in-memory caches
         in_memory_patterns = [
-            (r"^\s*_cache\s*=\s*\{\}", "IN_MEMORY_STATE", "In-memory cache as source of truth is forbidden. Use Supabase for persistent state."),
-            (r"^\s*user_cache\s*=\s*\{", "IN_MEMORY_STATE", "In-memory user cache is forbidden. Use Supabase for persistent state."),
-            (r"^\s*_store\s*=\s*\{\}", "IN_MEMORY_STATE", "In-memory store is forbidden. Use Supabase for persistent state."),
+            (
+                r"^\s*_cache\s*=\s*\{\}",
+                "IN_MEMORY_STATE",
+                "In-memory cache as source of truth is forbidden. Use Supabase for persistent state.",
+            ),
+            (
+                r"^\s*user_cache\s*=\s*\{",
+                "IN_MEMORY_STATE",
+                "In-memory user cache is forbidden. Use Supabase for persistent state.",
+            ),
+            (
+                r"^\s*_store\s*=\s*\{\}",
+                "IN_MEMORY_STATE",
+                "In-memory store is forbidden. Use Supabase for persistent state.",
+            ),
         ]
 
         for pattern, rule, message in in_memory_patterns:
             for match in re.finditer(pattern, content, re.MULTILINE):
-                line_num = content[:match.start()].count("\n") + 1
+                line_num = content[: match.start()].count("\n") + 1
                 line_content = content.split("\n")[line_num - 1].strip()
-                self.violations.append(Violation(
-                    file_path=str(file_path.relative_to(self.project_root)),
-                    line_number=line_num,
-                    rule=rule,
-                    message=message,
-                    code_snippet=line_content
-                ))
+                self.violations.append(
+                    Violation(
+                        file_path=str(file_path.relative_to(self.project_root)),
+                        line_number=line_num,
+                        rule=rule,
+                        message=message,
+                        code_snippet=line_content,
+                    )
+                )
 
     def _check_business_logic(self, file_path: Path, content: str) -> None:
         """Check for business logic that should be in Next.js."""
         # FSRS algorithm patterns
         fsrs_patterns = [
-            (r"class\s+FSRS", "BUSINESS_LOGIC_IN_FASTAPI", "FSRS business logic should be in Next.js, not FastAPI."),
-            (r"def\s+calculate_fsrs", "BUSINESS_LOGIC_IN_FASTAPI", "FSRS calculation logic should be in Next.js, not FastAPI."),
-            (r"def\s+schedule_review", "BUSINESS_LOGIC_IN_FASTAPI", "Review scheduling logic should be in Next.js, not FastAPI."),
-            (r"interval\s*\*\s*ease", "BUSINESS_LOGIC_IN_FASTAPI", "FSRS interval calculation should be in Next.js, not FastAPI."),
-            (r"stability\s*\*\s*ease", "BUSINESS_LOGIC_IN_FASTAPI", "FSRS stability calculation should be in Next.js, not FastAPI."),
+            (
+                r"class\s+FSRS",
+                "BUSINESS_LOGIC_IN_FASTAPI",
+                "FSRS business logic should be in Next.js, not FastAPI.",
+            ),
+            (
+                r"def\s+calculate_fsrs",
+                "BUSINESS_LOGIC_IN_FASTAPI",
+                "FSRS calculation logic should be in Next.js, not FastAPI.",
+            ),
+            (
+                r"def\s+schedule_review",
+                "BUSINESS_LOGIC_IN_FASTAPI",
+                "Review scheduling logic should be in Next.js, not FastAPI.",
+            ),
+            (
+                r"interval\s*\*\s*ease",
+                "BUSINESS_LOGIC_IN_FASTAPI",
+                "FSRS interval calculation should be in Next.js, not FastAPI.",
+            ),
+            (
+                r"stability\s*\*\s*ease",
+                "BUSINESS_LOGIC_IN_FASTAPI",
+                "FSRS stability calculation should be in Next.js, not FastAPI.",
+            ),
         ]
 
         for pattern, rule, message in fsrs_patterns:
             for match in re.finditer(pattern, content, re.MULTILINE):
-                line_num = content[:match.start()].count("\n") + 1
+                line_num = content[: match.start()].count("\n") + 1
                 line_content = content.split("\n")[line_num - 1].strip()
-                self.violations.append(Violation(
-                    file_path=str(file_path.relative_to(self.project_root)),
-                    line_number=line_num,
-                    rule=rule,
-                    message=message,
-                    code_snippet=line_content
-                ))
+                self.violations.append(
+                    Violation(
+                        file_path=str(file_path.relative_to(self.project_root)),
+                        line_number=line_num,
+                        rule=rule,
+                        message=message,
+                        code_snippet=line_content,
+                    )
+                )
 
     def _check_direct_sql(self, file_path: Path, content: str) -> None:
         """Check for direct SQL execution patterns."""
         sql_patterns = [
-            (r"\.execute\s*\(\s*['\"]\s*(?:SELECT|INSERT|UPDATE|DELETE)", "DIRECT_SQL", "Direct SQL execution is forbidden. Use Supabase client with RLS."),
-            (r"execute_query\s*\(\s*['\"]", "DIRECT_SQL", "Direct SQL execution via execute_query is forbidden. Use Supabase client with RLS."),
+            (
+                r"\.execute\s*\(\s*['\"]\s*(?:SELECT|INSERT|UPDATE|DELETE)",
+                "DIRECT_SQL",
+                "Direct SQL execution is forbidden. Use Supabase client with RLS.",
+            ),
+            (
+                r"execute_query\s*\(\s*['\"]",
+                "DIRECT_SQL",
+                "Direct SQL execution via execute_query is forbidden. Use Supabase client with RLS.",
+            ),
         ]
 
         for pattern, rule, message in sql_patterns:
             for match in re.finditer(pattern, content, re.MULTILINE | re.IGNORECASE):
-                line_num = content[:match.start()].count("\n") + 1
+                line_num = content[: match.start()].count("\n") + 1
                 line_content = content.split("\n")[line_num - 1].strip()
                 # Skip if it's a migration file or a comment
-                if "#" in line_content and line_content.index("#") < line_content.index(match.group(0)):
+                if "#" in line_content and line_content.index("#") < line_content.index(
+                    match.group(0)
+                ):
                     continue
-                self.violations.append(Violation(
-                    file_path=str(file_path.relative_to(self.project_root)),
-                    line_number=line_num,
-                    rule=rule,
-                    message=message,
-                    code_snippet=line_content
-                ))
+                self.violations.append(
+                    Violation(
+                        file_path=str(file_path.relative_to(self.project_root)),
+                        line_number=line_num,
+                        rule=rule,
+                        message=message,
+                        code_snippet=line_content,
+                    )
+                )
 
     def _check_crud_services(self, file_path: Path, content: str) -> None:
         """Check for CRUD service patterns that should not be in FastAPI."""
         # Check for service classes in FastAPI (these should be agents, not CRUD services)
         service_patterns = [
-            (r"class\s+\w+Service\s*\(", "CRUD_SERVICE_IN_FASTAPI", "CRUD services should not exist in FastAPI. FastAPI should only have agents."),
+            (
+                r"class\s+\w+Service\s*\(",
+                "CRUD_SERVICE_IN_FASTAPI",
+                "CRUD services should not exist in FastAPI. FastAPI should only have agents.",
+            ),
         ]
 
         for pattern, rule, message in service_patterns:
             for match in re.finditer(pattern, content, re.MULTILINE):
-                line_num = content[:match.start()].count("\n") + 1
+                line_num = content[: match.start()].count("\n") + 1
                 line_content = content.split("\n")[line_num - 1].strip()
-                self.violations.append(Violation(
-                    file_path=str(file_path.relative_to(self.project_root)),
-                    line_number=line_num,
-                    rule=rule,
-                    message=message,
-                    code_snippet=line_content
-                ))
+                self.violations.append(
+                    Violation(
+                        file_path=str(file_path.relative_to(self.project_root)),
+                        line_number=line_num,
+                        rule=rule,
+                        message=message,
+                        code_snippet=line_content,
+                    )
+                )
 
     def _check_direct_fastapi_calls(self, file_path: Path, content: str) -> None:
         """Check for direct HTTP calls to FastAPI from Next.js."""
         fastapi_patterns = [
-            (r"fetch\s*\(\s*['\"][^'\"]*fastapi", "DIRECT_FASTAPI_CALL", "Direct HTTP calls to FastAPI from Next.js are forbidden. Use Supabase-mediated workflow."),
-            (r"axios\s*\.\s*(?:get|post|put|delete)\s*\(\s*['\"][^'\"]*fastapi", "DIRECT_FASTAPI_CALL", "Direct HTTP calls to FastAPI from Next.js are forbidden. Use Supabase-mediated workflow."),
-            (r"['\"][^'\"]*localhost:\d+.*\/api\/v\d+", "DIRECT_FASTAPI_CALL", "Hardcoded FastAPI endpoints are forbidden. Use Supabase-mediated workflow."),
-            (r"['\"][^'\"]*\/\/api\.[^'\"]+\/decks", "DIRECT_FASTAPI_CALL", "Direct deck API calls to FastAPI are forbidden. Use Supabase-mediated workflow."),
-            (r"['\"][^'\"]*\/\/api\.[^'\"]+\/fsrs", "DIRECT_FASTAPI_CALL", "Direct FSRS API calls to FastAPI are forbidden. Use Supabase-mediated workflow."),
+            (
+                r"fetch\s*\(\s*['\"][^'\"]*fastapi",
+                "DIRECT_FASTAPI_CALL",
+                "Direct HTTP calls to FastAPI from Next.js are forbidden. Use Supabase-mediated workflow.",
+            ),
+            (
+                r"axios\s*\.\s*(?:get|post|put|delete)\s*\(\s*['\"][^'\"]*fastapi",
+                "DIRECT_FASTAPI_CALL",
+                "Direct HTTP calls to FastAPI from Next.js are forbidden. Use Supabase-mediated workflow.",
+            ),
+            (
+                r"['\"][^'\"]*localhost:\d+.*\/api\/v\d+",
+                "DIRECT_FASTAPI_CALL",
+                "Hardcoded FastAPI endpoints are forbidden. Use Supabase-mediated workflow.",
+            ),
+            (
+                r"['\"][^'\"]*\/\/api\.[^'\"]+\/decks",
+                "DIRECT_FASTAPI_CALL",
+                "Direct deck API calls to FastAPI are forbidden. Use Supabase-mediated workflow.",
+            ),
+            (
+                r"['\"][^'\"]*\/\/api\.[^'\"]+\/fsrs",
+                "DIRECT_FASTAPI_CALL",
+                "Direct FSRS API calls to FastAPI are forbidden. Use Supabase-mediated workflow.",
+            ),
         ]
 
         for pattern, rule, message in fastapi_patterns:
             for match in re.finditer(pattern, content, re.MULTILINE | re.IGNORECASE):
-                line_num = content[:match.start()].count("\n") + 1
+                line_num = content[: match.start()].count("\n") + 1
                 line_content = content.split("\n")[line_num - 1].strip()
-                self.violations.append(Violation(
-                    file_path=str(file_path.relative_to(self.project_root)),
-                    line_number=line_num,
-                    rule=rule,
-                    message=message,
-                    code_snippet=line_content
-                ))
+                self.violations.append(
+                    Violation(
+                        file_path=str(file_path.relative_to(self.project_root)),
+                        line_number=line_num,
+                        rule=rule,
+                        message=message,
+                        code_snippet=line_content,
+                    )
+                )
 
 
 # =============================================================================
 # Pytest Test Cases
 # =============================================================================
+
 
 @pytest.fixture
 def scanner() -> ArchitectureScanner:
@@ -302,7 +436,9 @@ class TestFastAPIArchitecture:
 
     def test_fastapi_no_jwt_validation(self, violations: list[Violation]) -> None:
         """Ensure no JWT validation in FastAPI."""
-        jwt_violations = [v for v in violations if v.rule in ("FORBIDDEN_JWT_VALIDATION", "FORBIDDEN_AUTH_IMPORT")]
+        jwt_violations = [
+            v for v in violations if v.rule in ("FORBIDDEN_JWT_VALIDATION", "FORBIDDEN_AUTH_IMPORT")
+        ]
         if jwt_violations:
             message = "Found forbidden JWT validation in FastAPI:\n"
             for v in jwt_violations:
@@ -386,6 +522,7 @@ class TestOverallArchitecture:
 # Standalone Execution (for CI script usage)
 # =============================================================================
 
+
 def main() -> int:
     """Run architecture checks and return exit code."""
     # Find project root (parent of fastapi directory)
@@ -406,9 +543,9 @@ def main() -> int:
             violations_by_rule[v.rule] = []
         violations_by_rule[v.rule].append(v)
 
-    print(f"\n{'='*80}")
+    print(f"\n{'=' * 80}")
     print("ARCHITECTURE VIOLATION REPORT")
-    print(f"{'='*80}\n")
+    print(f"{'=' * 80}\n")
 
     total = len(violations)
     print(f"Total violations found: {total}\n")
@@ -423,9 +560,9 @@ def main() -> int:
                 print(f"    Code: {v.code_snippet[:80]}")
             print()
 
-    print(f"\n{'='*80}")
+    print(f"\n{'=' * 80}")
     print(f"❌ {total} architecture violations must be fixed!")
-    print(f"{'='*80}")
+    print(f"{'=' * 80}")
     print("\nRefer to documentation/ARCHITECTURE_RULES.md for architectural guidelines.")
 
     return 1

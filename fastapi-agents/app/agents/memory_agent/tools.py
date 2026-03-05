@@ -9,6 +9,7 @@ from app.services.memory import semantic_memory as sem_mem
 
 logger = logging.getLogger(__name__)
 
+
 @tool
 def get_episodic_memory(query: str, user_id: str = "INJECTED") -> str:
     """Search past conversation summaries for context about a user's history or preferences.
@@ -20,6 +21,7 @@ def get_episodic_memory(query: str, user_id: str = "INJECTED") -> str:
         return "No relevant past conversations found."
     return "\n".join([f"- {r.text} (Context score: {r.score})" for r in results])
 
+
 @tool
 def get_semantic_facts(keywords: list[str], user_id: str = "INJECTED") -> str:
     """Search structured facts about the user (interests, goals, preferred settings).
@@ -27,9 +29,7 @@ def get_semantic_facts(keywords: list[str], user_id: str = "INJECTED") -> str:
     (Note: user_id is handled automatically)
     """
     results = sem_mem.search_semantic_memory(user_id, keywords)
-    logger.info(
-        f"get_semantic_facts tool: found {len(results)} items for user {user_id}"
-    )
+    logger.info(f"get_semantic_facts tool: found {len(results)} items for user {user_id}")
     if not results:
         return "No specific facts found for these keywords."
     res_text = "\n".join(
@@ -40,8 +40,11 @@ def get_semantic_facts(keywords: list[str], user_id: str = "INJECTED") -> str:
     )
     return res_text
 
+
 @tool
-async def get_user_learning_progress(jwt: str, identifier: str, include_notes: bool = False, user_id: str = "INJECTED") -> str:
+async def get_user_learning_progress(
+    jwt: str, identifier: str, include_notes: bool = False, user_id: str = "INJECTED"
+) -> str:
     """Retrieve live learning stats for a specific Japanese character or slug.
     Identifiers can be Kanji (e.g. '桜'), Slugs (e.g. 'sakura'), or Words.
     If include_notes is True, it will also return the user's personal/agent notes for this item.
@@ -50,15 +53,18 @@ async def get_user_learning_progress(jwt: str, identifier: str, include_notes: b
     try:
         client = MCPDomainClient(jwt)
         # Call via MCP Tool
-        status_data = await client.call_tool("get_learning_progress", {"user_id": user_id, "identifier": identifier})
-        
+        status_data = await client.call_tool(
+            "get_learning_progress", {"user_id": user_id, "identifier": identifier}
+        )
+
         if not status_data:
             return f"No learning record found for '{identifier}'."
-            
+
         return str(status_data)
     except Exception as e:
         logger.error(f"Error getting learning progress: {e}")
         return f"Failed to retrieve learning progress: {str(e)}"
+
 
 @tool
 async def search_knowledge_units(jwt: str, query: str, user_id: str = "INJECTED") -> str:
@@ -68,7 +74,7 @@ async def search_knowledge_units(jwt: str, query: str, user_id: str = "INJECTED"
     try:
         client = MCPDomainClient(jwt)
         results = await client.call_tool("search_knowledge", {"user_id": user_id, "query": query})
-        
+
         if not results:
             return f"No knowledge units found for '{query}'."
         return str(results)
@@ -76,23 +82,29 @@ async def search_knowledge_units(jwt: str, query: str, user_id: str = "INJECTED"
         logger.error(f"Error searching knowledge: {e}")
         return f"Failed to search knowledge: {str(e)}"
 
+
 @tool
-async def append_to_learning_notes(jwt: str, identifier: str, note_content: str, user_id: str = "INJECTED") -> str:
+async def append_to_learning_notes(
+    jwt: str, identifier: str, note_content: str, user_id: str = "INJECTED"
+) -> str:
     """Appends a personal note, trick, or mnemonic to the user's learning record for a specific Japanese character, slug, or word.
     Use this if the user explicitly asks you to save a note or remember a rule for a specific item.
     """
     try:
         client = MCPDomainClient(jwt)
-        
+
         # Searching via MCP
-        results = await client.call_tool("search_knowledge", {"user_id": user_id, "query": identifier})
+        results = await client.call_tool(
+            "search_knowledge", {"user_id": user_id, "query": identifier}
+        )
         if not results or "error" in str(results).lower():
             return f"Could not find any knowledge unit matching '{identifier}' to save the note to."
-        
+
         return str(results)
     except Exception as e:
         logger.error(f"Error appending note: {e}")
         return f"Failed to append note: {str(e)}"
+
 
 @tool
 async def get_recent_reviews(jwt: str, limit: int = 5, user_id: str = "INJECTED") -> str:
@@ -101,17 +113,18 @@ async def get_recent_reviews(jwt: str, limit: int = 5, user_id: str = "INJECTED"
     """
     try:
         client = MCPDomainClient(jwt)
-        
+
         # Call MCP for data
         results = await client.call_tool("get_recent_reviews", {"user_id": user_id, "limit": limit})
-        
+
         if not results:
             return "No recent reviews found."
-            
+
         return str(results)
     except Exception as e:
         logger.error(f"Error getting recent reviews: {e}")
         return f"Failed to retrieve recent reviews: {str(e)}"
+
 
 # Tool list for the Planner
 TOOLS = [

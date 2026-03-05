@@ -50,9 +50,7 @@ router = APIRouter()
 @router.post("/context", response_model=ContextResponse, tags=["Context"])
 @limiter.limit(f"{settings.rate_limit_per_minute}/minute")
 async def get_chat_context(
-    request: Request,
-    req: ContextRequest,
-    current_user: dict[str, Any] = Depends(get_current_user)
+    request: Request, req: ContextRequest, current_user: dict[str, Any] = Depends(get_current_user)
 ):
     """Primary chatbot integration endpoint."""
     user_id = current_user["id"]
@@ -65,9 +63,7 @@ async def get_chat_context(
         ep_text = "\n".join(f"- {m.text}" for m in ep_results) or "(none)"
 
         keywords = [w for w in req.query.split() if len(w) > 3][:8]
-        sem_results = await run_in_threadpool(
-            sem_mem.search_semantic_memory, user_id, keywords
-        )
+        sem_results = await run_in_threadpool(sem_mem.search_semantic_memory, user_id, keywords)
         sem_text = (
             "\n".join(
                 f"- ({r['node'].get('id')} [{r['node'].get('type')}])"
@@ -87,8 +83,8 @@ async def get_chat_context(
             domain = DomainClient(current_user["jwt"])
             raw = await domain.get_chat_messages(req.session_id)
             thread_msgs = raw[-10:]
-            
-            recent = thread_msgs # use for context
+
+            recent = thread_msgs  # use for context
             lines = []
             for m in recent:
                 prefix = "User" if m["role"] == "user" else "Assistant"
@@ -131,22 +127,18 @@ async def get_chat_context(
         raise HTTPException(status_code=500, detail="Context retrieval failed")
 
 
-@router.post(
-    "/episodic/search", response_model=EpisodicSearchResponse, tags=["Episodic"]
-)
+@router.post("/episodic/search", response_model=EpisodicSearchResponse, tags=["Episodic"])
 @limiter.limit(f"{settings.rate_limit_per_minute}/minute")
 async def search_episodic(
     request: Request,
     req: EpisodicSearchRequest,
-    current_user: dict[str, Any] = Depends(get_current_user)
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     """Search episodic memory."""
     user_id = current_user["id"]
     if str(req.user_id) != str(user_id):
         raise HTTPException(status_code=400, detail="Invalid user_id in request body")
-    results = await run_in_threadpool(
-        ep_mem.search_episodic_memory, user_id, req.query, req.k
-    )
+    results = await run_in_threadpool(ep_mem.search_episodic_memory, user_id, req.query, req.k)
     return EpisodicSearchResponse(user_id=user_id, query=req.query, results=results)
 
 
@@ -155,7 +147,7 @@ async def search_episodic(
 async def add_episodic(
     request: Request,
     req: AddEpisodicRequest,
-    current_user: dict[str, Any] = Depends(get_current_user)
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     """Add episodic memory."""
     user_id = current_user["id"]
@@ -166,56 +158,41 @@ async def add_episodic(
 
 
 @router.delete("/episodic/{memory_id}", response_model=ClearResponse, tags=["Episodic"])
-async def forget_episodic(
-    memory_id: str,
-    current_user: dict[str, Any] = Depends(get_current_user)
-):
+async def forget_episodic(memory_id: str, current_user: dict[str, Any] = Depends(get_current_user)):
     """Delete a specific episodic memory."""
     user_id = current_user["id"]
     try:
         await run_in_threadpool(ep_mem.delete_episodic_memory_by_id, memory_id)
     except Exception as exc:
-        logger.error(
-            "forget_episodic_error", extra={"memory_id": memory_id, "error": str(exc)}
-        )
+        logger.error("forget_episodic_error", extra={"memory_id": memory_id, "error": str(exc)})
         raise HTTPException(status_code=500, detail="Failed to delete memory")
     return ClearResponse(user_id=user_id, message=f"Memory '{memory_id}' deleted.")
 
 
 @router.delete("/episodic/clear", response_model=ClearResponse, tags=["Episodic"])
-async def clear_episodic(
-    current_user: dict[str, Any] = Depends(get_current_user)
-):
+async def clear_episodic(current_user: dict[str, Any] = Depends(get_current_user)):
     """Clear all episodic memories for a user."""
     user_id = current_user["id"]
     await run_in_threadpool(ep_mem.clear_episodic_memory, user_id)
-    return ClearResponse(
-        user_id=user_id, message=f"All episodic memories cleared for '{user_id}'."
-    )
+    return ClearResponse(user_id=user_id, message=f"All episodic memories cleared for '{user_id}'.")
 
 
-@router.post(
-    "/semantic/search", response_model=SemanticSearchResponse, tags=["Semantic"]
-)
+@router.post("/semantic/search", response_model=SemanticSearchResponse, tags=["Semantic"])
 async def search_semantic(
-    req: SemanticSearchRequest,
-    current_user: dict[str, Any] = Depends(get_current_user)
+    req: SemanticSearchRequest, current_user: dict[str, Any] = Depends(get_current_user)
 ):
     """Search semantic memory."""
     user_id = current_user["id"]
     if str(req.user_id) != str(user_id):
         raise HTTPException(status_code=400, detail="Invalid user_id in request body")
     keywords = [w for w in req.query.split() if len(w) > 2]
-    results = await run_in_threadpool(
-        sem_mem.search_semantic_memory, user_id, keywords
-    )
+    results = await run_in_threadpool(sem_mem.search_semantic_memory, user_id, keywords)
     return SemanticSearchResponse(user_id=user_id, query=req.query, results=results)
 
 
 @router.post("/semantic/add", response_model=AddSemanticResponse, tags=["Semantic"])
 async def add_semantic(
-    req: AddSemanticRequest,
-    current_user: dict[str, Any] = Depends(get_current_user)
+    req: AddSemanticRequest, current_user: dict[str, Any] = Depends(get_current_user)
 ):
     """Add semantic memory nodes and relationships."""
     user_id = current_user["id"]
@@ -224,21 +201,15 @@ async def add_semantic(
     n, r = await run_in_threadpool(
         sem_mem.add_nodes_and_relationships, user_id, req.nodes, req.relationships
     )
-    return AddSemanticResponse(
-        user_id=user_id, nodes_added=n, relationships_added=r
-    )
+    return AddSemanticResponse(user_id=user_id, nodes_added=n, relationships_added=r)
 
 
 @router.delete("/semantic/clear", response_model=ClearResponse, tags=["Semantic"])
-async def clear_semantic(
-    current_user: dict[str, Any] = Depends(get_current_user)
-):
+async def clear_semantic(current_user: dict[str, Any] = Depends(get_current_user)):
     """Clear all semantic memory for a user."""
     user_id = current_user["id"]
     await run_in_threadpool(sem_mem.clear_semantic_memory, user_id)
-    return ClearResponse(
-        user_id=user_id, message=f"Semantic graph cleared for '{user_id}'."
-    )
+    return ClearResponse(user_id=user_id, message=f"Semantic graph cleared for '{user_id}'.")
 
 
 @router.get("/profile", response_model=UserProfileSchema, tags=["Profile"])

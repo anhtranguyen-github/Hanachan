@@ -45,9 +45,7 @@ router = APIRouter()
 @router.post("/chat", response_model=ChatResponse, tags=["Chat"])
 @limiter.limit(f"{settings.rate_limit_per_minute}/minute")
 async def chat(
-    request: Request,
-    req: ChatRequest,
-    current_user: dict[str, Any] = Depends(get_current_user)
+    request: Request, req: ChatRequest, current_user: dict[str, Any] = Depends(get_current_user)
 ):
     """Memory-augmented chat (non-streaming).
 
@@ -57,7 +55,7 @@ async def chat(
     """
     user_id = current_user["id"]
     if str(req.user_id) != str(user_id):
-          raise HTTPException(status_code=400, detail="Invalid user_id in request body")
+        raise HTTPException(status_code=400, detail="Invalid user_id in request body")
     try:
         result = await run_chat(
             user_id=user_id,
@@ -87,15 +85,13 @@ async def chat(
 @router.post("/chat/stream", tags=["Chat"])
 @limiter.limit(f"{settings.rate_limit_per_minute}/minute")
 async def chat_stream(
-    request: Request,
-    req: ChatRequest,
-    current_user: dict[str, Any] = Depends(get_current_user)
+    request: Request, req: ChatRequest, current_user: dict[str, Any] = Depends(get_current_user)
 ):
     """Streaming version of /chat using the new iterative LangGraph."""
     user_id = current_user["id"]
     if str(req.user_id) != str(user_id):
-          raise HTTPException(status_code=400, detail="Invalid user_id in request body")
-    
+        raise HTTPException(status_code=400, detail="Invalid user_id in request body")
+
     async def event_stream() -> AsyncGenerator[str, None]:
         # Initialize state
         initial_state = {
@@ -112,7 +108,6 @@ async def chat_stream(
             "tts_enabled": req.tts_enabled,
         }
 
-
         try:
             # astream_events v2 provides deep tracing of thoughts, tools, and tokens
             async for event in memory_graph.astream_events(
@@ -121,9 +116,16 @@ async def chat_stream(
                 config={"configurable": {"thread_id": req.session_id or user_id}},
             ):
                 kind = event["event"]
-                
+
                 # 1. Thought Tracing (from node updates)
-                if kind == "on_chain_end" and event["name"] in ["planner", "reviewer", "generate", "rewrite", "update", "tts"]:
+                if kind == "on_chain_end" and event["name"] in [
+                    "planner",
+                    "reviewer",
+                    "generate",
+                    "rewrite",
+                    "update",
+                    "tts",
+                ]:
                     # Node finished, check for thoughts in the output
                     output = event["data"].get("output")
                     if isinstance(output, dict) and "thought" in output:
@@ -134,7 +136,7 @@ async def chat_stream(
                     tool_name = event["name"]
                     tool_input = event["data"].get("input", {})
                     yield f"data: {json.dumps({'type': 'status', 'content': f'Calling {tool_name}...', 'meta': tool_input})}\n\n"
-                
+
                 if kind == "on_tool_end":
                     tool_name = event["name"]
                     yield f"data: {json.dumps({'type': 'status', 'content': f'Finished {tool_name}.'})}\n\n"
@@ -149,9 +151,7 @@ async def chat_stream(
             yield f"data: {json.dumps({'type': 'done', 'session_id': req.session_id})}\n\n"
 
         except Exception as exc:
-            logger.error(
-                "stream_graph_error", extra={"user_id": user_id, "error": str(exc)}
-            )
+            logger.error("stream_graph_error", extra={"user_id": user_id, "error": str(exc)})
             yield f"data: {json.dumps({'type': 'error', 'message': f'Processing failed: {str(exc)}'})}\n\n"
 
     return StreamingResponse(

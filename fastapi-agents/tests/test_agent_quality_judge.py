@@ -109,14 +109,16 @@ async def test_graph_completes_with_output():
         mock_ep.return_value = []
         mock_sem.return_value = []
 
-        mock_make_llm.return_value = _make_mock_llm([
-            AIMessage(content="Simple greeting, no tools needed."),  # Planner
-            AIMessage(content="GENERATE"),  # Reviewer
-            AIMessage(content="こんにちは！元気ですか？"),  # Generator
-            AIMessage(content="Summary"),  # Summary update
-            MagicMock(),  # KG update
-            MagicMock(),  # Note update
-        ])
+        mock_make_llm.return_value = _make_mock_llm(
+            [
+                AIMessage(content="Simple greeting, no tools needed."),  # Planner
+                AIMessage(content="GENERATE"),  # Reviewer
+                AIMessage(content="こんにちは！元気ですか？"),  # Generator
+                AIMessage(content="Summary"),  # Summary update
+                MagicMock(),  # KG update
+                MagicMock(),  # Note update
+            ]
+        )
 
         final = await memory_graph.ainvoke(state)
 
@@ -159,20 +161,26 @@ async def test_episodic_memory_tool_called():
         # Planner emits a tool_call for get_episodic_memory
         planner_msg = AIMessage(
             content="",
-            tool_calls=[{
-                "id": "call_1",
-                "name": "get_episodic_memory",
-                "args": {"query": "yesterday discussion", "user_id": "INJECTED"},
-            }],
+            tool_calls=[
+                {
+                    "id": "call_1",
+                    "name": "get_episodic_memory",
+                    "args": {"query": "yesterday discussion", "user_id": "INJECTED"},
+                }
+            ],
         )
-        mock_make_llm.return_value = _make_mock_llm([
-            planner_msg,  # Planner calls tool
-            AIMessage(content="GENERATE"),  # Reviewer
-            AIMessage(content="Yesterday we discussed the difference between Wa and Ga particles."),
-            AIMessage(content="Sum"),
-            MagicMock(),
-            MagicMock(),
-        ])
+        mock_make_llm.return_value = _make_mock_llm(
+            [
+                planner_msg,  # Planner calls tool
+                AIMessage(content="GENERATE"),  # Reviewer
+                AIMessage(
+                    content="Yesterday we discussed the difference between Wa and Ga particles."
+                ),
+                AIMessage(content="Sum"),
+                MagicMock(),
+                MagicMock(),
+            ]
+        )
 
         final = await memory_graph.ainvoke(state)
 
@@ -218,20 +226,24 @@ async def test_semantic_facts_tool_called():
 
         planner_msg = AIMessage(
             content="",
-            tool_calls=[{
-                "id": "call_2",
-                "name": "get_semantic_facts",
-                "args": {"keywords": ["about me", "profile"], "user_id": "INJECTED"},
-            }],
+            tool_calls=[
+                {
+                    "id": "call_2",
+                    "name": "get_semantic_facts",
+                    "args": {"keywords": ["about me", "profile"], "user_id": "INJECTED"},
+                }
+            ],
         )
-        mock_make_llm.return_value = _make_mock_llm([
-            planner_msg,
-            AIMessage(content="GENERATE"),
-            AIMessage(content="You live in Tokyo and are studying for JLPT N2!"),
-            AIMessage(content="Sum"),
-            MagicMock(),
-            MagicMock(),
-        ])
+        mock_make_llm.return_value = _make_mock_llm(
+            [
+                planner_msg,
+                AIMessage(content="GENERATE"),
+                AIMessage(content="You live in Tokyo and are studying for JLPT N2!"),
+                AIMessage(content="Sum"),
+                MagicMock(),
+                MagicMock(),
+            ]
+        )
 
         final = await memory_graph.ainvoke(state)
 
@@ -272,20 +284,24 @@ async def test_learning_progress_tool_called():
 
         planner_msg = AIMessage(
             content="",
-            tool_calls=[{
-                "id": "call_3",
-                "name": "get_user_learning_progress",
-                "args": {"identifier": "桜", "user_id": "INJECTED", "jwt": "fake-jwt"},
-            }],
+            tool_calls=[
+                {
+                    "id": "call_3",
+                    "name": "get_user_learning_progress",
+                    "args": {"identifier": "桜", "user_id": "INJECTED", "jwt": "fake-jwt"},
+                }
+            ],
         )
-        mock_make_llm.return_value = _make_mock_llm([
-            planner_msg,
-            AIMessage(content="GENERATE"),
-            AIMessage(content="You are N4 level with 15 items due today."),
-            AIMessage(content="Sum"),
-            MagicMock(),
-            MagicMock(),
-        ])
+        mock_make_llm.return_value = _make_mock_llm(
+            [
+                planner_msg,
+                AIMessage(content="GENERATE"),
+                AIMessage(content="You are N4 level with 15 items due today."),
+                AIMessage(content="Sum"),
+                MagicMock(),
+                MagicMock(),
+            ]
+        )
 
         final = await memory_graph.ainvoke(state)
 
@@ -324,14 +340,16 @@ async def test_thread_context_preserved():
         mock_ep.return_value = []
         mock_sem.return_value = []
 
-        mock_make_llm.return_value = _make_mock_llm([
-            AIMessage(content="User is N5 learning hiragana, simple advice."),
-            AIMessage(content="GENERATE"),
-            AIMessage(content="You should learn katakana next!"),
-            AIMessage(content="Sum"),
-            MagicMock(),
-            MagicMock(),
-        ])
+        mock_make_llm.return_value = _make_mock_llm(
+            [
+                AIMessage(content="User is N5 learning hiragana, simple advice."),
+                AIMessage(content="GENERATE"),
+                AIMessage(content="You should learn katakana next!"),
+                AIMessage(content="Sum"),
+                MagicMock(),
+                MagicMock(),
+            ]
+        )
 
         final = await memory_graph.ainvoke(state)
 
@@ -371,22 +389,26 @@ async def test_reviewer_rewrite_loop():
 
         planner_tool = AIMessage(
             content="",
-            tool_calls=[{
-                "id": "call_rw",
-                "name": "search_knowledge_units",
-                "args": {"query": "ている grammar", "user_id": "INJECTED", "jwt": "fake-jwt"},
-            }],
+            tool_calls=[
+                {
+                    "id": "call_rw",
+                    "name": "search_knowledge_units",
+                    "args": {"query": "ている grammar", "user_id": "INJECTED", "jwt": "fake-jwt"},
+                }
+            ],
         )
-        mock_make_llm.return_value = _make_mock_llm([
-            planner_tool,  # 1st planner: calls tool
-            AIMessage(content="REWRITE: search for te-iru form"),  # Reviewer: REWRITE
-            AIMessage(content="Let me search again."),  # 2nd planner (after rewrite)
-            AIMessage(content="GENERATE"),  # Reviewer: GENERATE
-            AIMessage(content="ている expresses ongoing actions."),  # Generator
-            AIMessage(content="Sum"),
-            MagicMock(),
-            MagicMock(),
-        ])
+        mock_make_llm.return_value = _make_mock_llm(
+            [
+                planner_tool,  # 1st planner: calls tool
+                AIMessage(content="REWRITE: search for te-iru form"),  # Reviewer: REWRITE
+                AIMessage(content="Let me search again."),  # 2nd planner (after rewrite)
+                AIMessage(content="GENERATE"),  # Reviewer: GENERATE
+                AIMessage(content="ている expresses ongoing actions."),  # Generator
+                AIMessage(content="Sum"),
+                MagicMock(),
+                MagicMock(),
+            ]
+        )
 
         final = await memory_graph.ainvoke(state)
 
