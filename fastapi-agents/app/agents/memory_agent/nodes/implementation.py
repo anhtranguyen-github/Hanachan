@@ -16,6 +16,7 @@ from app.services.memory import semantic_memory as sem_mem
 
 logger = logging.getLogger(__name__)
 
+
 async def tools_node(state: AgentState) -> dict[str, Any]:
     """Custom tool node that injects the actual user_id from state into tool calls."""
     user_id = state["user_id"]
@@ -57,11 +58,9 @@ async def tools_node(state: AgentState) -> dict[str, Any]:
         target_tool = tool_map[tool_name]
         try:
             content = await target_tool.ainvoke(args)
-                
+
             results.append(
-                ToolMessage(
-                    tool_call_id=tool_call["id"], content=str(content), name=tool_name
-                )
+                ToolMessage(tool_call_id=tool_call["id"], content=str(content), name=tool_name)
             )
         except Exception as e:
             logger.error(f"Error in tool {tool_name}: {e}")
@@ -72,6 +71,7 @@ async def tools_node(state: AgentState) -> dict[str, Any]:
             )
 
     return {"messages": results}
+
 
 PLANNER_PROMPT = ChatPromptTemplate.from_messages(
     [
@@ -96,6 +96,7 @@ PLANNER_PROMPT = ChatPromptTemplate.from_messages(
     ]
 )
 
+
 async def planner_node(state: AgentState) -> dict[str, Any]:
     """Decides what the agent should do next (call tools or generate)."""
     llm = make_llm().bind_tools(TOOLS)
@@ -104,6 +105,7 @@ async def planner_node(state: AgentState) -> dict[str, Any]:
     thread_text = "(no active session)"
     if state.get("session_id"):
         from app.core.domain_client import DomainClient
+
         client = DomainClient(state["jwt"])
         try:
             messages = await client.get_chat_messages(state["session_id"])
@@ -133,10 +135,11 @@ async def planner_node(state: AgentState) -> dict[str, Any]:
         thought = "I have enough information to answer directly."
 
     return {
-        "messages": [response], 
+        "messages": [response],
         "iterations": state.get("iterations", 0) + 1,
-        "thought": thought
+        "thought": thought,
     }
+
 
 REVIEWER_PROMPT = ChatPromptTemplate.from_messages(
     [
@@ -155,16 +158,13 @@ REVIEWER_PROMPT = ChatPromptTemplate.from_messages(
     ]
 )
 
+
 def reviewer_node(state: AgentState) -> dict[str, Any]:
     """Checks if the tool results are sufficient."""
     llm = make_llm()
     chain = REVIEWER_PROMPT | llm
-    messages_text = "\n".join(
-        [f"{m.type.capitalize()}: {m.content}" for m in state["messages"]]
-    )
-    response = chain.invoke(
-        {"user_input": state["user_input"], "messages": messages_text}
-    )
+    messages_text = "\n".join([f"{m.type.capitalize()}: {m.content}" for m in state["messages"]])
+    response = chain.invoke({"user_input": state["user_input"], "messages": messages_text})
 
     content = response.content.upper()
     if "GENERATE" in content or state["iterations"] >= 3:
@@ -176,6 +176,7 @@ def reviewer_node(state: AgentState) -> dict[str, Any]:
         thought = f"The information is incomplete. I need to search again: {suggestion}"
         return {"review_result": "rewrite", "rewritten_query": suggestion, "thought": thought}
 
+
 def rewriter_node(state: AgentState) -> dict[str, Any]:
     """Modifies the message list to guide the planner towards a better tool call."""
     suggestion = state.get("rewritten_query", "Try searching for simpler keywords.")
@@ -185,8 +186,9 @@ def rewriter_node(state: AgentState) -> dict[str, Any]:
                 content=f"[Reviewer Feedback]: The previous tools didn't find enough. {suggestion}"
             )
         ],
-        "thought": "I'm rewriting the query to improve context retrieval."
+        "thought": "I'm rewriting the query to improve context retrieval.",
     }
+
 
 GENERATION_PROMPT = ChatPromptTemplate.from_messages(
     [
@@ -200,6 +202,7 @@ GENERATION_PROMPT = ChatPromptTemplate.from_messages(
         ("human", "{user_input}"),
     ]
 )
+
 
 def generator_node(state: AgentState) -> dict[str, Any]:
     """Generates the final response based on all gathered context."""
@@ -216,21 +219,18 @@ def generator_node(state: AgentState) -> dict[str, Any]:
         else:
             lines.append(f"{role}: {m.content}")
     messages_text = "\n".join(lines)
-    logger.debug(
-        f"generator_context: {messages_text}"
-    )
+    logger.debug(f"generator_context: {messages_text}")
 
-    response = chain.invoke(
-        {"user_input": state["user_input"], "messages": messages_text}
-    )
+    response = chain.invoke({"user_input": state["user_input"], "messages": messages_text})
 
     return {"generation": response.content, "thought": "Final answer generated."}
+
 
 async def tts_node(state: AgentState) -> dict[str, Any]:
     """Generates voice for the final response using ElevenLabs SDK and stores it via Domain Service."""
     if not state.get("tts_enabled", True):
         return {"audio_file": None}
-        
+
     if state.get("generation"):
         try:
             import uuid
@@ -239,21 +239,23 @@ async def tts_node(state: AgentState) -> dict[str, Any]:
 
             from app.core.config import settings
             from app.core.domain_client import DomainClient
+
             client = ElevenLabs(api_key=settings.elevenlabs_api_key)
-            
+
             audio_stream = client.text_to_speech.convert(
                 text=state["generation"],
                 voice_id="JBFqnCBsd6RMkjVDRZzb",
-                model_id="eleven_multilingual_v2"
+                model_id="eleven_multilingual_v2",
             )
-            
+
             import tempfile
+
             temp_dir = tempfile.gettempdir()
             temp_file = f"{temp_dir}/agent_tts_{uuid.uuid4()}.wav"
             with open(temp_file, "wb") as f:
                 for chunk in audio_stream:
                     f.write(chunk)
-            
+
             if os.path.exists(temp_file):
                 client = DomainClient(state["jwt"])
                 public_url = await client.upload_audio(temp_file)
@@ -267,6 +269,7 @@ async def tts_node(state: AgentState) -> dict[str, Any]:
             return {"audio_file": None}
     return {}
 
+
 async def update_memory_node(state: AgentState) -> dict[str, Any]:
     """Final node to persist the side effects (episodic/semantic update) via Domain Service."""
     user_id = state["user_id"]
@@ -276,22 +279,46 @@ async def update_memory_node(state: AgentState) -> dict[str, Any]:
     output = state["generation"]
 
     from app.services.mcp_domain_client import MCPDomainClient
+
     client = MCPDomainClient(jwt_token)
 
     if session_id:
         try:
-            await client.call_tool("upsert_chat_session", {"user_id": user_id, "session_id": session_id})
-            existing_messages = await client.call_tool("get_chat_messages", {"user_id": user_id, "session_id": session_id})
-            await client.call_tool("add_chat_message", {"user_id": user_id, "session_id": session_id, "role": "user", "content": user_input})
-            await client.call_tool("add_chat_message", {"user_id": user_id, "session_id": session_id, "role": "assistant", "content": output})
+            await client.call_tool(
+                "upsert_chat_session", {"user_id": user_id, "session_id": session_id}
+            )
+            existing_messages = await client.call_tool(
+                "get_chat_messages", {"user_id": user_id, "session_id": session_id}
+            )
+            await client.call_tool(
+                "add_chat_message",
+                {
+                    "user_id": user_id,
+                    "session_id": session_id,
+                    "role": "user",
+                    "content": user_input,
+                },
+            )
+            await client.call_tool(
+                "add_chat_message",
+                {
+                    "user_id": user_id,
+                    "session_id": session_id,
+                    "role": "assistant",
+                    "content": output,
+                },
+            )
 
             if not existing_messages or len(existing_messages) < 2:
                 try:
                     title_llm = make_llm()
                     title_prompt = f"Generate a very short (max 5 words) title for this conversation in Japanese. User: {user_input}"
                     title_res = title_llm.invoke(title_prompt).content
-                    title = title_res.strip().replace('"', '').replace('*', '')
-                    await client.call_tool("update_chat_session", {"user_id": user_id, "session_id": session_id, "title": title})
+                    title = title_res.strip().replace('"', "").replace("*", "")
+                    await client.call_tool(
+                        "update_chat_session",
+                        {"user_id": user_id, "session_id": session_id, "title": title},
+                    )
                     logger.info(f"Generated title for session {session_id}: {title}")
                 except Exception as te:
                     logger.error(f"Failed to generate title: {te}")
@@ -307,21 +334,34 @@ async def update_memory_node(state: AgentState) -> dict[str, Any]:
         ).content
         ep_mem.add_episodic_memory(user_id, summary)
 
-        extraction_prompt = f"Extract entities and facts from this interaction: User: {user_input}\nAI: {output}"
+        extraction_prompt = (
+            f"Extract entities and facts from this interaction: User: {user_input}\nAI: {output}"
+        )
         kg_data = extraction_llm.invoke(extraction_prompt)
         sem_mem.add_semantic_facts(user_id, kg_data)
 
         class NoteExtraction(BaseModel):
-            has_note: bool = Field(description="True if the AI provided a specific mnemonic or helpful learning trick about a Japanese character.")
-            character_or_slug: str | None = Field(description="The specific Japanese character or slug the note is about, if any.")
-            note_content: str | None = Field(description="The concise learning trick or mnemonic provided.")
-            
+            has_note: bool = Field(
+                description="True if the AI provided a specific mnemonic or helpful learning trick about a Japanese character."
+            )
+            character_or_slug: str | None = Field(
+                description="The specific Japanese character or slug the note is about, if any."
+            )
+            note_content: str | None = Field(
+                description="The concise learning trick or mnemonic provided."
+            )
+
         note_extractor = make_llm().with_structured_output(NoteExtraction)
         note_check = note_extractor.invoke(
             f"Review this AI response carefully.\nDid the AI provide a specific memory trick, mnemonic, or important usage note about a specific Japanese character?\n\nAI Response: {output}"
         )
-        
-        if note_check and note_check.has_note and note_check.character_or_slug and note_check.note_content:
+
+        if (
+            note_check
+            and note_check.has_note
+            and note_check.character_or_slug
+            and note_check.note_content
+        ):
             logger.info("Skipped storing KU note due to architecture rules (use NextJS/Supabase).")
     except Exception as e:
         logger.error(f"Memory persistence failed: {e}")

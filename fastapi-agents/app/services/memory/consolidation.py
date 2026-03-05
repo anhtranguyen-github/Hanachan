@@ -72,19 +72,17 @@ def _consolidate_batch(
 
 
 def consolidate_memories(user_id: str) -> ConsolidationResult:
-    """Run consolidation for a user.
-    """
+    """Run consolidation for a user."""
     logger.info("consolidation_started", extra={"user_id": user_id})
     return _do_consolidate(user_id)
+
 
 def _do_consolidate(user_id: str) -> ConsolidationResult:
     all_memories = ep_mem.list_episodic_memories(user_id, limit=200)
     total_before = len(all_memories)
 
     # Filter out already-consolidated memories to avoid over-compression
-    non_consolidated = [
-        m for m in all_memories if not m.text.startswith("[Consolidated]")
-    ]
+    non_consolidated = [m for m in all_memories if not m.text.startswith("[Consolidated]")]
 
     if len(non_consolidated) <= CONSOLIDATION_THRESHOLD:
         return ConsolidationResult(

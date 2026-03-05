@@ -106,9 +106,7 @@ def add_episodic_memory(user_id: str, text: str) -> str:
     return point_id
 
 
-def search_episodic_memory(
-    user_id: str, query: str, k: int = 3
-) -> list[EpisodicMemory]:
+def search_episodic_memory(user_id: str, query: str, k: int = 3) -> list[EpisodicMemory]:
     """Similarity search restricted to *user_id*; returns top-k results."""
     client = _get_client()
     embedder = _get_embedder()

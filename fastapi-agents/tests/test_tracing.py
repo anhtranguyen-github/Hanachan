@@ -11,10 +11,12 @@ def test_tracing_environment_configuration(monkeypatch):
     monkeypatch.setenv("LANGCHAIN_ENDPOINT", "https://api.smith.langchain.com")
     monkeypatch.setenv("LANGCHAIN_API_KEY", "ls__mock_key")
     monkeypatch.setenv("LANGCHAIN_PROJECT", "hanachan_test_project")
-    
+
     import os
+
     assert os.getenv("LANGCHAIN_TRACING_V2") == "true"
     assert os.getenv("LANGCHAIN_PROJECT") == "hanachan_test_project"
+
 
 @pytest.mark.asyncio
 async def test_tracing_context_manager():
@@ -23,7 +25,7 @@ async def test_tracing_context_manager():
         from langchain_core.tracers.context import tracing_v2_enabled
     except ImportError:
         pytest.skip("Langchain core not installed or wrong version")
-    
+
     # Simple dummy run to check if the context manager opens correctly
     # Under regular operation, `run_chat` inherits this environment.
     with patch("langchain_core.tracers.context.tracing_v2_enabled"):

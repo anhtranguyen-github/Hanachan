@@ -19,11 +19,13 @@ def should_continue(state: AgentState):
         return "tools"
     return "reviewer"
 
+
 def decide_path(state: AgentState):
     """Router for the reviewer output."""
     if state.get("review_result") == "rewrite":
         return "rewrite"
     return "generate"
+
 
 def _build_graph():
     workflow = StateGraph(AgentState)
@@ -57,11 +59,12 @@ def _build_graph():
     # Parallel path: Generation branches into TTS and Update simultaneously
     workflow.add_edge("generate", "tts")
     workflow.add_edge("generate", "update")
-    
+
     # Both parallel branches go to END
     workflow.add_edge("tts", END)
     workflow.add_edge("update", END)
 
     return workflow.compile()
+
 
 memory_graph = _build_graph()

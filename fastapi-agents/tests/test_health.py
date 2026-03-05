@@ -2,6 +2,7 @@
 Tests for health and root endpoints.
 These tests run without any external service dependencies.
 """
+
 from __future__ import annotations
 
 import pytest

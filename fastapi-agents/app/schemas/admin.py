@@ -10,8 +10,10 @@ from pydantic import BaseModel, Field
 # USER MANAGEMENT SCHEMAS
 # =============================================================================
 
+
 class UserListItem(BaseModel):
     """User item in list view."""
+
     id: str
     display_name: str | None
     level: int
@@ -26,6 +28,7 @@ class UserListItem(BaseModel):
 
 class UserListResponse(BaseModel):
     """Response for listing users."""
+
     users: list[UserListItem]
     total: int
     limit: int
@@ -34,6 +37,7 @@ class UserListResponse(BaseModel):
 
 class LearningStats(BaseModel):
     """Learning statistics for a user."""
+
     new_items: int
     learning_items: int
     review_items: int
@@ -43,6 +47,7 @@ class LearningStats(BaseModel):
 
 class ChatStats(BaseModel):
     """Chat statistics for a user."""
+
     total_sessions: int
     total_messages: int
     last_chat_at: str | None
@@ -50,6 +55,7 @@ class ChatStats(BaseModel):
 
 class CostStats(BaseModel):
     """Cost statistics for a user."""
+
     last_30_days_cost_usd: float
     last_30_days_tokens: int
     last_30_days_requests: int
@@ -57,6 +63,7 @@ class CostStats(BaseModel):
 
 class SuspensionInfo(BaseModel):
     """Active suspension information."""
+
     id: str
     reason: str
     suspended_until: str | None
@@ -66,6 +73,7 @@ class SuspensionInfo(BaseModel):
 
 class RateLimitOverrideInfo(BaseModel):
     """Rate limit override information."""
+
     id: str
     scope: str
     endpoint_pattern: str
@@ -78,6 +86,7 @@ class RateLimitOverrideInfo(BaseModel):
 
 class UserDetailsResponse(BaseModel):
     """Detailed user information."""
+
     id: str
     display_name: str | None
     level: int
@@ -92,6 +101,7 @@ class UserDetailsResponse(BaseModel):
 
 class SuspendUserRequest(BaseModel):
     """Request to suspend a user."""
+
     reason: str = Field(..., min_length=1, max_length=500)
     suspension_type: str = Field(default="temporary", pattern="^(temporary|permanent)$")
     duration_hours: int | None = Field(default=None, ge=1, le=8760)  # Max 1 year
@@ -99,6 +109,7 @@ class SuspendUserRequest(BaseModel):
 
 class SuspendUserResponse(BaseModel):
     """Response after suspending a user."""
+
     suspension_id: str
     user_id: str
     reason: str
@@ -109,11 +120,13 @@ class SuspendUserResponse(BaseModel):
 
 class LiftSuspensionRequest(BaseModel):
     """Request to lift a suspension."""
+
     reason: str = Field(..., min_length=1, max_length=500)
 
 
 class LiftSuspensionResponse(BaseModel):
     """Response after lifting a suspension."""
+
     suspension_id: str
     user_id: str
     lifted_at: str
@@ -124,8 +137,10 @@ class LiftSuspensionResponse(BaseModel):
 # COST TRACKING SCHEMAS
 # =============================================================================
 
+
 class ModelCostStats(BaseModel):
     """Cost statistics by model."""
+
     model: str
     cost_usd: float
     tokens: int
@@ -134,6 +149,7 @@ class ModelCostStats(BaseModel):
 
 class EndpointCostStats(BaseModel):
     """Cost statistics by endpoint."""
+
     endpoint: str
     cost_usd: float
     tokens: int
@@ -142,6 +158,7 @@ class EndpointCostStats(BaseModel):
 
 class DailyCostStats(BaseModel):
     """Daily cost breakdown."""
+
     date: str
     cost_usd: float
     tokens: int
@@ -151,6 +168,7 @@ class DailyCostStats(BaseModel):
 
 class TopUserCost(BaseModel):
     """Top user by cost."""
+
     user_id: str
     display_name: str | None
     cost_usd: float
@@ -160,6 +178,7 @@ class TopUserCost(BaseModel):
 
 class CostAnalyticsResponse(BaseModel):
     """Cost analytics response."""
+
     period_days: int
     summary: dict
     by_model: list[ModelCostStats]
@@ -170,6 +189,7 @@ class CostAnalyticsResponse(BaseModel):
 
 class CostLogEntry(BaseModel):
     """Individual cost log entry."""
+
     id: str
     model: str
     endpoint: str
@@ -185,6 +205,7 @@ class CostLogEntry(BaseModel):
 
 class UserCostHistoryResponse(BaseModel):
     """User cost history response."""
+
     user_id: str
     period_days: int
     summary: dict
@@ -195,8 +216,10 @@ class UserCostHistoryResponse(BaseModel):
 # AUDIT LOG SCHEMAS
 # =============================================================================
 
+
 class AuditLogEntry(BaseModel):
     """Individual audit log entry."""
+
     id: str
     admin_user_id: str
     admin_name: str | None
@@ -212,6 +235,7 @@ class AuditLogEntry(BaseModel):
 
 class AuditLogsResponse(BaseModel):
     """Audit logs response."""
+
     logs: list[AuditLogEntry]
     total: int
     limit: int
@@ -222,8 +246,10 @@ class AuditLogsResponse(BaseModel):
 # ABUSE DETECTION SCHEMAS
 # =============================================================================
 
+
 class AbuseAlert(BaseModel):
     """Abuse alert entry."""
+
     id: str
     alert_type: str
     severity: str
@@ -241,6 +267,7 @@ class AbuseAlert(BaseModel):
 
 class AbuseAlertsResponse(BaseModel):
     """Abuse alerts response."""
+
     alerts: list[AbuseAlert]
     total: int
     limit: int
@@ -249,7 +276,10 @@ class AbuseAlertsResponse(BaseModel):
 
 class CreateAbuseAlertRequest(BaseModel):
     """Request to create an abuse alert."""
-    alert_type: str = Field(..., pattern="^(rate_limit_exceeded|cost_spike|suspicious_pattern|data_exfiltration|spam)$")
+
+    alert_type: str = Field(
+        ..., pattern="^(rate_limit_exceeded|cost_spike|suspicious_pattern|data_exfiltration|spam)$"
+    )
     severity: str = Field(..., pattern="^(low|medium|high|critical)$")
     description: str = Field(..., min_length=1, max_length=1000)
     user_id: str | None = None
@@ -259,6 +289,7 @@ class CreateAbuseAlertRequest(BaseModel):
 
 class CreateAbuseAlertResponse(BaseModel):
     """Response after creating an abuse alert."""
+
     alert_id: str
     alert_type: str
     severity: str
@@ -267,12 +298,14 @@ class CreateAbuseAlertResponse(BaseModel):
 
 class ResolveAbuseAlertRequest(BaseModel):
     """Request to resolve an abuse alert."""
+
     resolution_notes: str = Field(..., min_length=1, max_length=1000)
     status: str = Field(default="resolved", pattern="^(resolved|false_positive)$")
 
 
 class ResolveAbuseAlertResponse(BaseModel):
     """Response after resolving an abuse alert."""
+
     alert_id: str
     status: str
     resolved_at: str
@@ -282,8 +315,10 @@ class ResolveAbuseAlertResponse(BaseModel):
 # RATE LIMIT SCHEMAS
 # =============================================================================
 
+
 class RateLimitOverride(BaseModel):
     """Rate limit override entry."""
+
     id: str
     user_id: str | None
     user_name: str | None
@@ -301,11 +336,13 @@ class RateLimitOverride(BaseModel):
 
 class RateLimitOverridesResponse(BaseModel):
     """Rate limit overrides response."""
+
     overrides: list[RateLimitOverride]
 
 
 class CreateRateLimitOverrideRequest(BaseModel):
     """Request to create a rate limit override."""
+
     scope: str = Field(..., pattern="^(user|ip|global)$")
     endpoint_pattern: str = Field(default="*", max_length=100)
     reason: str = Field(..., min_length=1, max_length=500)
@@ -319,6 +356,7 @@ class CreateRateLimitOverrideRequest(BaseModel):
 
 class CreateRateLimitOverrideResponse(BaseModel):
     """Response after creating a rate limit override."""
+
     override_id: str
     scope: str
     endpoint_pattern: str
@@ -330,8 +368,10 @@ class CreateRateLimitOverrideResponse(BaseModel):
 # SYSTEM HEALTH SCHEMAS
 # =============================================================================
 
+
 class SystemHealthResponse(BaseModel):
     """System health response."""
+
     status: str
     db_status: str
     qdrant_status: str
@@ -342,6 +382,7 @@ class SystemHealthResponse(BaseModel):
 
 class AdminDashboardStats(BaseModel):
     """Overview stats for admin dashboard."""
+
     total_users: int
     active_users_24h: int
     active_users_7d: int
