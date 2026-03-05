@@ -8,13 +8,18 @@ run without any real credentials or network access.
 from __future__ import annotations
 
 import os
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
+
+# ── Load environment variables from .env if present ──────────────────────────
+from dotenv import load_dotenv
 from faker import Faker
 from httpx import ASGITransport, AsyncClient
+
+load_dotenv()
 
 fake = Faker()
 
@@ -130,7 +135,7 @@ def service_role_headers() -> dict:
 @pytest.fixture
 def sample_user_id() -> str:
     """Generate a random test user ID."""
-    return f"test-user-{fake.uuid4()[:8]}"
+    return str(fake.uuid4())
 
 
 @pytest.fixture

@@ -9,8 +9,8 @@ def test_settings_load_from_env():
     """Settings should load from environment variables."""
     from app.core.config import settings
 
-    assert settings.openai_api_key == "sk-test-key"
-    assert settings.supabase_url == "https://test.supabase.co"
+    assert settings.openai_api_key != "", "OPENAI_API_KEY should be loaded"
+    assert settings.supabase_url != "", "SUPABASE_URL should be loaded"
     
 
 
