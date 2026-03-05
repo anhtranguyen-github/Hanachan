@@ -34,12 +34,12 @@ export default function SignupPage() {
             });
 
             if (error) {
-                setMessage({ text: error.message, success: false });
+                setMessage({ text: (error instanceof Error ? error.message : String(error)), success: false });
             } else {
                 setMessage({ text: 'Account created! Check your email for a confirmation link.', success: true });
             }
-        } catch (err: any) {
-            setMessage({ text: err.message || 'An unexpected error occurred', success: false });
+        } catch (err: unknown) {
+            setMessage({ text: (err instanceof Error ? err.message : String(err)) || 'An unexpected error occurred', success: false });
         } finally {
             setLoading(false);
         }

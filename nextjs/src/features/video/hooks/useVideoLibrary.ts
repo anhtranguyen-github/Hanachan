@@ -61,8 +61,8 @@ export function useVideoLibrary(userId: string | undefined) {
       ]);
       setEntries(libraryEntries);
       setCategories(userCategories);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load library');
+    } catch (err: unknown) {
+      setError((err instanceof Error ? err.message : String(err)) || 'Failed to load library');
     } finally {
       setLoading(false);
     }
@@ -110,8 +110,8 @@ export function useVideoLibrary(userId: string | undefined) {
       
       await loadLibrary();
       return { success: true };
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to add video';
+    } catch (err: unknown) {
+      const errorMsg = (err instanceof Error ? err.message : String(err)) || 'Failed to add video';
       setUploadState(prev => ({ ...prev, stage: 'error', error: errorMsg }));
       setError(errorMsg);
       return { success: false, error: errorMsg };
@@ -124,8 +124,8 @@ export function useVideoLibrary(userId: string | undefined) {
       await service.removeFromLibrary(userId, videoId);
       setEntries(prev => prev.filter(e => e.video_id !== videoId));
       return { success: true };
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to remove video';
+    } catch (err: unknown) {
+      const errorMsg = (err instanceof Error ? err.message : String(err)) || 'Failed to remove video';
       setError(errorMsg);
       return { success: false, error: errorMsg };
     }
@@ -139,8 +139,8 @@ export function useVideoLibrary(userId: string | undefined) {
         e.video_id === videoId ? { ...e, is_favorite: isFavorite } : e
       ));
       return { success: true };
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to update favorite';
+    } catch (err: unknown) {
+      const errorMsg = (err instanceof Error ? err.message : String(err)) || 'Failed to update favorite';
       setError(errorMsg);
       return { success: false, error: errorMsg };
     }
@@ -154,8 +154,8 @@ export function useVideoLibrary(userId: string | undefined) {
         e.video_id === videoId ? { ...e, category_id: categoryId } : e
       ));
       return { success: true };
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to assign category';
+    } catch (err: unknown) {
+      const errorMsg = (err instanceof Error ? err.message : String(err)) || 'Failed to assign category';
       setError(errorMsg);
       return { success: false, error: errorMsg };
     }
@@ -167,8 +167,8 @@ export function useVideoLibrary(userId: string | undefined) {
       const category = await service.createCategory(userId, req);
       setCategories(prev => [...prev, category]);
       return { success: true, category };
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to create category';
+    } catch (err: unknown) {
+      const errorMsg = (err instanceof Error ? err.message : String(err)) || 'Failed to create category';
       setError(errorMsg);
       return { success: false, error: errorMsg };
     }
@@ -180,8 +180,8 @@ export function useVideoLibrary(userId: string | undefined) {
       await service.deleteCategory(categoryId, userId);
       setCategories(prev => prev.filter(c => c.id !== categoryId));
       return { success: true };
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to delete category';
+    } catch (err: unknown) {
+      const errorMsg = (err instanceof Error ? err.message : String(err)) || 'Failed to delete category';
       setError(errorMsg);
       return { success: false, error: errorMsg };
     }

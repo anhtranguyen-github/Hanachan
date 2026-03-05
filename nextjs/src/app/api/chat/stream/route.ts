@@ -89,8 +89,8 @@ export async function POST(req: NextRequest) {
                 'X-Memory-Session-Id': resolvedSessionId ?? '',
             },
         });
-    } catch (err: any) {
-        const errEvent = `data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`;
+    } catch (err: unknown) {
+        const errEvent = `data: ${JSON.stringify({ type: 'error', message: (err instanceof Error ? err.message : String(err)) })}\n\n`;
         return new Response(errEvent, {
             status: 500,
             headers: { 'Content-Type': 'text/event-stream' },

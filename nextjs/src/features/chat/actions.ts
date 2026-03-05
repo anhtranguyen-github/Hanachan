@@ -17,9 +17,9 @@ export async function sendMessageAction(sessionId: string, userId: string, conte
     try {
         const result = await advancedChatService.sendMessage(sessionId, userId, content);
         return { success: true, ...result };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Chat Action Error:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: (error instanceof Error ? error.message : String(error)) };
     }
 }
 

@@ -526,14 +526,14 @@ export async function createDictationSession(
     }
 
     return await response.json();
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating dictation session:', error);
     return {
       success: false,
       video_id: videoId,
       subtitles: [],
       total_subtitles: 0,
-      error: error.message || 'Network error',
+      error: (error instanceof Error ? error.message : String(error)) || 'Network error',
     };
   }
 }
@@ -571,13 +571,13 @@ export async function submitDictationAttempt(
     }
 
     return await response.json();
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error submitting dictation attempt:', error);
     return {
       success: false,
       is_complete: false,
       remaining: 0,
-      error: error.message || 'Network error',
+      error: (error instanceof Error ? error.message : String(error)) || 'Network error',
     };
   }
 }
@@ -601,7 +601,7 @@ export async function getDictationStats(): Promise<DictationStats> {
     }
 
     return await response.json();
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting dictation stats:', error);
     return {
       total_sessions: 0,

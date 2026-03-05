@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { submitReview } from '@/features/learning/service';
 import { srsRepository } from '@/features/learning/srsRepository';
 
+vi.mock('next/headers', () => ({
+    cookies: vi.fn().mockReturnValue(Promise.resolve({ get: vi.fn().mockReturnValue({ value: 'mock-token' }) }))
+}));
 vi.mock('@/features/learning/srsRepository');
 vi.mock('@/features/analytics/service', () => ({
     analyticsService: {

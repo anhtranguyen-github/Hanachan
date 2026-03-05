@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Loader2, BookOpen, ChevronRight, Target, X, Sparkles, GraduationCap } from 'lucide-react';
-import { fetchNewItems, fetchLevelStats } from '@/features/learning/service';
+import { fetchNewItemsAction, fetchLevelStatsAction } from '@/features/learning/actions';
 import { useUser } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { clsx } from 'clsx';
@@ -24,8 +24,10 @@ export default function LearnOverviewPage() {
             const { data: profile } = await supabase.from('users').select('level').eq('id', userId).single();
             const currentLevel = profile?.level || 1;
             setUserLevel(currentLevel);
-            const levelStats = await fetchLevelStats(userId, `level-${currentLevel}`);
-            const newItems = await fetchNewItems(userId, `level-${currentLevel}`, 20);
+            const levelRes = await fetchLevelStatsAction(userId, `level-${currentLevel}`);
+            const levelStats = levelRes.data || { new: 0, learned: 0, total: 100 };
+            const newItemsRes = await fetchNewItemsAction(userId, `level-${currentLevel}`, 20);
+            const newItems = newItemsRes.data || [];
             const batches = [];
             for (let i = 0; i < newItems.length; i += 5) {
                 batches.push({ id: (i / 5) + 1, items: newItems.slice(i, i + 5), status: i === 0 ? 'available' : 'locked' });

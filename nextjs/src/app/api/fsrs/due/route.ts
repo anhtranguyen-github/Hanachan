@@ -69,10 +69,10 @@ export async function GET(req: NextRequest) {
             item_type_filter: itemType || null
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('[FSRS Due API]', error);
         return NextResponse.json(
-            { success: false, error: error.message || 'Internal server error' },
+            { success: false, error: 'Internal server error' },
             { status: 500 }
         );
     }

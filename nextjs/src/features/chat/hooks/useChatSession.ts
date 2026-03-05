@@ -226,9 +226,9 @@ export function useChatSession(userId?: string, conversationId?: string) {
                     }
                 }
             }
-        } catch (err: any) {
-            if (err.name !== 'AbortError') {
-                console.error('[useChatSession] stream error:', err);
+        } catch (err: unknown) {
+            if (err instanceof Error && err.name !== 'AbortError') {
+                console.error('Stream reader error:', err);
                 setMessages(prev => [
                     ...prev,
                     {

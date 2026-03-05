@@ -1,4 +1,4 @@
-import { submitReview } from './service';
+import { submitReviewAction } from './actions';
 import { Rating } from './domain/SRSAlgorithm';
 import { srsRepository } from './srsRepository';
 import { questionRepository } from './questionRepository';
@@ -156,13 +156,12 @@ export class ReviewSessionController {
         else {
             // 1. Calculate FSRS with FIF
             // state.wrongCount holds the total failures in this session
-            await submitReview(
-                this.userId,
+            await submitReviewAction(
+                this.sessionId || 'unknown_session',
                 current.ku_id,
                 current.prompt_variant,
                 rating,
-                current.currentState,
-                // Pass wrongCount to the Service to forward to FSRSEngine
+                state.attemptCount,
                 state.wrongCount
             );
 

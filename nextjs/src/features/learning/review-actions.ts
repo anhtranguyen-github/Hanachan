@@ -43,9 +43,9 @@ export async function startReviewSessionAction(
     try {
         const session = await startReviewSession(userId, options);
         return { success: true, data: session };
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error(`${LOG_PREFIX} Error starting session:`, e);
-        return { success: false, error: e.message };
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }
 
@@ -61,9 +61,9 @@ export async function getNextReviewCardAction(
     try {
         const cards = await generateReviewCards(unitIds.map(id => ({ unitId: id, facet: 'meaning' })), userId);
         return { success: true, data: cards };
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error(`${LOG_PREFIX} Error getting cards:`, e);
-        return { success: false, error: e.message };
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }
 
@@ -95,9 +95,9 @@ export async function submitReviewAnswerAction(
                 nextReview: result.nextReview.toISOString()
             }
         };
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error(`${LOG_PREFIX} Error submitting answer:`, e);
-        return { success: false, error: e.message };
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }
 
@@ -117,11 +117,11 @@ export async function getReviewStatsAction(
     try {
         const stats = await getReviewStats(userId);
         return { success: true, data: stats };
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error(`${LOG_PREFIX} Error getting stats:`, e);
         return {
             success: false,
-            error: e.message,
+            error: (e instanceof Error ? e.message : String(e)),
             data: { due: 0, dueByType: {}, learned: 0, burned: 0 }
         };
     }
@@ -150,11 +150,11 @@ export async function getDueCountsAction(
                 total: stats.due
             } as any
         };
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error(`${LOG_PREFIX} Error getting due counts:`, e);
         return {
             success: false,
-            error: e.message,
+            error: (e instanceof Error ? e.message : String(e)),
             data: { radical: 0, kanji: 0, vocabulary: 0, grammar: 0, total: 0 }
         };
     }
@@ -177,8 +177,8 @@ export async function getGrammarClozeCardAction(
         }
 
         return { success: true, data: cards[0] };
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error(`${LOG_PREFIX} Error getting grammar card:`, e);
-        return { success: false, error: e.message };
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }

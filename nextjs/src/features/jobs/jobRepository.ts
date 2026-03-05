@@ -119,7 +119,7 @@ export async function createAgentJob(
   
   if (error) {
     console.error('Error creating agent job:', error);
-    throw new Error(`Failed to create job: ${error.message}`);
+    throw new Error(`Failed to create job: ${(error instanceof Error ? error.message : String(error))}`);
   }
   
   return {

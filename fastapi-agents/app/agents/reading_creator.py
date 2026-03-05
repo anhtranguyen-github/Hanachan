@@ -130,11 +130,11 @@ def select_featured_content(
     )
 
     # Sample items (prefer recently learned items for reinforcement)
-    selected_vocab = random.sample(vocab_list, min(vocab_count, len(vocab_list)))
-    selected_grammar = random.sample(
+    selected_vocab = random.sample(vocab_list, min(vocab_count, len(vocab_list)))  # nosec B311
+    selected_grammar = random.sample(  # nosec B311
         grammar_list, min(grammar_count, len(grammar_list))
     )
-    selected_kanji = random.sample(kanji_list, min(kanji_count, len(kanji_list)))
+    selected_kanji = random.sample(kanji_list, min(kanji_count, len(kanji_list)))  # nosec B311
 
     return {
         "vocab": selected_vocab,

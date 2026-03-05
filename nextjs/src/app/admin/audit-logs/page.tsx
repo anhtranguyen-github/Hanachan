@@ -37,7 +37,7 @@ export default function AuditLogsPage() {
       setLogs(result.logs);
       setTotal(result.total);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load audit logs");
+      setError(err instanceof Error ? (err instanceof Error ? err.message : String(err)) : "Failed to load audit logs");
     } finally {
       setLoading(false);
     }

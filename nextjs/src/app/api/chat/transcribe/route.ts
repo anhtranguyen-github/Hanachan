@@ -57,10 +57,10 @@ export async function POST(req: NextRequest) {
             : (transcription as any).text ?? '';
 
         return NextResponse.json({ success: true, transcript: transcript.trim() });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('[Transcribe API]', err);
         return NextResponse.json(
-            { success: false, error: err.message ?? 'Transcription failed' },
+            { success: false, error: (err instanceof Error ? err.message : String(err)) ?? 'Transcription failed' },
             { status: 500 },
         );
     }

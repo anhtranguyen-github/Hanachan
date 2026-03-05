@@ -71,7 +71,7 @@ export default function AdminDashboardPage() {
         const data = await getDashboardStats();
         setStats(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load stats");
+        setError(err instanceof Error ? (err instanceof Error ? err.message : String(err)) : "Failed to load stats");
       } finally {
         setLoading(false);
       }

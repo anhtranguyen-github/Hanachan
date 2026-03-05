@@ -41,7 +41,7 @@ export async function addSentenceAction(japaneseRaw: string, englishRaw: string)
 
     if (error) {
         console.error('Error adding sentence:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: (error instanceof Error ? error.message : String(error)) };
     }
 
     // 2. Trigger annotation via Next.js API route (architecture: no direct FastAPI calls)
@@ -82,7 +82,7 @@ export async function fetchUserSentencesAction() {
         .order('created_at', { ascending: false });
 
     if (error) {
-        return { success: false, error: error.message };
+        return { success: false, error: (error instanceof Error ? error.message : String(error)) };
     }
 
     if (!sentences || sentences.length === 0) {

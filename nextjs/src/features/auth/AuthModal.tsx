@@ -80,8 +80,8 @@ export function AuthModal() {
                     }, 2000);
                 }
             }
-        } catch (err: any) {
-            setError(err.message || 'An unexpected error occurred');
+        } catch (err: unknown) {
+            setError((err instanceof Error ? err.message : String(err)) || 'An unexpected error occurred');
         } finally {
             setLoading(false);
         }
@@ -98,8 +98,8 @@ export function AuthModal() {
                 },
             });
             if (oauthError) throw oauthError;
-        } catch (err: any) {
-            setError(err.message || `An error occurred while connecting to ${provider}`);
+        } catch (err: unknown) {
+            setError((err instanceof Error ? err.message : String(err)) || `An error occurred while connecting to ${provider}`);
             setLoading(false);
         }
     };

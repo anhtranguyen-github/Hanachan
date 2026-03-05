@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, ArrowLeft, CheckCircle2, Zap, X } from 'lucide-react';
-import { fetchDueItems } from '@/features/learning/service';
+import { fetchDueItemsAction } from '@/features/learning/actions';
 import { ReviewSessionController, QuizItem } from '@/features/learning/ReviewSessionController';
 import { Rating } from '@/features/learning/domain/FSRSEngine';
 import { GlassCard } from '@/components/premium/GlassCard';
@@ -25,7 +25,8 @@ function SessionContent() {
         const userId = user.id;
 
         try {
-            const items = await fetchDueItems(userId);
+            const itemsRes = await fetchDueItemsAction(userId);
+            const items = itemsRes.data || [];
 
             if (items.length === 0) {
                 setPhase('complete');

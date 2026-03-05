@@ -96,7 +96,7 @@ export function useSpeakingPractice(): UseSpeakingPracticeReturn {
             setLastFeedback(null);
 
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred');
+            setError(err instanceof Error ? (err instanceof Error ? err.message : String(err)) : 'An error occurred');
             console.error('Failed to start session:', err);
         } finally {
             setIsLoading(false);

@@ -90,8 +90,8 @@ export default function ReadingSessionPage() {
             } else if (data.status === 'completed') {
                 setPhase('session_complete');
             }
-        } catch (err: any) {
-            setError(err.message || 'Failed to load session');
+        } catch (err: unknown) {
+            setError((err instanceof Error ? err.message : String(err)) || 'Failed to load session');
             setPhase('loading');
         }
     };
@@ -101,8 +101,8 @@ export default function ReadingSessionPage() {
             await startReadingSession(sessionId);
             startTimeRef.current = Date.now();
             setPhase('reading');
-        } catch (err: any) {
-            setError(err.message || 'Failed to start session');
+        } catch (err: unknown) {
+            setError((err instanceof Error ? err.message : String(err)) || 'Failed to start session');
         }
     };
 
@@ -129,8 +129,8 @@ export default function ReadingSessionPage() {
             const result = await submitAnswer(exercise.id, currentQuestionIndex, selectedAnswer, timeSpent);
             setAnswerResult(result);
             setExerciseAnswers(prev => [...prev, result]);
-        } catch (err: any) {
-            setError(err.message || 'Failed to submit answer');
+        } catch (err: unknown) {
+            setError((err instanceof Error ? err.message : String(err)) || 'Failed to submit answer');
         } finally {
             setSubmitting(false);
         }
@@ -166,8 +166,8 @@ export default function ReadingSessionPage() {
                 const result = await completeReadingSession(sessionId, totalTime);
                 setSessionScore(result);
                 setPhase('session_complete');
-            } catch (err: any) {
-                setError(err.message || 'Failed to complete session');
+            } catch (err: unknown) {
+                setError((err instanceof Error ? err.message : String(err)) || 'Failed to complete session');
             }
         }
     };

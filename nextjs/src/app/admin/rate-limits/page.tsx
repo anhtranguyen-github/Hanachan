@@ -68,7 +68,7 @@ export default function RateLimitsPage() {
       resetForm();
       loadOverrides();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to create override");
+      alert(err instanceof Error ? (err instanceof Error ? err.message : String(err)) : "Failed to create override");
     }
   }
 
