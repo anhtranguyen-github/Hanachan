@@ -5,8 +5,7 @@ Episodic Memory Module — backed by Qdrant (cloud).
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import List
+from datetime import UTC, datetime
 
 from langchain_openai import OpenAIEmbeddings
 from qdrant_client import QdrantClient
@@ -88,7 +87,7 @@ def add_episodic_memory(user_id: str, text: str) -> str:
 
     vector = embedder.embed_query(text)
     point_id = str(uuid.uuid4())
-    created_at = datetime.now(timezone.utc).isoformat()
+    created_at = datetime.now(UTC).isoformat()
 
     client.upsert(
         collection_name=settings.qdrant_collection,
@@ -109,7 +108,7 @@ def add_episodic_memory(user_id: str, text: str) -> str:
 
 def search_episodic_memory(
     user_id: str, query: str, k: int = 3
-) -> List[EpisodicMemory]:
+) -> list[EpisodicMemory]:
     """Similarity search restricted to *user_id*; returns top-k results."""
     client = _get_client()
     embedder = _get_embedder()
@@ -142,7 +141,7 @@ def search_episodic_memory(
     ]
 
 
-def list_episodic_memories(user_id: str, limit: int = 50) -> List[EpisodicMemory]:
+def list_episodic_memories(user_id: str, limit: int = 50) -> list[EpisodicMemory]:
     """List all episodic memories for *user_id* (no ranking, newest first)."""
     client = _get_client()
     records, _ = client.scroll(

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import Depends
 
@@ -26,13 +26,13 @@ Architecture Note:
 
 import json
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage
 
-from app.agents.memory_agent import memory_agent, run_chat
+from app.agents.memory_agent import memory_graph, run_chat
 from app.core.config import settings
 from app.core.rate_limit import limiter
 from app.schemas.chat import ChatRequest, ChatResponse
@@ -47,7 +47,7 @@ router = APIRouter()
 async def chat(
     request: Request,
     req: ChatRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: dict[str, Any] = Depends(get_current_user)
 ):
     """Memory-augmented chat (non-streaming).
 
@@ -89,7 +89,7 @@ async def chat(
 async def chat_stream(
     request: Request,
     req: ChatRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: dict[str, Any] = Depends(get_current_user)
 ):
     """Streaming version of /chat using the new iterative LangGraph."""
     user_id = current_user["id"]
@@ -112,32 +112,39 @@ async def chat_stream(
             "tts_enabled": req.tts_enabled,
         }
 
-        full_response = ""
 
         try:
-            # We use astream to yield updates from the graph
-            async for event in memory_agent.astream(
+            # astream_events v2 provides deep tracing of thoughts, tools, and tokens
+            async for event in memory_graph.astream_events(
                 initial_state,
+                version="v2",
                 config={"configurable": {"thread_id": req.session_id or user_id}},
             ):
-                # We can yield "meta" events for planning/tools
-                for node_name, state_update in event.items():
-                    if node_name == "planner":
-                        # If the planner produced messages with tool calls, we can signal that
-                        last_msg = state_update["messages"][-1]
-                        if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
-                            tool_names = [tc["name"] for tc in last_msg.tool_calls]
-                            yield f"data: {json.dumps({'type': 'status', 'content': f'Planning tools: {tool_names}'})}\n\n"
+                kind = event["event"]
+                
+                # 1. Thought Tracing (from node updates)
+                if kind == "on_chain_end" and event["name"] in ["planner", "reviewer", "generate", "rewrite", "update", "tts"]:
+                    # Node finished, check for thoughts in the output
+                    output = event["data"].get("output")
+                    if isinstance(output, dict) and "thought" in output:
+                        yield f"data: {json.dumps({'type': 'thought', 'content': output['thought']})}\n\n"
 
-                    elif node_name == "tools":
-                        yield f"data: {json.dumps({'type': 'status', 'content': 'Retrieving knowledge...'})}\n\n"
+                # 2. Tool Tracing
+                if kind == "on_tool_start":
+                    tool_name = event["name"]
+                    tool_input = event["data"].get("input", {})
+                    yield f"data: {json.dumps({'type': 'status', 'content': f'Calling {tool_name}...', 'meta': tool_input})}\n\n"
+                
+                if kind == "on_tool_end":
+                    tool_name = event["name"]
+                    yield f"data: {json.dumps({'type': 'status', 'content': f'Finished {tool_name}.'})}\n\n"
 
-                    elif node_name == "generate":
-                        # The final generation
-                        full_response = state_update["generation"]
-                        # In the current implementation, 'generate' node produces the full response at once.
-                        # If we wanted token-by-token streaming, we'd need to emit from inside the node or use a stream_mode.
-                        yield f"data: {json.dumps({'type': 'token', 'content': full_response})}\n\n"
+                # 3. Token Streaming (Reasoning & Generation)
+                # We filter for the 'generator' node's LLM stream
+                if kind == "on_chat_model_stream":
+                    content = event["data"]["chunk"].content
+                    if content:
+                        yield f"data: {json.dumps({'type': 'token', 'content': content})}\n\n"
 
             yield f"data: {json.dumps({'type': 'done', 'session_id': req.session_id})}\n\n"
 

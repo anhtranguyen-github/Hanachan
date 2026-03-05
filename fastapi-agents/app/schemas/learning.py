@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -12,14 +12,14 @@ class KUStatus(BaseModel):
     meaning: str
     level: int
     state: str = "new"  # 'new', 'reviewing', 'learned', etc.
-    next_review: Optional[datetime] = None
-    last_review: Optional[datetime] = None
+    next_review: datetime | None = None
+    last_review: datetime | None = None
     stability: float = 0.0
     difficulty: float = 5.0
     reps: int = 0
     lapses: int = 0
-    notes: Optional[str] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    notes: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class UserLearningSummary(BaseModel):
@@ -28,4 +28,4 @@ class UserLearningSummary(BaseModel):
     learned_count: int
     reviewing_count: int
     new_count: int
-    level_stats: Dict[int, Dict[str, int]] = Field(default_factory=dict)
+    level_stats: dict[int, dict[str, int]] = Field(default_factory=dict)

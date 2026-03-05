@@ -5,7 +5,6 @@ Memory Consolidation Module.
 from __future__ import annotations
 
 import logging
-from typing import List
 
 from langchain_core.prompts import ChatPromptTemplate
 from qdrant_client import QdrantClient
@@ -50,7 +49,7 @@ _CONSOLIDATION_PROMPT = ChatPromptTemplate.from_messages(
 
 def _consolidate_batch(
     user_id: str,
-    memories: List[EpisodicMemory],
+    memories: list[EpisodicMemory],
     client: QdrantClient,
 ) -> str:
     """Merge a batch of memories → one consolidated string, replace in Qdrant."""
@@ -104,7 +103,7 @@ def _do_consolidate(user_id: str) -> ConsolidationResult:
     # Batch the non-consolidated memories oldest-first
     sorted_memories = sorted(non_consolidated, key=lambda m: m.created_at or "")
     batches_merged = 0
-    consolidated_summaries: List[str] = []
+    consolidated_summaries: list[str] = []
 
     for i in range(0, len(sorted_memories), BATCH_SIZE):
         batch = sorted_memories[i : i + BATCH_SIZE]

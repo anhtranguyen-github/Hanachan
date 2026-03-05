@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -30,7 +30,7 @@ class KnowledgeGraph(BaseModel):
     """Structured knowledge extracted from a conversation by the LLM."""
 
     model_config = ConfigDict(extra="forbid")
-    relationships: List[Relationship] = Field(
+    relationships: list[Relationship] = Field(
         description="Relationships to add to the knowledge graph."
     )
 
@@ -43,8 +43,8 @@ class KnowledgeGraph(BaseModel):
 class EpisodicMemory(BaseModel):
     id: str
     text: str
-    score: Optional[float] = None
-    created_at: Optional[str] = None
+    score: float | None = None
+    created_at: str | None = None
 
 
 class EpisodicSearchRequest(BaseModel):
@@ -56,7 +56,7 @@ class EpisodicSearchRequest(BaseModel):
 class EpisodicSearchResponse(BaseModel):
     user_id: str
     query: str
-    results: List[EpisodicMemory]
+    results: list[EpisodicMemory]
 
 
 class AddEpisodicRequest(BaseModel):
@@ -96,13 +96,13 @@ class SemanticSearchRequest(BaseModel):
 class SemanticSearchResponse(BaseModel):
     user_id: str
     query: str
-    results: List[Dict[str, Any]]
+    results: list[dict[str, Any]]
 
 
 class AddSemanticRequest(BaseModel):
     user_id: str
-    nodes: List[Node]
-    relationships: List[Relationship]
+    nodes: list[Node]
+    relationships: list[Relationship]
 
 
 class AddSemanticResponse(BaseModel):
@@ -118,12 +118,12 @@ class AddSemanticResponse(BaseModel):
 
 class UserProfile(BaseModel):
     user_id: str
-    name: Optional[str] = None
-    preferences: List[str] = []
-    goals: List[str] = []
-    interests: List[str] = []
-    facts: List[str] = []
-    raw_triples: List[Dict[str, Any]] = []
+    name: str | None = None
+    preferences: list[str] = []
+    goals: list[str] = []
+    interests: list[str] = []
+    facts: list[str] = []
+    raw_triples: list[dict[str, Any]] = []
 
 
 # ---------------------------------------------------------------------------
@@ -154,4 +154,4 @@ class HealthResponse(BaseModel):
     qdrant: str
     neo4j: str
     db: str = "ok"
-    degraded: List[str] = []
+    degraded: list[str] = []

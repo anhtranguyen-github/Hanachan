@@ -1,0 +1,628 @@
+"""
+LangGraph Memory-Augmented Agent (Iterative Version).
+Graph: planning -> tools -> reviewer -> decide -> (rewrite -> planning) or (generate -> update -> END)
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+from datetime import datetime
+from typing import Annotated, Any
+
+from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.tools import tool
+from langgraph.graph import END, StateGraph
+from typing_extensions import TypedDict
+
+from app.agents.deck_manager import DECK_TOOLS
+from app.core.llm import make_llm
+from app.schemas.memory import KnowledgeGraph
+from app.services.mcp_domain_client import MCPDomainClient
+from app.services.memory import episodic_memory as ep_mem
+from app.services.memory import semantic_memory as sem_mem
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Agent State
+# ---------------------------------------------------------------------------
+
+
+class AgentState(TypedDict):
+    user_id: str
+    session_id: str | None
+    user_input: str
+    # Iterative fields
+    messages: Annotated[list[BaseMessage], lambda x, y: x + y]
+    plan: str
+    thought: str  # Added for process tracing
+    iterations: int
+    review_result: str  # "generate" or "rewrite"
+    rewritten_query: str | None
+    # Final output
+    generation: str
+    audio_file: str | None
+    tts_enabled: bool
+    jwt: str
+    # For return compatibility
+    thread_context: str
+    retrieved_episodic: str
+    retrieved_semantic: str
+
+
+# ---------------------------------------------------------------------------
+# Tools (The "Bridge" to Memory Layers & Databases)
+# ---------------------------------------------------------------------------
+
+
+@tool
+def get_episodic_memory(query: str, user_id: str = "INJECTED") -> str:
+    """Search past conversation summaries for context about a user's history or preferences.
+    Use this if you need to remember what we talked about in previous sessions.
+    (Note: user_id is handled automatically)
+    """
+    results = ep_mem.search_episodic_memory(user_id, query, k=3)
+    if not results:
+        return "No relevant past conversations found."
+    return "\n".join([f"- {r.text} (Context score: {r.score})" for r in results])
+
+
+@tool
+def get_semantic_facts(keywords: list[str], user_id: str = "INJECTED") -> str:
+    """Search structured facts about the user (interests, goals, preferred settings).
+    Use this for specific factual questions about the person.
+    (Note: user_id is handled automatically)
+    """
+    results = sem_mem.search_semantic_memory(user_id, keywords)
+    logger.info(
+        f"get_semantic_facts tool: found {len(results)} items for user {user_id}"
+    )
+    if not results:
+        return "No specific facts found for these keywords."
+    res_text = "\n".join(
+        [
+            f"- ({r['source'].get('id')}) —[{r['relationship']}]→ ({r['target'].get('id')})"
+            for r in results[:15]
+        ]
+    )
+    return res_text
+
+
+@tool
+async def get_user_learning_progress(jwt: str, identifier: str, include_notes: bool = False, user_id: str = "INJECTED") -> str:
+    """Retrieve live learning stats for a specific Japanese character or slug.
+    Identifiers can be Kanji (e.g. '桜'), Slugs (e.g. 'sakura'), or Words.
+    If include_notes is True, it will also return the user's personal/agent notes for this item.
+    (Note: user_id is handled automatically)
+    """
+    try:
+        client = MCPDomainClient(jwt)
+        # Call via MCP Tool
+        status_data = await client.call_tool("get_learning_progress", {"user_id": user_id, "identifier": identifier})
+        
+        if not status_data:
+            return f"No learning record found for '{identifier}'."
+            
+        return str(status_data)
+    except Exception as e:
+        logger.error(f"Error getting learning progress: {e}")
+        return f"Failed to retrieve learning progress: {str(e)}"
+
+
+@tool
+async def search_knowledge_units(jwt: str, query: str, user_id: str = "INJECTED") -> str:
+    """Search the general Japanese knowledge database for meanings, characters, or slugs.
+    Use this if the user asks 'What does X mean?' or 'How do you write Y?'.
+    """
+    try:
+        client = MCPDomainClient(jwt)
+        results = await client.call_tool("search_knowledge", {"user_id": user_id, "query": query})
+        
+        if not results:
+            return f"No knowledge units found for '{query}'."
+        return str(results)
+    except Exception as e:
+        logger.error(f"Error searching knowledge: {e}")
+        return f"Failed to search knowledge: {str(e)}"
+
+
+@tool
+async def append_to_learning_notes(jwt: str, identifier: str, note_content: str, user_id: str = "INJECTED") -> str:
+    """Appends a personal note, trick, or mnemonic to the user's learning record for a specific Japanese character, slug, or word.
+    Use this if the user explicitly asks you to save a note or remember a rule for a specific item.
+    """
+    try:
+        client = MCPDomainClient(jwt)
+        
+        # Searching via MCP
+        results = await client.call_tool("search_knowledge", {"user_id": user_id, "query": identifier})
+        if not results or "error" in str(results).lower():
+            return f"Could not find any knowledge unit matching '{identifier}' to save the note to."
+        
+        return str(results)
+    except Exception as e:
+        logger.error(f"Error appending note: {e}")
+        return f"Failed to append note: {str(e)}"
+@tool
+async def get_recent_reviews(jwt: str, limit: int = 5, user_id: str = "INJECTED") -> str:
+    """Retrieve the most recent words or characters the user has reviewed.
+    Use this if the user asks 'What did I just study?' or 'How did my last session go?'.
+    """
+    try:
+        client = MCPDomainClient(jwt)
+        
+        # Call MCP for data
+        results = await client.call_tool("get_recent_reviews", {"user_id": user_id, "limit": limit})
+        
+        if not results:
+            return "No recent reviews found."
+            
+        return str(results)
+    except Exception as e:
+        logger.error(f"Error getting recent reviews: {e}")
+        return f"Failed to retrieve recent reviews: {str(e)}"
+
+
+# Tool list for the Planner
+TOOLS = [
+    get_episodic_memory,
+    get_semantic_facts,
+    get_user_learning_progress,
+    get_recent_reviews,
+    search_knowledge_units,
+    append_to_learning_notes,
+] + DECK_TOOLS
+
+
+async def tools_node(state: AgentState) -> dict[str, Any]:
+    """Custom tool node that injects the actual user_id from state into tool calls."""
+    user_id = state["user_id"]
+    last_msg = state["messages"][-1]
+    tool_map = {t.name: t for t in TOOLS}
+
+    if not last_msg.tool_calls:
+        return {"messages": []}
+
+    results = []
+    for tool_call in last_msg.tool_calls:
+        tool_name = tool_call["name"]
+        args = tool_call["args"]
+
+        if tool_name not in tool_map:
+            continue
+
+        # Inject user_id and jwt if needed
+        if tool_name in [
+            "get_episodic_memory",
+            "get_semantic_facts",
+            "get_user_learning_progress",
+            "get_recent_reviews",
+            "search_knowledge_units",
+            "append_to_learning_notes",
+            "create_user_deck",
+            "list_my_decks",
+            "add_to_deck",
+            "remove_from_deck",
+            "view_deck_contents",
+            "submit_reading_answer",
+        ]:
+            if "user_id" in tool_map[tool_name].args:
+                args["user_id"] = user_id
+            if "jwt" in tool_map[tool_name].args:
+                args["jwt"] = state["jwt"]
+
+        # Invoke (LangChain handles sync/async internally via ainvoke)
+        target_tool = tool_map[tool_name]
+        try:
+            content = await target_tool.ainvoke(args)
+                
+            results.append(
+                ToolMessage(
+                    tool_call_id=tool_call["id"], content=str(content), name=tool_name
+                )
+            )
+        except Exception as e:
+            logger.error(f"Error in tool {tool_name}: {e}")
+            results.append(
+                ToolMessage(
+                    tool_call_id=tool_call["id"], content=f"Error: {str(e)}", name=tool_name
+                )
+            )
+
+    return {"messages": results}
+
+
+# ---------------------------------------------------------------------------
+# Nodes (Logic blocks)
+# ---------------------------------------------------------------------------
+
+PLANNER_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are a strategic planning node for a Japanese language learning assistant.\n"
+            "Your goal is to decide which tools to call to gather enough context to answer the user's message accurately.\n\n"
+            "User session context:\n{thread_context}\n\n"
+            "Instructions:\n"
+            "1. Analyze the user's message.\n"
+            "2. If the message is a simple greeting, you may not need tools.\n"
+            "3. If it involves their learning progress, use 'get_user_learning_progress'.\n"
+            "4. If it's about Japanese grammar/vocab, use 'search_knowledge_units'.\n"
+            "5. If it refers to past conversations, use 'get_episodic_memory'.\n"
+            "6. If it's about their personal facts, interests, or goals, use 'get_semantic_facts'.\n"
+            "7. If the user explicitly asks you to save or remember a note for a specific kanji/vocab/grammar, use 'append_to_learning_notes'.\n"
+            "8. If the user wants to create, list, view, or manage their study decks, use the appropriate 'deck' tools.\n"
+            "9. If you have already gathered info, decide if you need more or if you can proceed to answer.\n\n"
+            "Current Date: {date}",
+        ),
+        ("placeholder", "{messages}"),
+    ]
+)
+
+
+async def planner_node(state: AgentState) -> dict[str, Any]:
+    """Decides what the agent should do next (call tools or generate)."""
+    llm = make_llm().bind_tools(TOOLS)
+
+    # Pre-fetch thread context for the prompt (via Domain Service)
+    thread_text = "(no active session)"
+    if state.get("session_id"):
+        from app.core.domain_client import DomainClient
+        client = DomainClient(state["jwt"])
+        try:
+            messages = await client.get_chat_messages(state["session_id"])
+            recent = messages[-5:]
+            lines = []
+            for m in recent:
+                prefix = "User" if m["role"] == "user" else "Assistant"
+                lines.append(f"{prefix}: {m['content']}")
+            thread_text = "\n".join(lines)
+        except Exception:
+            thread_text = "Failed to retrieve session context."
+
+    chain = PLANNER_PROMPT | llm
+    response = chain.invoke(
+        {
+            "messages": state["messages"],
+            "thread_context": thread_text,
+            "date": datetime.now().strftime("%Y-%m-%d"),
+        }
+    )
+
+    thought = "Thinking about next steps..."
+    if hasattr(response, "tool_calls") and response.tool_calls:
+        tool_names = [tc["name"] for tc in response.tool_calls]
+        thought = f"I decided to use these tools: {tool_names}"
+    else:
+        thought = "I have enough information to answer directly."
+
+    return {
+        "messages": [response], 
+        "iterations": state.get("iterations", 0) + 1,
+        "thought": thought
+    }
+
+
+REVIEWER_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are a Quality Assurance reviewer. Evaluate the gathered context against the user's original intent.\n\n"
+            "User Input: {user_input}\n"
+            "Gathered Context: {messages}\n\n"
+            "Decision Rules:\n"
+            "- If the tool results clearly answer the user's question, respond with 'GENERATE'.\n"
+            "- If the tool results are missing key information (e.g. couldn't find a record), respond with 'REWRITE' followed by a suggestion for a better search query.\n"
+            "- If you have looped more than 3 times, respond with 'GENERATE' to avoid frustration.\n\n"
+            "Return ONLY the decision word and suggestion if applicable.",
+        ),
+        ("human", "Check if we have enough info."),
+    ]
+)
+
+
+def reviewer_node(state: AgentState) -> dict[str, Any]:
+    """Checks if the tool results are sufficient."""
+    llm = make_llm()
+    chain = REVIEWER_PROMPT | llm
+    messages_text = "\n".join(
+        [f"{m.type.capitalize()}: {m.content}" for m in state["messages"]]
+    )
+    response = chain.invoke(
+        {"user_input": state["user_input"], "messages": messages_text}
+    )
+
+    content = response.content.upper()
+    if "GENERATE" in content or state["iterations"] >= 3:
+        thought = "The gathered information is sufficient. Proceeding to answer."
+        return {"review_result": "generate", "thought": thought}
+    else:
+        # Extract suggested rewrite if present
+        suggestion = content.replace("REWRITE", "").strip()
+        thought = f"The information is incomplete. I need to search again: {suggestion}"
+        return {"review_result": "rewrite", "rewritten_query": suggestion, "thought": thought}
+
+
+def rewriter_node(state: AgentState) -> dict[str, Any]:
+    """Modifies the message list to guide the planner towards a better tool call."""
+    suggestion = state.get("rewritten_query", "Try searching for simpler keywords.")
+    return {
+        "messages": [
+            HumanMessage(
+                content=f"[Reviewer Feedback]: The previous tools didn't find enough. {suggestion}"
+            )
+        ],
+        "thought": "I'm rewriting the query to improve context retrieval."
+    }
+
+
+GENERATION_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are Hanachan, a helpful and personalized Japanese learning assistant.\n"
+            "Use the retrieved context to answer the user. Be concise, warm, and professional.\n"
+            "Reference the facts found if relevant, but don't show raw metadata.\n\n"
+            "Context:\n{messages}",
+        ),
+        ("human", "{user_input}"),
+    ]
+)
+
+
+def generator_node(state: AgentState) -> dict[str, Any]:
+    """Generates the final response based on all gathered context."""
+    llm = make_llm()
+    chain = GENERATION_PROMPT | llm
+    lines = []
+    for m in state["messages"]:
+        role = m.type.capitalize()
+        if m.type == "ai" and hasattr(m, "tool_calls") and m.tool_calls:
+            calls = ", ".join([tc["name"] for tc in m.tool_calls])
+            lines.append(f"{role} (Calling tools: {calls}): {m.content}")
+        elif m.type == "tool":
+            lines.append(f"Tool Result ({getattr(m, 'name', 'unknown')}): {m.content}")
+        else:
+            lines.append(f"{role}: {m.content}")
+    messages_text = "\n".join(lines)
+    logger.debug(
+        "generator_context",
+        extra={"messages_text": messages_text},
+    )
+
+    response = chain.invoke(
+        {"user_input": state["user_input"], "messages": messages_text}
+    )
+
+    return {"generation": response.content, "thought": "Final answer generated."}
+
+
+async def tts_node(state: AgentState) -> dict[str, Any]:
+    """Generates voice for the final response using ElevenLabs SDK and stores it via Domain Service."""
+    if not state.get("tts_enabled", True):
+        return {"audio_file": None}
+        
+    if state.get("generation"):
+        try:
+            import uuid
+
+            # Use native ElevenLabs client for reliability on SDK ^2.0
+            from elevenlabs.client import ElevenLabs
+
+            from app.core.config import settings
+            from app.core.domain_client import DomainClient
+            client = ElevenLabs(api_key=settings.elevenlabs_api_key)
+            
+            # Fetch audio stream
+            audio_stream = client.text_to_speech.convert(
+                text=state["generation"],
+                voice_id="JBFqnCBsd6RMkjVDRZzb",
+                model_id="eleven_multilingual_v2"
+            )
+            
+            import tempfile
+            temp_dir = tempfile.gettempdir()
+            temp_file = f"{temp_dir}/agent_tts_{uuid.uuid4()}.wav"
+            with open(temp_file, "wb") as f:
+                for chunk in audio_stream:
+                    f.write(chunk)
+            
+            if os.path.exists(temp_file):
+                # Call Domain Service for storage (PURE AGENT RUNTIME)
+                client = DomainClient(state["jwt"])
+                public_url = await client.upload_audio(temp_file)
+                
+                # Cleanup temporary file
+                try:
+                    os.remove(temp_file)
+                except Exception as e:
+                    logger.warning(f"Failed to delete temp audio file {temp_file}: {e}")
+                    
+                return {"audio_file": public_url}
+        except Exception as e:
+            logger.error(f"ElevenLabs TTS (or Domain upload) failed: {e}")
+            return {"audio_file": None}
+    return {}
+
+
+async def update_memory_node(state: AgentState) -> dict[str, Any]:
+    """Final node to persist the side effects (episodic/semantic update) via Domain Service."""
+    user_id = state["user_id"]
+    jwt_token = state["jwt"]
+    session_id = state.get("session_id")
+    user_input = state["user_input"]
+    output = state["generation"]
+
+    from app.services.mcp_domain_client import MCPDomainClient
+    client = MCPDomainClient(jwt_token)
+
+    # 1. Update Session Memory (via Domain SSOT)
+    if session_id:
+        try:
+            # Ensure session exists in DB before adding messages
+            await client.call_tool("upsert_chat_session", {"user_id": user_id, "session_id": session_id})
+            
+            # Check if we should generate a title (if it's the first message or no title exists)
+            # For simplicity, we can fetch messages and if it's the first pair, generate title.
+            existing_messages = await client.call_tool("get_chat_messages", {"user_id": user_id, "session_id": session_id})
+            
+            await client.call_tool("add_chat_message", {"user_id": user_id, "session_id": session_id, "role": "user", "content": user_input})
+            await client.call_tool("add_chat_message", {"user_id": user_id, "session_id": session_id, "role": "assistant", "content": output})
+
+            if not existing_messages or len(existing_messages) < 2:
+                try:
+                    title_llm = make_llm()
+                    title_prompt = f"Generate a very short (max 5 words) title for this conversation in Japanese. User: {user_input}"
+                    title_res = title_llm.invoke(title_prompt).content
+                    # Remove quotes or markdown if any
+                    title = title_res.strip().replace('"', '').replace('*', '')
+                    await client.call_tool("update_chat_session", {"user_id": user_id, "session_id": session_id, "title": title})
+                    logger.info(f"Generated title for session {session_id}: {title}")
+                except Exception as te:
+                    logger.error(f"Failed to generate title: {te}")
+
+        except Exception as e:
+            logger.error(f"Failed to persist chat_session or message via MCP: {e}")
+
+    # 2. Extract and Update Memory Layers (Episodic & Semantic)
+    # We use a secondary LLM call to summarize and extract facts
+    try:
+        extraction_llm = make_llm().with_structured_output(KnowledgeGraph)
+        summary_llm = make_llm()
+
+        # Summary
+        summary = summary_llm.invoke(
+            f"Summarize this interaction in one sentence: User: {user_input}\nAI: {output}"
+        ).content
+        ep_mem.add_episodic_memory(user_id, summary)
+
+        # Semantic
+        extraction_prompt = f"Extract entities and facts from this interaction: User: {user_input}\nAI: {output}"
+        kg_data = extraction_llm.invoke(extraction_prompt)
+        sem_mem.add_semantic_facts(user_id, kg_data)
+
+        # 3. Check for KU Notes (Agent implicitly saves hints/mnemonics)
+        from pydantic import BaseModel, Field
+        class NoteExtraction(BaseModel):
+            has_note: bool = Field(description="True if the AI provided a specific mnemonic or helpful learning trick about a Japanese character.")
+            character_or_slug: str | None = Field(description="The specific Japanese character or slug the note is about, if any.")
+            note_content: str | None = Field(description="The concise learning trick or mnemonic provided.")
+            
+        note_extractor = make_llm().with_structured_output(NoteExtraction)
+        note_check = note_extractor.invoke(
+            f"Review this AI response carefully.\nDid the AI provide a specific memory trick, mnemonic, or important usage note about a specific Japanese character?\n\nAI Response: {output}"
+        )
+        
+        if note_check and note_check.has_note and note_check.character_or_slug and note_check.note_content:
+            # Replaced with Supabase direct call or omitted since it's an architecture violation
+            logger.info("Skipped storing KU note due to architecture rules (use NextJS/Supabase).")
+
+    except Exception as e:
+        logger.error(f"Memory persistence failed: {e}")
+
+    return {"thought": "Memories extracted and persisted to domain storage."}
+
+
+# ---------------------------------------------------------------------------
+# Graph Compilation
+# ---------------------------------------------------------------------------
+
+
+def should_continue(state: AgentState):
+    """Router for the planner -> tool node path."""
+    last_msg = state["messages"][-1]
+    if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
+        return "tools"
+    return "reviewer"
+
+
+def decide_path(state: AgentState):
+    """Router for the reviewer output."""
+    if state.get("review_result") == "rewrite":
+        return "rewrite"
+    return "generate"
+
+
+def _build_graph():
+    workflow = StateGraph(AgentState)
+
+    workflow.add_node("planner", planner_node)
+    workflow.add_node("tools", tools_node)
+    workflow.add_node("reviewer", reviewer_node)
+    workflow.add_node("rewrite", rewriter_node)
+    workflow.add_node("generate", generator_node)
+    workflow.add_node("tts", tts_node)
+    workflow.add_node("update", update_memory_node)
+
+    workflow.set_entry_point("planner")
+
+    # Conditional edge after planner
+    workflow.add_conditional_edges(
+        "planner", should_continue, {"tools": "tools", "reviewer": "reviewer"}
+    )
+
+    # After tools always go back to planner to evaluate results
+    workflow.add_edge("tools", "planner")
+
+    # After reviewer decide rewrite or generate
+    workflow.add_conditional_edges(
+        "reviewer", decide_path, {"rewrite": "rewrite", "generate": "generate"}
+    )
+
+    # After rewrite go back to planner
+    workflow.add_edge("rewrite", "planner")
+
+    # Parallel path: Generation branches into TTS and Update simultaneously
+    workflow.add_edge("generate", "tts")
+    workflow.add_edge("generate", "update")
+    
+    # Both parallel branches go to END
+    workflow.add_edge("tts", END)
+    workflow.add_edge("update", END)
+
+    return workflow.compile()
+
+
+memory_graph = _build_graph()
+
+# ---------------------------------------------------------------------------
+# Public Entry Point (Compatibility layer)
+# ---------------------------------------------------------------------------
+
+
+async def run_chat(
+    user_id: str,
+    jwt: str,
+    message: str,
+    session_id: str | None = None,
+    tts_enabled: bool = True,
+) -> dict[str, Any]:
+    """Invoke the iterative memory-augmented agent."""
+
+    # Initialize state
+    initial_state = {
+        "user_id": user_id,
+        "jwt": jwt,
+        "session_id": session_id,
+        "user_input": message,
+        "messages": [HumanMessage(content=message)],
+        "iterations": 0,
+        "generation": "",
+        "audio_file": None,
+        "tts_enabled": tts_enabled,
+        "thread_context": "",
+        "retrieved_episodic": "",
+        "retrieved_semantic": "",
+    }
+
+    result = await memory_graph.ainvoke(initial_state)
+
+    return {
+        "response": result["generation"],
+        "audio_file": result.get("audio_file"),
+        "episodic_context": "Retrieved via agentic tools",
+        "semantic_context": "Retrieved via agentic tools",
+        "thread_context": "Dynamic",
+    }

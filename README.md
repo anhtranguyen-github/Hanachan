@@ -30,7 +30,8 @@ cp .env.example nextjs/.env.local
 # Fill in your keys
 
 # Run
-./run.sh
+pnpm dev
+# (or ./scripts/run.sh)
 ```
 
 Open [http://localhost:3000](http://localhost:3000)

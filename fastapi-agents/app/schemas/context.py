@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -9,7 +9,7 @@ from app.schemas.session import SessionMessage, SessionSummary
 class ContextRequest(BaseModel):
     user_id: str
     query: str
-    session_id: Optional[str] = None
+    session_id: str | None = None
     max_episodic: int = Field(default=3, ge=1, le=10)
 
 
@@ -22,18 +22,18 @@ class ContextResponse(BaseModel):
     user_id: str
     query: str
     system_prompt_block: str
-    episodic_memories: List[EpisodicMemory] = []
-    semantic_facts: List[Dict[str, Any]] = []
+    episodic_memories: list[EpisodicMemory] = []
+    semantic_facts: list[dict[str, Any]] = []
     user_profile_snippet: str = ""
-    thread_history: List[SessionMessage] = []
+    thread_history: list[SessionMessage] = []
 
 
 class MemoryInspectResponse(BaseModel):
     user_id: str
-    episodic_memories: List[EpisodicMemory]
-    semantic_graph: List[Dict[str, Any]]
-    graph_schema: Optional[Dict[str, Any]] = None
-    active_sessions: List[SessionSummary] = []
+    episodic_memories: list[EpisodicMemory]
+    semantic_graph: list[dict[str, Any]]
+    graph_schema: dict[str, Any] | None = None
+    active_sessions: list[SessionSummary] = []
 
 
 # Resolve forward reference

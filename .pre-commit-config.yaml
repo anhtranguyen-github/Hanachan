@@ -1,0 +1,41 @@
+repos:
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.0
+    hooks:
+    -   id: ruff
+        args: [ --fix, --exit-non-zero-on-fix ]
+
+-   repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+    -   id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: .*/tests/.*
+
+-   repo: local
+    hooks:
+    -   id: hardcoded-strings
+        name: check-hardcoded-strings
+        entry: python3 tools/check_hardcoded_strings.py
+        language: system
+        pass_filenames: false
+    -   id: mock-data
+        name: check-mock-data
+        entry: python3 tools/check_mock_data.py
+        language: system
+        pass_filenames: false
+    -   id: debug-artifacts
+        name: check-debug-artifacts
+        entry: python3 tools/check_debug_artifacts.py
+        language: system
+        pass_filenames: false
+    -   id: import-linter-agents
+        name: import-linter (fastapi-agents)
+        entry: bash -c "cd fastapi-agents && uv run lint-imports"
+        language: system
+        pass_filenames: false
+    -   id: import-linter-domain
+        name: import-linter (fastapi-domain)
+        entry: bash -c "cd fastapi-domain && uv run lint-imports"
+        language: system
+        pass_filenames: false

@@ -5,7 +5,7 @@ Maintenance endpoints.
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
@@ -62,7 +62,7 @@ async def health_detailed(request: Request):
 @limiter.limit("2/hour")
 async def run_consolidation(
     request: Request,
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     try:
         user_id = current_user["id"]
@@ -76,7 +76,7 @@ async def run_consolidation(
 
 @router.post("/memory/test/seed", tags=["Maintenance"])
 async def seed_test_data(
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     user_id = current_user["id"]
     await run_in_threadpool(
@@ -98,7 +98,7 @@ async def seed_test_data(
     u_node = Node(
         id=user_id,
         type="User",
-        properties={"name": "Alice" if "alice" in user_id.lower() else "Test User"},
+        properties={"name": "Alice" if "alice" in user_id.lower() else f"User-{user_id[:8]}"},
     )
     goal_node = Node(
         id="JLPT_N2",
@@ -125,7 +125,7 @@ async def seed_test_data(
 
 @router.delete("/memory/test/clear", response_model=ClearResponse, tags=["Maintenance"])
 async def clear_test_data(
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     user_id = current_user["id"]
     ep_count = await run_in_threadpool(ep_mem.clear_episodic_memory, user_id)
