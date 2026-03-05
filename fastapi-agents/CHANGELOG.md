@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Quality Assurance & Python 3.11 Migration (2026-03-05)
+
+#### Added
+- **Functional Graph tests**: Rewrote `test_agent_quality_judge.py` to verify tool calls, graph routing, and context propagation using mocks, ensuring stable and fast CI runs without LLM flakiness.
+
+#### Changed
+- **Python 3.11 Finalization**: Migrated the project to Python 3.11. Removed 3.10 compatibility shims for `StrEnum` and `datetime.UTC`.
+- **Ruff Linting**: Fully configured Ruff in `pyproject.toml` and fixed all existing style/bug violations.
+- **Import Linter**: Corrected architectural layer definitions in `.importlinter` to properly enforce domain-driven isolation rules.
+
+#### Refactored
+- **Agent Modularization**: Refactored monolithic agent files (`memory_agent.py`, `reading_creator.py`) into modular package structures with clear separation of state, tools, and nodes.
+- **Legacy Cleanup**: Removed deprecated `admin_security.py` and unused script artifacts.
+
+#### Fixed
+- **Authentication in Tests**: Fixed `test_session_api.py` failures by aligning test headers with mock authentication keys.
+- **Config Loading**: Updated `test_config.py` to support real API keys in local development environments.
+- **Hygiene**: Replaced debug prints in `memory_agent.py` and sanitized API route prefixes in `main.py`.
+
 ### Backend QA & Memory Agent Fixes (2026-03-04)
 
 #### Added
