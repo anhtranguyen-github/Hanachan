@@ -1,0 +1,18 @@
+[importlinter]
+root_package = app
+
+[importlinter:contract:domain-no-adapters]
+name = Domain must not depend on adapters (API/Infra)
+type = layers
+layers =
+    app.adapters
+    app.domain
+
+[importlinter:contract:domain-isolated]
+name = Domain must be isolated from agents or api-specific logic
+type = forbidden
+source_modules =
+    app.domain
+forbidden_modules =
+    app.adapters
+    app.auth
