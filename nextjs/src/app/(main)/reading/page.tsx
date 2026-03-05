@@ -71,8 +71,8 @@ export default function ReadingPage() {
             setError(null);
             const session = await createReadingSession();
             router.push(`/reading/session/${session.id}`);
-        } catch (err: any) {
-            setError(err.message || 'Failed to create session');
+        } catch (err: unknown) {
+            setError((err instanceof Error ? err.message : String(err)) || 'Failed to create session');
             setCreating(false);
         }
     };

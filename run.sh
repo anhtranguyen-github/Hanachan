@@ -120,18 +120,18 @@ cd "$ROOT_DIR/nextjs"
 case "$MODE" in
   prod|product)
     log "🏗️ Building frontend (production)"
-    pnpm run build
+    ppnpm run build
     log "🚀 Starting frontend (production)"
-    PORT="$FRONTEND_PORT" pnpm run start &
+    PORT="$FRONTEND_PORT" ppnpm run start &
     ;;
   build)
     log "🏗️ Build-only mode"
-    pnpm run build
+    ppnpm run build
     shutdown
     ;;
   *)
     log "🚀 Starting frontend (dev)"
-    PORT="$FRONTEND_PORT" pnpm run dev &
+    PORT="$FRONTEND_PORT" ppnpm run dev &
     ;;
 esac
 

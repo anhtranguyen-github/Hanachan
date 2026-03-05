@@ -193,8 +193,8 @@ export function usePronunciationAssessment(): UsePronunciationAssessmentReturn {
                 }
             );
 
-        } catch (err: any) {
-            const message = err?.message || 'Failed to start speech recognition';
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Failed to start speech recognition';
             setError(message);
             setStatus('error');
             recognizerRef.current = null;

@@ -44,7 +44,7 @@ export default function AIDebugPage() {
         setSemanticGraph(result.graph);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load data");
+      setError(err instanceof Error ? (err instanceof Error ? err.message : String(err)) : "Failed to load data");
     } finally {
       setLoading(false);
     }

@@ -49,9 +49,9 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ entries });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API/videos/library] GET error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -69,9 +69,9 @@ export async function POST(req: NextRequest) {
 
     const entry = await addToLibrary(userId, { video_id, category_id, notes });
     return NextResponse.json({ entry });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API/videos/library] POST error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -89,8 +89,8 @@ export async function DELETE(req: NextRequest) {
 
     await removeFromLibrary(userId, videoId);
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API/videos/library] DELETE error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -80,10 +80,10 @@ export async function POST(
             attempt: result.attempt
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('[Practice Record API]', error);
         return NextResponse.json(
-            { success: false, error: error.message || 'Internal server error' },
+            { success: false, error: 'Internal server error' },
             { status: 500 }
         );
     }

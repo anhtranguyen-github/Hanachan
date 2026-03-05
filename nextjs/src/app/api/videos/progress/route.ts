@@ -41,9 +41,9 @@ export async function GET(req: NextRequest) {
 
     const progress = await getVideoProgress(userId, videoId);
     return NextResponse.json({ progress });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API/videos/progress] GET error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -67,8 +67,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ progress });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API/videos/progress] POST error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -638,8 +638,8 @@ function AddVideoModal({
     try {
       await onAdd(youtubeId);
       // Don't close modal here - let the progress modal handle it
-    } catch (err: any) {
-      setError(err.message || 'Failed to add video');
+    } catch (err: unknown) {
+      setError((err instanceof Error ? err.message : String(err)) || 'Failed to add video');
     } finally {
       setLoading(false);
     }
@@ -733,8 +733,8 @@ function CreateCategoryModal({
       if (!result.success) {
         setError(result.error || 'Failed to create category');
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to create category');
+    } catch (err: unknown) {
+      setError((err instanceof Error ? err.message : String(err)) || 'Failed to create category');
     } finally {
       setLoading(false);
     }

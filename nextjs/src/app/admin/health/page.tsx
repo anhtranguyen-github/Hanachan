@@ -39,7 +39,7 @@ export default function HealthPage() {
       const data = await getSystemHealth();
       setHealth(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load health data");
+      setError(err instanceof Error ? (err instanceof Error ? err.message : String(err)) : "Failed to load health data");
     } finally {
       setLoading(false);
     }

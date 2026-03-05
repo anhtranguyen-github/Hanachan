@@ -70,9 +70,9 @@ export function KUUserNotes({ kuId, kuType }: KUUserNotesProps) {
             if (updateError) throw updateError;
 
             setIsEditing(false);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Failed to save notes', err);
-            setError(err.message || 'Failed to save notes.');
+            setError((err instanceof Error ? err.message : String(err)) || 'Failed to save notes.');
         } finally {
             setIsSaving(false);
         }

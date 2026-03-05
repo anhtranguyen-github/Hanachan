@@ -9,8 +9,12 @@
  * Uses both anon client (RLS-bound) and service role client (RLS-bypass).
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+
+vi.mock('next/headers', () => ({
+  cookies: vi.fn().mockReturnValue(Promise.resolve({ get: vi.fn().mockReturnValue({ value: 'mock-token' }) }))
+}));
 
 // Test configuration
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;

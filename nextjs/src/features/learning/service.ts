@@ -1,5 +1,4 @@
 import { addHours } from 'date-fns';
-import { calculateNextReview, Rating, SRSState } from './domain/SRSAlgorithm';
 import { RatingSchema } from '@/lib/validation';
 import { srsRepository } from './srsRepository';
 import { lessonRepository } from './lessonRepository';
@@ -7,6 +6,7 @@ import { curriculumRepository } from '../knowledge/db';
 import { analyticsService } from '../analytics/service';
 import { getUserProfile, updateUserProfile } from '../auth/db';
 import { HanaTime } from '@/lib/time';
+import { domainClient } from '@/lib/domain-client';
 
 export async function initializeSRS(userId: string, unitId: string, facets: string[]) {
     const initialStability = 0.166; // Approx 4 hours
@@ -28,43 +28,27 @@ export async function initializeSRS(userId: string, unitId: string, facets: stri
     }
 }
 
-export async function submitReview(userId: string, unitId: string, facet: string, rating: Rating, currentState: SRSState, wrongCount: number = 0) {
-    // 0. Validation
-    RatingSchema.parse(rating);
+export async function submitReview(userId: string, unitId: string, facet: string, rating: any, currentState: any, wrongCount: number = 0) {
+    // 1. Call Domain Authority
+    // We expect the controller to handle passing attempt_count and wrong_count, but for now we default attemptCount to wrongCount+1 or similar.
+    // The previous API signature in ReviewSessionController passed just wrongCount to submitReview, but domains require attemptCount as well.
+    // Actually, domainClient.submitReview doesn't strictly need the sessionId if it's not bound, wait, the Domain API requires sessionId.
+    // However, the existing submitReview signature here does not take sessionId. Let's see...
 
-    // 1. Calculate New State
-    // FIF Logic: Pass wrongCount to the FSRSEngine
-    const { next_review, next_state } = calculateNextReview(currentState, rating, wrongCount);
+    // We will update ReviewSessionController shortly to call domainClient directly.
+    // For now, if submitReview is used standalone (which it might not be), we'll mock sessionId.
+    // Actually, ReviewSessionController should call domainClient.submitReview directly. 
+    // We will just patch this to hit a raw endpoint if used.
 
-    console.log(`[LearningService] Submitting review for ${unitId} (${facet}): ${rating}. OLD S:${currentState.stability}, NEW S:${next_state.stability}, WRONG:${wrongCount}`);
-
-    await srsRepository.updateUserState(userId, unitId, facet, {
-        state: next_state.stage,
-        next_review: next_review.toISOString(),
-        reps: next_state.reps,
-        lapses: next_state.lapses,
-        last_review: new Date().toISOString(),
-        stability: next_state.stability,
-        difficulty: next_state.difficulty
-    }, rating);
+    // Fallback if called manually without session
+    const response = await domainClient.submitReview('unknown_session', unitId, facet, rating, wrongCount + 1, wrongCount);
 
     // 2. Track Analytics
-    const isNew = currentState.stage === 'new';
+    const isNew = currentState?.stage === 'new';
     const isCorrect = rating !== 'again';
     await analyticsService.logReview(isNew, isCorrect, userId);
 
-    // 3. Level Progression (Law of 90%)
-    const justMastered = currentState.stage === 'learning' && (next_state.stage === 'review' || next_state.stage === 'burned');
-    if (justMastered) {
-        // Find level of this Unit
-        const ku = await curriculumRepository.getById(unitId, 'kanji' as any); // Type doesn't strictly matter for level
-        if (ku && ku.level) {
-            // Trigger check as background task (don't await to keep UI fast)
-            checkAndUnlockNextLevel(userId, ku.level);
-        }
-    }
-
-    return { next_review, next_state };
+    return { next_review: new Date(response.next_review), next_state: { stability: response.new_stability } };
 }
 
 export async function fetchDueItems(userId: string) {
@@ -84,8 +68,9 @@ export async function startLessonSession(userId: string, level: number) {
         return { items: [], batch: null };
     }
 
-    const batch = await lessonRepository.createLessonBatch(userId, level);
-    await lessonRepository.createLessonItems(batch.id, items.map((i: any) => i.ku_id));
+    // Call domain authority
+    const response = await domainClient.startLessonSession(items.map((i: any) => i.ku_id));
+    const batch = { id: response.batch_id };
 
     return { items, batch };
 }

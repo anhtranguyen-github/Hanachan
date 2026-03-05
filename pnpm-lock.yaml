@@ -7,7 +7,7 @@ settings:
 importers:
 
   .:
-    dependencies:
+    devDependencies:
       '@kilocode/cli':
         specifier: ^7.0.33
         version: 7.0.33

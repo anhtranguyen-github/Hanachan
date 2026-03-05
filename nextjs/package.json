@@ -20,7 +20,8 @@
     "test:accounts:create": "node ../scripts/create-test-accounts.js",
     "generate-types:domain": "openapi-typescript openapi/fastapi-domain-openapi.json -o src/types/api/domain.d.ts",
     "generate-types:agents": "openapi-typescript openapi/fastapi-agents-openapi.json -o src/types/api/agents.d.ts",
-    "generate-types": "pnpm generate-types:domain && pnpm generate-types:agents"
+    "generate-types": "pnpm generate-types:domain && pnpm generate-types:agents",
+    "preinstall": "npx only-allow pnpm"
   },
   "dependencies": {
     "@langchain/core": "0.3.80",

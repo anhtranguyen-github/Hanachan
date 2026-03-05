@@ -1,6 +1,7 @@
 import ast
-import os
+import logging
 import pathlib
+
 
 def test_no_supabase_imports():
     """
@@ -12,7 +13,8 @@ def test_no_supabase_imports():
     for py_file in app_dir.rglob("*.py"):
         try:
             tree = ast.parse(py_file.read_text())
-        except Exception:
+        except Exception as e:
+            logging.error(f"Failed to parse {py_file}: {e}")
             continue
             
         for node in ast.walk(tree):
@@ -21,4 +23,4 @@ def test_no_supabase_imports():
                     assert not name.name.startswith("supabase"), f"Architecture Violation in {py_file.name}: direct Supabase import '{name.name}' is forbidden for agents."
             elif isinstance(node, ast.ImportFrom):
                 if node.module and node.module.startswith("supabase"):
-                    assert False, f"Architecture Violation in {py_file.name}: direct Supabase import 'from {node.module}' is forbidden for agents."
+                    raise AssertionError(f"Architecture Violation in {py_file.name}: direct Supabase import 'from {node.module}' is forbidden for agents.")

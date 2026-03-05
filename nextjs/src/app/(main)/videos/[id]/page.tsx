@@ -96,8 +96,8 @@ export default function VideoPlayerPage() {
           const words = await videoService.getUserSavedWords(user.id, id);
           setSavedWords(new Set(words.map(w => w.surface)));
         }
-      } catch (err: any) {
-        setError(err.message || 'Failed to load video');
+      } catch (err: unknown) {
+        setError((err instanceof Error ? err.message : String(err)) || 'Failed to load video');
       } finally {
         setLoading(false);
       }
@@ -132,7 +132,7 @@ export default function VideoPlayerPage() {
     try {
       await videoService.addToLibrary(user.id, { video_id: video.id });
       setIsInLibrary(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to add to library:', err);
     }
   }, [user, video]);
@@ -150,7 +150,7 @@ export default function VideoPlayerPage() {
         source_timestamp_ms: timestamp,
       });
       setSavedWords(prev => new Set(Array.from(prev).concat(result.surface)));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to save word:', err);
     }
   }, [user, video]);
@@ -167,7 +167,7 @@ export default function VideoPlayerPage() {
         source_video_id: video.id,
       });
       setSavedWords(prev => new Set(Array.from(prev).concat(stat.surface)));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to save vocab word:', err);
     }
   }, [user, video]);

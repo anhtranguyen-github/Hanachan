@@ -56,7 +56,7 @@ export default function CostsPage() {
         const result = await getCostAnalytics(days);
         setData(result);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load cost data");
+        setError(err instanceof Error ? (err instanceof Error ? err.message : String(err)) : "Failed to load cost data");
       } finally {
         setLoading(false);
       }

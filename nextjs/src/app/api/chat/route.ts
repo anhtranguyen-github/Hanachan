@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
             toolsUsed: [],
         });
 
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error('[Chat API]', e);
-        return NextResponse.json({ success: false, error: e.message }, { status: 500 });
+        return NextResponse.json({ success: false, error: (e instanceof Error ? e.message : String(e)) }, { status: 500 });
     }
 }

@@ -66,9 +66,9 @@ function SessionContent() {
             setController(newController);
             setStats({ mistakes: 0, totalItems: initializedItems.length, completed: 0 });
             setPhase('lesson-view');
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("[LearnSession] loadSession error:", error);
-            setError(error.message);
+            setError((error instanceof Error ? error.message : String(error)));
             setPhase('complete');
         }
     };

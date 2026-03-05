@@ -81,10 +81,10 @@ export async function GET(
             sentences: sentences || []
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('[Practice Session GET API]', error);
         return NextResponse.json(
-            { success: false, error: error.message || 'Internal server error' },
+            { success: false, error: 'Internal server error' },
             { status: 500 }
         );
     }
@@ -159,10 +159,10 @@ export async function POST(
             attempt: result.attempt
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('[Practice Session POST API]', error);
         return NextResponse.json(
-            { success: false, error: error.message || 'Internal server error' },
+            { success: false, error: 'Internal server error' },
             { status: 500 }
         );
     }
@@ -225,10 +225,10 @@ export async function DELETE(
             success: true
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('[Practice Session DELETE API]', error);
         return NextResponse.json(
-            { success: false, error: error.message || 'Internal server error' },
+            { success: false, error: 'Internal server error' },
             { status: 500 }
         );
     }

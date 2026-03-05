@@ -75,8 +75,8 @@ export default function ReadingSettingsPage() {
             await updateReadingConfig(config);
             setSaved(true);
             setTimeout(() => setSaved(false), 3000);
-        } catch (err: any) {
-            setError(err.message || 'Failed to save settings');
+        } catch (err: unknown) {
+            setError((err instanceof Error ? err.message : String(err)) || 'Failed to save settings');
         } finally {
             setSaving(false);
         }
