@@ -3,11 +3,11 @@ import os
 from fastapi import APIRouter, Depends, HTTPException
 from supabase import Client, create_client
 
+from app.adapters.supabase.reading_repo import SupabaseReadingRepository
 from app.auth.jwt import get_current_user_id
 from app.domain.reading.errors import ReadingDomainError
 from app.domain.reading.models import AnswerResult, AnswerSubmission
 from app.domain.reading.services import ReadingService
-from app.adapters.supabase.reading_repo import SupabaseReadingRepository
 
 router = APIRouter(prefix="/reading", tags=["reading"])
 

@@ -1,20 +1,19 @@
 from datetime import datetime
-from enum import Enum
-from typing import Dict, Optional
+from enum import StrEnum
 
 from pydantic import BaseModel
 
 
-class SRSStage(str, Enum):
+class SRSStage(StrEnum):
     NEW = "new"
     LEARNING = "learning"
     REVIEW = "review"
     BURNED = "burned"
 
 
-class Rating(str, Enum):
+class Rating(StrEnum):
     AGAIN = "again"
-    PASS = "pass"
+    PASS = "pass"  # nosec B105
 
 
 class SRSState(BaseModel):
@@ -35,12 +34,12 @@ class KUStatus(BaseModel):
     difficulty: float
     reps: int
     lapses: int
-    last_review: Optional[datetime] = None
-    next_review: Optional[datetime] = None
+    last_review: datetime | None = None
+    next_review: datetime | None = None
     # Catalog info
-    character: Optional[str] = None
-    meaning: Optional[str] = None
-    notes: Optional[str] = None
+    character: str | None = None
+    meaning: str | None = None
+    notes: str | None = None
 
 
 class LearningSummary(BaseModel):
@@ -48,14 +47,14 @@ class LearningSummary(BaseModel):
     learned_count: int
     burned_count: int
     new_items_count: int
-    by_type: Dict[str, Dict[str, int]] = {}
+    by_type: dict[str, dict[str, int]] = {}
 
 
 class KnowledgeUnit(BaseModel):
     id: str
     type: str
     level: int
-    character: Optional[str] = None
+    character: str | None = None
     meaning: str
     slug: str
-    metadata: Dict = {}
+    metadata: dict = {}

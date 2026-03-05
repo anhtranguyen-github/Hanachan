@@ -1,7 +1,6 @@
 import logging
 import math
 from datetime import datetime, timedelta
-from typing import Optional, Tuple
 
 from app.domain.learning.models import KUStatus, Rating, SRSStage, SRSState
 
@@ -16,7 +15,7 @@ class FSRSEngine:
     @classmethod
     def calculate_next_review(
         cls, current: SRSState, rating: Rating, wrong_count: int = 0
-    ) -> Tuple[datetime, SRSState]:
+    ) -> tuple[datetime, SRSState]:
         stage = current.stage
         stability = current.stability
         difficulty = current.difficulty
@@ -112,7 +111,7 @@ class LearningService:
 
     async def get_ku_progress(
         self, user_id: str, identifier: str, include_notes: bool = False
-    ) -> Optional[KUStatus]:
+    ) -> KUStatus | None:
         """
         Retrieves learning progress for a KU by ID, character, or slug.
         """

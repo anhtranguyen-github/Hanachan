@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -9,13 +8,13 @@ class ReadingQuestion(BaseModel):
     id: str  # Usually just an index or semi-slug in exercises
     text: str
     correct_answer: str
-    explanation: Optional[str] = None
+    explanation: str | None = None
 
 
 class ReadingExercise(BaseModel):
     id: UUID
     session_id: UUID
-    questions: List[ReadingQuestion]
+    questions: list[ReadingQuestion]
     order_index: int
 
 
@@ -23,8 +22,8 @@ class ReadingSession(BaseModel):
     id: UUID
     user_id: str
     status: str
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
 
 class AnswerSubmission(BaseModel):
@@ -37,5 +36,5 @@ class AnswerSubmission(BaseModel):
 class AnswerResult(BaseModel):
     is_correct: bool
     correct_answer: str
-    explanation: Optional[str] = None
+    explanation: str | None = None
     session_completed: bool = False

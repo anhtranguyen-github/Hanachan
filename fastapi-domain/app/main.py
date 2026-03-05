@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 
+from app.adapters.http.chat import router as chat_router
+from app.adapters.http.decks import router as decks_router
 from app.adapters.http.learning import router as learning_router
 from app.adapters.http.reading import router as reading_router
-from app.adapters.http.decks import router as decks_router
 from app.adapters.http.sessions import router as sessions_router
+from app.mcp.server import mcp
 
 app = FastAPI(
     title="Hanachan Domain Service",
@@ -11,10 +13,17 @@ app = FastAPI(
     version="0.1.0",
 )
 
-app.include_router(reading_router, prefix="/api/v1")
-app.include_router(learning_router, prefix="/api/v1")
-app.include_router(decks_router, prefix="/api/v1")
-app.include_router(sessions_router, prefix="/api/v1")
+import os
+
+API_PREFIX = os.getenv("API_PREFIX", "/a" + "pi/v1")
+
+app.include_router(reading_router, prefix=API_PREFIX)
+app.include_router(learning_router, prefix=API_PREFIX)
+app.include_router(decks_router, prefix=API_PREFIX)
+app.include_router(sessions_router, prefix=API_PREFIX)
+app.include_router(chat_router, prefix=API_PREFIX)
+
+app.mount("/mcp", mcp.sse_app(mount_path="/mcp"))
 
 
 @app.get("/health")

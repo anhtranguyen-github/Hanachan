@@ -1,11 +1,11 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 class HanaTime:
     @staticmethod
     def get_now_iso() -> str:
-        return datetime.now(timezone.utc).isoformat()
+        return datetime.now(UTC).isoformat()
 
     @staticmethod
     def get_now() -> datetime:
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)

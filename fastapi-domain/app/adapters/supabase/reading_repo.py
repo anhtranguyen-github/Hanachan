@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 from supabase import Client
@@ -11,7 +10,7 @@ class SupabaseReadingRepository(IReadingRepository):
     def __init__(self, client: Client):
         self.client = client
 
-    async def get_session(self, session_id: UUID) -> Optional[ReadingSession]:
+    async def get_session(self, session_id: UUID) -> ReadingSession | None:
         response = (
             self.client.table("reading_sessions").select("*").eq("id", str(session_id)).execute()
         )
@@ -26,7 +25,7 @@ class SupabaseReadingRepository(IReadingRepository):
             completed_at=data.get("completed_at"),
         )
 
-    async def get_exercise(self, exercise_id: UUID) -> Optional[ReadingExercise]:
+    async def get_exercise(self, exercise_id: UUID) -> ReadingExercise | None:
         response = (
             self.client.table("reading_exercises").select("*").eq("id", str(exercise_id)).execute()
         )
