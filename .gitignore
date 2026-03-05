@@ -1,35 +1,79 @@
 # ==========================================
 # Hanachan Monorepo - Comprehensive .gitignore
 # ==========================================
+# This file ensures deterministic builds by excluding:
+# - Generated artifacts
+# - Build outputs
+# - Caches
+# - Environment-specific files
+# - Logs and temporary files
+#
+# SOURCE OF TRUTH files that MUST be tracked:
+# - openapi/schema.json (API contract)
+# - heyapi.config.ts (SDK generation config)
+# - package.json (dependencies)
+# - pnpm-lock.yaml (lockfile for reproducibility)
+# - pyproject.toml (Python dependencies)
+# - uv.lock (Python lockfile)
+# ==========================================
 
-# --- Dependencies & Package Managers ---
+# ==========================================
+# 1. Dependencies & Package Managers
+# ==========================================
+
+# Node.js
 node_modules/
 .pnp
 .pnp.js
-.turbo/
-.uv/
+
+# pnpm
+.pnpm-store/
+
+# Python environments
 .venv/
 venv/
 ENV/
 env/
 *.egg-info/
-package-lock.json
-pnpm-lock.yaml
 
-# --- Build Outputs ---
+# ==========================================
+# 2. Build Outputs
+# ==========================================
+
+# Next.js
 .next/
 .next_clean/
 dist/
 build/
 out/
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
+
+# TypeScript
 *.tsbuildinfo
 next-env.d.ts
 
-# --- Environment & Secrets ---
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+
+# ==========================================
+# 3. Generated Code
+# ==========================================
+
+# Hey API generated SDK (must be regenerated during build)
+nextjs/src/client/
+
+# Old generated API client location (deprecated)
+nextjs/src/lib/api/generated/
+
+# ==========================================
+# 4. Environment & Secrets
+# ==========================================
+
 .env
 .env.*
 !.env.example
@@ -38,7 +82,10 @@ next-env.d.ts
 *.key
 .env.keys
 
-# --- Tooling & AI Agents ---
+# ==========================================
+# 5. Tooling & AI Agents
+# ==========================================
+
 .agent/
 .agents/
 .kilocode/
@@ -48,8 +95,45 @@ next-env.d.ts
 .pytest_cache/
 .mypy_cache/
 .vercel/
+.turbo/
+.uv/
 
-# --- Database & Storage ---
+# ==========================================
+# 6. Test Artifacts
+# ==========================================
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/
+
+# Test outputscoverage/
+test-results/
+playwright-report/
+
+# Mutation testing
+.stryker-tmp/
+reports/mutation/
+mutmut-*.txt
+mutmut-*.log
+
+# ==========================================
+# 7. Logs & Temporary Files
+# ==========================================
+
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# ==========================================
+# 8. Database & Storage
+# ==========================================
+
 *.db
 *.sqlite
 *.sqlite3
@@ -59,28 +143,32 @@ processed_data/
 database_setup/
 database_setup.sql
 
-# --- Operating System ---
+# ==========================================
+# 9. Operating System
+# ==========================================
+
+# macOS
 .DS_Store
 .DS_Store?
 ._*
+
+# Windows
 Thumbs.db
 desktop.ini
 
-# --- IDEs (VS Code) ---
+# ==========================================
+# 10. IDEs
+# ==========================================
+
 .vscode/
 !.vscode/extensions.json
+.idea/
+*.iml
 
-# --- Logs & Performance ---
-*.log
-*.tmp
-logs/
-temp/
-local-test/
-.coverage
-.coverage.*
-htmlcov/
+# ==========================================
+# 11. AI/ML Artifacts
+# ==========================================
 
-# --- AI Scratchpads & Debug Artifacts ---
 debug.txt
 hardcoded.txt
 mock.txt
@@ -92,10 +180,15 @@ planner_failure_patterns.txt
 complex_qa_results.json
 chat_test*.png
 screenshots/
+
+# ==========================================
+# 12. Miscellaneous
+# ==========================================
+
+null
 /*.png
 /*.jpg
 /*.webp
-null
 
-# --- Project Specific Backups ---
+# Project specific backups
 /fastapi-agents/app/agents/memory_agent.py.bak
