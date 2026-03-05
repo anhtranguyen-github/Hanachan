@@ -36,11 +36,18 @@ line-length = 100
 target-version = "py311"
 
 [tool.ruff.lint]
-select = ["E", "F", "S", "B", "I"] # Include S for Bandit-like security checks
-ignore = ["E501", "B008", "B904", "S105"]
+select = [
+    "E",
+    "F",
+    "I",
+    "B",
+    "UP",
+    "TID"
+]
+ignore = ["B008", "B904", "E501", "E402"]
 
-[tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101", "S105", "S106"]
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
@@ -50,3 +57,13 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short --cov=app --cov-report=term-missing"
+
+[dependency-groups]
+dev = [
+    "bandit>=1.9.4",
+    "detect-secrets>=1.5.0",
+    "import-linter>=2.10",
+    "ruff>=0.15.4",
+]
+[tool.bandit]
+exclude_dirs = [".venv", "tests"]

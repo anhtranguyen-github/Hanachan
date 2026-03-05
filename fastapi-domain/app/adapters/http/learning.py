@@ -1,13 +1,12 @@
 import os
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends
 from supabase import Client, create_client
 
+from app.adapters.supabase.learning_repo import LearningRepository
 from app.auth.jwt import get_current_user_id
 from app.domain.learning.models import KnowledgeUnit, KUStatus, Rating
 from app.domain.learning.services import LearningService
-from app.adapters.supabase.learning_repo import LearningRepository
 
 router = APIRouter(prefix="/learning", tags=["learning"])
 
@@ -22,7 +21,7 @@ def get_learning_service() -> LearningService:
     return LearningService(repo)
 
 
-@router.get("/progress", response_model=Optional[KUStatus])
+@router.get("/progress", response_model=KUStatus | None)
 async def get_progress(
     identifier: str,
     user_id: str = Depends(get_current_user_id),
@@ -31,7 +30,7 @@ async def get_progress(
     return await service.get_ku_progress(user_id, identifier)
 
 
-@router.get("/search", response_model=List[KnowledgeUnit])
+@router.get("/search", response_model=list[KnowledgeUnit])
 async def search_ku(
     q: str, limit: int = 10, service: LearningService = Depends(get_learning_service)
 ):
@@ -61,7 +60,7 @@ async def add_note(
     return {"status": "success"}
 
 
-@router.get("/recent-reviews", response_model=List[dict])
+@router.get("/recent-reviews", response_model=list[dict])
 async def get_recent_reviews(
     limit: int = 5,
     user_id: str = Depends(get_current_user_id),

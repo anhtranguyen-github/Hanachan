@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 
 from supabase import Client
 
@@ -10,7 +9,7 @@ class LearningRepository:
     def __init__(self, client: Client):
         self.client = client
 
-    async def get_ku_status(self, user_id: str, ku_id: str, facet: str) -> Optional[KUStatus]:
+    async def get_ku_status(self, user_id: str, ku_id: str, facet: str) -> KUStatus | None:
         response = (
             self.client.table("user_fsrs_states")
             .select("*, knowledge_units(*)")
@@ -68,7 +67,7 @@ class LearningRepository:
             data, on_conflict="user_id,item_id,facet"
         ).execute()
 
-    async def search_kus(self, query: str, limit: int = 10) -> List[KnowledgeUnit]:
+    async def search_kus(self, query: str, limit: int = 10) -> list[KnowledgeUnit]:
         # Search by character, meaning or slug
         response = (
             self.client.table("knowledge_units")
@@ -80,7 +79,7 @@ class LearningRepository:
 
         return [KnowledgeUnit(**item) for item in response.data]
 
-    async def get_due_items(self, user_id: str, limit: int = 20) -> List[KUStatus]:
+    async def get_due_items(self, user_id: str, limit: int = 20) -> list[KUStatus]:
         now = datetime.utcnow().isoformat()
         response = (
             self.client.table("user_fsrs_states")

@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Optional
 from uuid import UUID
 
 from app.domain.reading.models import ReadingExercise, ReadingSession
@@ -7,11 +6,11 @@ from app.domain.reading.models import ReadingExercise, ReadingSession
 
 class IReadingRepository(ABC):
     @abstractmethod
-    async def get_session(self, session_id: UUID) -> Optional[ReadingSession]:
+    async def get_session(self, session_id: UUID) -> ReadingSession | None:
         pass
 
     @abstractmethod
-    async def get_exercise(self, exercise_id: UUID) -> Optional[ReadingExercise]:
+    async def get_exercise(self, exercise_id: UUID) -> ReadingExercise | None:
         pass
 
     @abstractmethod
