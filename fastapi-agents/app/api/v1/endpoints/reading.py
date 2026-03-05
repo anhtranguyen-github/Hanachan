@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -16,21 +16,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/reading", tags=["Reading"])
 
 class ReadingConfigUpdate(BaseModel):
-    exercises_per_session: Optional[int] = Field(None, ge=1, le=20)
+    exercises_per_session: int | None = Field(None, ge=1, le=20)
     # ... other fields if needed for override
-    difficulty_level: Optional[str] = None
-    topic_preferences: Optional[List[str]] = None
+    difficulty_level: str | None = None
+    topic_preferences: list[str] | None = None
 
 class CreateSessionRequest(BaseModel):
-    config_override: Optional[Dict[str, Any]] = None
-    topics: Optional[List[str]] = None
+    config_override: dict[str, Any] | None = None
+    topics: list[str] | None = None
 
 @router.post("/sessions")
 @limiter.limit("5/minute")
 async def create_reading_session(
     request: Request,
     body: CreateSessionRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     """
     Pure Agent Runtime version of Session Creation.

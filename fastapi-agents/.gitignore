@@ -11,3 +11,6 @@ venv/
 
 # Local test files (not for CI)
 local-test/
+*.log
+.coverage
+htmlcov/

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, Dict, List
+from typing import Any
 
 from neo4j import Driver, GraphDatabase
 
@@ -135,7 +135,7 @@ def add_semantic_facts(user_id: str, kg: KnowledgeGraph) -> int:
 
 
 def add_nodes_and_relationships(
-    user_id: str, nodes: List[Node], relationships: List[Relationship]
+    user_id: str, nodes: list[Node], relationships: list[Relationship]
 ) -> tuple[int, int]:
     """Manually add nodes and relationships in a single atomic transaction."""
     driver = _get_driver()
@@ -166,7 +166,7 @@ def add_nodes_and_relationships(
     return len(nodes), len(relationships)
 
 
-def search_semantic_memory(user_id: str, keywords: List[str]) -> List[Dict[str, Any]]:
+def search_semantic_memory(user_id: str, keywords: list[str]) -> list[dict[str, Any]]:
     """Fulltext search with fuzzy matching and fallback 'about me' logic."""
     if not keywords:
         return []
@@ -204,7 +204,7 @@ def search_semantic_memory(user_id: str, keywords: List[str]) -> List[Dict[str, 
     kw_query = " OR ".join(lucene_terms)
 
     driver = _get_driver()
-    results: List[Dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
 
     with driver.session() as session:
         try:
@@ -285,9 +285,9 @@ def search_semantic_memory(user_id: str, keywords: List[str]) -> List[Dict[str, 
     return _deduplicate(results)
 
 
-def _deduplicate(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _deduplicate(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
     seen: set = set()
-    deduped: List[Dict[str, Any]] = []
+    deduped: list[dict[str, Any]] = []
     for item in results:
         key = (
             item["source"].get("id"),
@@ -300,7 +300,7 @@ def _deduplicate(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return deduped
 
 
-def inspect_semantic_memory(user_id: str) -> List[Dict[str, Any]]:
+def inspect_semantic_memory(user_id: str) -> list[dict[str, Any]]:
     """Return all relationships in the graph for a given user."""
     driver = _get_driver()
     with driver.session() as session:
@@ -322,7 +322,7 @@ def inspect_semantic_memory(user_id: str) -> List[Dict[str, Any]]:
         ]
 
 
-def get_graph_schema() -> Dict[str, Any]:
+def get_graph_schema() -> dict[str, Any]:
     """Return a simplified view of node labels and relationship types."""
     driver = _get_driver()
     with driver.session() as session:

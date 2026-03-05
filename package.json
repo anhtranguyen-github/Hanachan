@@ -4,6 +4,7 @@
   "private": true,
   "description": "Hanachan - Japanese language learning chatbot",
   "scripts": {
+    "dev": "./scripts/run.sh",
     "test": "pnpm run test:all",
     "test:all": "pnpm run test:backend && pnpm run test:frontend",
     "test:backend": "cd fastapi-agents && uv run python -m pytest",

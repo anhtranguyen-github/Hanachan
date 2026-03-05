@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
@@ -52,7 +52,7 @@ router = APIRouter()
 async def get_chat_context(
     request: Request,
     req: ContextRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: dict[str, Any] = Depends(get_current_user)
 ):
     """Primary chatbot integration endpoint."""
     user_id = current_user["id"]
@@ -138,7 +138,7 @@ async def get_chat_context(
 async def search_episodic(
     request: Request,
     req: EpisodicSearchRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: dict[str, Any] = Depends(get_current_user)
 ):
     """Search episodic memory."""
     user_id = current_user["id"]
@@ -155,7 +155,7 @@ async def search_episodic(
 async def add_episodic(
     request: Request,
     req: AddEpisodicRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: dict[str, Any] = Depends(get_current_user)
 ):
     """Add episodic memory."""
     user_id = current_user["id"]
@@ -168,7 +168,7 @@ async def add_episodic(
 @router.delete("/episodic/{memory_id}", response_model=ClearResponse, tags=["Episodic"])
 async def forget_episodic(
     memory_id: str,
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: dict[str, Any] = Depends(get_current_user)
 ):
     """Delete a specific episodic memory."""
     user_id = current_user["id"]
@@ -184,7 +184,7 @@ async def forget_episodic(
 
 @router.delete("/episodic/clear", response_model=ClearResponse, tags=["Episodic"])
 async def clear_episodic(
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: dict[str, Any] = Depends(get_current_user)
 ):
     """Clear all episodic memories for a user."""
     user_id = current_user["id"]
@@ -199,7 +199,7 @@ async def clear_episodic(
 )
 async def search_semantic(
     req: SemanticSearchRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: dict[str, Any] = Depends(get_current_user)
 ):
     """Search semantic memory."""
     user_id = current_user["id"]
@@ -215,7 +215,7 @@ async def search_semantic(
 @router.post("/semantic/add", response_model=AddSemanticResponse, tags=["Semantic"])
 async def add_semantic(
     req: AddSemanticRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: dict[str, Any] = Depends(get_current_user)
 ):
     """Add semantic memory nodes and relationships."""
     user_id = current_user["id"]
@@ -231,7 +231,7 @@ async def add_semantic(
 
 @router.delete("/semantic/clear", response_model=ClearResponse, tags=["Semantic"])
 async def clear_semantic(
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: dict[str, Any] = Depends(get_current_user)
 ):
     """Clear all semantic memory for a user."""
     user_id = current_user["id"]
@@ -243,7 +243,7 @@ async def clear_semantic(
 
 @router.get("/profile", response_model=UserProfileSchema, tags=["Profile"])
 async def get_user_profile(
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     """Get user profile."""
     user_id = current_user["id"]

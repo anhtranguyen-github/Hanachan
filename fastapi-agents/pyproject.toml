@@ -2,7 +2,7 @@
 name = "hanachan-fastapi"
 version = "0.1.0"
 description = "FastAPI backend for Hanachan chatbot"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.109.0",
     "uvicorn>=0.27.0",
@@ -22,6 +22,7 @@ dependencies = [
     "yt-dlp>=2026.2.21",
     "janome>=0.5.0",
     "langchain-neo4j>=0.8.0",
+    "mcp>=1.26.0",
 ]
 
 [project.optional-dependencies]
@@ -67,17 +68,23 @@ filterwarnings = [
     "ignore::PendingDeprecationWarning",
 ]
 
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
 [tool.ruff.lint]
-select = ["E", "F", "S", "B", "I"]
-ignore = ["S608", "E501", "B008", "B904", "E402"]
+select = [
+    "E",
+    "F",
+    "I",
+    "B",
+    "UP",
+    "TID"
+]
+ignore = ["B008", "B904", "E501", "E402"]
 
-[tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101", "S105", "S106", "S110", "S108"]
-"app/services/sentence_library.py" = ["S608"]
-"app/services/video_embeddings.py" = ["S608"]
-
-[tool.ruff.lint.pycodestyle]
-max-line-length = 120
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
 
 [tool.coverage.run]
 source = ["app"]
@@ -105,9 +112,15 @@ directory = "htmlcov"
 
 [dependency-groups]
 dev = [
+    "bandit>=1.9.4",
+    "detect-secrets>=1.5.0",
     "faker>=40.5.1",
     "httpx>=0.28.1",
+    "import-linter>=2.10",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.0.0",
+    "ruff>=0.15.4",
 ]
+[tool.bandit]
+exclude_dirs = [".venv", "tests"]

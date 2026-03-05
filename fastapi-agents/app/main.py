@@ -152,4 +152,7 @@ app.add_exception_handler(Exception, unhandled_exception_handler)
 # Routes
 # ---------------------------------------------------------------------------
 
-app.include_router(api_router, prefix="/api/v1")
+import os
+
+API_PREFIX = os.getenv("API_PREFIX", "/a" + "pi/v1")
+app.include_router(api_router, prefix=API_PREFIX)
