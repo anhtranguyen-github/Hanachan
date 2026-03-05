@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class MCPDomainClient:
     def __init__(self, jwt: str):
         self.jwt = jwt
-        default_url = "http" + "://fastapi-domain:8001/mcp/sse"
+        default_url = "http" + "://fastapi-domain:8000/mcp/sse"
         self.url = os.getenv("DOMAIN_MCP_URL", default_url)
         self.headers = {"Authorization": f"Bearer {self.jwt}"}
 

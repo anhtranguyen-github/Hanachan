@@ -6,6 +6,8 @@ export default defineConfig({
         globals: true,
         environment: 'node',
         setupFiles: ['./tests/setup.ts'],
+        // API tests use their own setup file for service health checks
+        // Note: API tests in tests/api/ have their own setup.ts
         include: ['**/*.test.ts', '**/*.test.tsx'],
         exclude: ['node_modules', '.next'],
         testTimeout: 60000, // 60s for bulk tests
