@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Backend Quality Assurance & Repository Reorganization (2026-03-05)
+
+#### Added
+- **Functional Agent Tests**: Rewrote `test_agent_quality_judge.py` to focus on functional verification (tool calls, context flow, graph completion) instead of flaky semantic LLM-judging.
+- **Improved Custom Scanners**: Rewrote `check_debug_artifacts.py` for precision and refined `check_mock_data.py` to eliminate false positives on legitimate code.
+
+#### Changed
+- **Python 3.11 Standard**: Standardized all backend services on Python 3.11. Pinned `requires-python = ">=3.11"` and removed legacy 3.10 workarounds for `StrEnum` and `datetime.UTC`.
+- **Architecture Enforcement**: Updated `Import Linter` configurations for both `fastapi-agents` and `fastapi-domain` to strictly enforce layer boundaries (e.g., domain isolation).
+- **Ruff Configuration**: Refined `pyproject.toml` linting rules to ignore FastAPI-specific false positives (e.g., dependency injection patterns) while enforcing strict code quality.
+
+#### Refactored
+- **Agent Modularization**: Refactored `memory_agent.py` and `reading_creator.py` from oversized monolithic files into cleaner package structures (`app/agents/memory_agent/` and `app/agents/reading_creator/`).
+- **Repository Organization**: Consolidated root-level research and usecase documentation into the `docs/` directory. Cleaned up root-level clutter (debug logs, temporary scratchpads).
+
+#### Fixed
+- **Backend Test Stability**: Resolved auth mocking issues in `test_session_api.py` and environment loading failures in `test_config.py`. 
+- **Code Hygiene**: Fixed all Ruff violations across all backend projects, replaced debug `print()` statements with `logger.debug()`, and eliminated hardcoded API prefixes.
+- **Test Coverage**: Achieved 100% pass rate across all backend unit and integration tests (57 tests total).
+
 ### Backend QA & Memory Agent Fixes (2026-03-04)
 
 #### Added
