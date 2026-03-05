@@ -3,7 +3,10 @@ import { submitReview } from '@/features/learning/service';
 import { srsRepository } from '@/features/learning/srsRepository';
 
 vi.mock('next/headers', () => ({
-    cookies: vi.fn().mockReturnValue(Promise.resolve({ get: vi.fn().mockReturnValue({ value: 'mock-token' }) }))
+    cookies: vi.fn().mockReturnValue(Promise.resolve({
+        get: vi.fn().mockReturnValue({ value: 'mock-token' }),
+        getAll: vi.fn().mockReturnValue([{ name: 'sb-test-auth-token', value: JSON.stringify(['mock-token']) }])
+    }))
 }));
 vi.mock('@/features/learning/srsRepository');
 vi.mock('@/features/analytics/service', () => ({

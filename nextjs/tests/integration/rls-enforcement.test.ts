@@ -13,7 +13,10 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 
 vi.mock('next/headers', () => ({
-  cookies: vi.fn().mockReturnValue(Promise.resolve({ get: vi.fn().mockReturnValue({ value: 'mock-token' }) }))
+  cookies: vi.fn().mockReturnValue(Promise.resolve({
+    get: vi.fn().mockReturnValue({ value: 'mock-token' }),
+    getAll: vi.fn().mockReturnValue([{ name: 'sb-test-auth-token', value: JSON.stringify(['mock-token']) }])
+  }))
 }));
 
 // Test configuration
