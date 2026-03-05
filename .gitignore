@@ -1,24 +1,23 @@
-# ==========================================
 # Hanachan Monorepo Root .gitignore
-# ==========================================
 
 # --- Dependencies & Build ---
 node_modules/
-.pnp
-.pnp.js
 .turbo/
-dist/
-build/
-out/
 .next/
 .next_clean/
 .uv/
 .venv/
 venv/
-ENV/
-env/
-*.egg-info/
 __pycache__/
+*.egg-info/
+*.py[cod]
+.agent/
+.agents/
+.kilocode/
+.kiro/
+.gemini/
+.vscode/
+!.vscode/extensions.json
 
 # --- Environment & Secrets ---
 .env
@@ -27,113 +26,43 @@ __pycache__/
 .secrets.baseline
 *.pem
 *.key
-.env.keys
 
-# --- Python Tools & Patterns ---
-*.py[cod]
-*$py.class
-*.so
+# --- Backend Tools (FastAPI) ---
 .pytest_cache/
 .ruff_cache/
-.mypy_cache/
-.tox/
-.nox/
 .coverage
-.coverage.*
 htmlcov/
-nosetests.xml
-coverage.xml
-*.cover
-*.pyo
-.python-version
-pip-log.txt
-pip-delete-this-directory.txt
+*.log
 
-# --- Node.js & Tooling ---
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-.eslintcache
-.stylelintcache
+# --- Frontend Tools (Next.js) ---
 *.tsbuildinfo
 next-env.d.ts
 
 # --- Database & Storage ---
 *.db
-*.sqlite
-*.sqlite3
 /data/
-/processed_data/
 .supabase/
 /database_setup/
-database_setup.sql
-database_setup.sh
 
-# --- Operating System ---
+# --- Operating System & Common Scratches ---
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
-[Dd]esktop.ini
-
-# --- IDEs & Editors ---
 .vscode/
 !.vscode/extensions.json
-.idea/
-*.swp
-*.swo
-*~
-.project
-.settings/
-.classpath
-.factorypath
 
-# --- Local Log Files ---
-*.log
-*.tmp
-temp/
-local-test/
-dev_log.txt
-test_results.txt
-test-results/
-playwright-report/
-playwright/.auth/
-
-# --- Agent-Generated Scratches (Cleanup) ---
-# (Ignore temporary artifacts from AI coding sessions)
+# --- Agent-Generated Scratches (Local Only) ---
 debug.txt
 hardcoded.txt
 mock.txt
 runs.json
 qa_checklist.txt
 backend_qa_report.md
-answer_quality_report.txt
-planner_failure_patterns.txt
-complex_qa_results.json
 chat_test*.png
 screenshots/
 /*.png
 /*.jpg
-/*.jpeg
 /*.webp
-/*.gif
-/*.svg
 null
-
-# --- Documentation ---
-# Only ignore specialized rendered output, keep the docs/ folder tracked
-# (Removed docs/ from ignore in previous step)
-# docs/
-
-# --- Deployment ---
-.vercel/
-.vercel_build_output/
-.netlify/
 
 # --- Project Specifics ---
 /fastapi-agents/app/agents/memory_agent.py.bak
-/fastapi-agents/tests/fixtures/cache/
