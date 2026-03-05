@@ -12,7 +12,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
 
 import pytest
 
@@ -35,9 +34,9 @@ class ArchitectureScanner:
 
     def __init__(self, project_root: Path):
         self.project_root = project_root
-        self.violations: List[Violation] = []
+        self.violations: list[Violation] = []
 
-    def scan_all(self) -> List[Violation]:
+    def scan_all(self) -> list[Violation]:
         """Run all violation scans."""
         self.violations = []
         self._scan_fastapi()
@@ -275,7 +274,7 @@ def scanner() -> ArchitectureScanner:
 
 
 @pytest.fixture
-def violations(scanner: ArchitectureScanner) -> List[Violation]:
+def violations(scanner: ArchitectureScanner) -> list[Violation]:
     """Run scanner and return all violations."""
     return scanner.scan_all()
 
@@ -283,7 +282,7 @@ def violations(scanner: ArchitectureScanner) -> List[Violation]:
 class TestFastAPIArchitecture:
     """Tests for FastAPI architectural violations."""
 
-    def test_fastapi_no_psycopg2_imports(self, violations: List[Violation]) -> None:
+    def test_fastapi_no_psycopg2_imports(self, violations: list[Violation]) -> None:
         """Ensure no direct PostgreSQL driver imports in FastAPI."""
         db_violations = [v for v in violations if v.rule == "FORBIDDEN_DB_DRIVER"]
         if db_violations:
@@ -292,7 +291,7 @@ class TestFastAPIArchitecture:
                 message += f"  - {v}\n"
             pytest.fail(message)
 
-    def test_fastapi_no_core_database_imports(self, violations: List[Violation]) -> None:
+    def test_fastapi_no_core_database_imports(self, violations: list[Violation]) -> None:
         """Ensure no imports from core.database in FastAPI."""
         core_violations = [v for v in violations if v.rule == "FORBIDDEN_CORE_IMPORT"]
         if core_violations:
@@ -301,7 +300,7 @@ class TestFastAPIArchitecture:
                 message += f"  - {v}\n"
             pytest.fail(message)
 
-    def test_fastapi_no_jwt_validation(self, violations: List[Violation]) -> None:
+    def test_fastapi_no_jwt_validation(self, violations: list[Violation]) -> None:
         """Ensure no JWT validation in FastAPI."""
         jwt_violations = [v for v in violations if v.rule in ("FORBIDDEN_JWT_VALIDATION", "FORBIDDEN_AUTH_IMPORT")]
         if jwt_violations:
@@ -310,7 +309,7 @@ class TestFastAPIArchitecture:
                 message += f"  - {v}\n"
             pytest.fail(message)
 
-    def test_fastapi_no_in_memory_state(self, violations: List[Violation]) -> None:
+    def test_fastapi_no_in_memory_state(self, violations: list[Violation]) -> None:
         """Ensure no in-memory state as source of truth in FastAPI."""
         memory_violations = [v for v in violations if v.rule == "IN_MEMORY_STATE"]
         if memory_violations:
@@ -319,7 +318,7 @@ class TestFastAPIArchitecture:
                 message += f"  - {v}\n"
             pytest.fail(message)
 
-    def test_fastapi_no_business_logic(self, violations: List[Violation]) -> None:
+    def test_fastapi_no_business_logic(self, violations: list[Violation]) -> None:
         """Ensure FSRS/business logic is not in FastAPI."""
         logic_violations = [v for v in violations if v.rule == "BUSINESS_LOGIC_IN_FASTAPI"]
         if logic_violations:
@@ -328,7 +327,7 @@ class TestFastAPIArchitecture:
                 message += f"  - {v}\n"
             pytest.fail(message)
 
-    def test_fastapi_no_direct_sql(self, violations: List[Violation]) -> None:
+    def test_fastapi_no_direct_sql(self, violations: list[Violation]) -> None:
         """Ensure no direct SQL execution in FastAPI."""
         sql_violations = [v for v in violations if v.rule == "DIRECT_SQL"]
         if sql_violations:
@@ -337,7 +336,7 @@ class TestFastAPIArchitecture:
                 message += f"  - {v}\n"
             pytest.fail(message)
 
-    def test_services_removed_from_fastapi(self, violations: List[Violation]) -> None:
+    def test_services_removed_from_fastapi(self, violations: list[Violation]) -> None:
         """Ensure CRUD services don't exist in FastAPI (only agents allowed)."""
         service_violations = [v for v in violations if v.rule == "CRUD_SERVICE_IN_FASTAPI"]
         if service_violations:
@@ -350,7 +349,7 @@ class TestFastAPIArchitecture:
 class TestNextJSArchitecture:
     """Tests for Next.js architectural violations."""
 
-    def test_nextjs_no_direct_fastapi_calls(self, violations: List[Violation]) -> None:
+    def test_nextjs_no_direct_fastapi_calls(self, violations: list[Violation]) -> None:
         """Ensure Next.js doesn't call FastAPI directly."""
         call_violations = [v for v in violations if v.rule == "DIRECT_FASTAPI_CALL"]
         if call_violations:
@@ -363,7 +362,7 @@ class TestNextJSArchitecture:
 class TestOverallArchitecture:
     """Tests for overall architectural compliance."""
 
-    def test_no_critical_violations(self, violations: List[Violation]) -> None:
+    def test_no_critical_violations(self, violations: list[Violation]) -> None:
         """Ensure no critical architectural violations exist."""
         critical_rules = {
             "FORBIDDEN_DB_DRIVER",
@@ -401,7 +400,7 @@ def main() -> int:
         return 0
 
     # Group violations by rule
-    violations_by_rule: dict[str, List[Violation]] = {}
+    violations_by_rule: dict[str, list[Violation]] = {}
     for v in violations:
         if v.rule not in violations_by_rule:
             violations_by_rule[v.rule] = []
