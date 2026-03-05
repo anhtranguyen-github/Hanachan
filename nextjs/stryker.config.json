@@ -1,0 +1,38 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "reporters": ["html", "json", "dashboard"],
+  "testRunner": "vitest",
+  "coverageAnalysis": "perTest",
+  "timeoutFactor": 3,
+  "timeoutMS": 10000,
+  "mutate": [
+    "src/**/*.ts",
+    "!src/**/*.d.ts",
+    "!src/app/**",
+    "!src/middleware.ts",
+    "!src/client/**"
+  ],
+  "ignorePatterns": [
+    "node_modules",
+    "dist",
+    "build",
+    ".next",
+    "coverage",
+    "src/client/**"
+  ],
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": 70
+  },
+  "vitest": {
+    "configFile": "vitest.config.ts"
+  },
+  "htmlReporter": {
+    "fileName": "reports/mutation/mutation-report.html"
+  },
+  "jsonReporter": {
+    "fileName": "reports/mutation/mutation-report.json"
+  }
+}

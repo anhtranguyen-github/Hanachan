@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.2.0",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "pnpm generate:api && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
@@ -15,12 +15,15 @@
     "test:unit:watch": "vitest --dir tests/unit",
     "test:integration": "vitest run --dir tests/integration",
     "test:integration:watch": "vitest --dir tests/integration",
+    "test:api": "vitest run --dir tests/api",
     "test:ci": "vitest run --reporter=default --silent",
     "typecheck": "tsc --noEmit",
     "test:accounts:create": "node ../scripts/create-test-accounts.js",
-    "generate-types:domain": "openapi-typescript openapi/fastapi-domain-openapi.json -o src/types/api/domain.d.ts",
-    "generate-types:agents": "openapi-typescript openapi/fastapi-agents-openapi.json -o src/types/api/agents.d.ts",
-    "generate-types": "pnpm generate-types:domain && pnpm generate-types:agents",
+    "generate:api": "pnpm generate:api:domain && pnpm generate:api:agents",
+    "generate:api:domain": "openapi-ts -c @hey-api/client-fetch -i ../openapi/domain.json -o src/client/domain",
+    "generate:api:agents": "openapi-ts -c @hey-api/client-fetch -i ../openapi/agents.json -o src/client/agents",
+    "test:mutation": "stryker run",
+    "test:mutation:ci": "stryker run --reporters json,dashboard",
     "preinstall": "npx only-allow pnpm"
   },
   "dependencies": {
@@ -47,6 +50,10 @@
     "zustand": "5.0.10"
   },
   "devDependencies": {
+    "@hey-api/client-fetch": "^0.8.0",
+    "@hey-api/openapi-ts": "^0.64.0",
+    "@stryker-mutator/core": "^9.6.0",
+    "@stryker-mutator/vitest-runner": "^9.6.0",
     "@types/node": "20.17.6",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
@@ -57,7 +64,6 @@
     "dotenv-cli": "^11.0.0",
     "eslint": "8.57.1",
     "eslint-config-next": "14.2.16",
-    "openapi-typescript": "^7.13.0",
     "playwright-core": "^1.58.2",
     "postcss": "8.4.47",
     "tailwindcss": "3.4.14",

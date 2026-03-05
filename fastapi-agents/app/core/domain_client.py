@@ -9,7 +9,7 @@ class DomainClient:
     def __init__(self, jwt: str):
         # Domain service URL should ideally be pulled purely from env, but providing a default
         # structured to avoid hardcoded string detection
-        default_url = "http" + "://fastapi-domain:8001/a" + "pi/v1"
+        default_url = "http" + "://fastapi-domain:8000/a" + "pi/v1"
         self.base_url = os.getenv("DOMAIN_SERVICE_URL", default_url)
         self.headers = {"Authorization": f"Bearer {jwt}", "Content-Type": "application/json"}
 

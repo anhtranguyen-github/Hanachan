@@ -11,7 +11,7 @@ async def test_mcp_domain_client_init():
     jwt = "test-jwt-token"
     client = MCPDomainClient(jwt)
     assert client.headers["Authorization"] == f"Bearer {jwt}"
-    assert "DOMAIN_MCP_URL" in client.url or client.url == "http://fastapi-domain:8001/mcp/sse"
+    assert "DOMAIN_MCP_URL" in client.url or client.url == "http://fastapi-domain:8000/mcp/sse"
 
 
 @pytest.mark.asyncio
