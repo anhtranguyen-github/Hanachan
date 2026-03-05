@@ -5,7 +5,6 @@ Chat request/response schemas.
 from __future__ import annotations
 
 import uuid
-from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -21,7 +20,7 @@ class ChatRequest(BaseModel):
         max_length=4000,
         description="Max 4000 characters (~1000 tokens).",
     )
-    session_id: Optional[str] = Field(
+    session_id: str | None = Field(
         None,
         description="Session ID for thread continuity. If omitted, no session context is used.",
     )
@@ -48,7 +47,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     user_id: str
-    session_id: Optional[str] = None
+    session_id: str | None = None
     message: str
     response: str
     episodic_context: str = ""

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -22,12 +22,12 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def _get_raw_facts(user_id: str) -> List[Dict[str, Any]]:
+def _get_raw_facts(user_id: str) -> list[dict[str, Any]]:
     """Return all semantic triples for this user."""
     return sem_mem.inspect_semantic_memory(user_id)
 
 
-def _facts_to_text(facts: List[Dict[str, Any]]) -> str:
+def _facts_to_text(facts: list[dict[str, Any]]) -> str:
     if not facts:
         return "(no structured facts available)"
     lines = []

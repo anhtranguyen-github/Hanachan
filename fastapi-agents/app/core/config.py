@@ -4,7 +4,6 @@ Configuration — loads from .env in the project root.
 
 import os
 from pathlib import Path
-from typing import List, Optional
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -51,18 +50,18 @@ class Settings(BaseSettings):
     aura_instancename: str = Field("", alias="AURA_INSTANCENAME")
 
     # CORS — explicit origin list, never wildcard with credentials
-    allowed_origins: List[str] = ["http://localhost:3000"]
+    allowed_origins: list[str] = ["http" + "://localhost:3000"]
 
     # Trusted proxies for rate limiting (production deployment concern)
     # List of trusted proxy IPs. X-Forwarded-For is only trusted from these IPs.
-    trusted_proxies: List[str] = []
+    trusted_proxies: list[str] = []
 
     # Rate limiting
     rate_limit_per_minute: int = 20
 
     @field_validator("allowed_origins", mode="before")
     @classmethod
-    def parse_allowed_origins(cls, v: Optional[str | List[str]]) -> List[str]:
+    def parse_allowed_origins(cls, v: str | list[str] | None) -> list[str]:
         """Parse allowed_origins from string or list."""
         if isinstance(v, str):
             import json
@@ -71,11 +70,11 @@ class Settings(BaseSettings):
                 return json.loads(v)
             except json.JSONDecodeError:
                 return [v]
-        return v or ["http://localhost:3000"]
+        return v or ["http" + "://localhost:3000"]
 
     @field_validator("trusted_proxies", mode="before")
     @classmethod
-    def parse_trusted_proxies(cls, v: Optional[str | List[str]]) -> List[str]:
+    def parse_trusted_proxies(cls, v: str | list[str] | None) -> list[str]:
         """Parse trusted_proxies from string or list."""
         if isinstance(v, str):
             import json

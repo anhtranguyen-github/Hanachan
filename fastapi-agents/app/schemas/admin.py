@@ -4,8 +4,6 @@ Admin API Schemas — Pydantic models for Admin Control Plane endpoints.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from pydantic import BaseModel, Field
 
 # =============================================================================
@@ -15,10 +13,10 @@ from pydantic import BaseModel, Field
 class UserListItem(BaseModel):
     """User item in list view."""
     id: str
-    display_name: Optional[str]
+    display_name: str | None
     level: int
-    last_activity_at: Optional[str]
-    created_at: Optional[str]
+    last_activity_at: str | None
+    created_at: str | None
     active_learning_items: int
     total_chats: int
     total_messages: int
@@ -47,7 +45,7 @@ class ChatStats(BaseModel):
     """Chat statistics for a user."""
     total_sessions: int
     total_messages: int
-    last_chat_at: Optional[str]
+    last_chat_at: str | None
 
 
 class CostStats(BaseModel):
@@ -61,7 +59,7 @@ class SuspensionInfo(BaseModel):
     """Active suspension information."""
     id: str
     reason: str
-    suspended_until: Optional[str]
+    suspended_until: str | None
     type: str
     created_at: str
 
@@ -71,9 +69,9 @@ class RateLimitOverrideInfo(BaseModel):
     id: str
     scope: str
     endpoint_pattern: str
-    max_requests_per_minute: Optional[int]
-    max_requests_per_hour: Optional[int]
-    max_requests_per_day: Optional[int]
+    max_requests_per_minute: int | None
+    max_requests_per_hour: int | None
+    max_requests_per_day: int | None
     expires_at: str
     reason: str
 
@@ -81,14 +79,14 @@ class RateLimitOverrideInfo(BaseModel):
 class UserDetailsResponse(BaseModel):
     """Detailed user information."""
     id: str
-    display_name: Optional[str]
+    display_name: str | None
     level: int
-    last_activity_at: Optional[str]
-    created_at: Optional[str]
+    last_activity_at: str | None
+    created_at: str | None
     learning_stats: LearningStats
     chat_stats: ChatStats
     cost_stats: CostStats
-    suspension: Optional[SuspensionInfo]
+    suspension: SuspensionInfo | None
     rate_limit_overrides: list[RateLimitOverrideInfo]
 
 
@@ -96,7 +94,7 @@ class SuspendUserRequest(BaseModel):
     """Request to suspend a user."""
     reason: str = Field(..., min_length=1, max_length=500)
     suspension_type: str = Field(default="temporary", pattern="^(temporary|permanent)$")
-    duration_hours: Optional[int] = Field(default=None, ge=1, le=8760)  # Max 1 year
+    duration_hours: int | None = Field(default=None, ge=1, le=8760)  # Max 1 year
 
 
 class SuspendUserResponse(BaseModel):
@@ -105,7 +103,7 @@ class SuspendUserResponse(BaseModel):
     user_id: str
     reason: str
     type: str
-    suspended_until: Optional[str]
+    suspended_until: str | None
     created_at: str
 
 
@@ -154,7 +152,7 @@ class DailyCostStats(BaseModel):
 class TopUserCost(BaseModel):
     """Top user by cost."""
     user_id: str
-    display_name: Optional[str]
+    display_name: str | None
     cost_usd: float
     tokens: int
     requests: int
@@ -179,9 +177,9 @@ class CostLogEntry(BaseModel):
     completion_tokens: int
     total_tokens: int
     cost_usd: float
-    latency_ms: Optional[int]
+    latency_ms: int | None
     success: bool
-    error_message: Optional[str]
+    error_message: str | None
     created_at: str
 
 
@@ -201,14 +199,14 @@ class AuditLogEntry(BaseModel):
     """Individual audit log entry."""
     id: str
     admin_user_id: str
-    admin_name: Optional[str]
+    admin_name: str | None
     action: str
     target_type: str
-    target_id: Optional[str]
-    old_value: Optional[dict]
-    new_value: Optional[dict]
-    reason: Optional[str]
-    ip_address: Optional[str]
+    target_id: str | None
+    old_value: dict | None
+    new_value: dict | None
+    reason: str | None
+    ip_address: str | None
     created_at: str
 
 
@@ -229,15 +227,15 @@ class AbuseAlert(BaseModel):
     id: str
     alert_type: str
     severity: str
-    user_id: Optional[str]
-    user_name: Optional[str]
-    ip_address: Optional[str]
+    user_id: str | None
+    user_name: str | None
+    ip_address: str | None
     description: str
-    evidence: Optional[dict]
+    evidence: dict | None
     status: str
-    resolved_by: Optional[str]
-    resolved_at: Optional[str]
-    resolution_notes: Optional[str]
+    resolved_by: str | None
+    resolved_at: str | None
+    resolution_notes: str | None
     created_at: str
 
 
@@ -254,9 +252,9 @@ class CreateAbuseAlertRequest(BaseModel):
     alert_type: str = Field(..., pattern="^(rate_limit_exceeded|cost_spike|suspicious_pattern|data_exfiltration|spam)$")
     severity: str = Field(..., pattern="^(low|medium|high|critical)$")
     description: str = Field(..., min_length=1, max_length=1000)
-    user_id: Optional[str] = None
-    ip_address: Optional[str] = None
-    evidence: Optional[dict] = None
+    user_id: str | None = None
+    ip_address: str | None = None
+    evidence: dict | None = None
 
 
 class CreateAbuseAlertResponse(BaseModel):
@@ -287,14 +285,14 @@ class ResolveAbuseAlertResponse(BaseModel):
 class RateLimitOverride(BaseModel):
     """Rate limit override entry."""
     id: str
-    user_id: Optional[str]
-    user_name: Optional[str]
-    ip_address: Optional[str]
+    user_id: str | None
+    user_name: str | None
+    ip_address: str | None
     scope: str
     endpoint_pattern: str
-    max_requests_per_minute: Optional[int]
-    max_requests_per_hour: Optional[int]
-    max_requests_per_day: Optional[int]
+    max_requests_per_minute: int | None
+    max_requests_per_hour: int | None
+    max_requests_per_day: int | None
     expires_at: str
     reason: str
     created_by: str
@@ -312,11 +310,11 @@ class CreateRateLimitOverrideRequest(BaseModel):
     endpoint_pattern: str = Field(default="*", max_length=100)
     reason: str = Field(..., min_length=1, max_length=500)
     expires_hours: int = Field(default=24, ge=1, le=720)  # Max 30 days
-    user_id: Optional[str] = None
-    ip_address: Optional[str] = None
-    max_requests_per_minute: Optional[int] = Field(default=None, ge=1)
-    max_requests_per_hour: Optional[int] = Field(default=None, ge=1)
-    max_requests_per_day: Optional[int] = Field(default=None, ge=1)
+    user_id: str | None = None
+    ip_address: str | None = None
+    max_requests_per_minute: int | None = Field(default=None, ge=1)
+    max_requests_per_hour: int | None = Field(default=None, ge=1)
+    max_requests_per_day: int | None = Field(default=None, ge=1)
 
 
 class CreateRateLimitOverrideResponse(BaseModel):

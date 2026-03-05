@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 class SessionMessage(BaseModel):
     role: str  # 'user' | 'assistant' | 'system'
     content: str
-    timestamp: Optional[str] = None
+    timestamp: str | None = None
 
 
 class SessionInfo(BaseModel):
@@ -18,13 +18,13 @@ class SessionInfo(BaseModel):
 
     session_id: str
     user_id: str
-    title: Optional[str] = None  # auto-generated after first exchange
-    summary: Optional[str] = None  # rolling summary, updated each turn
+    title: str | None = None  # auto-generated after first exchange
+    summary: str | None = None  # rolling summary, updated each turn
     created_at: str
     updated_at: str
     message_count: int
-    messages: List[SessionMessage] = []
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    messages: list[SessionMessage] = []
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class SessionSummary(BaseModel):
@@ -32,35 +32,35 @@ class SessionSummary(BaseModel):
 
     session_id: str
     user_id: str
-    title: Optional[str] = None
-    summary: Optional[str] = None
+    title: str | None = None
+    summary: str | None = None
     created_at: str
     updated_at: str
     message_count: int
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class CreateSessionRequest(BaseModel):
     user_id: str
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
 
 class CreateSessionResponse(BaseModel):
     session_id: str
     user_id: str
-    title: Optional[str] = None
+    title: str | None = None
     created_at: str
 
 
 class UpdateSessionRequest(BaseModel):
-    title: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    title: str | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class EndSessionResponse(BaseModel):
     session_id: str
     user_id: str
-    title: Optional[str] = None
-    summary: Optional[str] = None
+    title: str | None = None
+    summary: str | None = None
     message_count: int
     message: str

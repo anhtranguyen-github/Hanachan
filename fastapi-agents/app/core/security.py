@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import Optional
 
 from fastapi import HTTPException
 
@@ -39,7 +38,7 @@ class ArchitectureViolationError(HTTPException):
     This is an architecture violation - auth must be handled by Next.js/Supabase.
     """
 
-    def __init__(self, detail: Optional[str] = None):
+    def __init__(self, detail: str | None = None):
         message = detail or (
             "Architecture Violation: JWT authentication is not allowed in FastAPI. "
             "Auth must be handled by Supabase/Next.js (BFF pattern). "

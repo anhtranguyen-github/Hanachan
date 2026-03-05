@@ -1,6 +1,6 @@
 import base64
 import json
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -8,7 +8,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 # HTTPBearer automatically looks for the Authorization header
 security = HTTPBearer()
 
-def get_current_user(token: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
+def get_current_user(token: HTTPAuthorizationCredentials = Depends(security)) -> dict[str, Any]:
     """
     Extracts user context from the supplied JWT without performing cryptographic validation.
     This complies with the architecture rule: JWT validation is forbidden in FastAPI (handled by Domain SSOT).

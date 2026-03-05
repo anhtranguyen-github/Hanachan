@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -24,7 +23,7 @@ class DeckItem(DeckItemBase):
 
 class DeckBase(BaseModel):
     name: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class DeckCreate(DeckBase):
@@ -36,6 +35,6 @@ class Deck(DeckBase):
     user_id: UUID
     created_at: datetime
     updated_at: datetime
-    items: List[DeckItem] = []
+    items: list[DeckItem] = []
 
     model_config = ConfigDict(from_attributes=True)

@@ -1,6 +1,6 @@
 import logging
 import uuid
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, Depends
 
@@ -12,7 +12,7 @@ router = APIRouter(tags=["Session"])
 
 @router.post("/session")
 async def create_session(
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     """Proxy session creation to Domain Service."""
     client = DomainClient(current_user["jwt"])
@@ -22,7 +22,7 @@ async def create_session(
 
 @router.get("/sessions")
 async def list_sessions(
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     """Proxy session listing to Domain Service."""
     client = DomainClient(current_user["jwt"])
@@ -31,7 +31,7 @@ async def list_sessions(
 @router.get("/session/{session_id}")
 async def get_session(
     session_id: str,
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     """Proxy session detail to Domain Service."""
     client = DomainClient(current_user["jwt"])
@@ -40,7 +40,7 @@ async def get_session(
 @router.delete("/session/{session_id}")
 async def end_session(
     session_id: str,
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     """Delete session via Domain Service."""
     client = DomainClient(current_user["jwt"])
