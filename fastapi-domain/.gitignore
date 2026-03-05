@@ -1,17 +1,19 @@
-# FastAPI Domain - Local .gitignore
+# FastAPI Domain - Comprehensive .gitignore
 
-# Python specifics
+# --- Python ---
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.python-version
 .venv/
 venv/
 .env
+.env.*
 .uv/
+*.egg-info/
+.python-version
 
-# Testing & Quality
+# --- Testing & Quality ---
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
@@ -20,10 +22,10 @@ venv/
 htmlcov/
 *.log
 
-# IDEs
-.vscode/
-.idea/
-
-# Local data
+# --- Local Artifacts ---
 local-test/
 .secrets.baseline
+
+# --- IDEs ---
+.vscode/
+.idea/
