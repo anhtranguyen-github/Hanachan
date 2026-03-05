@@ -4,7 +4,7 @@ All session_memory calls are mocked to avoid DB dependencies.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
@@ -19,16 +19,15 @@ def _make_session(session_id: str, user_id: str) -> dict:
         "title": "Test Session",
         "summary": None,
         "messages": [],
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
+        "updated_at": datetime.now(UTC).isoformat(),
         "message_count": 0,
     }
 
 
 def _make_service_role_headers() -> dict:
-    """Use the Supabase key as service role auth."""
-    from app.core.config import settings
-    return {"Authorization": f"Bearer {settings.supabase_service_key}"}
+    """Use the test service role token that conftest.py mock auth accepts."""
+    return {"Authorization": "Bearer test-service-key-32-chars-at-least-wow"}
 
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
@@ -96,8 +95,8 @@ async def test_list_sessions_success(client: AsyncClient):
             "title": "Session 1",
             "summary": None,
             "message_count": 5,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
         }
     ]
 
