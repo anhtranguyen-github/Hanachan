@@ -6,15 +6,15 @@ from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from app.core.domain_client import DomainClient
-from app.core.llm import make_llm
-from app.agents.reading_creator.types import ReadingConfig, ReadingExercise, ReadingQuestion
 from app.agents.reading_creator.prompts import (
     PASSAGE_GENERATION_PROMPT,
-    TOPICS,
-    TOPIC_LABELS,
     PASSAGE_LENGTH_CHARS,
+    TOPIC_LABELS,
+    TOPICS,
 )
+from app.agents.reading_creator.types import ReadingConfig, ReadingExercise
+from app.core.domain_client import DomainClient
+from app.core.llm import make_llm
 
 logger = logging.getLogger(__name__)
 

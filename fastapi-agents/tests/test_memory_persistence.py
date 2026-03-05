@@ -19,7 +19,7 @@ async def test_update_memory_node_persistence():
     }
 
     with patch("app.services.mcp_domain_client.MCPDomainClient.call_tool", new_callable=AsyncMock) as mock_call, \
-         patch("app.agents.memory_agent.make_llm") as mock_make_llm:
+         patch("app.agents.memory_agent.nodes.implementation.make_llm") as mock_make_llm:
         
         # Mock LLM instance
         mock_llm_instance = MagicMock()

@@ -1,10 +1,16 @@
 from langgraph.graph import END, StateGraph
-from app.agents.memory_agent.state import AgentState
+
 from app.agents.memory_agent.nodes.implementation import (
-    planner_node, tools_node, reviewer_node, 
-    rewriter_node, generator_node, tts_node, 
-    update_memory_node
+    generator_node,
+    planner_node,
+    reviewer_node,
+    rewriter_node,
+    tools_node,
+    tts_node,
+    update_memory_node,
 )
+from app.agents.memory_agent.state import AgentState
+
 
 def should_continue(state: AgentState):
     """Router for the planner -> tool node path."""
