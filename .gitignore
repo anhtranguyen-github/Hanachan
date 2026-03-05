@@ -1,23 +1,33 @@
-# Hanachan Monorepo Root .gitignore
+# ==========================================
+# Hanachan Monorepo - Comprehensive .gitignore
+# ==========================================
 
-# --- Dependencies & Build ---
+# --- Dependencies & Package Managers ---
 node_modules/
+.pnp
+.pnp.js
 .turbo/
-.next/
-.next_clean/
 .uv/
 .venv/
 venv/
-__pycache__/
+ENV/
+env/
 *.egg-info/
+package-lock.json
+pnpm-lock.yaml
+
+# --- Build Outputs ---
+.next/
+.next_clean/
+dist/
+build/
+out/
+__pycache__/
 *.py[cod]
-.agent/
-.agents/
-.kilocode/
-.kiro/
-.gemini/
-.vscode/
-!.vscode/extensions.json
+*$py.class
+*.so
+*.tsbuildinfo
+next-env.d.ts
 
 # --- Environment & Secrets ---
 .env
@@ -26,37 +36,60 @@ __pycache__/
 .secrets.baseline
 *.pem
 *.key
+.env.keys
 
-# --- Backend Tools (FastAPI) ---
-.pytest_cache/
+# --- Tooling & AI Agents ---
+.agent/
+.agents/
+.kilocode/
+.kiro/
+.gemini/
 .ruff_cache/
-.coverage
-htmlcov/
-*.log
-
-# --- Frontend Tools (Next.js) ---
-*.tsbuildinfo
-next-env.d.ts
+.pytest_cache/
+.mypy_cache/
+.vercel/
 
 # --- Database & Storage ---
 *.db
-/data/
+*.sqlite
+*.sqlite3
+data/
+processed_data/
 .supabase/
-/database_setup/
+database_setup/
+database_setup.sql
 
-# --- Operating System & Common Scratches ---
+# --- Operating System ---
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
+desktop.ini
+
+# --- IDEs (VS Code) ---
 .vscode/
 !.vscode/extensions.json
 
-# --- Agent-Generated Scratches (Local Only) ---
+# --- Logs & Performance ---
+*.log
+*.tmp
+logs/
+temp/
+local-test/
+.coverage
+.coverage.*
+htmlcov/
+
+# --- AI Scratchpads & Debug Artifacts ---
 debug.txt
 hardcoded.txt
 mock.txt
 runs.json
 qa_checklist.txt
 backend_qa_report.md
+answer_quality_report.txt
+planner_failure_patterns.txt
+complex_qa_results.json
 chat_test*.png
 screenshots/
 /*.png
@@ -64,5 +97,5 @@ screenshots/
 /*.webp
 null
 
-# --- Project Specifics ---
+# --- Project Specific Backups ---
 /fastapi-agents/app/agents/memory_agent.py.bak

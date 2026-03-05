@@ -1,17 +1,19 @@
-# FastAPI Agents - Local .gitignore
+# FastAPI Agents - Comprehensive .gitignore
 
-# Python specifics
+# --- Python ---
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.python-version
 .venv/
 venv/
 .env
+.env.*
 .uv/
+*.egg-info/
+.python-version
 
-# Testing & Quality
+# --- Testing & Quality ---
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
@@ -20,12 +22,14 @@ venv/
 htmlcov/
 *.log
 
-# IDEs
-.vscode/
-.idea/
-
-# Local data & backups
+# --- Local Artifacts ---
 local-test/
 *.py.bak
-*.ipynb_checkpoints/
 .secrets.baseline
+debug.txt
+hardcoded.txt
+mock.txt
+
+# --- IDEs ---
+.vscode/
+.idea/
