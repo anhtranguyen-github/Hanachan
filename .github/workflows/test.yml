@@ -24,7 +24,7 @@ jobs:
         run: uv python install 3.11
       - name: Install dependencies
         working-directory: fastapi-domain
-        run: uv sync --dev
+        run: uv sync --all-groups --all-extras
       - name: Run Pytest
         working-directory: fastapi-domain
         run: uv run pytest tests/ -v
@@ -41,7 +41,7 @@ jobs:
         run: uv python install 3.11
       - name: Install dependencies
         working-directory: fastapi-agents
-        run: uv sync --dev
+        run: uv sync --all-groups --all-extras
       - name: Run Pytest
         working-directory: fastapi-agents
         run: uv run pytest tests/ -v
