@@ -1,4 +1,5 @@
-from typing import TypedDict, Any
+from typing import TypedDict
+
 
 class ReadingConfig(TypedDict):
     exercises_per_session: int
