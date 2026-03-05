@@ -23,7 +23,7 @@ export function ErrorModal({
   onRetry,
   onDismiss,
 }: ErrorModalProps) {
-  const errorMessage = error instanceof Error ? error.message : error;
+  const errorMessage = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : error;
   const fullMessage = errorMessage ? `${message}\n\n${errorMessage}` : message;
 
   return (

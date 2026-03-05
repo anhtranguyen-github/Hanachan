@@ -49,7 +49,7 @@ export default function AbuseAlertsPage() {
       });
       setAlerts(result.alerts);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load alerts");
+      setError(err instanceof Error ? (err instanceof Error ? err.message : String(err)) : "Failed to load alerts");
     } finally {
       setLoading(false);
     }
@@ -70,7 +70,7 @@ export default function AbuseAlertsPage() {
       setResolutionNotes("");
       loadAlerts();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to resolve alert");
+      alert(err instanceof Error ? (err instanceof Error ? err.message : String(err)) : "Failed to resolve alert");
     }
   }
 

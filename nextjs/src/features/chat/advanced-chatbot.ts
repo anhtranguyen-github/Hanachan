@@ -32,8 +32,8 @@ export class HanachanChatService {
         try {
             const ctx = await getMemoryContext(userId, text, resolvedSessionId, 5);
             memoryContext = ctx.system_prompt_block;
-        } catch (err: any) {
-            console.error("Memory retrieval failed:", err.message);
+        } catch (err: unknown) {
+            console.error("Memory retrieval failed:", (err instanceof Error ? err.message : String(err)));
         }
 
         const systemContext = await this.buildSystemContext(userId, intent, summary, memoryContext, text);

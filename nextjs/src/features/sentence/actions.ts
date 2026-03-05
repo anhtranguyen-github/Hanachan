@@ -12,17 +12,17 @@ export async function analyzeSentenceAction(text: string): Promise<{ success: bo
         const result = await sentenceService.analyze(text);
 
         return { success: true, data: result };
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error("Analysis Failed", e);
-        return { success: false, error: "Failed to analyze sentence. " + e.message };
+        return { success: false, error: "Failed to analyze sentence. " + (e instanceof Error ? e.message : String(e)) };
     }
 }
 export async function getSentenceAction(id: string) {
     try {
         const sentence = await sentenceRepository.getById(id);
         return { success: true, data: sentence };
-    } catch (e: any) {
-        return { success: false, error: e.message };
+    } catch (e: unknown) {
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }
 
@@ -30,8 +30,8 @@ export async function fetchSentencesAction(userId: string) {
     try {
         const sentences = await sentenceRepository.getUserSentences(userId);
         return { success: true, data: sentences };
-    } catch (e: any) {
-        return { success: false, error: e.message };
+    } catch (e: unknown) {
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }
 
@@ -42,8 +42,8 @@ export async function createSentenceAction(data: any) {
             return { success: false, error: "Failed to create sentence." };
         }
         return { success: true, data: result };
-    } catch (e: any) {
-        return { success: false, error: e.message };
+    } catch (e: unknown) {
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }
 
@@ -54,7 +54,7 @@ export async function mineSentenceAction(userId: string, text: string, preAnalys
             return { success: false, error: "Failed to create sentence record." };
         }
         return { success: true, data: result };
-    } catch (e: any) {
-        return { success: false, error: e.message };
+    } catch (e: unknown) {
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }

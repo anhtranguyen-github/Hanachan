@@ -111,9 +111,9 @@ export async function createDictationSession(
             subtitles: formattedSubtitles
         };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error creating dictation session:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: (error instanceof Error ? error.message : String(error)) };
     }
 }
 
@@ -249,9 +249,9 @@ export async function submitDictationAttempt(
             }
         };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error submitting dictation attempt:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: (error instanceof Error ? error.message : String(error)) };
     }
 }
 
@@ -288,9 +288,9 @@ export async function getDictationSessionStatus(
             }
         };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error getting session status:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: (error instanceof Error ? error.message : String(error)) };
     }
 }
 
@@ -313,14 +313,14 @@ export async function endDictationSession(
             .eq('user_id', userId);
 
         if (error) {
-            return { success: false, error: error.message };
+            return { success: false, error: (error instanceof Error ? error.message : String(error)) };
         }
 
         return { success: true };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error ending session:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: (error instanceof Error ? error.message : String(error)) };
     }
 }
 

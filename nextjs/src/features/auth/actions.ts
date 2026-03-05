@@ -9,9 +9,9 @@ export async function syncUserAction(userId: string, email: string, displayName?
     try {
         await provisionUserProfile(userId, email, displayName, avatarUrl);
         return { success: true };
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error("Sync User failed:", e);
-        return { success: false, error: e.message };
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }
 
@@ -25,7 +25,7 @@ export async function login(prevState: any, formData: FormData) {
     });
 
     if (error) {
-        return { error: error.message };
+        return { error: 'Internal server error' };
     }
 
     revalidatePath('/', 'layout');
@@ -49,7 +49,7 @@ export async function signup(prevState: any, formData: FormData) {
     });
 
     if (error) {
-        return { success: false, message: error.message };
+        return { success: false, message: (error instanceof Error ? error.message : String(error)) };
     }
 
     if (data.user) {

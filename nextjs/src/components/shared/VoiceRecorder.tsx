@@ -76,7 +76,7 @@ export function VoiceRecorder({ onTranscript, disabled = false, className }: Voi
 
             recorder.start();
             setState('recording');
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('[VoiceRecorder] getUserMedia error:', err);
             setErrorMsg('Microphone access denied');
             setState('error');
@@ -120,9 +120,9 @@ export function VoiceRecorder({ onTranscript, disabled = false, className }: Voi
                 onTranscript(data.transcript);
             }
             setState('idle');
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('[VoiceRecorder] transcription error:', err);
-            setErrorMsg(err.message ?? 'Transcription failed');
+            setErrorMsg((err instanceof Error ? err.message : String(err)) ?? 'Transcription failed');
             setState('error');
             setTimeout(() => setState('idle'), 2500);
         }

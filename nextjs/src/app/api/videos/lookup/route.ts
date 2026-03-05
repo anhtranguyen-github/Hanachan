@@ -37,8 +37,8 @@ export async function GET(req: NextRequest) {
 
     const result = await lookupWord(word, userId || undefined);
     return NextResponse.json({ result });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API/videos/lookup] GET error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

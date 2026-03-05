@@ -55,7 +55,7 @@ export default function UsersPage() {
       setUsers(data.users);
       setTotal(data.total);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load users");
+      setError(err instanceof Error ? (err instanceof Error ? err.message : String(err)) : "Failed to load users");
     } finally {
       setLoading(false);
     }
@@ -86,7 +86,7 @@ export default function UsersPage() {
       setSuspendReason("");
       loadUsers();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to suspend user");
+      alert(err instanceof Error ? (err instanceof Error ? err.message : String(err)) : "Failed to suspend user");
     }
   };
 

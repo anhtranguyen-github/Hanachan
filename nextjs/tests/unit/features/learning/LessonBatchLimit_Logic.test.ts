@@ -5,6 +5,30 @@ import { lessonRepository } from '@/features/learning/lessonRepository';
 import { srsRepository } from '@/features/learning/srsRepository';
 import { analyticsService } from '@/features/analytics/service';
 
+vi.mock('next/headers', () => ({
+    cookies: vi.fn().mockReturnValue(Promise.resolve({
+        get: vi.fn().mockReturnValue({ value: 'mock-token' }),
+        getAll: vi.fn().mockReturnValue([{ name: 'sb-mock-auth-token', value: '{"access_token":"mock"}' }])
+    }))
+}));
+
+const { mockDomainClient } = vi.hoisted(() => {
+    return {
+        mockDomainClient: {
+            startLessonSession: vi.fn().mockResolvedValue({ success: true, batch_id: 'sess-1' })
+        }
+    };
+});
+
+vi.mock('@/lib/domain-client', () => {
+    return {
+        domainClient: mockDomainClient,
+        DomainClient: {
+            getInstance: () => mockDomainClient
+        }
+    };
+});
+
 vi.mock('@/features/learning/lessonRepository', () => ({
     lessonRepository: {
         countTodayBatches: vi.fn(),
@@ -71,7 +95,7 @@ describe('Lesson Batch Daily Limit', () => {
         const result = await startLessonSession(userId, 1);
 
         expect(result.batch).not.toBeNull();
-        expect(lessonRepository.createLessonBatch).toHaveBeenCalled();
+        expect(mockDomainClient.startLessonSession).toHaveBeenCalled();
     });
 
     it('should block starting a session when at the limit (10 batches)', async () => {

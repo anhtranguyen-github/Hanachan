@@ -57,10 +57,10 @@ export async function GET(req: NextRequest) {
             stats
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('[Dictation Stats API]', error);
         return NextResponse.json(
-            { success: false, error: error.message || 'Internal server error' },
+            { success: false, error: 'Internal server error' },
             { status: 500 }
         );
     }

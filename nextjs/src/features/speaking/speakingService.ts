@@ -108,9 +108,9 @@ export async function createPracticeSession(
             sentences: formattedSentences
         };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error creating practice session:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: (error instanceof Error ? error.message : String(error)) };
     }
 }
 
@@ -160,9 +160,9 @@ export async function recordPracticeAttempt(
             attempt: attempt as PracticeAttempt
         };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error recording practice attempt:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: (error instanceof Error ? error.message : String(error)) };
     }
 }
 
@@ -184,14 +184,14 @@ export async function endPracticeSession(
             .eq('user_id', userId);
 
         if (error) {
-            return { success: false, error: error.message };
+            return { success: false, error: (error instanceof Error ? error.message : String(error)) };
         }
 
         return { success: true };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error ending practice session:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: (error instanceof Error ? error.message : String(error)) };
     }
 }
 

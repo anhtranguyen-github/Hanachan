@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ReviewSessionController } from '@/features/learning/ReviewSessionController';
 import { srsRepository } from '@/features/learning/srsRepository';
-import { submitReview } from '@/features/learning/service';
+import { submitReviewAction } from '@/features/learning/actions';
 
 // Mock the dependencies
 vi.mock('@/features/learning/srsRepository', () => ({
@@ -15,8 +15,8 @@ vi.mock('@/features/learning/srsRepository', () => ({
     }
 }));
 
-vi.mock('@/features/learning/service', () => ({
-    submitReview: vi.fn().mockResolvedValue({ success: true })
+vi.mock('@/features/learning/actions', () => ({
+    submitReviewAction: vi.fn().mockResolvedValue({ success: true })
 }));
 
 vi.mock('@/features/learning/questionRepository', () => ({
@@ -78,7 +78,7 @@ describe('ReviewSessionController (FIF Mechanics)', () => {
 
         expect(success1).toBe(false);
         // Should NOT call submitReview on fail (FIF Rule)
-        expect(submitReview).not.toHaveBeenCalled();
+        expect(submitReviewAction).not.toHaveBeenCalled();
 
         // Should update repository as 'incorrect'
         expect(srsRepository.updateReviewSessionItem).toHaveBeenCalledWith(
@@ -93,13 +93,13 @@ describe('ReviewSessionController (FIF Mechanics)', () => {
         const success2 = await controller.submitAnswer('pass');
         expect(success2).toBe(true);
         // Should call submitReview (Commit)
-        expect(submitReview).toHaveBeenCalledWith(userId, '2', 'meaning', 'pass', expect.any(Object), 0);
+        expect(submitReviewAction).toHaveBeenCalledWith('mock-session-id', '2', 'meaning', 'pass', 1, 0);
 
         // Answer first item correctly (second attempt)
         const success3 = await controller.submitAnswer('pass');
         expect(success3).toBe(true);
         // Should call submitReview with wrongCount = 1
-        expect(submitReview).toHaveBeenCalledWith(userId, '1', 'meaning', 'pass', expect.any(Object), 1);
+        expect(submitReviewAction).toHaveBeenCalledWith('mock-session-id', '1', 'meaning', 'pass', 2, 1);
 
         expect(srsRepository.updateReviewSessionItem).toHaveBeenCalledWith(
             expect.any(String), '1', 'meaning', 'correct', 'pass', 1, 2

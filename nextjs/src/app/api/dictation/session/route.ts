@@ -77,10 +77,10 @@ export async function POST(req: NextRequest) {
             subtitles: result.subtitles
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('[Dictation Session API]', error);
         return NextResponse.json(
-            { success: false, error: error.message || 'Internal server error' },
+            { success: false, error: 'Internal server error' },
             { status: 500 }
         );
     }

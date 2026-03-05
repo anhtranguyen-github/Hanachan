@@ -71,8 +71,8 @@ export function KUUserSentences({ kuId, kuType, character }: KUUserSentencesProp
             setJaInput('');
             setEnInput('');
             setIsAdding(false);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError((err instanceof Error ? err.message : String(err)));
         } finally {
             setIsSaving(false);
         }

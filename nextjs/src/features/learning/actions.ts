@@ -18,22 +18,28 @@ export async function initializeSRSAction(userId: string, unitId: string, facets
         revalidatePath('/learn');
         revalidatePath('/levels');
         return { success: true };
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error("[LearningActions] Failed to initialize SRS", e);
-        return { success: false, error: e.message };
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }
 
-export async function submitReviewAction(userId: string, unitId: string, facet: string, rating: any, currentState: any) {
+export async function submitReviewAction(sessionId: string, unitId: string, facet: string, rating: any, attemptCount: number, wrongCount: number) {
     try {
-        const result = await submitReview(userId, unitId, facet, rating, currentState);
-        revalidatePath('/dashboard');
-        revalidatePath('/review');
-        revalidatePath('/levels');
-        revalidatePath('/levels/[id]', 'page');
+        const result = await domainClient.submitReview(sessionId, unitId, facet, rating, attemptCount, wrongCount);
+        // Do not revalidate everything yet to keep UI fast
         return { success: true, data: result };
-    } catch (e: any) {
-        return { success: false, error: e.message };
+    } catch (e: unknown) {
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
+    }
+}
+
+export async function startReviewSessionAction(limit: number = 20, contentType: string = 'all') {
+    try {
+        const result = await domainClient.startReviewSession(limit, contentType);
+        return { success: true, data: result };
+    } catch (e: unknown) {
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }
 
@@ -43,17 +49,46 @@ export async function fetchUserDashboardStatsAction(userId: string) {
         const stats = await fetchUserDashboardStats(userId);
         console.log('[LearningActions] Stats received:', !!stats);
         return { success: true, data: stats };
-    } catch (e: any) {
-        console.error('[LearningActions] Error:', e.message);
-        return { success: false, error: e.message };
+    } catch (e: unknown) {
+        console.error('[LearningActions] Error:', (e instanceof Error ? e.message : String(e)));
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }
 export async function fetchDueItemsAction(userId: string) {
     try {
         const items = await fetchDueItems(userId);
         return { success: true, data: items };
-    } catch (e: any) {
-        return { success: false, error: e.message };
+    } catch (e: unknown) {
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
+    }
+}
+
+import { fetchLevelStats, fetchCurriculumStats, fetchNewItems } from './service';
+
+export async function fetchNewItemsAction(userId: string, levelId: string, limit: number = 5) {
+    try {
+        const items = await fetchNewItems(userId, levelId, limit);
+        return { success: true, data: items };
+    } catch (e: unknown) {
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
+    }
+}
+
+export async function fetchLevelStatsAction(userId: string, levelId: string) {
+    try {
+        const stats = await fetchLevelStats(userId, levelId);
+        return { success: true, data: stats };
+    } catch (e: unknown) {
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
+    }
+}
+
+export async function fetchCurriculumStatsAction() {
+    try {
+        const stats = await fetchCurriculumStats();
+        return { success: true, data: stats };
+    } catch (e: unknown) {
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }
 
@@ -61,21 +96,23 @@ export async function startLessonSessionAction(userId: string, level: number) {
     try {
         const result = await startLessonSession(userId, level);
         return { success: true, data: result };
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error("[LearningActions] startLessonSession error:", e);
-        return { success: false, error: e.message };
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }
 
+import { domainClient } from '@/lib/domain-client';
+
 export async function completeLessonBatchAction(batchId: string) {
     try {
-        await lessonRepository.completeLessonBatch(batchId);
+        await domainClient.completeLessonSession(batchId);
         revalidatePath('/dashboard');
         revalidatePath('/learn');
         return { success: true };
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error("[LearningActions] completeLessonBatch error:", e);
-        return { success: false, error: e.message };
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }
 
@@ -83,8 +120,8 @@ export async function updateKUNoteAction(userId: string, kuId: string, note: str
     try {
         const updatedNotes = await srsRepository.updateKUNote(userId, kuId, note);
         return { success: true, data: updatedNotes };
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error("[LearningActions] updateKUNote error:", e);
-        return { success: false, error: e.message };
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }

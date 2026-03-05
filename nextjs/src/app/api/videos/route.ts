@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { searchVideos, getOrCreateVideo } from '@/features/video/service';
+import { z } from 'zod';
 
 function getSupabase(cookieStore: any) {
   return createServerClient(
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest) {
 
     const videos = await searchVideos(query, jlptLevel);
     return NextResponse.json({ videos });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API/videos] GET error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -52,15 +53,20 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { youtube_id } = body;
+    const schema = z.object({
+      youtube_id: z.string().min(1, 'youtube_id is required').max(50)
+    });
 
-    if (!youtube_id) {
-      return NextResponse.json({ error: 'youtube_id is required' }, { status: 400 });
+    const parsed = schema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
     }
+
+    const { youtube_id } = parsed.data;
 
     const video = await getOrCreateVideo(youtube_id);
     return NextResponse.json({ video });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API/videos] POST error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

@@ -24,7 +24,7 @@ export async function getUserLevelsAction(userId: string) {
         }));
 
         return { success: true, data: levels };
-    } catch (e: any) {
-        return { success: false, error: e.message };
+    } catch (e: unknown) {
+        return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }

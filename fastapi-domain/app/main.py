@@ -2,6 +2,8 @@ from fastapi import FastAPI
 
 from app.adapters.http.learning import router as learning_router
 from app.adapters.http.reading import router as reading_router
+from app.adapters.http.decks import router as decks_router
+from app.adapters.http.sessions import router as sessions_router
 
 app = FastAPI(
     title="Hanachan Domain Service",
@@ -11,6 +13,8 @@ app = FastAPI(
 
 app.include_router(reading_router, prefix="/api/v1")
 app.include_router(learning_router, prefix="/api/v1")
+app.include_router(decks_router, prefix="/api/v1")
+app.include_router(sessions_router, prefix="/api/v1")
 
 
 @app.get("/health")

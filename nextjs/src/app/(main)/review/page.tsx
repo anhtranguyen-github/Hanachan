@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Swords, ChevronRight, Target, TrendingUp, X, Clock, Zap } from 'lucide-react';
-import { fetchUserDashboardStats } from '@/features/learning/service';
+import { fetchUserDashboardStatsAction } from '@/features/learning/actions';
 import { useUser } from '@/features/auth/AuthContext';
 import { clsx } from 'clsx';
 
@@ -18,7 +18,8 @@ export default function ReviewPage() {
             const userId = user?.id;
             if (!userId) return;
 
-            const dashboardStats = await fetchUserDashboardStats(userId);
+            const dashRes = await fetchUserDashboardStatsAction(userId);
+            const dashboardStats: any = dashRes.data || {};
             setStats({
                 due: dashboardStats.reviewsDue,
                 breakdown: dashboardStats.dueBreakdown,

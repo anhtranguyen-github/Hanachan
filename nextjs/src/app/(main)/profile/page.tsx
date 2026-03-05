@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { getUserProfile, updateUserProfile } from '@/features/auth/db';
-import { fetchUserDashboardStats } from '@/features/learning/service';
+import { fetchUserDashboardStatsAction, fetchLevelStatsAction } from '@/features/learning/actions';
 import {
     User, Brain, Map, Settings, Edit3, Save, X, Loader2,
     Flame, Target, BookOpen, Zap, Star, Shield,
@@ -77,10 +77,12 @@ export default function ProfilePage() {
             const profileData = await getUserProfile(user.id);
             const userLevel = profileData?.level || 1;
 
-            const [statsData, levelStatsData] = await Promise.all([
-                fetchUserDashboardStats(user.id),
-                import('@/features/learning/service').then(m => m.fetchLevelStats(user.id, `level-${userLevel}`))
+            const [statsRes, levelStatsRes] = await Promise.all([
+                fetchUserDashboardStatsAction(user.id),
+                fetchLevelStatsAction(user.id, `level-${userLevel}`)
             ]);
+            const statsData = statsRes.data || {};
+            const levelStatsData = levelStatsRes.data || {};
 
             setProfile(profileData);
             setStats({ ...statsData, levelStats: levelStatsData });
@@ -149,8 +151,8 @@ export default function ProfilePage() {
             setIsEditing(false);
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
-        } catch (e: any) {
-            setSaveError(e.message || 'Failed to save profile');
+        } catch (e: unknown) {
+            setSaveError((e instanceof Error ? e.message : String(e)) || 'Failed to save profile');
         } finally {
             setSaving(false);
         }

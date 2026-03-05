@@ -18,7 +18,7 @@ import {
     Video,
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { fetchUserDashboardStats, fetchCurriculumStats, fetchLevelStats } from '@/features/learning/service';
+import { fetchUserDashboardStatsAction, fetchCurriculumStatsAction, fetchLevelStatsAction } from '@/features/learning/actions';
 import { useUser } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { HanaTime } from '@/lib/time';
@@ -39,17 +39,23 @@ export default function DashboardPage() {
             const currentLevel = profile?.level || 1;
             setUserLevel(currentLevel);
 
-            const dashboardStats = await fetchUserDashboardStats(userId);
-            const curriculumStats = await fetchCurriculumStats();
-            const levelStats = await fetchLevelStats(userId, `level-${currentLevel}`);
+            const [dashRes, currRes, lvlRes] = await Promise.all([
+                fetchUserDashboardStatsAction(userId),
+                fetchCurriculumStatsAction(),
+                fetchLevelStatsAction(userId, `level-${currentLevel}`)
+            ]);
+
+            const dashboardStats: any = dashRes.data || {};
+            const curriculumStats: any = currRes.data || {};
+            const levelStats: any = lvlRes.data || { new: 0, learned: 0, total: 100 };
 
             setStats({
                 ...dashboardStats,
                 curriculum: curriculumStats,
                 levelStats: levelStats,
-                due: dashboardStats.reviewsDue,
-                new: levelStats.new,
-                retention: dashboardStats.retention,
+                due: dashboardStats.reviewsDue || 0,
+                new: levelStats.new || 0,
+                retention: dashboardStats.retention || 0,
                 streak: dashboardStats.streak || 0,
                 progression: {
                     percentage: Math.round((levelStats.learned / Math.max(levelStats.total, 1)) * 100),
