@@ -1,78 +1,24 @@
-"""
-Reading Creator Agent — Generates personalized Japanese reading exercises
-based on user's current learning status (vocabulary, grammar, kanji mastered).
-
-Flow:
-  analyze_user_status -> select_content -> generate_passage -> create_questions -> validate -> END
-"""
-
-from __future__ import annotations
-
 import json
 import logging
 import random
 import secrets
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.core.domain_client import DomainClient
 from app.core.llm import make_llm
+from app.agents.reading_creator.types import ReadingConfig, ReadingExercise, ReadingQuestion
+from app.agents.reading_creator.prompts import (
+    PASSAGE_GENERATION_PROMPT,
+    TOPICS,
+    TOPIC_LABELS,
+    PASSAGE_LENGTH_CHARS,
+)
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Types
-# ---------------------------------------------------------------------------
-
-
-class ReadingConfig(TypedDict):
-    exercises_per_session: int
-    time_limit_minutes: int
-    difficulty_level: (
-        str  # 'N5' | 'N4' | 'N3' | 'N2' | 'N1' | 'adaptive'
-    )
-    jlpt_target: Optional[int]
-    vocab_weight: int
-    grammar_weight: int
-    kanji_weight: int
-    include_furigana: bool
-    include_translation: bool
-    passage_length: str  # 'short' | 'medium' | 'long'
-    topic_preferences: List[str]
-
-
-class ReadingQuestion(TypedDict):
-    index: int
-    type: str  # 'multiple_choice' | 'true_false' | 'fill_blank' | 'comprehension'
-    question_ja: str
-    question_en: str
-    options: Optional[List[str]]
-    correct_answer: str
-    explanation: str
-
-
-class ReadingExercise(TypedDict):
-    passage_ja: str
-    passage_furigana: Optional[str]
-    passage_en: str
-    passage_title: str
-    difficulty_level: str
-    jlpt_level: Optional[int]
-    topic: str
-    word_count: int
-    featured_vocab_ids: List[str]
-    featured_grammar_ids: List[str]
-    featured_kanji_ids: List[str]
-    questions: List[ReadingQuestion]
-
-
-# ---------------------------------------------------------------------------
-# User Learning Status Analyzer
-# ---------------------------------------------------------------------------
-
-
-async def get_user_learning_context(jwt: str) -> Dict[str, Any]:
+async def get_user_learning_context(jwt: str) -> dict[str, Any]:
     """
     Fetch user's current learning status to inform content generation.
     Returns vocabulary, grammar, and kanji the user has learned via Domain Service.
@@ -92,15 +38,9 @@ async def get_user_learning_context(jwt: str) -> Dict[str, Any]:
             "kanji_count": 0,
         }
 
-
-# ---------------------------------------------------------------------------
-# Content Selector
-# ---------------------------------------------------------------------------
-
-
 def select_featured_content(
-    context: Dict[str, Any], config: ReadingConfig
-) -> Dict[str, Any]:
+    context: dict[str, Any], config: ReadingConfig
+) -> dict[str, Any]:
     """
     Select which vocabulary, grammar, and kanji to feature in the passage
     based on weights and user's learning status.
@@ -145,144 +85,11 @@ def select_featured_content(
         "kanji_ids": [k["id"] for k in selected_kanji],
     }
 
-
-# ---------------------------------------------------------------------------
-# Passage Generator Prompt
-# ---------------------------------------------------------------------------
-
-PASSAGE_GENERATION_PROMPT = """You are a Japanese language teacher creating reading practice materials.
-
-## User Profile
-- Current Level: {user_level}
-- Vocabulary mastered: {vocab_count} words
-- Grammar patterns mastered: {grammar_count} patterns
-- Kanji mastered: {kanji_count} characters
-
-## Featured Content to Include
-### Vocabulary to use naturally:
-{vocab_list}
-
-### Grammar patterns to demonstrate:
-{grammar_list}
-
-### Kanji to include:
-{kanji_list}
-
-## Configuration
-- Difficulty: {difficulty_level}
-- Passage length: {passage_length} ({word_count_target} Japanese characters approx)
-- Topic: {topic}
-- Include furigana: {include_furigana}
-- JLPT target: N{jlpt_target}
-
-## Instructions
-Create a natural, engaging Japanese reading passage that:
-1. Naturally incorporates the featured vocabulary, grammar, and kanji
-2. Matches the specified difficulty level
-3. Is about the given topic
-4. Feels authentic (not like a textbook exercise)
-5. Has a clear narrative or informational structure
-
-Then create {question_count} comprehension questions:
-- Mix of multiple_choice (2-3 questions), true_false (1 question), and comprehension (1-2 questions)
-- Questions should test understanding of the passage content
-- Include questions that specifically test the featured vocabulary/grammar
-
-## Output Format (JSON)
-Return ONLY valid JSON in this exact format:
-{{
-  "passage_title": "Title in Japanese",
-  "passage_ja": "Full Japanese passage text",
-  "passage_furigana": "Passage with furigana in HTML ruby format (if requested)",
-  "passage_en": "Full English translation",
-  "topic": "{topic}",
-  "difficulty_level": "{difficulty_level}",
-  "jlpt_level": {jlpt_target},
-  "word_count": 150,
-  "questions": [
-    {{
-      "index": 0,
-      "type": "multiple_choice",
-      "question_ja": "Question in Japanese",
-      "question_en": "Question in English",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correct_answer": "Option A",
-      "explanation": "Why this is correct"
-    }},
-    {{
-      "index": 1,
-      "type": "true_false",
-      "question_ja": "Statement in Japanese",
-      "question_en": "Statement in English",
-      "options": ["True", "False"],
-      "correct_answer": "True",
-      "explanation": "Explanation"
-    }},
-    {{
-      "index": 2,
-      "type": "comprehension",
-      "question_ja": "Open question in Japanese",
-      "question_en": "Open question in English",
-      "options": null,
-      "correct_answer": "Expected answer",
-      "explanation": "What to look for in the answer"
-    }}
-  ]
-}}"""
-
-TOPICS = [
-    "daily_life",
-    "culture",
-    "nature",
-    "food",
-    "travel",
-    "technology",
-    "history",
-    "sports",
-    "music",
-    "family",
-    "work",
-    "school",
-    "seasons",
-    "festivals",
-    "animals",
-]
-
-TOPIC_LABELS = {
-    "daily_life": "日常生活",
-    "culture": "文化",
-    "nature": "自然",
-    "food": "食べ物",
-    "travel": "旅行",
-    "technology": "テクノロジー",
-    "history": "歴史",
-    "sports": "スポーツ",
-    "music": "音楽",
-    "family": "家族",
-    "work": "仕事",
-    "school": "学校",
-    "seasons": "季節",
-    "festivals": "祭り",
-    "animals": "動物",
-}
-
-PASSAGE_LENGTH_CHARS = {
-    "short": 150,
-    "medium": 300,
-    "long": 500,
-}
-
-
-# ---------------------------------------------------------------------------
-# Main Generator
-# ---------------------------------------------------------------------------
-
-
 async def generate_reading_exercise(
     user_id: str,
     config: ReadingConfig,
     jwt: str,
-    topic: Optional[str] = None,
+    topic: str | None = None,
 ) -> ReadingExercise:
     """
     Generate a single reading exercise for the user based on their learning status.
@@ -417,12 +224,11 @@ async def generate_reading_exercise(
 
     return exercise
 
-
 async def generate_reading_session(
     user_id: str,
     config: ReadingConfig,
     jwt: str,
-) -> List[ReadingExercise]:
+) -> list[ReadingExercise]:
     """
     Generate a full reading session with multiple exercises.
     """
@@ -453,12 +259,6 @@ async def generate_reading_session(
 
     return exercises
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
 def _level_to_jlpt(level: int) -> int:
     """Convert curriculum level to approximate JLPT level."""
     if level <= 10:
@@ -472,10 +272,9 @@ def _level_to_jlpt(level: int) -> int:
     else:
         return 1
 
-
 def _create_fallback_exercise(
     topic: str, difficulty: str, jlpt_level: int
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create a simple fallback exercise when LLM fails."""
     return {
         "passage_title": "日本語の練習",
