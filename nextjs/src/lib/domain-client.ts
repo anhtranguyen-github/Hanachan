@@ -14,7 +14,11 @@ export class DomainClient {
         // Find the Supabase auth token
         // Usually named sb-<project-ref>-auth-token
         let authCookie = null;
-        for (const cookie of cookieStore.getAll()) {
+
+        // Safety check for Vitest/JSDOM environments where next/headers might be partially mocked
+        const allCookies = typeof cookieStore.getAll === 'function' ? cookieStore.getAll() : [];
+
+        for (const cookie of allCookies) {
             if (cookie.name.includes('-auth-token')) {
                 const parsed = JSON.parse(cookie.value);
                 if (Array.isArray(parsed) && parsed[0]) {
