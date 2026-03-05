@@ -1,8 +1,18 @@
 from typing import Any
+
 from langchain_core.messages import HumanMessage
+
 from app.agents.memory_agent.graph import memory_graph
+from app.agents.memory_agent.nodes.implementation import update_memory_node
+from app.agents.memory_agent.tools import (
+    TOOLS,
+    get_user_learning_progress,
+    search_knowledge_units,
+)
+from app.core.llm import make_llm
 from app.services.memory import episodic_memory as ep_mem
 from app.services.memory import semantic_memory as sem_mem
+
 
 async def run_chat(
     user_id: str,
@@ -39,4 +49,15 @@ async def run_chat(
         "thread_context": "Dynamic",
     }
 
-__all__ = ["memory_graph", "run_chat"]
+
+__all__ = [
+    "memory_graph",
+    "run_chat",
+    "update_memory_node",
+    "get_user_learning_progress",
+    "search_knowledge_units",
+    "TOOLS",
+    "make_llm",
+    "ep_mem",
+    "sem_mem",
+]

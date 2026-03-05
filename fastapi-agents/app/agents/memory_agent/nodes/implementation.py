@@ -2,16 +2,17 @@ import logging
 import os
 from datetime import datetime
 from typing import Any
+
 from langchain_core.messages import HumanMessage, ToolMessage
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
-from app.core.llm import make_llm
 from app.agents.memory_agent.state import AgentState
 from app.agents.memory_agent.tools import TOOLS
+from app.core.llm import make_llm
+from app.schemas.memory import KnowledgeGraph
 from app.services.memory import episodic_memory as ep_mem
 from app.services.memory import semantic_memory as sem_mem
-from app.schemas.memory import KnowledgeGraph
 
 logger = logging.getLogger(__name__)
 
@@ -233,7 +234,9 @@ async def tts_node(state: AgentState) -> dict[str, Any]:
     if state.get("generation"):
         try:
             import uuid
+
             from elevenlabs.client import ElevenLabs
+
             from app.core.config import settings
             from app.core.domain_client import DomainClient
             client = ElevenLabs(api_key=settings.elevenlabs_api_key)

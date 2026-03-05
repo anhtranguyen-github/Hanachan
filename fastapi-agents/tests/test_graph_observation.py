@@ -57,9 +57,9 @@ async def test_graph_thought_tracing_observation():
     mock_llm.bind_tools = lambda tools: mock_llm
     mock_llm.with_structured_output = lambda schema: mock_llm
 
-    with patch("app.agents.memory_agent.make_llm", return_value=mock_llm), \
-         patch("app.agents.memory_agent.ep_mem"), \
-         patch("app.agents.memory_agent.sem_mem"), \
+    with patch("app.agents.memory_agent.nodes.implementation.make_llm", return_value=mock_llm), \
+         patch("app.agents.memory_agent.nodes.implementation.ep_mem"), \
+         patch("app.agents.memory_agent.nodes.implementation.sem_mem"), \
          patch("app.core.domain_client.DomainClient") as mock_domain_cls:
         
         mock_domain = AsyncMock()
@@ -112,9 +112,9 @@ async def test_graph_loop_observation():
     mock_llm.bind_tools = lambda tools: mock_llm
     mock_llm.with_structured_output = lambda schema: mock_llm
 
-    with patch("app.agents.memory_agent.make_llm", return_value=mock_llm), \
-         patch("app.agents.memory_agent.ep_mem"), \
-         patch("app.agents.memory_agent.sem_mem"), \
+    with patch("app.agents.memory_agent.nodes.implementation.make_llm", return_value=mock_llm), \
+         patch("app.agents.memory_agent.nodes.implementation.ep_mem"), \
+         patch("app.agents.memory_agent.nodes.implementation.sem_mem"), \
          patch("app.core.domain_client.DomainClient"):
         
         mock_tool = MagicMock()
