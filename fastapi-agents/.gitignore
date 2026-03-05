@@ -1,16 +1,31 @@
+# FastAPI Agents - Local .gitignore
+
+# Python specifics
 __pycache__/
 *.py[cod]
-*.pyo
+*$py.class
+*.so
+.python-version
 .venv/
 venv/
 .env
-.uv
-*.egg-info/
-.pytest_cache/
-.ipynb_checkpoints/
+.uv/
 
-# Local test files (not for CI)
-local-test/
-*.log
+# Testing & Quality
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 .coverage
+.coverage.*
 htmlcov/
+*.log
+
+# IDEs
+.vscode/
+.idea/
+
+# Local data & backups
+local-test/
+*.py.bak
+*.ipynb_checkpoints/
+.secrets.baseline
