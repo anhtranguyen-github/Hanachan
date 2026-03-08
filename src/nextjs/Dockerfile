@@ -35,12 +35,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
-EXPOSE 3000
-ENV PORT=3000
+EXPOSE 43100
+ENV PORT=43100
 ENV HOSTNAME="0.0.0.0"
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD ["wget", "-qO-", "http://localhost:3000/"]
+    CMD ["wget", "-qO-", "http://localhost:43100/"]
 
 CMD ["node", "server.js"]

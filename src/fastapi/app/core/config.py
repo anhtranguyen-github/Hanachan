@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     openai_api_base: str | None = None
     llm_model: str = "gpt-4o"
     default_llm_model: str = "free-combo"
-    llm_base_url: str = "http://localhost:20128/v1"
+    llm_base_url: str = "http://localhost:43120/v1"
     embedding_model: str = "text-embedding-3-small"
     embedding_dimensions: int = 1024  # jina-embeddings-v3 default dimension
     
@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     aura_instancename: str = Field("", alias="AURA_INSTANCENAME")
 
     # CORS — explicit origin list, never wildcard with credentials
-    allowed_origins: list[str] = ["http" + "://localhost:3000"]
+    allowed_origins: list[str] = ["http" + "://localhost:43100"]
 
     # Trusted proxies for rate limiting (production deployment concern)
     # List of trusted proxy IPs. X-Forwarded-For is only trusted from these IPs.
@@ -74,8 +74,8 @@ class Settings(BaseSettings):
     database_url: str = ""
 
     # Deprecated compatibility fields from the two-service split
-    fastapi_core_url: str = "http://localhost:6100/api/v1"
-    fastapi_core_mcp_url: str = "http://localhost:6100/mcp/sse"
+    fastapi_core_url: str = "http://localhost:43110/api/v1"
+    fastapi_core_mcp_url: str = "http://localhost:43110/mcp/sse"
 
     admin_emails: list[str] = ["admin@hanachan.test"]
 
@@ -91,7 +91,7 @@ class Settings(BaseSettings):
                 return json.loads(v)
             except json.JSONDecodeError:
                 return [v]
-        return v or ["http" + "://localhost:3000"]
+        return v or ["http" + "://localhost:43100"]
 
     @field_validator("trusted_proxies", mode="before")
     @classmethod

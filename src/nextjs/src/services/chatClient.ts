@@ -8,11 +8,15 @@ class ChatClient extends ApiClient {
   /**
    * Browser-side: Streams chat response via BFF API route
    */
-  async streamChat(payload: ChatRequest): Promise<ReadableStream<Uint8Array>> {
+  async streamChat(
+    payload: ChatRequest,
+    options: { signal?: AbortSignal } = {},
+  ): Promise<ReadableStream<Uint8Array>> {
     const res = await fetch('/api/agent/chat/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+      signal: options.signal,
     });
 
     if (!res.ok || !res.body) {

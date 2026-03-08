@@ -1,6 +1,8 @@
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config({ path: '.env.local' });
 
+const frontendPort = process.env.HANACHAN_FRONTEND_PORT || '43100';
+
 async function testFrontendEndpoint() {
     console.log('Testing Next.js API endpoint for adding video...');
 
@@ -17,7 +19,7 @@ async function testFrontendEndpoint() {
 
     try {
         console.log('Sending request to Next.js API...');
-        const response = await fetch('http://localhost:3000/api/videos', {
+        const response = await fetch(`http://localhost:${frontendPort}/api/videos`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

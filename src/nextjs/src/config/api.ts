@@ -4,10 +4,10 @@ import { AGENTS_BASE_URL } from './env';
  * Base URLs for internal and external services
  */
 
-// backend port 6100
+// backend port 43110
 export const AGENTS_API_BASE_URL = AGENTS_BASE_URL;
 
-// unified backend port 6100
+// unified backend port 43110
 export const BACKEND_API_BASE_URL =
   process.env.FASTAPI_CORE_URL?.replace(/\/+$/, '') ||
   `${AGENTS_BASE_URL}/api/v1`;

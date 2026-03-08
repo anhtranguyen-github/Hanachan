@@ -34,7 +34,7 @@ pnpm dev
 # (or ./scripts/run.sh)
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:43100](http://localhost:43100)
 
 ---
 
@@ -69,8 +69,8 @@ docker compose down
 
 | Service | Port | Description |
 |---------|------|-------------|
-| nextjs | 3000 | Next.js frontend |
-| fastapi | 6100 | FastAPI backend API |
+| nextjs | 43100 | Next.js frontend |
+| fastapi | 43110 | FastAPI backend API |
 
 ### Docker Commands
 
@@ -116,7 +116,7 @@ docker compose --profile test run --rm nextjs-test
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-AGENTS_API_URL=http://fastapi:6100
+AGENTS_API_URL=http://fastapi:43110
 OPENAI_API_KEY=your_openai_key
 
 # Optional
@@ -152,7 +152,7 @@ NEO4J_USER=neo4j
 NEO4J_PASSWORD=your_password
 
 # CORS
-ALLOWED_ORIGINS=["http://localhost:3000"]
+ALLOWED_ORIGINS=["http://localhost:43100"]
 ```
 
 ### Production Deployment

@@ -15,7 +15,7 @@ def test_settings_load_from_env():
 
 
 def test_settings_allowed_origins_default():
-    """allowed_origins should default to localhost:3000."""
+    """allowed_origins should default to localhost:43100."""
     from app.core.config import settings
 
     assert isinstance(settings.allowed_origins, list)
@@ -30,9 +30,9 @@ def test_settings_allowed_origins_parse_json_string():
         openai_api_key="key",
         supabase_url="https://x.supabase.co",
         supabase_key="key",
-        allowed_origins='["http://localhost:3000","https://example.com"]',
+        allowed_origins='["http://localhost:43100","https://example.com"]',
     )
-    assert "http://localhost:3000" in s.allowed_origins
+    assert "http://localhost:43100" in s.allowed_origins
     assert "https://example.com" in s.allowed_origins
 
 

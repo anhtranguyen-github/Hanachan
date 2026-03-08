@@ -58,7 +58,10 @@ async def post_update_node(state: TutorState) -> dict[str, Any]:
 
         extraction_llm = make_llm().with_structured_output(KnowledgeGraph)
         kg_data = extraction_llm.invoke(
-            f"Extract entities and facts from this interaction: User: {user_input}\nAI: {output}"
+            "Extract relationships from the interaction. "
+            "Each relationship MUST follow this format: {'source': {'id': 'User', 'type': 'Person'}, 'target': {'id': 'Ramen', 'type': 'Food'}, 'type': 'LIKES'}. "
+            "The source and target MUST be objects with 'id' and 'type'. "
+            f"User: {user_input}\nAI: {output}"
         )
         sem_mem.add_semantic_facts(user_id, kg_data)
     except Exception as e:

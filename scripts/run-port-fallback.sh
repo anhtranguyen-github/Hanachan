@@ -4,9 +4,17 @@ set -euo pipefail
 # run-port-fallback.sh — manages port, connects to cloud service and falls back to local
 # (previously repo-root run.sh)
 # Usage:
-#   CLOUD_URL="https://prod.example.com" PORT=8000 LOCAL_CMD="uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT" ./scripts/run-port-fallback.sh
+#   CLOUD_URL="https://prod.example.com" PORT=43110 LOCAL_CMD="uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT" ./scripts/run-port-fallback.sh
 
-PORT=${PORT:-8000}
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PORT_CONFIG_FILE="${ROOT_DIR}/config/ports.env"
+
+if [ -f "$PORT_CONFIG_FILE" ]; then
+  # shellcheck disable=SC1090
+  . "$PORT_CONFIG_FILE"
+fi
+
+PORT=${PORT:-${HANACHAN_BACKEND_PORT:-43110}}
 CLOUD_URL=${CLOUD_URL:-}
 LOCAL_CMD=${LOCAL_CMD:-"uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT"}
 HEALTH_PATH=${HEALTH_PATH:-/health}
@@ -100,4 +108,3 @@ log "Hint: set SERVICE_URL environment variable for downstream tasks: export SER
 if [ -n "$LOCAL_PID" ]; then
   wait "$LOCAL_PID"
 fi
-

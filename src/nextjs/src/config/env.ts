@@ -7,11 +7,11 @@ export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
 export const IS_TEST = process.env.NODE_ENV === 'test';
 
 // Base URLs
-export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:43100';
 
 export const AGENTS_BASE_URL = 
   process.env.AGENTS_API_URL?.replace(/\/+$/, '') || 
-  'http://127.0.0.1:6100';
+  'http://127.0.0.1:43110';
 
 export const LLM_PROVIDER = process.env.LLM_PROVIDER === 'omniroute' ? 'omniroute' : 'openai';
 export const LLM_MODEL = process.env.LLM_MODEL || 'gpt-4o-mini';

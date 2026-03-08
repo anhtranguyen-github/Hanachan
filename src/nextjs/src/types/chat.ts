@@ -9,6 +9,28 @@ export interface ChatRequest {
   tts_enabled?: boolean;
 }
 
+export interface StreamTraceEvent {
+  type: 'thought' | 'status';
+  content: string;
+  node?: string;
+  label?: string;
+  tool_name?: string;
+  phase?: 'start' | 'complete';
+  meta?: Record<string, unknown>;
+}
+
+export interface AgentThreadMessage {
+  id?: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp?: string | null;
+  created_at?: string | null;
+  metadata?: Record<string, unknown> & {
+    traces?: StreamTraceEvent[];
+  };
+  traces?: StreamTraceEvent[];
+}
+
 export interface ChatResponse {
   user_id: string;
   session_id?: string | null;

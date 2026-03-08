@@ -2,6 +2,8 @@ import { chromium } from 'playwright-core';
 import path from 'path';
 
 async function runAudit() {
+    const frontendPort = process.env.HANACHAN_FRONTEND_PORT || '43100';
+    const appBaseUrl = `http://localhost:${frontendPort}`;
     const browser = await chromium.connectOverCDP('http://172.29.176.1:9222');
     const context = browser.contexts()[0];
     const page = context.pages()[0] || await context.newPage();
@@ -19,7 +21,7 @@ async function runAudit() {
 
     for (const ku of KUs) {
         console.log(`Auditing ${ku.type}: ${ku.name}...`);
-        const url = `http://localhost:3000/content/${ku.type === 'vocabulary' ? 'vocabulary' : ku.type === 'radical' ? 'radicals' : ku.type}/${encodeURIComponent(ku.slug)}`;
+        const url = `${appBaseUrl}/content/${ku.type === 'vocabulary' ? 'vocabulary' : ku.type === 'radical' ? 'radicals' : ku.type}/${encodeURIComponent(ku.slug)}`;
 
         await page.goto(url, { waitUntil: 'networkidle' });
 
@@ -81,7 +83,7 @@ async function runAudit() {
 
     // Check Dashboard
     console.log('Auditing Dashboard...');
-    await page.goto('http://localhost:3000/dashboard', { waitUntil: 'networkidle' });
+    await page.goto(`${appBaseUrl}/dashboard`, { waitUntil: 'networkidle' });
     const dashboardText = await page.innerText('body');
     const dashboardAudit = {
         type: 'dashboard',

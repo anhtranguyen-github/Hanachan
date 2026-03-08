@@ -11,14 +11,14 @@ describe('MessageTraces', () => {
 
     it('renders the live streaming badge when isStreaming is true', () => {
         const traces = [
-            { type: 'thought', content: 'Thinking about Japanese...' },
-            { type: 'status', content: 'Executing Memory Search...' }
+            { type: 'thought', content: 'Thinking about Japanese...', node: 'router', label: 'Router' },
+            { type: 'status', content: 'Executing Memory Search...', tool_name: 'search_memory', phase: 'start' as const }
         ];
 
         render(<MessageTraces traces={traces} isStreaming={true} />);
 
         // Should render the very last trace inline
-        expect(screen.getByText('Executing Memory Search...')).toBeDefined();
+        expect(screen.getByText('Tool Call · search_memory: Executing Memory Search...')).toBeDefined();
         // Should not render the accordion button
         expect(screen.queryByText(/Agent Reasoning/)).toBeNull();
     });
@@ -41,8 +41,8 @@ describe('MessageTraces', () => {
 
     it('expands the accordion and renders markdown when clicked', () => {
         const traces = [
-            { type: 'status', content: 'Connecting to DB...' },
-            { type: 'thought', content: 'Found the `kanji` matching **食**' }
+            { type: 'status', content: 'Connecting to DB...', tool_name: 'search_knowledge', meta: { query: '食べる' } },
+            { type: 'thought', content: 'Found the `kanji` matching **食**', node: 'response', label: 'Response' }
         ];
 
         render(<MessageTraces traces={traces} isStreaming={false} />);
@@ -53,6 +53,8 @@ describe('MessageTraces', () => {
 
         // Traces should now be visible
         expect(screen.getByText('Connecting to DB...')).toBeDefined();
+        expect(screen.getByText('Tool Call · search_knowledge')).toBeDefined();
+        expect(screen.getByText(/"query": "食べる"/)).toBeDefined();
         
         // ReactMarkdown should have rendered the bold tags
         const kanjiBold = screen.getByText('食');

@@ -2,8 +2,8 @@ version: '3.8'
 
 # ─── Hanachan — Full Stack Docker Compose ────────────────────────────────────
 # Services:
-#   nextjs   — Next.js 14 frontend (port 3000)
-#   fastapi  — Unified FastAPI backend (port 6100)
+#   nextjs   — Next.js 14 frontend (port 43100)
+#   fastapi  — Unified FastAPI backend (port 43110)
 #   qdrant   — Vector database (ports 6333, 6334)
 #   neo4j    — Graph database (ports 7474, 7687)
 #
@@ -24,14 +24,14 @@ services:
       args:
         - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
         - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-        - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+        - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:${HANACHAN_FRONTEND_PORT:-43100}}
     ports:
-      - "3000:3000"
+      - "${HANACHAN_FRONTEND_PORT:-43100}:${HANACHAN_FRONTEND_PORT:-43100}"
     env_file:
       - ./src/nextjs/.env
     environment:
       - NODE_ENV=production
-      - AGENTS_API_URL=http://fastapi:6100
+      - AGENTS_API_URL=http://fastapi:${HANACHAN_BACKEND_PORT:-43110}
     depends_on:
       fastapi:
         condition: service_healthy
@@ -39,7 +39,7 @@ services:
       - app-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:${HANACHAN_FRONTEND_PORT:-43100}/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -52,7 +52,7 @@ services:
       dockerfile: Dockerfile
       target: runner
     ports:
-      - "6100:6100"
+      - "${HANACHAN_BACKEND_PORT:-43110}:${HANACHAN_BACKEND_PORT:-43110}"
     env_file:
       - ./src/fastapi/.env
     environment:
@@ -60,7 +60,7 @@ services:
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USER=neo4j
       - NEO4J_PASSWORD=password
-      - OPENAI_API_BASE=${OPENAI_API_BASE:-http://host.docker.internal:20128/v1}
+      - OPENAI_API_BASE=${OPENAI_API_BASE:-http://host.docker.internal:${HANACHAN_OMNIROUTE_PORT:-43120}/v1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -72,7 +72,7 @@ services:
       - app-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:6100/api/v1/health')\" || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:${HANACHAN_BACKEND_PORT:-43110}/api/v1/health')\" || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -82,7 +82,7 @@ services:
   registry:
     image: registry:2
     ports:
-      - "5000:5000"
+      - "${HANACHAN_REGISTRY_PORT:-43130}:5000"
     volumes:
       - registry-data:/var/lib/registry
     networks:
@@ -120,7 +120,7 @@ services:
       - neo4j-logs:/logs
     environment:
       - NEO4J_AUTH=neo4j/password
-      - NEO4J_PLUGINS=["apoc", "gds"]
+      - NEO4J_PLUGINS=["apoc", "graph-data-science"]
       - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
     networks:
       - app-network
@@ -142,7 +142,7 @@ services:
       - ./src/fastapi/.env
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test-key}
-      - OPENAI_API_BASE=${OPENAI_API_BASE:-http://host.docker.internal:20128/v1}
+      - OPENAI_API_BASE=${OPENAI_API_BASE:-http://host.docker.internal:${HANACHAN_OMNIROUTE_PORT:-43120}/v1}
       - SUPABASE_URL=${SUPABASE_URL:-https://test.supabase.co}
       - SUPABASE_KEY=${SUPABASE_KEY:-test-anon-key}
       - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET:-test-jwt-secret-32-chars-minimum!!}
@@ -171,8 +171,8 @@ services:
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-https://test.supabase.co}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-test-anon-key}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test-key}
-      - AGENTS_API_URL=${AGENTS_API_URL:-http://fastapi:6100}
-      - FASTAPI_CORE_URL=${FASTAPI_CORE_URL:-http://fastapi:6100/api/v1}
+      - AGENTS_API_URL=${AGENTS_API_URL:-http://fastapi:${HANACHAN_BACKEND_PORT:-43110}}
+      - FASTAPI_CORE_URL=${FASTAPI_CORE_URL:-http://fastapi:${HANACHAN_BACKEND_PORT:-43110}/api/v1}
     networks:
       - app-network
     profiles:
