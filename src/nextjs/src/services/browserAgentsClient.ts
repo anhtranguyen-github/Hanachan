@@ -1,6 +1,6 @@
 import ApiClient from './apiClient';
 import { 
-  ChatRequest, 
+  AgentThreadMessage,
   AgentSession, 
   CreateSessionRequest 
 } from '@/types/chat';
@@ -28,6 +28,16 @@ class BrowserAgentsClient extends ApiClient {
    */
   async getThread(sessionId: string): Promise<AgentSession> {
     return this.get<AgentSession>(`/api/thread/session/${encodeURIComponent(sessionId)}`);
+  }
+
+  /**
+   * Get thread message history via BFF
+   */
+  async getThreadMessages(sessionId: string, limit = 200): Promise<AgentThreadMessage[]> {
+    return this.get<AgentThreadMessage[]>(
+      `/api/thread/session/${encodeURIComponent(sessionId)}/messages`,
+      { params: { limit } },
+    );
   }
 
   /**

@@ -23,7 +23,7 @@ load_dotenv()
 fake = Faker()
 
 # ── Set ONLY env defaults that are NOT in .env ───────────────────────────────
-os.environ.setdefault("ALLOWED_ORIGINS", '["http://localhost:3000"]')
+os.environ.setdefault("ALLOWED_ORIGINS", '["http://localhost:43100"]')
 
 
 @pytest_asyncio.fixture(scope="session")

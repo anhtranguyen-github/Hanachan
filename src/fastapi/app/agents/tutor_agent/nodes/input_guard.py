@@ -18,8 +18,7 @@ _SSN_RE = re.compile(r"\b\d{3}-\d{2}-\d{4}\b")
 _BLOCKED_PATTERNS = [
     re.compile(p, re.IGNORECASE)
     for p in [
-        r"\b(hack|exploit|inject|drop\s+table)\b",
-        r"\b(ignore\s+previous|ignore\s+all|disregard)\b",
+        r"\b(hack|exploit|malicious|virus)\b",
     ]
 ]
 

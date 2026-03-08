@@ -10,7 +10,7 @@ Hanchan is a Japanese language learning platform with an AI tutor. It runs as th
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│              Next.js  (port 3000)                    │
+│              Next.js  (port 43100)                   │
 │  App Router │ Server Actions │ BFF API routes        │
 │  Features: learning, chat, reading, decks, video,    │
 │            speaking, sentence, knowledge, analytics   │
@@ -18,7 +18,7 @@ Hanchan is a Japanese language learning platform with an AI tutor. It runs as th
                      │  HTTP (Bearer JWT)
                      ▼
 ┌──────────────────────────────────────────────────────┐
-│              FastAPI  (port 6100)                     │
+│              FastAPI  (port 43110)                    │
 │  Tutor Agent (LangGraph) │ MCP tools │ Memory svc    │
 │  Domains: learning, reading, chat                    │
 └──────┬─────────────┬─────────────────┬───────────────┘
@@ -138,7 +138,7 @@ Profile, Homework, Learning (progress/search/reviews/notes), Reading, Deck CRUD,
 
 ## Infrastructure
 
-Docker Compose runs: **nextjs** (3000), **fastapi** (6100), **qdrant** (6333), **neo4j** (7474/7687), **registry** (5000). Supabase runs separately via `supabase start` (ports 54421–54423).
+Docker Compose runs: **nextjs** (43100), **fastapi** (43110), **qdrant** (6333), **neo4j** (7474/7687), **registry** (43130). Supabase runs separately via `supabase start` (ports 54421–54423).
 
 ---
 

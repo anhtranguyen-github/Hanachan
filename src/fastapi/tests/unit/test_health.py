@@ -68,7 +68,7 @@ async def test_cors_headers_present(client: AsyncClient):
     response = await client.options(
         "/api/v1/memory/context",
         headers={
-            "Origin": "http://localhost:3000",
+            "Origin": "http://localhost:43100",
             "Access-Control-Request-Method": "POST",
             "Access-Control-Request-Headers": "Content-Type,Authorization",
         },

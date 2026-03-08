@@ -93,7 +93,7 @@ The `learning` feature already follows this pattern. Extend to `reading`, `decks
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│              Next.js  (port 3000)                    │
+│              Next.js  (port 43100)                   │
 │  Auth (sole owner) │ FSRS (sole owner) │ All CRUD    │
 │  Server actions talk directly to Supabase (RLS)      │
 │  Only calls FastAPI for: agent chat                  │
@@ -101,7 +101,7 @@ The `learning` feature already follows this pattern. Extend to `reading`, `decks
                      │  POST /agent/chat (x-user-id header)
                      ▼
 ┌──────────────────────────────────────────────────────┐
-│              FastAPI  (port 6100)                     │
+│              FastAPI  (port 43110)                    │
 │  Agent host only. No CRUD, no auth, no FSRS.         │
 │  LangGraph agent → MCP tools → memory services       │
 └──────┬─────────────┬─────────────────┬───────────────┘

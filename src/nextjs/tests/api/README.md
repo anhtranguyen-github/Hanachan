@@ -22,8 +22,8 @@ pnpm vitest run tests/api/health.test.ts
 ## Test Environment
 
 These tests expect the backend services to be running:
-- Core API: http://localhost:6100/api/v1
-- Agents API: http://localhost:6100
+- Core API: http://localhost:43110/api/v1
+- Agents API: http://localhost:43110
 
 You can override these URLs using environment variables:
 - `FASTAPI_CORE_URL`

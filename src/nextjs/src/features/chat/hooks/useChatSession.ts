@@ -8,7 +8,7 @@ import { browserAgentsClient } from '@/services/browserAgentsClient';
 import { chatClient } from '@/services/chatClient';
 import { useAuth } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { AgentSession } from '@/types/chat';
+import { AgentSession, AgentThreadMessage, StreamTraceEvent } from '@/types/chat';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -17,7 +17,17 @@ import { AgentSession } from '@/types/chat';
 export interface StreamingState {
     isStreaming: boolean;
     partial: string;
-    traces: { type: string; content: string }[];
+    traces: StreamTraceEvent[];
+}
+
+function mapThreadMessage(message: AgentThreadMessage): ChatMessage {
+    return {
+        role: message.role,
+        content: message.content,
+        timestamp: message.timestamp ?? message.created_at ?? new Date().toISOString(),
+        metadata: message.metadata ?? undefined,
+        traces: message.traces ?? message.metadata?.traces ?? undefined,
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -105,6 +115,9 @@ export function useChatSession(userId?: string, conversationId?: string) {
             });
             const sid = session.id;
             memorySessionIdRef.current = sid;
+            setActiveThread(session);
+            setSessionTitle(session.title ?? null);
+            setSessionSummary(session.summary ?? null);
             return sid;
         } catch {
             return null;
@@ -134,19 +147,16 @@ export function useChatSession(userId?: string, conversationId?: string) {
         setIsLoading(true);
         try {
             console.log('[useChatSession] Loading thread history:', memSessionId);
-            const data = (await browserAgentsClient.getThread(memSessionId)) as any;
-            // Merge memory messages into the local messages state
-            const messages = data.messages || [];
-            console.log('[useChatSession] Messages loaded:', messages.length);
-            const mapped: ChatMessage[] = messages.map((m: any) => ({
-                role: m.role as 'user' | 'assistant',
-                content: m.content,
-                timestamp: m.timestamp ?? new Date().toISOString(),
-            }));
+            const [thread, threadMessages] = await Promise.all([
+                browserAgentsClient.getThread(memSessionId),
+                browserAgentsClient.getThreadMessages(memSessionId),
+            ]);
+            console.log('[useChatSession] Messages loaded:', threadMessages.length);
+            const mapped = threadMessages.map(mapThreadMessage);
             setMessages(mapped);
-            setSessionTitle(data.title ?? null);
-            setSessionSummary(data.summary ?? null);
-            setActiveThread(data);
+            setSessionTitle(thread.title ?? null);
+            setSessionSummary(thread.summary ?? null);
+            setActiveThread(thread);
             memorySessionIdRef.current = memSessionId;
         } catch (error) {
             console.error('[useChatSession] Failed to load thread history:', error);
@@ -180,12 +190,15 @@ export function useChatSession(userId?: string, conversationId?: string) {
         abortControllerRef.current = new AbortController();
 
         try {
-            const stream = await chatClient.streamChat({
-                message: content,
-                user_id: userId,
-                session_id: memSessionId,
-                tts_enabled: ttsEnabled,
-            });
+            const stream = await chatClient.streamChat(
+                {
+                    message: content,
+                    user_id: userId,
+                    session_id: memSessionId,
+                    tts_enabled: ttsEnabled,
+                },
+                { signal: abortControllerRef.current.signal },
+            );
 
             const reader = stream.getReader();
             const decoder = new TextDecoder();
@@ -211,7 +224,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
                         } else if (event.type === 'thought' || event.type === 'status') {
                             setStreaming(s => ({
                                 ...s,
-                                traces: [...s.traces, { type: event.type, content: event.content }]
+                                traces: [...s.traces, event satisfies StreamTraceEvent]
                             }));
                         } else if (event.type === 'done') {
                             // Commit the full streaming response as a real message

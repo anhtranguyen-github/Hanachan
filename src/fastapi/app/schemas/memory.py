@@ -9,15 +9,15 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class Node(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    id: str = Field(description="Unique identifier — a person's name, company ticker, or concept.")
-    type: str = Field(description="Node type, e.g. 'User', 'Company', 'InvestmentPhilosophy'.")
+    id: str = Field(description="Unique identifier — a person's name (e.g. 'Alice'), or concept (e.g. 'ramen').")
+    type: str = Field(description="Node type, e.g. 'User', 'Person', 'Food'.")
 
 
 class Relationship(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    source: Node = Field(description="Source node.")
-    target: Node = Field(description="Target node.")
-    type: str = Field(description="Relationship type, e.g. 'INTERESTED_IN', 'HAS_GOAL'.")
+    source: Node | str = Field(description="Source node or ID string.")
+    target: Node | str = Field(description="Target node or ID string.")
+    type: str = Field(description="Relationship type, e.g. 'LIKES', 'HAS_INTEREST'.")
 
 
 class KnowledgeGraph(BaseModel):

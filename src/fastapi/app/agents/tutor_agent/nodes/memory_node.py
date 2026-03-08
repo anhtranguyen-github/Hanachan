@@ -20,7 +20,11 @@ def memory_node(state: TutorState) -> dict[str, Any]:
     query = state["user_input"]
 
     # Episodic search
-    episodic_results = ep_mem.search_episodic_memory(user_id, query, k=3)
+    try:
+        episodic_results = ep_mem.search_episodic_memory(user_id, query, k=3)
+    except Exception as e:
+        logger.warning(f"Episodic memory retrieval failed: {e}")
+        episodic_results = []
     episodic_text = (
         "\n".join([f"- {r.text} (score: {r.score})" for r in episodic_results])
         if episodic_results
@@ -29,7 +33,11 @@ def memory_node(state: TutorState) -> dict[str, Any]:
 
     # Semantic search – extract keywords from the query
     keywords = [w for w in query.split() if len(w) > 2][:5]
-    semantic_results = sem_mem.search_semantic_memory(user_id, keywords) if keywords else []
+    try:
+        semantic_results = sem_mem.search_semantic_memory(user_id, keywords) if keywords else []
+    except Exception as e:
+        logger.warning(f"Semantic memory retrieval failed: {e}")
+        semantic_results = []
     semantic_text = (
         "\n".join(
             [

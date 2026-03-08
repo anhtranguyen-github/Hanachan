@@ -11,12 +11,19 @@ set -Eeuo pipefail
 #   ./run.sh start
 #
 
-FRONTEND_PORT=${FRONTEND_PORT:-3000}
-BACKEND_PORT=${BACKEND_PORT:-6100}
-OMNIROUTE_PORT=${OMNIROUTE_PORT:-20128}
 MODE="${1:-dev}"   # dev | build | start (or prod)
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PORT_CONFIG_FILE="${ROOT_DIR}/config/ports.env"
+
+if [[ -f "$PORT_CONFIG_FILE" ]]; then
+  # shellcheck disable=SC1090
+  source "$PORT_CONFIG_FILE"
+fi
+
+FRONTEND_PORT=${FRONTEND_PORT:-${HANACHAN_FRONTEND_PORT:-43100}}
+BACKEND_PORT=${BACKEND_PORT:-${HANACHAN_BACKEND_PORT:-43110}}
+OMNIROUTE_PORT=${OMNIROUTE_PORT:-${HANACHAN_OMNIROUTE_PORT:-43120}}
 
 BACKEND_PID=""
 FRONTEND_PID=""

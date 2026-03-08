@@ -11,7 +11,7 @@ process.env.NEXT_PUBLIC_SUPABASE_URL ??= 'https://test.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??= 'test-anon-key';
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'test-service-key-32-chars-at-least-wow';
 process.env.OPENAI_API_KEY ??= 'sk-test-key';
-process.env.AGENTS_API_URL ??= 'http://localhost:6100';
+process.env.AGENTS_API_URL ??= 'http://localhost:43110';
 
 // ── Test utilities ─────────────────────────────────────────────────────────
 

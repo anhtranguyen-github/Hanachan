@@ -168,6 +168,7 @@ htmlcov/
 # Test outputscoverage/
 test-results/
 playwright-report/
+src/nextjs/.tmp-*.mjs
 
 # Mutation testing
 .stryker-tmp/

@@ -7,8 +7,8 @@
 import { beforeAll, afterAll } from 'vitest';
 
 // API Base URLs - can be overridden via environment variables
-export const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.FASTAPI_CORE_URL || 'http://localhost:6100/api/v1';
-export const AGENTS_API_URL = process.env.AGENTS_API_URL || 'http://localhost:6100';
+export const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.FASTAPI_CORE_URL || 'http://localhost:43110/api/v1';
+export const AGENTS_API_URL = process.env.AGENTS_API_URL || 'http://localhost:43110';
 
 /**
  * Wait for a service to be available

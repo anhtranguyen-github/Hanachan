@@ -109,17 +109,22 @@ def add_semantic_facts(user_id: str, kg: KnowledgeGraph) -> int:
         def _write_tx(tx):
             for rel in kg.relationships:
                 # Ensure both endpoint nodes exist
+                src_id = rel.source.id if isinstance(rel.source, Node) else rel.source
+                src_type = rel.source.type if isinstance(rel.source, Node) else "Entity"
+                tgt_id = rel.target.id if isinstance(rel.target, Node) else rel.target
+                tgt_type = rel.target.type if isinstance(rel.target, Node) else "Entity"
+
                 tx.run(
                     "MERGE (n:Entity {id: $id, user_id: $user_id}) SET n.type = $type",
-                    id=rel.source.id,
+                    id=src_id,
                     user_id=user_id,
-                    type=rel.source.type,
+                    type=src_type,
                 )
                 tx.run(
                     "MERGE (n:Entity {id: $id, user_id: $user_id}) SET n.type = $type",
-                    id=rel.target.id,
+                    id=tgt_id,
                     user_id=user_id,
-                    type=rel.target.type,
+                    type=tgt_type,
                 )
                 rel_type = _safe_rel_type(rel.type)
                 tx.run(
@@ -128,8 +133,8 @@ def add_semantic_facts(user_id: str, kg: KnowledgeGraph) -> int:
                     MERGE (t:Entity {{id: $tgt, user_id: $uid}})
                     MERGE (s)-[:{rel_type}]->(t)
                     """,
-                    src=rel.source.id,
-                    tgt=rel.target.id,
+                    src=src_id,
+                    tgt=tgt_id,
                     uid=user_id,
                 )
 
@@ -153,6 +158,8 @@ def add_nodes_and_relationships(
                     type=node.type,
                 )
             for rel in relationships:
+                src_id = rel.source.id if isinstance(rel.source, Node) else rel.source
+                tgt_id = rel.target.id if isinstance(rel.target, Node) else rel.target
                 rel_type = _safe_rel_type(rel.type)
                 tx.run(
                     f"""
@@ -160,8 +167,8 @@ def add_nodes_and_relationships(
                     MERGE (t:Entity {{id: $tgt, user_id: $uid}})
                     MERGE (s)-[:{rel_type}]->(t)
                     """,
-                    src=rel.source.id,
-                    tgt=rel.target.id,
+                    src=src_id,
+                    tgt=tgt_id,
                     uid=user_id,
                 )
 

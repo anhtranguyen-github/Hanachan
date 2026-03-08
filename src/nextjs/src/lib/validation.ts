@@ -73,7 +73,15 @@ export const ChatMessageSchema = z.object({
     content: z.string().min(1),
     timestamp: z.string().datetime(),
     metadata: z.any().optional(),
-    traces: z.array(z.object({ type: z.string(), content: z.string() })).optional(),
+    traces: z.array(z.object({
+        type: z.string(),
+        content: z.string(),
+        node: z.string().optional(),
+        label: z.string().optional(),
+        tool_name: z.string().optional(),
+        phase: z.enum(['start', 'complete']).optional(),
+        meta: z.record(z.string(), z.unknown()).optional(),
+    })).optional(),
 });
 
 export const ChatSessionSchema = z.object({

@@ -25,7 +25,12 @@ class ChatService:
         return res.data[0] if res.data else {"session_id": session_id}
 
     async def add_chat_message(
-        self, user_id: str, session_id: str, role: str, content: str
+        self,
+        user_id: str,
+        session_id: str,
+        role: str,
+        content: str,
+        metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         sess = (
             self.client.table("chat_sessions")
@@ -44,6 +49,7 @@ class ChatService:
                     "session_id": session_id,
                     "role": role,
                     "content": content,
+                    "metadata": metadata or {},
                     "created_at": datetime.now(timezone.utc).isoformat(),
                 }
             )
@@ -130,6 +136,54 @@ class ChatService:
             .execute()
         )
         return res.data[0] if res.data else {}
+
+    async def update_latest_assistant_message_metadata(
+        self,
+        user_id: str,
+        session_id: str,
+        metadata: dict[str, Any],
+        *,
+        content: str | None = None,
+    ) -> dict[str, Any]:
+        sess = (
+            self.client.table("chat_sessions")
+            .select("user_id")
+            .eq("id", session_id)
+            .single()
+            .execute()
+        )
+        if sess.data and sess.data["user_id"] != user_id:
+            raise ValueError("Unauthorized: User does not own this session")
+
+        query = (
+            self.client.table("chat_messages")
+            .select("id, metadata, content")
+            .eq("session_id", session_id)
+            .eq("role", "assistant")
+            .order("created_at", desc=True)
+            .limit(5)
+        )
+        res = query.execute()
+        candidates = res.data or []
+        target = None
+
+        if content is not None:
+            target = next((msg for msg in candidates if msg.get("content") == content), None)
+        if target is None and candidates:
+            target = candidates[0]
+        if target is None:
+            return {}
+
+        existing_metadata = target.get("metadata") or {}
+        merged_metadata = {**existing_metadata, **metadata}
+
+        updated = (
+            self.client.table("chat_messages")
+            .update({"metadata": merged_metadata})
+            .eq("id", target["id"])
+            .execute()
+        )
+        return updated.data[0] if updated.data else {}
 
     async def delete_chat_session(self, user_id: str, session_id: str) -> dict[str, Any]:
         self.client.table("chat_sessions").delete().eq("id", session_id).eq(

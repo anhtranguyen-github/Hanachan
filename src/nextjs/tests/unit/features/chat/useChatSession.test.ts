@@ -43,8 +43,8 @@ describe('useChatSession Stream and Traces', () => {
     it('accumulates thought and token events into streaming traces and partial content', async () => {
         // Prepare mock SSE output
         const chunks = [
-            `data: ${JSON.stringify({ type: 'thought', content: 'Analyzing question...' })}\n\n`,
-            `data: ${JSON.stringify({ type: 'status', content: 'Thinking hard' })}\n\n`,
+            `data: ${JSON.stringify({ type: 'thought', content: 'Analyzing question...', node: 'router', label: 'Router', phase: 'complete' })}\n\n`,
+            `data: ${JSON.stringify({ type: 'status', content: 'Thinking hard', tool_name: 'search_memory', phase: 'start', meta: { query: 'Hi there' } })}\n\n`,
             `data: ${JSON.stringify({ type: 'token', content: 'Hel' })}\n\n`,
             `data: ${JSON.stringify({ type: 'token', content: 'lo!' })}\n\n`,
             `data: ${JSON.stringify({ type: 'done', content: '' })}\n\n`,
@@ -76,8 +76,8 @@ describe('useChatSession Stream and Traces', () => {
         
         // 3. The persistent message should contain the two traces
         expect(assistantMsg.traces).toEqual([
-            { type: 'thought', content: 'Analyzing question...' },
-            { type: 'status', content: 'Thinking hard' }
+            { type: 'thought', content: 'Analyzing question...', node: 'router', label: 'Router', phase: 'complete' },
+            { type: 'status', content: 'Thinking hard', tool_name: 'search_memory', phase: 'start', meta: { query: 'Hi there' } }
         ]);
     });
 });
