@@ -9,8 +9,6 @@ from datetime import UTC, datetime
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
-from langchain.vectorstores import Qdrant as LangchainQdrant
-
 from app.core.config import settings
 from app.core.llm import make_embedding_model
 from app.schemas.memory import EpisodicMemory
@@ -21,7 +19,7 @@ from app.schemas.memory import EpisodicMemory
 
 _client: QdrantClient | None = None
 _embedder: OpenAIEmbeddings | None = None
-_store: LangchainQdrant | None = None
+# No LangChain vectorstore wrapper; operate with QdrantClient + embeddings directly
 
 
 def _get_client() -> QdrantClient:
@@ -42,19 +40,7 @@ def _get_embedder() -> OpenAIEmbeddings:
     return _embedder
 
 
-def _get_store() -> LangchainQdrant:
-    """Return a LangChain Qdrant vectorstore wrapping the Qdrant client."""
-    global _store
-    if _store is None:
-        client = _get_client()
-        embedder = _get_embedder()
-        _store = LangchainQdrant(
-            client=client,
-            collection_name=settings.qdrant_collection,
-            embeddings=embedder,
-            prefer_grpc=False,
-        )
-    return _store
+# (removed LangChain vectorstore wrapper)
 
 
 # ---------------------------------------------------------------------------
@@ -98,22 +84,27 @@ def health_check() -> str:
 
 def add_episodic_memory(user_id: str, text: str) -> str:
     """Embed *text* and upsert it into Qdrant. Returns the point id."""
-    store = _get_store()
+    client = _get_client()
+    embedder = _get_embedder()
     point_id = str(uuid.uuid4())
     created_at = datetime.now(UTC).isoformat()
-    # LangChain Qdrant expects texts + metadatas; IDs can be provided
-    store.add_texts(
-        texts=[text],
-        metadatas=[{"user_id": user_id, "created_at": created_at, "text": text}],
-        ids=[point_id],
-    )
+
+    # Compute embedding vector for the text
+    vectors = embedder.embed_documents([text])
+    vector = vectors[0]
+
+    # Upsert point into Qdrant
+    point = qmodels.PointStruct(id=point_id, vector=vector, payload={"user_id": user_id, "created_at": created_at, "text": text})
+    client.upsert(collection_name=settings.qdrant_collection, points=[point])
     return point_id
 
 
 def search_episodic_memory(user_id: str, query: str, k: int = 3) -> list[EpisodicMemory]:
     """Similarity search restricted to *user_id*; returns top-k results."""
-    store = _get_store()
-    # Build a Qdrant filter for LangChain (qdrant_client models accepted)
+    client = _get_client()
+    embedder = _get_embedder()
+
+    # Build a Qdrant filter
     qfilter = qmodels.Filter(
         must=[
             qmodels.FieldCondition(
@@ -122,16 +113,21 @@ def search_episodic_memory(user_id: str, query: str, k: int = 3) -> list[Episodi
             )
         ]
     )
-    docs = store.similarity_search(query, k=k, filter=qfilter)
+
+    # Compute query embedding
+    qvec = embedder.embed_query(query)
+
+    hits = client.search(collection_name=settings.qdrant_collection, query_vector=qvec, limit=k, filter=qfilter)
+
     results: list[EpisodicMemory] = []
-    for d in docs:
-        meta = d.metadata or {}
+    for h in hits:
+        payload = h.payload or {}
         results.append(
             EpisodicMemory(
-                id=(d.metadata.get("_id") if isinstance(d.metadata, dict) and d.metadata.get("_id") else getattr(d, "id", "")),
-                text=d.page_content,
-                score=getattr(d, "score", None),
-                created_at=meta.get("created_at"),
+                id=str(h.id),
+                text=payload.get("text", ""),
+                score=getattr(h, "score", None),
+                created_at=payload.get("created_at"),
             )
         )
     return results
