@@ -135,9 +135,7 @@ def search_episodic_memory(user_id: str, query: str, k: int = 3) -> list[Episodi
     # Fallback: use scroll to find items with the query substring in payload text
     records, _ = client.scroll(
         collection_name=settings.qdrant_collection,
-        scroll_filter=qmodels.FilterSelector(
-            filter=qfilter
-        ),
+        scroll_filter=qfilter,
         limit=1000,
         with_payload=True,
     )
