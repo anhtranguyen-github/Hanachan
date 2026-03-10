@@ -114,19 +114,49 @@ def search_episodic_memory(user_id: str, query: str, k: int = 3) -> list[Episodi
         ]
     )
 
-    # Compute query embedding
-    qvec = embedder.embed_query(query)
-
-    hits = client.search(collection_name=settings.qdrant_collection, query_vector=qvec, limit=k, filter=qfilter)
-
+    # If Qdrant client supports vector search, use it; otherwise fall back to payload scan.
     results: list[EpisodicMemory] = []
-    for h in hits:
+    if hasattr(client, "search"):
+        # Compute query embedding
+        qvec = embedder.embed_query(query)
+        hits = client.search(collection_name=settings.qdrant_collection, query_vector=qvec, limit=k, filter=qfilter)
+        for h in hits:
+            payload = h.payload or {}
+            results.append(
+                EpisodicMemory(
+                    id=str(h.id),
+                    text=payload.get("text", ""),
+                    score=getattr(h, "score", None),
+                    created_at=payload.get("created_at"),
+                )
+            )
+        return results
+
+    # Fallback: use scroll to find items with the query substring in payload text
+    records, _ = client.scroll(
+        collection_name=settings.qdrant_collection,
+        scroll_filter=qmodels.FilterSelector(
+            filter=qfilter
+        ),
+        limit=1000,
+        with_payload=True,
+    )
+    matched = []
+    qlow = (query or "").lower()
+    for r in records:
+        text_payload = (r.payload or {}).get("text", "")
+        if qlow in (text_payload or "").lower():
+            matched.append(r)
+            if len(matched) >= k:
+                break
+
+    for h in matched:
         payload = h.payload or {}
         results.append(
             EpisodicMemory(
                 id=str(h.id),
                 text=payload.get("text", ""),
-                score=getattr(h, "score", None),
+                score=None,
                 created_at=payload.get("created_at"),
             )
         )
