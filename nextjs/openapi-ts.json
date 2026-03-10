@@ -1,7 +1,0 @@
-{
-    "input": "openapi/fastapi-domain-openapi.json",
-    "output": "src/lib/api/generated/domain",
-    "plugins": [
-        "@hey-api/client-fetch"
-    ]
-}

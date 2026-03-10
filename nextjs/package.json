@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.2.0",
   "scripts": {
     "dev": "next dev",
-    "build": "pnpm generate:api && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
@@ -19,9 +19,7 @@
     "test:ci": "vitest run --reporter=default --silent",
     "typecheck": "tsc --noEmit",
     "test:accounts:create": "node ../scripts/create-test-accounts.js",
-    "generate:api": "pnpm generate:api:domain && pnpm generate:api:agents",
-    "generate:api:domain": "openapi-ts -c @hey-api/client-fetch -i ../openapi/domain.json -o src/client/domain",
-    "generate:api:agents": "openapi-ts -c @hey-api/client-fetch -i ../openapi/agents.json -o src/client/agents",
+    
     "test:mutation": "stryker run",
     "test:mutation:ci": "stryker run --reporters json,dashboard",
     "preinstall": "npx only-allow pnpm"
@@ -50,8 +48,6 @@
     "zustand": "5.0.10"
   },
   "devDependencies": {
-    "@hey-api/client-fetch": "^0.8.0",
-    "@hey-api/openapi-ts": "^0.64.0",
     "@stryker-mutator/core": "^9.6.0",
     "@stryker-mutator/vitest-runner": "^9.6.0",
     "@types/node": "20.17.6",
