@@ -4,27 +4,7 @@ Centralised LLM factory — all clients get timeouts and retry config.
 
 from __future__ import annotations
 
-from langchain.chat_models import ChatOpenAI
-
-
-def _resolve_openai_embeddings_class():
-    """Dynamically resolve the OpenAIEmbeddings class from installed packages."""
-    try:
-        from langchain.embeddings import OpenAIEmbeddings
-
-        return OpenAIEmbeddings
-    except Exception:
-        try:
-            from langchain.embeddings.openai import OpenAIEmbeddings
-
-            return OpenAIEmbeddings
-        except Exception:
-            try:
-                from langchain_openai import OpenAIEmbeddings as _AltOpenAIEmbeddings
-
-                return _AltOpenAIEmbeddings
-            except Exception:
-                raise
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 from app.core.config import settings
 
@@ -43,8 +23,7 @@ def make_llm(temperature: float = 0, streaming: bool = False) -> ChatOpenAI:
 
 def make_embedding_model() -> OpenAIEmbeddings:
     """Return an OpenAIEmbeddings instance with timeout and retry configured."""
-    EmbeddingsCls = _resolve_openai_embeddings_class()
-    return EmbeddingsCls(
+    return OpenAIEmbeddings(
         model=settings.embedding_model,
         openai_api_key=settings.openai_api_key,
         request_timeout=10,
