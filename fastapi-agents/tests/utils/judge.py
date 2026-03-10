@@ -13,7 +13,7 @@ class AgentJudge:
     def __init__(self):
         import os
 
-        from langchain_openai import ChatOpenAI
+        from langchain.chat_models import ChatOpenAI
 
         judge_key = os.environ.get("LLM_JUDGE_API_KEY")
         if judge_key and "sk-test-key" not in judge_key:

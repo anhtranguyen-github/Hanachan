@@ -4,7 +4,8 @@ Centralised LLM factory — all clients get timeouts and retry config.
 
 from __future__ import annotations
 
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain.chat_models import ChatOpenAI
+from langchain.embeddings import OpenAIEmbeddings
 
 from app.core.config import settings
 
