@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from langchain_openai import OpenAIEmbeddings
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
+from langchain.vectorstores import Qdrant as LangchainQdrant
 
 from app.core.config import settings
 from app.core.llm import make_embedding_model
@@ -21,6 +22,7 @@ from app.schemas.memory import EpisodicMemory
 
 _client: QdrantClient | None = None
 _embedder: OpenAIEmbeddings | None = None
+_store: LangchainQdrant | None = None
 
 
 def _get_client() -> QdrantClient:
@@ -39,6 +41,21 @@ def _get_embedder() -> OpenAIEmbeddings:
     if _embedder is None:
         _embedder = make_embedding_model()
     return _embedder
+
+
+def _get_store() -> LangchainQdrant:
+    """Return a LangChain Qdrant vectorstore wrapping the Qdrant client."""
+    global _store
+    if _store is None:
+        client = _get_client()
+        embedder = _get_embedder()
+        _store = LangchainQdrant(
+            client=client,
+            collection_name=settings.qdrant_collection,
+            embeddings=embedder,
+            prefer_grpc=False,
+        )
+    return _store
 
 
 # ---------------------------------------------------------------------------
@@ -82,61 +99,43 @@ def health_check() -> str:
 
 def add_episodic_memory(user_id: str, text: str) -> str:
     """Embed *text* and upsert it into Qdrant. Returns the point id."""
-    client = _get_client()
-    embedder = _get_embedder()
-
-    vector = embedder.embed_query(text)
+    store = _get_store()
     point_id = str(uuid.uuid4())
     created_at = datetime.now(UTC).isoformat()
-
-    client.upsert(
-        collection_name=settings.qdrant_collection,
-        points=[
-            qmodels.PointStruct(
-                id=point_id,
-                vector=vector,
-                payload={
-                    "user_id": user_id,
-                    "text": text,
-                    "created_at": created_at,
-                },
-            )
-        ],
+    # LangChain Qdrant expects texts + metadatas; IDs can be provided
+    store.add_texts(
+        texts=[text],
+        metadatas=[{"user_id": user_id, "created_at": created_at, "text": text}],
+        ids=[point_id],
     )
     return point_id
 
 
 def search_episodic_memory(user_id: str, query: str, k: int = 3) -> list[EpisodicMemory]:
     """Similarity search restricted to *user_id*; returns top-k results."""
-    client = _get_client()
-    embedder = _get_embedder()
-
-    vector = embedder.embed_query(query)
-    # Using query_points as search is deprecated/missing in some qdrant-client versions
-    response = client.query_points(
-        collection_name=settings.qdrant_collection,
-        query=vector,
-        limit=k,
-        query_filter=qmodels.Filter(
-            must=[
-                qmodels.FieldCondition(
-                    key="user_id",
-                    match=qmodels.MatchValue(value=user_id),
-                )
-            ]
-        ),
-        with_payload=True,
+    store = _get_store()
+    # Build a Qdrant filter for LangChain (qdrant_client models accepted)
+    qfilter = qmodels.Filter(
+        must=[
+            qmodels.FieldCondition(
+                key="user_id",
+                match=qmodels.MatchValue(value=user_id),
+            )
+        ]
     )
-    results = response.points
-    return [
-        EpisodicMemory(
-            id=str(hit.id),
-            text=hit.payload.get("text", ""),
-            score=hit.score,
-            created_at=hit.payload.get("created_at"),
+    docs = store.similarity_search(query, k=k, filter=qfilter)
+    results: list[EpisodicMemory] = []
+    for d in docs:
+        meta = d.metadata or {}
+        results.append(
+            EpisodicMemory(
+                id=(d.metadata.get("_id") if isinstance(d.metadata, dict) and d.metadata.get("_id") else getattr(d, "id", "")),
+                text=d.page_content,
+                score=getattr(d, "score", None),
+                created_at=meta.get("created_at"),
+            )
         )
-        for hit in results
-    ]
+    return results
 
 
 def list_episodic_memories(user_id: str, limit: int = 50) -> list[EpisodicMemory]:
