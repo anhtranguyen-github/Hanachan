@@ -7,7 +7,6 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from langchain.embeddings.openai import OpenAIEmbeddings
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 from langchain.vectorstores import Qdrant as LangchainQdrant
