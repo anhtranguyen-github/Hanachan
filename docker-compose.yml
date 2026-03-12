@@ -50,8 +50,10 @@ services:
       - "8765:8765"
     env_file:
       - ./fastapi-agents/.env
+    environment:
+      - FASTAPI_CORE_URL=http://core:6100/api/v1
     depends_on:
-      domain:
+      core:
         condition: service_healthy
       qdrant:
         condition: service_healthy
@@ -67,21 +69,21 @@ services:
       retries: 3
       start_period: 30s
 
-  # ── FastAPI Domain Service (SSOT) ───────────────────────────────────────────
-  domain:
+  # ── FastAPI Core Service (SSOT) ─────────────────────────────────────────────
+  core:
     build:
-      context: ./fastapi-domain
+      context: ./fastapi-core
       dockerfile: Dockerfile
       target: runner
     ports:
-      - "8000:8000"
+      - "6100:6100"
     env_file:
-      - ./fastapi-domain/.env
+      - ./fastapi-core/.env
     networks:
       - app-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/openapi.json')\" || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:6100/openapi.json')\" || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -177,7 +179,8 @@ services:
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-https://test.supabase.co}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-test-anon-key}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test-key}
-      - MEMORY_API_URL=${MEMORY_API_URL:-http://localhost:8765}
+      - AGENTS_API_URL=${AGENTS_API_URL:-http://fastapi:8765}
+      - FASTAPI_CORE_URL=${FASTAPI_CORE_URL:-http://core:6100}
     networks:
       - app-network
     profiles:

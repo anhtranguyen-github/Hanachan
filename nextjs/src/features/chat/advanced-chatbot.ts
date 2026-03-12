@@ -1,23 +1,24 @@
 // Server-side chat service - do NOT add 'use client' here
-import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
-import { ChatOpenAI } from "@langchain/openai";
-import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
+// This module MUST NOT call OpenAI/LangChain directly.
+// Architecture: UI → Next.js (BFF) → FastAPI agents → provider.
+import { getBearerFromSupabaseCookie } from '@/lib/auth-utils';
 import { chatRepo } from './chat-repo';
-import { PersonaInjector, ProjectAwarenessInjector } from './injectors';
-import { classifyIntent } from './chat-router';
-import { getMemoryContext } from '@/lib/memory-client';
 import { kuRepository } from '@/features/knowledge/db';
 
 export class HanachanChatService {
-    private llm: ChatOpenAI;
-    private personaInjector = new PersonaInjector();
-    private projectInjector = new ProjectAwarenessInjector();
+    private baseUrl: string;
 
     constructor() {
-        this.llm = new ChatOpenAI({
-            modelName: "gpt-4o",
-            temperature: 0.3,
-        });
+        // AGENTS_API_URL should point at the FastAPI agents service base URL (no trailing /api/v1).
+        // Back-compat: fall back to MEMORY_API_URL if still present.
+        this.baseUrl =
+            process.env.AGENTS_API_URL ||
+            process.env.MEMORY_API_URL ||
+            'http://127.0.0.1:6100';
+    }
+
+    private async getAuthHeader(): Promise<string | null> {
+        return getBearerFromSupabaseCookie();
     }
 
     async sendMessage(sessionId: string, userId: string, text: string) {
@@ -25,61 +26,38 @@ export class HanachanChatService {
         if (!session) session = await chatRepo.createSession(sessionId, userId);
         const resolvedSessionId = session.id;
 
-        const intent = classifyIntent(text);
-        const summary = session.summary || "No summary yet.";
-
-        let memoryContext = '';
-        try {
-            const ctx = await getMemoryContext(userId, text, resolvedSessionId, 5);
-            memoryContext = ctx.system_prompt_block;
-        } catch (err: unknown) {
-            console.error("Memory retrieval failed:", (err instanceof Error ? err.message : String(err)));
+        const authHeader = await this.getAuthHeader();
+        if (!authHeader) {
+            throw new Error('Missing auth token (expected Supabase auth cookie).');
         }
 
-        const systemContext = await this.buildSystemContext(userId, intent, summary, memoryContext, text);
-
-        const promptTemplate = ChatPromptTemplate.fromMessages([
-            ["system", "{system_context}"],
-            new MessagesPlaceholder("history"),
-            ["human", "{input}"]
-        ]);
-
-        const chain = promptTemplate.pipe(this.llm);
-
-        const historyLimit = 12;
-        const history = session.messages.slice(-historyLimit).map((m: any) =>
-            m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content)
-        );
-
-        const response = await chain.invoke({
-            system_context: systemContext,
-            history: history,
-            input: text
+        const res = await fetch(`${this.baseUrl}/api/v1/chat`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: authHeader,
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                message: text,
+                session_id: resolvedSessionId,
+            }),
+            cache: 'no-store',
         });
 
-        const replyText = response.content as string;
-        let cleanReply = replyText;
-
-        // Metadata extraction
-        const sMatch = replyText.match(/\[\[SUMMARY_UPDATE\]\]([\s\S]*?)(\[\[|$)/);
-        const tMatch = replyText.match(/\[\[TITLE_UPDATE\]\]([\s\S]*?)(\[\[|$)/);
-
-        if (sMatch || tMatch) {
-            const updates: any = {};
-            if (sMatch) updates.summary = sMatch[1].trim();
-            if (tMatch) updates.title = tMatch[1].trim();
-            await chatRepo.updateSession(resolvedSessionId, updates);
-            cleanReply = replyText
-                .replace(/\[\[SUMMARY_UPDATE\]\][\s\S]*?(\[\[TITLE_UPDATE\]\]|$)/, '')
-                .replace(/\[\[TITLE_UPDATE\]\][\s\S]*?$/, '')
-                .trim();
+        if (!res.ok) {
+            const errText = await res.text().catch(() => '');
+            throw new Error(`Memory API error: ${res.status} ${errText}`.trim());
         }
 
-        const implicitSummaryMatch = replyText.match(/<session_summary>([\s\S]*?)<\/session_summary>/);
-        if (implicitSummaryMatch) {
-            await chatRepo.updateSessionSummary(resolvedSessionId, implicitSummaryMatch[1].trim());
-            cleanReply = cleanReply.replace(/<session_summary>[\s\S]*?<\/session_summary>/, "").trim();
-        }
+        const data = (await res.json()) as {
+            response: string;
+            episodic_context?: string;
+            semantic_context?: string;
+            thread_context?: string;
+        };
+
+        const cleanReply = data.response ?? '';
 
         await chatRepo.addMessage(resolvedSessionId, {
             role: 'user',
@@ -97,23 +75,6 @@ export class HanachanChatService {
         });
 
         return { reply: cleanReply, actions: [], referencedKUs };
-    }
-
-    private async buildSystemContext(userId: string, intent: string, summary: string, memoryContext: string, text: string): Promise<string> {
-        let context = `You are Hanachan, an expert Japanese language tutor.\n\n### SESSION SUMMARY:\n${summary}\n`;
-
-        if (memoryContext) {
-            context += `\n### LONG-TERM MEMORY:\n${memoryContext}\n`;
-        }
-
-        context += await this.personaInjector.inject(userId);
-
-        if (text.toLowerCase().includes("project") || text.toLowerCase().includes("stack")) {
-            context += await this.projectInjector.inject(userId);
-        }
-
-        context += `\n[INSTRUCTIONS]\n1. Be concise.\n2. Use [[SUMMARY_UPDATE]] to update state if needed.\n`;
-        return context;
     }
 
     private async detectKUs(text: string) {

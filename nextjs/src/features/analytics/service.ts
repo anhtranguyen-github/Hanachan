@@ -1,3 +1,5 @@
+import { supabase } from '@/lib/supabase';
+import { HanaTime } from '@/lib/time';
 import * as db from './db';
 import { DailyStats, DashboardStats } from './types';
 import { uuidSchema } from '@/lib/validation';
@@ -21,12 +23,34 @@ export class AnalyticsService {
     }
 
     async getDashboardStats(userId: string) {
-        // Return default stats since daily_stats table does not exist.
+        const today = HanaTime.getNowISO().split('T')[0];
+        
+        const { data: logs } = await supabase
+            .from('fsrs_review_logs')
+            .select('rating, created_at')
+            .eq('user_id', userId)
+            .gte('created_at', today);
+
+        if (!logs || logs.length === 0) {
+            return {
+                daily: {
+                    minutes: 0,
+                    reviews: 0,
+                    retention: 100
+                }
+            };
+        }
+
+        const reviews = logs.length;
+        const correct = logs.filter(l => l.rating > 1).length;
+        const retention = Math.round((correct / reviews) * 100);
+        const minutes = Math.round(reviews * 0.5); // 30s per review avg
+
         return {
             daily: {
-                minutes: 0,
-                reviews: 0,
-                retention: 100
+                minutes,
+                reviews,
+                retention
             }
         };
     }

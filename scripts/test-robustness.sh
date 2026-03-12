@@ -112,16 +112,16 @@ run_mutation_tests() {
     
     # Python mutation testing with mutmut
     echo ""
-    echo "Running mutmut for FastAPI Domain..."
-    cd "$PROJECT_ROOT/fastapi-domain"
+    echo "Running mutmut for FastAPI Core..."
+    cd "$PROJECT_ROOT/fastapi-core"
     
-    if uv run mutmut run --paths-to-mutate="app/" --tests-dir="tests/" 2>&1 | tee "$REPORT_DIR/mutmut-domain.log"; then
-        success "mutmut completed for Domain"
-        uv run mutmut results > "$REPORT_DIR/mutmut-domain-results.txt"
+    if uv run mutmut run --paths-to-mutate="app/" --tests-dir="tests/" 2>&1 | tee "$REPORT_DIR/mutmut-core.log"; then
+        success "mutmut completed for Core"
+        uv run mutmut results > "$REPORT_DIR/mutmut-core-results.txt"
         
         # Calculate survival rate
-        local survived=$(grep -c "Survived" "$REPORT_DIR/mutmut-domain-results.txt" 2>/dev/null || echo "0")
-        local total=$(grep -c "🟢\|🔴" "$REPORT_DIR/mutmut-domain-results.txt" 2>/dev/null || echo "1")
+        local survived=$(grep -c "Survived" "$REPORT_DIR/mutmut-core-results.txt" 2>/dev/null || echo "0")
+        local total=$(grep -c "🟢\|🔴" "$REPORT_DIR/mutmut-core-results.txt" 2>/dev/null || echo "1")
         
         if [ "$total" -gt 0 ]; then
             local survival_rate=$(echo "scale=2; $survived / $total * 100" | bc)

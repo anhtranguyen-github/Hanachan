@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest';
-import { FSRSEngine } from '@/features/learning/domain/FSRSEngine';
+import { FSRSEngine } from '@/features/learning/core/FSRSEngine';
 
 describe('FSRSEngine FIF Logic', () => {
     const initialState = {

@@ -334,7 +334,7 @@ export default function HomePage() {
                     <div className="text-center mb-24">
                         <h2 className="text-5xl lg:text-7xl font-black mb-8 italic tracking-tighter">Sophisticated Agents. <br />Precision Mastery.</h2>
                         <p className="text-xl text-gray-400 max-w-3xl mx-auto font-medium">
-                            HanaChan isn't just one bot. It's a **LangGraph Network** of specialized agents working in harmony to manage your learning lifecycle.
+                            HanaChan isn&apos;t just one bot. It&apos;s a **LangGraph Network** of specialized agents working in harmony to manage your learning lifecycle.
                         </p>
                     </div>
 
@@ -490,7 +490,7 @@ export default function HomePage() {
                             href="/signup"
                             className="w-full sm:w-auto px-16 py-8 bg-white text-[#0a0a0c] font-[1000] text-2xl rounded-3xl shadow-3xl transition-all hover:scale-[1.05] hover:-rotate-1"
                         >
-                            Start Now — It's Free
+                            Start Now — It&apos;s Free
                         </Link>
                     </div>
                     <p className="mt-8 text-gray-600 font-bold tracking-widest uppercase text-xs">Unlock all features for 14 days. No strings attached.</p>

@@ -206,7 +206,7 @@ export function VideoUploadProgress({
               </div>
               <div>
                 <p className="text-sm font-bold text-[#3E4A61]">
-                  Couldn't add video
+                  Couldn&apos;t add video
                 </p>
                 <p className="text-xs text-red-500 mt-1">
                   {error || 'Something went wrong. Please try again.'}

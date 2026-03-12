@@ -7,6 +7,8 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
+from langchain_openai import OpenAIEmbeddings
+from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 from app.core.config import settings
@@ -14,12 +16,12 @@ from app.core.llm import make_embedding_model
 from app.schemas.memory import EpisodicMemory
 
 # ---------------------------------------------------------------------------
-# Singleton client & embedder
+# Singleton client, embedder, vector store
 # ---------------------------------------------------------------------------
 
 _client: QdrantClient | None = None
 _embedder: OpenAIEmbeddings | None = None
-# No LangChain vectorstore wrapper; operate with QdrantClient + embeddings directly
+_vectorstore: QdrantVectorStore | None = None
 
 
 def _get_client() -> QdrantClient:
@@ -40,7 +42,16 @@ def _get_embedder() -> OpenAIEmbeddings:
     return _embedder
 
 
-# (removed LangChain vectorstore wrapper)
+def _get_vectorstore() -> QdrantVectorStore:
+    """Return a LangChain Qdrant vector store bound to our collection."""
+    global _vectorstore
+    if _vectorstore is None:
+        _vectorstore = QdrantVectorStore(
+            client=_get_client(),
+            collection_name=settings.qdrant_collection,
+            embedding=_get_embedder(),
+        )
+    return _vectorstore
 
 
 # ---------------------------------------------------------------------------
@@ -84,25 +95,21 @@ def health_check() -> str:
 
 def add_episodic_memory(user_id: str, text: str) -> str:
     """Embed *text* and upsert it into Qdrant. Returns the point id."""
-    client = _get_client()
-    embedder = _get_embedder()
+    vectorstore = _get_vectorstore()
     point_id = str(uuid.uuid4())
     created_at = datetime.now(UTC).isoformat()
 
-    # Compute embedding vector for the text
-    vectors = embedder.embed_documents([text])
-    vector = vectors[0]
-
-    # Upsert point into Qdrant
-    point = qmodels.PointStruct(id=point_id, vector=vector, payload={"user_id": user_id, "created_at": created_at, "text": text})
-    client.upsert(collection_name=settings.qdrant_collection, points=[point])
+    vectorstore.add_texts(
+        texts=[text],
+        metadatas=[{"id": point_id, "user_id": user_id, "created_at": created_at}],
+        ids=[point_id],
+    )
     return point_id
 
 
 def search_episodic_memory(user_id: str, query: str, k: int = 3) -> list[EpisodicMemory]:
     """Similarity search restricted to *user_id*; returns top-k results."""
-    client = _get_client()
-    embedder = _get_embedder()
+    vectorstore = _get_vectorstore()
 
     # Build a Qdrant filter
     qfilter = qmodels.Filter(
@@ -114,48 +121,17 @@ def search_episodic_memory(user_id: str, query: str, k: int = 3) -> list[Episodi
         ]
     )
 
-    # If Qdrant client supports vector search, use it; otherwise fall back to payload scan.
+    hits = vectorstore.similarity_search_with_score(query, k=k, filter=qfilter)
+
     results: list[EpisodicMemory] = []
-    if hasattr(client, "search"):
-        # Compute query embedding
-        qvec = embedder.embed_query(query)
-        hits = client.search(collection_name=settings.qdrant_collection, query_vector=qvec, limit=k, filter=qfilter)
-        for h in hits:
-            payload = h.payload or {}
-            results.append(
-                EpisodicMemory(
-                    id=str(h.id),
-                    text=payload.get("text", ""),
-                    score=getattr(h, "score", None),
-                    created_at=payload.get("created_at"),
-                )
-            )
-        return results
-
-    # Fallback: use scroll to find items with the query substring in payload text
-    records, _ = client.scroll(
-        collection_name=settings.qdrant_collection,
-        scroll_filter=qfilter,
-        limit=1000,
-        with_payload=True,
-    )
-    matched = []
-    qlow = (query or "").lower()
-    for r in records:
-        text_payload = (r.payload or {}).get("text", "")
-        if qlow in (text_payload or "").lower():
-            matched.append(r)
-            if len(matched) >= k:
-                break
-
-    for h in matched:
-        payload = h.payload or {}
+    for doc, score in hits:
+        md = doc.metadata or {}
         results.append(
             EpisodicMemory(
-                id=str(h.id),
-                text=payload.get("text", ""),
-                score=None,
-                created_at=payload.get("created_at"),
+                id=str(md.get("id") or ""),
+                text=str(doc.page_content or ""),
+                score=float(score) if score is not None else None,
+                created_at=md.get("created_at"),
             )
         )
     return results

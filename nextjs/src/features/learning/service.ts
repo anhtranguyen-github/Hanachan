@@ -6,7 +6,7 @@ import { curriculumRepository } from '../knowledge/db';
 import { analyticsService } from '../analytics/service';
 import { getUserProfile, updateUserProfile } from '../auth/db';
 import { HanaTime } from '@/lib/time';
-import { domainClient } from '@/lib/domain-client';
+import { coreClient } from '@/lib/core-client';
 
 export async function initializeSRS(userId: string, unitId: string, facets: string[]) {
     const initialStability = 0.166; // Approx 4 hours
@@ -29,26 +29,15 @@ export async function initializeSRS(userId: string, unitId: string, facets: stri
 }
 
 export async function submitReview(userId: string, unitId: string, facet: string, rating: any, currentState: any, wrongCount: number = 0) {
-    // 1. Call Domain Authority
-    // We expect the controller to handle passing attempt_count and wrong_count, but for now we default attemptCount to wrongCount+1 or similar.
-    // The previous API signature in ReviewSessionController passed just wrongCount to submitReview, but domains require attemptCount as well.
-    // Actually, domainClient.submitReview doesn't strictly need the sessionId if it's not bound, wait, the Domain API requires sessionId.
-    // However, the existing submitReview signature here does not take sessionId. Let's see...
-
-    // We will update ReviewSessionController shortly to call domainClient directly.
-    // For now, if submitReview is used standalone (which it might not be), we'll mock sessionId.
-    // Actually, ReviewSessionController should call domainClient.submitReview directly. 
-    // We will just patch this to hit a raw endpoint if used.
-
-    // Fallback if called manually without session
-    const response = await domainClient.submitReview('unknown_session', unitId, facet, rating, wrongCount + 1, wrongCount);
+    // 1. Call Core Authority
+    const response = await coreClient.submitReviewV2(unitId, facet, rating, wrongCount);
 
     // 2. Track Analytics
     const isNew = currentState?.stage === 'new';
     const isCorrect = rating !== 'again';
     await analyticsService.logReview(isNew, isCorrect, userId);
 
-    return { next_review: new Date(response.next_review), next_state: { stability: response.new_stability } };
+    return { next_review: new Date(response.next_review), next_state: { stability: response.stability } };
 }
 
 export async function fetchDueItems(userId: string) {
@@ -56,7 +45,7 @@ export async function fetchDueItems(userId: string) {
 }
 
 export async function startLessonSession(userId: string, level: number) {
-    const DAILY_LIMIT = 10;
+    const DAILY_LIMIT = 50;
     const todayCount = await lessonRepository.countTodayBatches(userId);
 
     if (todayCount >= DAILY_LIMIT) {
@@ -68,8 +57,8 @@ export async function startLessonSession(userId: string, level: number) {
         return { items: [], batch: null };
     }
 
-    // Call domain authority
-    const response = await domainClient.startLessonSession(items.map((i: any) => i.ku_id));
+    // Call core authority
+    const response = await coreClient.startLessonSession(items.map((i: any) => i.ku_id));
     const batch = { id: response.batch_id };
 
     return { items, batch };
@@ -189,88 +178,47 @@ export async function fetchCurriculumStats() {
     return lessonRepository.fetchCurriculumStats();
 }
 
+function calculateStreak(heatmap: Record<string, number>): number {
+    if (!heatmap) return 0;
+    const now = HanaTime.getNow();
+    let streak = 0;
+    let checkDate = new Date(now);
+    checkDate.setHours(0, 0, 0, 0);
+
+    // If no activity today, check if there was activity yesterday to continue the streak
+    const todayStr = checkDate.toISOString().split('T')[0];
+    const yesterday = new Date(checkDate);
+    yesterday.setDate(checkDate.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    if (!heatmap[todayStr] && !heatmap[yesterdayStr]) {
+        return 0;
+    }
+
+    // Start checking from the most recent active day
+    let current = heatmap[todayStr] ? checkDate : yesterday;
+
+    while (true) {
+        const dateStr = current.toISOString().split('T')[0];
+        if (heatmap[dateStr]) {
+            streak++;
+            current.setDate(current.getDate() - 1);
+        } else {
+            break;
+        }
+    }
+    return streak;
+}
+
 export async function fetchUserDashboardStats(userId: string) {
-    console.log('[LearningService] fetchUserDashboardStats called for userId:', userId);
+    console.log('[LearningService] fetchUserDashboardStats (V2) called for userId:', userId);
 
     try {
-        const dueItems = await srsRepository.fetchDueItems(userId);
-        const repoStats = await srsRepository.fetchStats(userId);
-        const dailyStats = await analyticsService.getDashboardStats(userId);
-        const todayBatchCount = await lessonRepository.countTodayBatches(userId);
-        const rawForecast = await srsRepository.fetchReviewForecast(userId);
-
-        console.log('[LearningService] Live Data:', { due: dueItems?.length, learned: repoStats?.learned, today: dailyStats?.daily, todayBatches: todayBatchCount });
-
-        // Process Forecast (Hourly for 24h, Daily for 14d)
-        const now = HanaTime.getNow();
-        const hourlyForecast = Array.from({ length: 24 }, (_, i) => {
-            const hourStart = new Date(now);
-            hourStart.setHours(now.getHours() + i, 0, 0, 0);
-            const hourEnd = new Date(hourStart);
-            hourEnd.setHours(hourEnd.getHours() + 1);
-
-            const count = rawForecast.filter(f => {
-                const d = new Date(f.next_review);
-                return d >= hourStart && d < hourEnd;
-            }).length;
-
-            return { time: hourStart.toISOString(), count };
-        });
-
-        const dailyForecast = Array.from({ length: 14 }, (_, i) => {
-            const dayStart = new Date(now);
-            dayStart.setDate(now.getDate() + i);
-            dayStart.setHours(0, 0, 0, 0);
-            const dayEnd = new Date(dayStart);
-            dayEnd.setDate(dayEnd.getDate() + 1);
-
-            const count = rawForecast.filter(f => {
-                const d = new Date(f.next_review);
-                return d >= dayStart && d < dayEnd;
-            }).length;
-
-            return { date: dayStart.toISOString().split('T')[0], count };
-        });
-
-        // Calculate Type Mastery Percentages
-        const typePercentages = {
-            radical: repoStats ? Math.round((repoStats.typeMastery.radical / Math.max(repoStats.learned, 1)) * 100) : 0,
-            kanji: repoStats ? Math.round((repoStats.typeMastery.kanji / Math.max(repoStats.learned, 1)) * 100) : 0,
-            vocabulary: repoStats ? Math.round((repoStats.typeMastery.vocabulary / Math.max(repoStats.learned, 1)) * 100) : 0,
-            grammar: repoStats ? Math.round((repoStats.typeMastery.grammar / Math.max(repoStats.learned, 1)) * 100) : 0,
-        };
-
-        const stats = {
-            reviewsDue: dueItems?.length || 0,
-            dueBreakdown: {
-                learning: dueItems?.filter(i => i.state === 'learning').length || 0,
-                review: dueItems?.filter(i => i.state === 'review').length || 0,
-            },
-            totalLearned: repoStats?.learned || 0,
-            totalMastered: repoStats?.mastered || 0,
-            totalBurned: repoStats?.burned || 0,
-            recentLevels: [1, 2, 3],
-            retention: dailyStats?.daily.retention || 90,
-            minutesSpent: dailyStats?.daily.minutes || 0,
-            reviewsToday: repoStats?.last7Days[6] || 0, // Use repo data for accuracy
-            actionFrequencies: { analyze: 0, flashcard: repoStats?.learned || 0, srs: 0 },
-            dailyReviews: repoStats?.last7Days || [0, 0, 0, 0, 0, 0, 0],
-            forecast: {
-                hourly: hourlyForecast,
-                daily: dailyForecast,
-                total: rawForecast.length
-            },
-            heatmap: repoStats?.heatmap || {},
-            typeMastery: typePercentages,
-            srsSpread: repoStats?.srsSpread || { apprentice: 0, guru: 0, master: 0, enlightened: 0, burned: 0 },
-            totalKUCoverage: repoStats && repoStats.totalKUs > 0 ? (repoStats.learned / repoStats.totalKUs) * 100 : 0,
-            streak: 0, // Adding missing field to satisfy UI
-            todayBatchCount
-        };
-
+        const stats = await coreClient.getDashboardStats();
         return stats;
     } catch (error) {
-        console.error('[LearningService] Error fetching dashboard stats:', error);
+        console.error('[LearningService] Error fetching dashboard stats from Core API:', error);
+        // Return a safe empty state
         return {
             reviewsDue: 0, totalLearned: 0, totalBurned: 0,
             recentLevels: [1, 2, 3], retention: 0.9,

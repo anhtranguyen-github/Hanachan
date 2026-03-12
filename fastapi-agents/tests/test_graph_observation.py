@@ -64,11 +64,11 @@ async def test_graph_thought_tracing_observation():
         patch("app.agents.memory_agent.nodes.implementation.make_llm", return_value=mock_llm),
         patch("app.agents.memory_agent.nodes.implementation.ep_mem"),
         patch("app.agents.memory_agent.nodes.implementation.sem_mem"),
-        patch("app.core.domain_client.DomainClient") as mock_domain_cls,
+        patch("app.core.core_client.CoreClient") as mock_core_cls,
     ):
-        mock_domain = AsyncMock()
-        mock_domain.get_chat_messages.return_value = []
-        mock_domain_cls.return_value = mock_domain
+        mock_core = AsyncMock()
+        mock_core.get_chat_messages.return_value = []
+        mock_core_cls.return_value = mock_core
 
         # Tool Mock
         mock_tool = MagicMock()
@@ -137,7 +137,7 @@ async def test_graph_loop_observation():
         patch("app.agents.memory_agent.nodes.implementation.make_llm", return_value=mock_llm),
         patch("app.agents.memory_agent.nodes.implementation.ep_mem"),
         patch("app.agents.memory_agent.nodes.implementation.sem_mem"),
-        patch("app.core.domain_client.DomainClient"),
+        patch("app.core.core_client.CoreClient"),
     ):
         mock_tool = MagicMock()
         mock_tool.name = "search_knowledge_units"

@@ -7,8 +7,8 @@
 import { beforeAll, afterAll } from 'vitest';
 
 // API Base URLs - can be overridden via environment variables
-export const DOMAIN_API_URL = process.env.DOMAIN_API_URL || 'http://localhost:8000';
-export const AGENTS_API_URL = process.env.AGENTS_API_URL || 'http://localhost:8001';
+export const FASTAPI_CORE_URL = process.env.FASTAPI_CORE_URL || 'http://localhost:6200';
+export const AGENTS_API_URL = process.env.AGENTS_API_URL || 'http://localhost:8765';
 
 /**
  * Wait for a service to be available
@@ -32,10 +32,10 @@ export async function waitForService(url: string, maxRetries = 30, delay = 1000)
  * Check if services are running before tests
  */
 beforeAll(async () => {
-    // Check Domain API
-    const domainHealthy = await waitForService(DOMAIN_API_URL, 5, 500);
-    if (!domainHealthy) {
-        console.warn(`Warning: Domain API at ${DOMAIN_API_URL} is not available`);
+    // Check Core API
+    const coreHealthy = await waitForService(FASTAPI_CORE_URL, 5, 500);
+    if (!coreHealthy) {
+        console.warn(`Warning: Core API at ${FASTAPI_CORE_URL} is not available`);
     }
 
     // Check Agents API

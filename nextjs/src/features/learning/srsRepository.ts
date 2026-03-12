@@ -1,6 +1,6 @@
 import { addDays } from 'date-fns';
 import { supabase } from "@/lib/supabase";
-import { Rating } from "./domain/SRSAlgorithm";
+import { Rating } from "./core/SRSAlgorithm";
 import { HanaTime } from "@/lib/time";
 
 export const srsRepository = {
@@ -207,7 +207,7 @@ export const srsRepository = {
         // 1. Fetch Current States Summary
         const { data: learnedStates, error: statsError } = await supabase
             .from('user_fsrs_states')
-            .select('state, ku_id, last_review, stability, knowledge_units(type)')
+            .select('state, ku_id, last_review, stability, knowledge_units(type, level)')
             .eq('user_id', userId);
 
         if (statsError) {
@@ -244,7 +244,8 @@ export const srsRepository = {
             },
             last7Days: [0, 0, 0, 0, 0, 0, 0],
             heatmap: {} as Record<string, number>,
-            totalKUs: 0
+            totalKUs: 0,
+            learnedLevels: [] as number[]
         };
 
         // Calculate Spread from raw states
@@ -265,15 +266,23 @@ export const srsRepository = {
             }
         });
 
+        // Collect unique levels with activity
+        const levelSet = new Set<number>();
+        learnedStates?.forEach(s => {
+            const ku = Array.isArray(s.knowledge_units) ? s.knowledge_units[0] : s.knowledge_units;
+            if (ku && (ku as any).level) levelSet.add((ku as any).level);
+        });
+        stats.learnedLevels = Array.from(levelSet).sort((a, b) => a - b);
+
         // 3. Fetch Activity Logs for Heatmap and Last 7 Days
         const { data: logs } = await supabase
-            .from('user_learning_logs')
+            .from('fsrs_review_logs')
             .select('created_at')
             .eq('user_id', userId)
             .gte('created_at', addDays(HanaTime.getNow(), -365).toISOString());
 
         if (logs) {
-            const now = new Date();
+            const now = HanaTime.getNow();
             logs.forEach(log => {
                 const date = new Date(log.created_at);
                 const dateKey = date.toISOString().split('T')[0];

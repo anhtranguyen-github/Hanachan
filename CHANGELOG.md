@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Changed
 - **Python 3.11 Standard**: Standardized all backend services on Python 3.11. Pinned `requires-python = ">=3.11"` and removed legacy 3.10 workarounds for `StrEnum` and `datetime.UTC`.
-- **Architecture Enforcement**: Updated `Import Linter` configurations for both `fastapi-agents` and `fastapi-domain` to strictly enforce layer boundaries (e.g., domain isolation).
+- **Architecture Enforcement**: Updated `Import Linter` configurations for both `fastapi-agents` and `fastapi-core` to strictly enforce layer boundaries (e.g., logic isolation).
 - **Ruff Configuration**: Refined `pyproject.toml` linting rules to ignore FastAPI-specific false positives (e.g., dependency injection patterns) while enforcing strict code quality.
 
 #### Refactored

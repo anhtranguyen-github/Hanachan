@@ -14,7 +14,8 @@ import type {
     DailyMetric,
     ReadingConfig,
     ReadingSession,
-    ReadingMetrics
+    ReadingMetrics,
+    TopicPerformance
 } from "./types";
 
 /**
@@ -185,51 +186,70 @@ export async function listReadingSessions(
  */
 export async function getReadingMetrics(userId: string): Promise<ReadingMetrics> {
     try {
-        const { count: totalSessions } = await db
+        const { data: sessions, error: sessionsError } = await db
             .from('reading_sessions')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', userId);
-
-        // Completed sessions
-        const { count: completedSessions } = await db
-            .from('reading_sessions')
-            .select('*', { count: 'exact', head: true })
+            .select('*')
             .eq('user_id', userId)
-            .eq('status', 'completed');
+            .order('created_at', { ascending: false });
 
-        // Average score
-        const { data: scores } = await db
-            .from('reading_sessions')
-            .select('score')
-            .eq('user_id', userId)
-            .not('score', 'is', null);
+        if (sessionsError) throw sessionsError;
 
-        const validScores = scores?.filter(s => s.score !== null).map(s => s.score) || [];
+        const completedSessions = sessions?.filter(s => s.status === 'completed') || [];
+        const totalSessions = sessions?.length || 0;
+
+        // Statistics
+        const validScores = completedSessions.map(s => s.score).filter(s => s !== null);
         const averageScore = validScores.length > 0
             ? validScores.reduce((sum, s) => sum + s, 0) / validScores.length
             : 0;
         const bestScore = validScores.length > 0 ? Math.max(...validScores) : 0;
+        const totalTime = completedSessions.reduce((sum, s) => sum + (s.total_time_seconds || 0), 0);
+        
+        // Fetch total words read (requires fetching exercises)
+        const { data: exercises } = await db
+            .from('reading_exercises')
+            .select('word_count, topic, session_id, reading_sessions!inner(score, status)')
+            .eq('reading_sessions.user_id', userId)
+            .eq('reading_sessions.status', 'completed');
 
-        // Recent sessions
-        const { data: recentSessions } = await db
-            .from('reading_sessions')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(10);
+        const totalWords = exercises?.reduce((sum, e) => sum + (e.word_count || 0), 0) || 0;
+
+        // Daily Metrics
+        const dailyMetrics = await getMetricsHistory(userId, 30);
+        
+        // Streak calculation
+        const streak = calculateReadingStreak(dailyMetrics);
+
+        // Topic Performance
+        const topicMap = new Map<string, { total: number, scoreSum: number }>();
+        exercises?.forEach(e => {
+            const current = topicMap.get(e.topic) || { total: 0, scoreSum: 0 };
+            const session = sessions?.find(s => s.id === e.session_id);
+            if (session && session.score !== null) {
+                current.total++;
+                current.scoreSum += session.score;
+                topicMap.set(e.topic, current);
+            }
+        });
+
+        const topicPerformance: TopicPerformance[] = Array.from(topicMap.entries()).map(([topic, data]) => ({
+            topic,
+            exercises_count: data.total,
+            accuracy: Math.round(data.scoreSum / Math.max(data.total, 1))
+        }));
 
         return {
-            total_sessions: totalSessions || 0,
-            total_exercises: completedSessions || 0,
-            total_time_seconds: 0,
+            total_sessions: totalSessions,
+            total_exercises: exercises?.length || 0,
+            total_time_seconds: totalTime,
             avg_score: Math.round(averageScore * 10) / 10,
             best_score: bestScore,
-            pending_sessions: (totalSessions || 0) - (completedSessions || 0),
-            streak_days: 0,
-            total_words_read: 0,
-            recent_sessions: (recentSessions || []) as ReadingSession[],
-            daily_metrics: [],
-            topic_performance: []
+            pending_sessions: totalSessions - completedSessions.length,
+            streak_days: streak,
+            total_words_read: totalWords,
+            recent_sessions: (sessions?.slice(0, 10) || []) as ReadingSession[],
+            daily_metrics: dailyMetrics,
+            topic_performance: topicPerformance
         };
     } catch (error) {
         console.error('Error in getReadingMetrics:', error);
@@ -247,6 +267,39 @@ export async function getReadingMetrics(userId: string): Promise<ReadingMetrics>
             topic_performance: []
         };
     }
+}
+
+function calculateReadingStreak(metrics: DailyMetric[]): number {
+    if (!metrics || metrics.length === 0) return 0;
+    
+    // Sort metrics by date descending
+    const sorted = [...metrics].sort((a, b) => b.date.localeCompare(a.date));
+    
+    const now = HanaTime.getNow();
+    const todayStr = now.toISOString().split('T')[0];
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    // Check if there was activity today or yesterday
+    if (sorted[0].date !== todayStr && sorted[0].date !== yesterdayStr) {
+        return 0;
+    }
+
+    let streak = 0;
+    let expectedDate = new Date(sorted[0].date);
+
+    for (const metric of sorted) {
+        const d = new Date(metric.date);
+        if (d.toISOString().split('T')[0] === expectedDate.toISOString().split('T')[0]) {
+            streak++;
+            expectedDate.setDate(expectedDate.getDate() - 1);
+        } else {
+            break;
+        }
+    }
+
+    return streak;
 }
 
 /**
@@ -376,6 +429,8 @@ export async function completeReadingSession(
     }
 }
 
+import { coreClient } from "@/lib/core-client";
+
 /**
  * Submit an answer for an exercise question
  */
@@ -387,46 +442,20 @@ export async function submitAnswer(
     timeSpentSeconds: number = 0
 ): Promise<AnswerResult | null> {
     try {
-        // Get the exercise and question
-        const { data: exercise, error } = await db
-            .from('reading_exercises')
-            .select('questions, session_id')
-            .eq('id', exerciseId)
-            .single();
-
-        if (error || !exercise) {
-            console.error('Error fetching exercise:', error);
-            return null;
-        }
-
-        // Verify session ownership
-        const { data: session } = await db
-            .from('reading_sessions')
-            .select('user_id')
-            .eq('id', exercise.session_id)
-            .single();
-
-        if (session?.user_id !== userId) {
-            throw new Error('Unauthorized access to exercise');
-        }
-
-        const question = exercise.questions?.[questionIndex];
-        if (!question) {
-            throw new Error('Question not found');
-        }
-
-        const isCorrect = userAnswer.trim().toLowerCase() === question.correct_answer.trim().toLowerCase();
-
-        // Store the answer (we'd need a user_answers table for full implementation)
-        // For now, return the result
+        const response = await coreClient.submitReadingAnswer(
+            exerciseId,
+            questionIndex,
+            userAnswer,
+            timeSpentSeconds
+        );
         return {
-            is_correct: isCorrect,
-            correct_answer: question.correct_answer,
-            explanation: question.explanation,
-            exercise_completed: false // Would check if all questions answered
+            is_correct: response.is_correct,
+            correct_answer: response.correct_answer,
+            explanation: response.explanation,
+            exercise_completed: response.session_completed // Backend call this session_completed, but here it's expected as exercise_completed or similar
         };
     } catch (error) {
-        console.error('Error in submitAnswer:', error);
+        console.error('Error in submitAnswer using Core API:', error);
         return null;
     }
 }

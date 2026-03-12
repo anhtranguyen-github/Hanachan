@@ -59,7 +59,7 @@ export interface paths {
         put?: never;
         /**
          * Create Session
-         * @description Proxy session creation to Domain Service.
+         * @description Proxy session creation to Core Service.
          */
         post: operations["create_session_api_v1_memory_session_post"];
         delete?: never;
@@ -77,7 +77,7 @@ export interface paths {
         };
         /**
          * List Sessions
-         * @description Proxy session listing to Domain Service.
+         * @description Proxy session listing to Core Service.
          */
         get: operations["list_sessions_api_v1_memory_sessions_get"];
         put?: never;
@@ -97,14 +97,14 @@ export interface paths {
         };
         /**
          * Get Session
-         * @description Proxy session detail to Domain Service.
+         * @description Proxy session detail to Core Service.
          */
         get: operations["get_session_api_v1_memory_session__session_id__get"];
         put?: never;
         post?: never;
         /**
          * End Session
-         * @description Delete session via Domain Service.
+         * @description Delete session via Core Service.
          */
         delete: operations["end_session_api_v1_memory_session__session_id__delete"];
         options?: never;
@@ -304,10 +304,10 @@ export interface paths {
         /**
          * Create Reading Session
          * @description Pure Agent Runtime version of Session Creation.
-         *     1. Fetches config from Domain.
-         *     2. Fetches learning context from Domain.
+         *     1. Fetches config from Core.
+         *     2. Fetches learning context from Core.
          *     3. Generates content via LLM Agents.
-         *     4. Persists results back to Domain.
+         *     4. Persists results back to Core.
          */
         post: operations["create_reading_session_api_v1_reading_sessions_post"];
         delete?: never;

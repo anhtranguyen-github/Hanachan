@@ -315,7 +315,7 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                {/* Domain Mastery Grid */}
+                {/* Skill Mastery Grid */}
                 <div className="relative rounded-[2rem] p-4 sm:p-6 text-white space-y-4 flex flex-col shadow-xl overflow-hidden min-h-[220px]">
                     <div className="absolute inset-0 bg-gradient-to-br from-[#2D3748] to-[#1A202C]" />
                     <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#F4ACB7]/40 to-transparent" />
@@ -325,7 +325,7 @@ export default function DashboardPage() {
                             <Sparkles size={14} className="text-[#F4ACB7]" />
                         </div>
                         <div>
-                            <h3 className="text-base sm:text-lg font-black text-white/95 tracking-tight text-left">Domain Mastery</h3>
+                            <h3 className="text-base sm:text-lg font-black text-white/95 tracking-tight text-left">Skill Mastery</h3>
                             <p className="text-[8px] font-black uppercase tracking-widest text-white/30 text-left">Overall proficiency</p>
                         </div>
                     </div>
@@ -465,7 +465,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-1.5 text-primary">
                         <TrendingUp size={12} />
-                        <span className="text-[9px] font-black">100+/day</span>
+                        <span className="text-[9px] font-black">{stats.reviewsToday} Today</span>
                     </div>
                 </div>
                 <div className="overflow-x-auto no-scrollbar">

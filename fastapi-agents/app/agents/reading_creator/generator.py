@@ -13,7 +13,7 @@ from app.agents.reading_creator.prompts import (
     TOPICS,
 )
 from app.agents.reading_creator.types import ReadingConfig, ReadingExercise
-from app.core.domain_client import DomainClient
+from app.core.core_client import CoreClient
 from app.core.llm import make_llm
 
 logger = logging.getLogger(__name__)
@@ -22,13 +22,13 @@ logger = logging.getLogger(__name__)
 async def get_user_learning_context(jwt: str) -> dict[str, Any]:
     """
     Fetch user's current learning status to inform content generation.
-    Returns vocabulary, grammar, and kanji the user has learned via Domain Service.
+    Returns vocabulary, grammar, and kanji the user has learned via Core Service.
     """
     try:
-        client = DomainClient(jwt)
+        client = CoreClient(jwt)
         return await client.get_user_learning_context()
     except Exception as e:
-        logger.error(f"Failed to get user learning context from domain service: {e}")
+        logger.error(f"Failed to get user learning context from core service: {e}")
         return {
             "user_level": 1,
             "vocab": [],
@@ -89,7 +89,7 @@ async def generate_reading_exercise(
     """
     Generate a single reading exercise for the user based on their learning status.
     """
-    # 1. Get user learning context (now via Domain Service)
+    # 1. Get user learning context (now via Core Service)
     context = await get_user_learning_context(jwt)
 
     # 2. Select featured content

@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     # Rate limiting
     rate_limit_per_minute: int = 20
 
+    # FastAPI Core
+    fastapi_core_url: str = Field("http://fastapi-core:6100/api/v1", alias="FASTAPI_CORE_URL")
+    fastapi_core_mcp_url: str = Field("http://fastapi-core:6100/mcp/sse", alias="FASTAPI_CORE_MCP_URL")
+
     @field_validator("allowed_origins", mode="before")
     @classmethod
     def parse_allowed_origins(cls, v: str | list[str] | None) -> list[str]:

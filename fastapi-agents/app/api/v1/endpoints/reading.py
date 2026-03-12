@@ -9,7 +9,7 @@ from app.agents.reading_creator import (
     get_user_learning_context,
 )
 from app.api.deps import get_current_user
-from app.core.domain_client import DomainClient
+from app.core.core_client import CoreClient
 from app.core.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
@@ -37,20 +37,20 @@ async def create_reading_session(
 ):
     """
     Pure Agent Runtime version of Session Creation.
-    1. Fetches config from Domain.
-    2. Fetches learning context from Domain.
+    1. Fetches config from Core.
+    2. Fetches learning context from Core.
     3. Generates content via LLM Agents.
-    4. Persists results back to Domain.
+    4. Persists results back to Core.
     """
     user_id = current_user["id"]
     jwt = current_user["jwt"]
-    client = DomainClient(jwt)
+    client = CoreClient(jwt)
 
-    # 1. Get Config from Domain
+    # 1. Get Config from Core
     try:
         config_data = await client._get("/reading/config")
     except Exception:
-        # Fallback to defaults if domain not ready
+        # Fallback to defaults if core not ready
         config_data = {
             "exercises_per_session": 5,
             "difficulty_level": "adaptive",
@@ -60,7 +60,7 @@ async def create_reading_session(
     if body.config_override:
         config_data.update(body.config_override)
 
-    # 2. Get Learning Context from Domain
+    # 2. Get Learning Context from Core
     await get_user_learning_context(jwt)
 
     # 3. Generate content via Agent
@@ -68,16 +68,16 @@ async def create_reading_session(
     # generate_reading_session is now async
     exercises = await generate_reading_session(user_id, config_data, jwt)
 
-    # 4. Persist to Domain
-    # We send the whole payload to Domain to handle persistence in one go
-    # (assuming Domain has an endpoint to accept a pre-generated session)
+    # 4. Persist to Core
+    # We send the whole payload to Core to handle persistence in one go
+    # (assuming Core has an endpoint to accept a pre-generated session)
     payload = {"user_id": user_id, "config_snapshot": config_data, "exercises": exercises}
 
     try:
         result = await client._post("/reading/sessions/generated", payload)
         return result
     except Exception as e:
-        logger.error(f"Failed to persist generated session to Domain: {e}")
+        logger.error(f"Failed to persist generated session to Core: {e}")
         raise HTTPException(
-            status_code=500, detail="Failed to save generated content to Domain Service"
+            status_code=500, detail="Failed to save generated content to Core Service"
         )

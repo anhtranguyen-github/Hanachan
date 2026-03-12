@@ -1,4 +1,4 @@
-import { Rating } from './domain/SRSAlgorithm';
+import { Rating } from './core/SRSAlgorithm';
 import { lessonRepository } from './lessonRepository';
 import { questionRepository } from './questionRepository';
 

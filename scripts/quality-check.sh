@@ -6,7 +6,7 @@ REPO_ROOT=$(pwd)
 
 echo "🚀 Starting Full Codebase Quality Guard System..."
 
-PYTHON_PROJECTS=("fastapi-agents" "fastapi-domain")
+PYTHON_PROJECTS=("fastapi-agents" "fastapi-core")
 
 for proj in "${PYTHON_PROJECTS[@]}"; do
     echo ""

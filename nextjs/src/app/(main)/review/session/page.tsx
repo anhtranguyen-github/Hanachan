@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, ArrowLeft, CheckCircle2, Zap, X } from 'lucide-react';
 import { fetchDueItemsAction } from '@/features/learning/actions';
 import { ReviewSessionController, QuizItem } from '@/features/learning/ReviewSessionController';
-import { Rating } from '@/features/learning/domain/FSRSEngine';
+import { Rating } from '@/features/learning/core/FSRSEngine';
 import { GlassCard } from '@/components/premium/GlassCard';
 import { ReviewCardDisplay } from '@/features/learning/components/ReviewCardDisplay';
 import { clsx } from 'clsx';

@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest';
-import { calculateNextReview } from '@/features/learning/domain/SRSAlgorithm';
+import { calculateNextReview } from '@/features/learning/core/SRSAlgorithm';
 
 describe('SRSAlgorithm', () => {
     const initialState = {

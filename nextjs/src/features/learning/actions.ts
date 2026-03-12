@@ -26,7 +26,7 @@ export async function initializeSRSAction(userId: string, unitId: string, facets
 
 export async function submitReviewAction(sessionId: string, unitId: string, facet: string, rating: any, attemptCount: number, wrongCount: number) {
     try {
-        const result = await domainClient.submitReview(sessionId, unitId, facet, rating, attemptCount, wrongCount);
+        const result = await coreClient.submitReview(sessionId, unitId, facet, rating, attemptCount, wrongCount);
         // Do not revalidate everything yet to keep UI fast
         return { success: true, data: result };
     } catch (e: unknown) {
@@ -36,7 +36,7 @@ export async function submitReviewAction(sessionId: string, unitId: string, face
 
 export async function startReviewSessionAction(limit: number = 20, contentType: string = 'all') {
     try {
-        const result = await domainClient.startReviewSession(limit, contentType);
+        const result = await coreClient.startReviewSession(limit, contentType);
         return { success: true, data: result };
     } catch (e: unknown) {
         return { success: false, error: (e instanceof Error ? e.message : String(e)) };
@@ -102,11 +102,11 @@ export async function startLessonSessionAction(userId: string, level: number) {
     }
 }
 
-import { domainClient } from '@/lib/domain-client';
+import { coreClient } from '@/lib/core-client';
 
 export async function completeLessonBatchAction(batchId: string) {
     try {
-        await domainClient.completeLessonSession(batchId);
+        await coreClient.completeLessonSession(batchId);
         revalidatePath('/dashboard');
         revalidatePath('/learn');
         return { success: true };

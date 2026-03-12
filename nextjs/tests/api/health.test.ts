@@ -6,12 +6,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { DOMAIN_API_URL, AGENTS_API_URL } from './setup';
+import { FASTAPI_CORE_URL, AGENTS_API_URL } from './setup';
 
 describe('Health Endpoints', () => {
-    describe('Domain API Health', () => {
-        it('should return healthy status from domain API', async () => {
-            const response = await fetch(`${DOMAIN_API_URL}/health`);
+    describe('Core API Health', () => {
+        it('should return healthy status from core API', async () => {
+            const response = await fetch(`${FASTAPI_CORE_URL}/health`);
 
             expect(response.ok).toBe(true);
             expect(response.status).toBe(200);
@@ -38,8 +38,8 @@ describe('Health Endpoints', () => {
     });
 
     describe('OpenAPI Schema Availability', () => {
-        it('should serve OpenAPI schema from domain API', async () => {
-            const response = await fetch(`${DOMAIN_API_URL}/openapi.json`);
+        it('should serve OpenAPI schema from core API', async () => {
+            const response = await fetch(`${FASTAPI_CORE_URL}/openapi.json`);
 
             expect(response.ok).toBe(true);
             expect(response.status).toBe(200);
