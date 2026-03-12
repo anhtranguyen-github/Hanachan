@@ -36,9 +36,6 @@ async def tools_node(state: AgentState) -> dict[str, Any]:
 
         # Inject user_id and jwt if needed
         if tool_name in [
-            "get_episodic_memory",
-            "get_semantic_facts",
-            "get_user_learning_progress",
             "get_recent_reviews",
             "search_knowledge_units",
             "append_to_learning_notes",
@@ -48,6 +45,8 @@ async def tools_node(state: AgentState) -> dict[str, Any]:
             "remove_from_deck",
             "view_deck_contents",
             "submit_reading_answer",
+            "get_database_schema",
+            "execute_read_only_sql",
         ]:
             if "user_id" in tool_map[tool_name].args:
                 args["user_id"] = user_id
@@ -73,23 +72,20 @@ async def tools_node(state: AgentState) -> dict[str, Any]:
     return {"messages": results}
 
 
-PLANNER_PROMPT = ChatPromptTemplate.from_messages(
+ORCHESTRATOR_PROMPT = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are a strategic planning node for a Japanese language learning assistant.\n"
-            "Your goal is to decide which tools to call to gather enough context to answer the user's message accurately.\n\n"
-            "User session context:\n{thread_context}\n\n"
+            "You are the Orchestrator for a Japanese learning assistant.\n"
+            "Your job is to delegate tasks to specialized workers based on the user's intent.\n\n"
+            "Workers Available:\n"
+            "- 'memory_worker': Handles past conversations, personal facts, interests, and goals.\n"
+            "- 'sql_worker': Handles structured data queries in Supabase (e.g., counts, stats, specific records).\n\n"
             "Instructions:\n"
             "1. Analyze the user's message.\n"
-            "2. If the message is a simple greeting, you may not need tools.\n"
-            "3. If it involves their learning progress, use 'get_user_learning_progress'.\n"
-            "4. If it's about Japanese grammar/vocab, use 'search_knowledge_units'.\n"
-            "5. If it refers to past conversations, use 'get_episodic_memory'.\n"
-            "6. If it's about their personal facts, interests, or goals, use 'get_semantic_facts'.\n"
-            "7. If the user explicitly asks you to save or remember a note for a specific kanji/vocab/grammar, use 'append_to_learning_notes'.\n"
-            "8. If the user wants to create, list, view, or manage their study decks, use the appropriate 'deck' tools.\n"
-            "9. If you have already gathered info, decide if you need more or if you can proceed to answer.\n\n"
+            "2. Decide which worker(s) to call. You can call one, both, or none (if you can answer directly).\n"
+            "3. Return the names of the workers you want to trigger as a list, or 'GENERATE' if you have enough info.\n\n"
+            "User session context:\n{thread_context}\n\n"
             "Current Date: {date}",
         ),
         ("placeholder", "{messages}"),
@@ -97,47 +93,39 @@ PLANNER_PROMPT = ChatPromptTemplate.from_messages(
 )
 
 
-async def planner_node(state: AgentState) -> dict[str, Any]:
-    """Decides what the agent should do next (call tools or generate)."""
-    llm = make_llm().bind_tools(TOOLS)
+class WorkerDispatch(BaseModel):
+    workers: list[str] = Field(description="List of worker names to trigger: ['memory_worker', 'sql_worker']")
+    reasoning: str = Field(description="Short explanation of why these workers were chosen")
 
-    # Pre-fetch thread context for the prompt (via Domain Service)
+
+async def orchestrator_node(state: AgentState) -> dict[str, Any]:
+    """Decides which specialized worker agent to invoke."""
+    llm = make_llm().with_structured_output(WorkerDispatch)
+    
     thread_text = "(no active session)"
     if state.get("session_id"):
-        from app.core.domain_client import DomainClient
-
-        client = DomainClient(state["jwt"])
+        from app.core.core_client import CoreClient
+        client = CoreClient(state["jwt"])
         try:
             messages = await client.get_chat_messages(state["session_id"])
             recent = messages[-5:]
-            lines = []
-            for m in recent:
-                prefix = "User" if m["role"] == "user" else "Assistant"
-                lines.append(f"{prefix}: {m['content']}")
+            lines = [f"{('User' if m['role'] == 'user' else 'Assistant')}: {m['content']}" for m in recent]
             thread_text = "\n".join(lines)
         except Exception:
-            thread_text = "Failed to retrieve session context."
+            thread_text = "Failed to retrieve context."
 
-    chain = PLANNER_PROMPT | llm
-    response = chain.invoke(
-        {
-            "messages": state["messages"],
-            "thread_context": thread_text,
-            "date": datetime.now().strftime("%Y-%m-%d"),
-        }
-    )
-
-    thought = "Thinking about next steps..."
-    if hasattr(response, "tool_calls") and response.tool_calls:
-        tool_names = [tc["name"] for tc in response.tool_calls]
-        thought = f"I decided to use these tools: {tool_names}"
-    else:
-        thought = "I have enough information to answer directly."
+    chain = ORCHESTRATOR_PROMPT | llm
+    dispatch = await chain.ainvoke({
+        "messages": state["messages"],
+        "thread_context": thread_text,
+        "date": datetime.now().strftime("%Y-%m-%d"),
+    })
 
     return {
-        "messages": [response],
+        "active_workers": dispatch.workers,
+        "current_worker": dispatch.workers[0] if dispatch.workers else None,
+        "thought": f"Orchestrator dispatching to: {dispatch.workers}. Reasoning: {dispatch.reasoning}",
         "iterations": state.get("iterations", 0) + 1,
-        "thought": thought,
     }
 
 
@@ -227,7 +215,7 @@ def generator_node(state: AgentState) -> dict[str, Any]:
 
 
 async def tts_node(state: AgentState) -> dict[str, Any]:
-    """Generates voice for the final response using ElevenLabs SDK and stores it via Domain Service."""
+    """Generates voice for the final response using ElevenLabs SDK and stores it via Core Service."""
     if not state.get("tts_enabled", True):
         return {"audio_file": None}
 
@@ -238,7 +226,7 @@ async def tts_node(state: AgentState) -> dict[str, Any]:
             from elevenlabs.client import ElevenLabs
 
             from app.core.config import settings
-            from app.core.domain_client import DomainClient
+            from app.core.core_client import CoreClient
 
             client = ElevenLabs(api_key=settings.elevenlabs_api_key)
 
@@ -257,7 +245,7 @@ async def tts_node(state: AgentState) -> dict[str, Any]:
                     f.write(chunk)
 
             if os.path.exists(temp_file):
-                client = DomainClient(state["jwt"])
+                client = CoreClient(state["jwt"])
                 public_url = await client.upload_audio(temp_file)
                 try:
                     os.remove(temp_file)
@@ -271,24 +259,25 @@ async def tts_node(state: AgentState) -> dict[str, Any]:
 
 
 async def update_memory_node(state: AgentState) -> dict[str, Any]:
-    """Final node to persist the side effects (episodic/semantic update) via Domain Service."""
+    """Final node to persist the side effects (episodic/semantic update) via Core Service."""
     user_id = state["user_id"]
     jwt_token = state["jwt"]
     session_id = state.get("session_id")
     user_input = state["user_input"]
     output = state["generation"]
 
-    from app.services.mcp_domain_client import MCPDomainClient
+    from app.core.config import settings
+    from app.mcp.client import McpClient
 
-    client = MCPDomainClient(jwt_token)
+    client = McpClient(settings.fastapi_core_mcp_url)
 
     if session_id:
         try:
             await client.call_tool(
-                "upsert_chat_session", {"user_id": user_id, "session_id": session_id}
+                "upsert_chat_session", {"user_id": user_id, "session_id": session_id}, jwt=jwt_token
             )
             existing_messages = await client.call_tool(
-                "get_chat_messages", {"user_id": user_id, "session_id": session_id}
+                "get_chat_messages", {"user_id": user_id, "session_id": session_id}, jwt=jwt_token
             )
             await client.call_tool(
                 "add_chat_message",
@@ -298,6 +287,7 @@ async def update_memory_node(state: AgentState) -> dict[str, Any]:
                     "role": "user",
                     "content": user_input,
                 },
+                jwt=jwt_token,
             )
             await client.call_tool(
                 "add_chat_message",
@@ -307,6 +297,7 @@ async def update_memory_node(state: AgentState) -> dict[str, Any]:
                     "role": "assistant",
                     "content": output,
                 },
+                jwt=jwt_token,
             )
 
             if not existing_messages or len(existing_messages) < 2:
@@ -318,6 +309,7 @@ async def update_memory_node(state: AgentState) -> dict[str, Any]:
                     await client.call_tool(
                         "update_chat_session",
                         {"user_id": user_id, "session_id": session_id, "title": title},
+                        jwt=jwt_token,
                     )
                     logger.info(f"Generated title for session {session_id}: {title}")
                 except Exception as te:
@@ -366,4 +358,4 @@ async def update_memory_node(state: AgentState) -> dict[str, Any]:
     except Exception as e:
         logger.error(f"Memory persistence failed: {e}")
 
-    return {"thought": "Memories extracted and persisted to domain storage."}
+    return {"thought": "Memories extracted and persisted to core storage."}

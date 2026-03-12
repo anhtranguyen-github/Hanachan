@@ -12,7 +12,7 @@ import { clsx } from 'clsx';
 import { Check, X, ArrowRight, Keyboard, Sparkles, PencilLine, Loader2 } from 'lucide-react';
 
 import { QuizItem } from '../ReviewSessionController';
-import { Rating } from '../domain/FSRSEngine';
+import { Rating } from '../core/FSRSEngine';
 import { GlassCard } from '@/components/premium/GlassCard';
 import { updateKUNoteAction } from '../actions';
 import { useAuth } from '@/features/auth/AuthContext';

@@ -8,26 +8,26 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { DOMAIN_API_URL, AGENTS_API_URL, waitForService } from './setup';
+import { FASTAPI_CORE_URL, AGENTS_API_URL, waitForService } from './setup';
 
 describe('Generated API Client', () => {
-    describe('Domain API Client', () => {
-        it('should be able to import the domain client', async () => {
+    describe('Core API Client', () => {
+        it('should be able to import the core client', async () => {
             // This test will fail if the client hasn't been generated yet
             // Run `pnpm generate:api` to generate the client
             try {
-                const client = await import('@/client/domain');
+                const client = await import('@/client/core');
                 expect(client).toBeDefined();
             } catch (error) {
                 throw new Error(
-                    'Failed to import domain client. ' +
+                    'Failed to import core client. ' +
                     'Make sure to run `pnpm generate:api` first.'
                 );
             }
         });
 
         it('should have client configuration available', async () => {
-            const client = await import('@/client/domain');
+            const client = await import('@/client/core');
 
             // The client should export configuration functions
             expect(client).toBeDefined();

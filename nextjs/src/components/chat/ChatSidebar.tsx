@@ -179,9 +179,9 @@ function ThreadItem({
 
 export function ChatSidebar({ isOpen, onToggle }: { isOpen: boolean; onToggle: () => void }) {
     const {
-        memorySessions: threads,
+        threads,
         isLoading,
-        activeMemorySession,
+        activeThread,
         loadThreadHistory,
         createNewConversation,
         loadMemorySessions,
@@ -192,12 +192,12 @@ export function ChatSidebar({ isOpen, onToggle }: { isOpen: boolean; onToggle: (
     const [activeId, setActiveId] = useState<string | null>(null);
 
     useEffect(() => {
-        if (activeMemorySession) {
-            setActiveId(activeMemorySession.session_id);
+        if (activeThread) {
+            setActiveId(activeThread.session_id);
         } else {
             setActiveId(null);
         }
-    }, [activeMemorySession]);
+    }, [activeThread]);
 
     const handleNewThread = async () => {
         await createNewConversation();

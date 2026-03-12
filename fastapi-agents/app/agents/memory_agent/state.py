@@ -26,3 +26,6 @@ class AgentState(TypedDict):
     thread_context: str
     retrieved_episodic: str
     retrieved_semantic: str
+    retrieved_sql: str
+    active_workers: list[str]
+    current_worker: str | None

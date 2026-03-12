@@ -1,5 +1,5 @@
 import { submitReviewAction } from './actions';
-import { Rating } from './domain/SRSAlgorithm';
+import { Rating } from './core/SRSAlgorithm';
 import { srsRepository } from './srsRepository';
 import { questionRepository } from './questionRepository';
 

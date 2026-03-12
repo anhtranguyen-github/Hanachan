@@ -1,101 +1,243 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
 
-# run.sh — manages port, connects to cloud service and falls back to local
+########################################
+# Hanachan Startup Script (Root)
+########################################
+#
 # Usage:
-#   CLOUD_URL="https://prod.example.com" PORT=8000 LOCAL_CMD="uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT" ./run.sh
+#   ./run.sh dev
+#   ./run.sh build
+#   ./run.sh start
+#
 
-PORT=${PORT:-8000}
-CLOUD_URL=${CLOUD_URL:-}
-LOCAL_CMD=${LOCAL_CMD:-"uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT"}
-HEALTH_PATH=${HEALTH_PATH:-/health}
-KILL_TIMEOUT=${KILL_TIMEOUT:-5}
-START_TIMEOUT=${START_TIMEOUT:-30}
+FRONTEND_PORT=${FRONTEND_PORT:-3000}
+BACKEND_PORT=${BACKEND_PORT:-8765}
+MODE="${1:-dev}"   # dev | build | start (or prod)
 
-LOCAL_PID=""
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-log() { echo "[run.sh] $*"; }
+BACKEND_PID=""
+FRONTEND_PID=""
+CORE_PID=""
 
-cleanup() {
-  if [ -n "$LOCAL_PID" ] && ps -p "$LOCAL_PID" > /dev/null 2>&1; then
-    log "Stopping local process $LOCAL_PID"
-    kill "$LOCAL_PID" || true
-    sleep 1
-    if ps -p "$LOCAL_PID" > /dev/null 2>&1; then
-      kill -9 "$LOCAL_PID" || true
-    fi
-  fi
+log() {
+  echo -e "[$(date +'%H:%M:%S')] $*"
 }
 
-trap cleanup EXIT INT TERM
+cleanup_port() {
+  local port="$1"
+  log "Ensuring port $port is free..."
 
-# Find and free port if occupied
-if command -v lsof >/dev/null 2>&1; then
-  PID_ON_PORT=$(lsof -ti TCP:"$PORT" -sTCP:LISTEN || true)
-else
-  PID_ON_PORT=$(ss -ltnp 2>/dev/null | awk -v p=":$PORT" '$4 ~ p { sub(/.*,pid=/,"",$6); sub(/,.*/ ,"",$6); print $6 }' || true)
-fi
-
-if [ -n "$PID_ON_PORT" ]; then
-  log "Port $PORT is in use by PID(s): $PID_ON_PORT — attempting graceful stop"
-  for pid in $PID_ON_PORT; do
-    kill "$pid" || true
-  done
-  sleep "$KILL_TIMEOUT"
-  # Force kill remaining
-  for pid in $PID_ON_PORT; do
-    if ps -p "$pid" > /dev/null 2>&1; then
-      log "Force-killing $pid"
-      kill -9 "$pid" || true
-    fi
-  done
-else
-  log "Port $PORT is free"
-fi
-
-SERVICE_URL=""
-
-if [ -n "$CLOUD_URL" ]; then
-  log "Checking cloud service at $CLOUD_URL$HEALTH_PATH"
-  if curl --fail -s --max-time 5 "$CLOUD_URL$HEALTH_PATH" >/dev/null 2>&1; then
-    SERVICE_URL="$CLOUD_URL"
-    log "Cloud service reachable at $SERVICE_URL — skipping local start"
-  else
-    log "Cloud service unreachable — will start local service"
+  if command -v fuser >/dev/null 2>&1; then
+    fuser -k "$port/tcp" >/dev/null 2>&1 || true
   fi
-fi
 
-if [ -z "$SERVICE_URL" ]; then
-  log "Starting local service: $LOCAL_CMD"
-  # shellcheck disable=SC2086
-  eval $LOCAL_CMD &
-  LOCAL_PID=$!
-  SERVICE_URL="http://localhost:$PORT"
-  log "Local service started (PID $LOCAL_PID), waiting for readiness"
-
-  # Wait for health endpoint
-  for i in $(seq 1 "$START_TIMEOUT"); do
-    if curl --fail -s --max-time 2 "$SERVICE_URL$HEALTH_PATH" >/dev/null 2>&1; then
-      log "Local service is healthy"
-      break
+  if command -v lsof >/dev/null 2>&1; then
+    local pids
+    pids="$(lsof -ti :"$port" || true)"
+    if [[ -n "$pids" ]]; then
+      log "Killing remaining PIDs on port $port: $pids"
+      kill -9 $pids 2>/dev/null || true
     fi
-    if ! ps -p "$LOCAL_PID" > /dev/null 2>&1; then
-      log "Local process $LOCAL_PID exited unexpectedly"
-      exit 1
-    fi
-    sleep 1
-  done
-
-  if ! curl --fail -s --max-time 2 "$SERVICE_URL$HEALTH_PATH" >/dev/null 2>&1; then
-    log "Local service did not become healthy within $START_TIMEOUT seconds"
-    exit 1
   fi
+
+  # Fallback for environments without lsof/fuser (or where they can't see the owner).
+  if command -v ss >/dev/null 2>&1; then
+    local ss_pids
+    ss_pids="$(ss -ltnp 2>/dev/null | awk -v p=":$port" '$4 ~ p { match($0,/pid=[0-9]+/); if (RSTART) { print substr($0,RSTART+4,RLENGTH-4) } }' | sort -u || true)"
+    if [[ -n "$ss_pids" ]]; then
+      log "Detected PID(s) on port $port via ss: $ss_pids"
+      for pid in $ss_pids; do
+        kill -TERM "$pid" 2>/dev/null || true
+      done
+      sleep 1
+      for pid in $ss_pids; do
+        kill -KILL "$pid" 2>/dev/null || true
+      done
+    fi
+  fi
+
+  sleep 1
+}
+
+port_in_use() {
+  local port="$1"
+  if command -v lsof >/dev/null 2>&1; then
+    lsof -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1
+    return $?
+  fi
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltn 2>/dev/null | awk -v p=":$port" '$4 ~ p {found=1} END{exit found?0:1}'
+    return $?
+  fi
+  # Fallback: try to open a TCP connection (catches Windows/host listeners WSL can't see).
+  if command -v curl >/dev/null 2>&1; then
+    if curl -sSf "http://127.0.0.1:$port" >/dev/null 2>&1; then
+      return 0
+    fi
+  fi
+  if command -v nc >/dev/null 2>&1; then
+    if nc -z 127.0.0.1 "$port" >/dev/null 2>&1; then
+      return 0
+    fi
+  fi
+  # If we still can't detect anything, assume free.
+  return 1
+}
+
+shutdown() {
+  log "Stopping services..."
+
+  if [[ -n "$FRONTEND_PID" ]] && kill -0 "$FRONTEND_PID" 2>/dev/null; then
+    log "Stopping frontend (PID $FRONTEND_PID)"
+    kill -TERM "$FRONTEND_PID" 2>/dev/null || true
+  fi
+
+  if [[ -n "$BACKEND_PID" ]] && kill -0 "$BACKEND_PID" 2>/dev/null; then
+    log "Stopping backend (PID $BACKEND_PID)"
+    kill -TERM "$BACKEND_PID" 2>/dev/null || true
+  fi
+
+  if [[ -n "$CORE_PID" ]] && kill -0 "$CORE_PID" 2>/dev/null; then
+    log "Stopping core service (PID $CORE_PID)"
+    kill -TERM "$CORE_PID" 2>/dev/null || true
+  fi
+
+  sleep 2
+
+  if [[ -n "$FRONTEND_PID" ]] && kill -0 "$FRONTEND_PID" 2>/dev/null; then
+    log "Force killing frontend"
+    kill -KILL "$FRONTEND_PID" 2>/dev/null || true
+  fi
+
+  if [[ -n "$BACKEND_PID" ]] && kill -0 "$BACKEND_PID" 2>/dev/null; then
+    log "Force killing backend"
+    kill -KILL "$BACKEND_PID" 2>/dev/null || true
+  fi
+
+  if [[ -n "$CORE_PID" ]] && kill -0 "$CORE_PID" 2>/dev/null; then
+    log "Force killing core service"
+    kill -KILL "$CORE_PID" 2>/dev/null || true
+  fi
+
+  wait || true
+  log "Shutdown complete."
+  exit 0
+}
+
+trap shutdown SIGINT SIGTERM
+
+log "☁️ Using Cloud Supabase"
+log "🧹 Cleaning ports"
+
+if ! command -v pnpm >/dev/null 2>&1; then
+  log "ERROR: pnpm not found. Install pnpm (or enable corepack) and retry."
+  exit 127
 fi
 
-log "Service available at $SERVICE_URL"
-log "Hint: set SERVICE_URL environment variable for downstream tasks: export SERVICE_URL=$SERVICE_URL"
+cleanup_port "$BACKEND_PORT"
+cleanup_port "$FRONTEND_PORT"
+cleanup_port 6200
 
-# If we started a local app, wait on it so signals are handled by trap/cleanup
-if [ -n "$LOCAL_PID" ]; then
-  wait "$LOCAL_PID"
+if port_in_use "$FRONTEND_PORT"; then
+  log "ERROR: Port $FRONTEND_PORT is still in use and cannot be freed from this shell."
+  log "This is common when another project (or Docker/Windows) owns the listener."
+  log "Fix: stop the other project, or run with a different port:"
+  log "  FRONTEND_PORT=3001 ./run.sh dev"
+  exit 1
 fi
+
+case "$MODE" in
+  build)
+    log "🏗️ Build-only mode (frontend only)"
+    cd "$ROOT_DIR/nextjs"
+    pnpm run build
+    exit 0
+    ;;
+  dev)
+    log "🚀 Starting core service on port 6200"
+    cd "$ROOT_DIR/fastapi-core"
+    uv run python -m uvicorn app.main:app \
+      --host 127.0.0.1 \
+      --port 6200 \
+      > "$ROOT_DIR/fastapi-core/core.log" 2>&1 &
+    CORE_PID=$!
+
+    log "🚀 Starting backend on port $BACKEND_PORT"
+    cd "$ROOT_DIR/fastapi-agents"
+
+    uv run python -m uvicorn app.main:app \
+      --host 0.0.0.0 \
+      --port "$BACKEND_PORT" \
+      > "$ROOT_DIR/fastapi-agents/server.log" 2>&1 &
+
+    BACKEND_PID=$!
+
+    log "⏳ Waiting for backend health..."
+    for i in {1..15}; do
+      if curl -sf "http://localhost:$BACKEND_PORT/api/v1/health" >/dev/null; then
+        log "✅ Backend ready"
+        break
+      fi
+      sleep 1
+    done
+
+    cd "$ROOT_DIR/nextjs"
+    log "🚀 Starting frontend (dev)"
+    if port_in_use "$FRONTEND_PORT"; then
+      log "ERROR: Port $FRONTEND_PORT became busy before starting frontend."
+      log "Another process grabbed the port during startup (often a host/Windows listener)."
+      log "Fix: stop that process or run with a different port, e.g.:"
+      log "  FRONTEND_PORT=3001 ./run.sh dev"
+      shutdown
+    fi
+    PORT="$FRONTEND_PORT" pnpm run dev &
+    ;;
+  start|prod|product)
+    log "🚀 Starting backend on port $BACKEND_PORT"
+    cd "$ROOT_DIR/fastapi-agents"
+
+    uv run python -m uvicorn app.main:app \
+      --host 0.0.0.0 \
+      --port "$BACKEND_PORT" \
+      > "$ROOT_DIR/fastapi-agents/server.log" 2>&1 &
+
+    BACKEND_PID=$!
+
+    log "⏳ Waiting for backend health..."
+    for i in {1..10}; do
+      if curl -sf "http://localhost:$BACKEND_PORT/api/v1/health" >/dev/null; then
+        log "✅ Backend ready"
+        break
+      fi
+      sleep 1
+    done
+
+    cd "$ROOT_DIR/nextjs"
+    log "🏗️ Ensuring production build exists"
+    pnpm run build
+    log "🚀 Starting frontend (production start)"
+    if port_in_use "$FRONTEND_PORT"; then
+      log "ERROR: Port $FRONTEND_PORT became busy before starting frontend."
+      log "Another process grabbed the port during startup (often a host/Windows listener)."
+      log "Fix: stop that process or run with a different port, e.g.:"
+      log "  FRONTEND_PORT=3001 ./run.sh start"
+      shutdown
+    fi
+    PORT="$FRONTEND_PORT" pnpm run start &
+    ;;
+  *)
+    log "Unknown MODE='$MODE'. Use one of: dev | build | start"
+    shutdown
+    ;;
+esac
+
+FRONTEND_PID=$!
+
+log "✅ Startup complete"
+log "Backend:  http://localhost:$BACKEND_PORT"
+log "Frontend: http://localhost:$FRONTEND_PORT"
+log "Press Ctrl+C to stop."
+
+wait

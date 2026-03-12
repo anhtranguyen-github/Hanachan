@@ -5,7 +5,7 @@ This directory contains integration tests that verify the generated API client c
 ## Test Structure
 
 - `health.test.ts` - Health endpoint tests for all services
-- `domain-api.test.ts` - Domain API integration tests
+- `core-api.test.ts` - Core API integration tests
 - `agents-api.test.ts` - Agents API integration tests
 - `client.test.ts` - SDK client configuration tests
 
@@ -22,11 +22,11 @@ pnpm vitest run tests/api/health.test.ts
 ## Test Environment
 
 These tests expect the backend services to be running:
-- Domain API: http://localhost:8000
-- Agents API: http://localhost:8001
+- Core API: http://localhost:6100 (Docker) / http://localhost:6200 (Dev)
+- Agents API: http://localhost:8765
 
 You can override these URLs using environment variables:
-- `DOMAIN_API_URL`
+- `FASTAPI_CORE_URL`
 - `AGENTS_API_URL`
 
 ## Generated Client

@@ -31,9 +31,9 @@ export function KUUserSentences({ kuId, kuType, character }: KUUserSentencesProp
         setIsLoading(true);
         try {
             const { data } = await supabase
-                .from('ku_to_sentence')
+                .from('sentence_knowledge')
                 .select('sentence:sentences(*)')
-                .eq('item_id', kuId);
+                .eq('ku_id', kuId);
 
             if (data) {
                 setSentences(data.map((d: any) => d.sentence));
@@ -60,10 +60,9 @@ export function KUUserSentences({ kuId, kuType, character }: KUUserSentencesProp
             if (!result.success || !result.data) throw new Error(result.error || 'Failed to add sentence.');
 
             // Link it
-            const { error: linkError } = await supabase.from('ku_to_sentence').insert({
+            const { error: linkError } = await supabase.from('sentence_knowledge').insert({
                 ku_id: kuId,
-                sentence_id: result.data.id,
-                is_primary: false
+                sentence_id: result.data.id
             });
             if (linkError) throw linkError;
 

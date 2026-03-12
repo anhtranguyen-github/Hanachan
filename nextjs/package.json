@@ -19,7 +19,6 @@
     "test:ci": "vitest run --reporter=default --silent",
     "typecheck": "tsc --noEmit",
     "test:accounts:create": "node ../scripts/create-test-accounts.js",
-    
     "test:mutation": "stryker run",
     "test:mutation:ci": "stryker run --reporters json,dashboard",
     "preinstall": "npx only-allow pnpm"
@@ -60,6 +59,7 @@
     "dotenv-cli": "^11.0.0",
     "eslint": "8.57.1",
     "eslint-config-next": "14.2.16",
+    "playwright": "^1.58.2",
     "playwright-core": "^1.58.2",
     "postcss": "8.4.47",
     "tailwindcss": "3.4.14",

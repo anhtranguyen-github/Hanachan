@@ -15,7 +15,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { memoryChatStream, createMemorySession } from '@/lib/memory-client';
+import { getBearerFromCookieHeader, getBearerFromSupabaseCookie } from '../../memory/_auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,18 +30,51 @@ export async function POST(req: NextRequest) {
         );
     }
 
-    // Ensure we have a session for thread continuity
-    let resolvedSessionId: string | undefined = sessionId;
-    if (!resolvedSessionId) {
-        try {
-            resolvedSessionId = await createMemorySession(userId, { source: 'hanachan' });
-        } catch {
-            // Non-fatal — chat will still work without session context
-        }
+    const authHeader =
+        req.headers.get('authorization') ||
+        getBearerFromCookieHeader(req.headers.get('cookie')) ||
+        (await getBearerFromSupabaseCookie());
+    if (!authHeader?.startsWith('Bearer ')) {
+        return new Response(
+            `data: ${JSON.stringify({ type: 'error', message: 'Authorization Bearer token required' })}\n\n`,
+            { status: 401, headers: { 'Content-Type': 'text/event-stream' } },
+        );
     }
 
+    // Ensure we have a session for thread continuity
+    let resolvedSessionId: string | undefined = sessionId;
+
     try {
-        const upstream = await memoryChatStream(userId, message, resolvedSessionId, ttsEnabled);
+        // Agent API base URL (no trailing /api/v1).
+        // - AGENTS_API_URL is expected to be a bare base (e.g. http://localhost:8765)
+        // - MEMORY_API_URL may already include /api/v1, so we strip it.
+        const normalizedMemoryUrl = process.env.MEMORY_API_URL
+            ? process.env.MEMORY_API_URL.replace(/\/api\/v1\/?$/, '')
+            : undefined;
+        const baseUrl =
+            (process.env.AGENTS_API_URL && process.env.AGENTS_API_URL.replace(/\/+$/, '')) ||
+            (normalizedMemoryUrl && normalizedMemoryUrl.replace(/\/+$/, '')) ||
+            'http://127.0.0.1:8765';
+        const upstreamRes = await fetch(`${baseUrl}/api/v1/chat/stream`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: authHeader,
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                message,
+                session_id: resolvedSessionId,
+                tts_enabled: ttsEnabled,
+            }),
+            cache: 'no-store',
+        });
+
+        if (!upstreamRes.ok || !upstreamRes.body) {
+            const errText = await upstreamRes.text().catch(() => '');
+            const errEvent = `data: ${JSON.stringify({ type: 'error', message: `Upstream error: ${upstreamRes.status} ${errText}`.trim() })}\n\n`;
+            return new Response(errEvent, { status: 502, headers: { 'Content-Type': 'text/event-stream' } });
+        }
 
         // Pipe the upstream SSE stream directly to the client
         // Inject session_id into the 'done' event via a TransformStream
@@ -81,7 +114,7 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        return new Response(upstream.pipeThrough(transform), {
+        return new Response(upstreamRes.body.pipeThrough(transform), {
             headers: {
                 'Content-Type': 'text/event-stream',
                 'Cache-Control': 'no-cache, no-transform',
@@ -92,7 +125,7 @@ export async function POST(req: NextRequest) {
     } catch (err: unknown) {
         const errEvent = `data: ${JSON.stringify({ type: 'error', message: (err instanceof Error ? err.message : String(err)) })}\n\n`;
         return new Response(errEvent, {
-            status: 500,
+            status: 502,
             headers: { 'Content-Type': 'text/event-stream' },
         });
     }

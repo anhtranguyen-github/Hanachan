@@ -53,7 +53,7 @@ async def test_create_session_success(client: AsyncClient):
     session_data = _make_session(session_id, user_id)
 
     with patch(
-        "app.core.domain_client.DomainClient.upsert_chat_session", return_value=session_data
+        "app.core.core_client.CoreClient.upsert_chat_session", return_value=session_data
     ):
         response = await client.post(
             "/api/v1/memory/session",
@@ -70,8 +70,8 @@ async def test_create_session_success(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_session_not_found(client: AsyncClient):
     """GET /session/{id} should return 404 for non-existent sessions."""
-    # Simulate DomainClient raising error or returning None
-    with patch("app.core.domain_client.DomainClient.get_chat_session") as mocked:
+    # Simulate CoreClient raising error or returning None
+    with patch("app.core.core_client.CoreClient.get_chat_session") as mocked:
         from fastapi import HTTPException
 
         mocked.side_effect = HTTPException(status_code=404, detail="Not found")
@@ -107,7 +107,7 @@ async def test_list_sessions_success(client: AsyncClient):
     ]
 
     with patch(
-        "app.core.domain_client.DomainClient.list_chat_sessions", return_value=mock_sessions
+        "app.core.core_client.CoreClient.list_chat_sessions", return_value=mock_sessions
     ):
         response = await client.get(
             "/api/v1/memory/sessions",
@@ -124,7 +124,7 @@ async def test_list_sessions_success(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_end_session_not_found(client: AsyncClient):
     """DELETE /session/{id} should return 404 for non-existent sessions."""
-    with patch("app.core.domain_client.DomainClient.delete_chat_session") as mocked:
+    with patch("app.core.core_client.CoreClient.delete_chat_session") as mocked:
         from fastapi import HTTPException
 
         mocked.side_effect = HTTPException(status_code=404, detail="Not found")

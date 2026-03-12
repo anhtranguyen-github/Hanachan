@@ -21,12 +21,13 @@ Removed endpoints (migrated to Next.js + Supabase):
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import chat, maintenance, memory, reading, session
+from app.api.v1.endpoints import chat, maintenance, memory, reading, session, tutor
 
 api_router = APIRouter()
 
 # Agent-only endpoints (stateless AI processing)
 api_router.include_router(chat.router, tags=["Chat"])
+api_router.include_router(tutor.router, tags=["Tutor"])
 api_router.include_router(session.router, prefix="/memory", tags=["Session"])
 api_router.include_router(memory.router, prefix="/memory", tags=["Memory"])
 api_router.include_router(reading.router, tags=["Reading"])

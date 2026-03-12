@@ -12,25 +12,25 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { DOMAIN_API_URL, AGENTS_API_URL, waitForService } from './setup';
+import { FASTAPI_CORE_URL, AGENTS_API_URL, waitForService } from './setup';
 
 describe('API Contract Drift Detection', () => {
-    let domainAvailable = false;
+    let coreAvailable = false;
     let agentsAvailable = false;
 
     beforeAll(async () => {
-        domainAvailable = await waitForService(DOMAIN_API_URL, 3, 500);
+        coreAvailable = await waitForService(FASTAPI_CORE_URL, 3, 500);
         agentsAvailable = await waitForService(AGENTS_API_URL, 3, 500);
     });
 
-    describe('Domain API Contract', () => {
+    describe('Core API Contract', () => {
         it('should have expected API structure', async () => {
-            if (!domainAvailable) {
-                console.warn('Domain API not available, skipping contract test');
+            if (!coreAvailable) {
+                console.warn('Core API not available, skipping contract test');
                 return;
             }
 
-            const response = await fetch(`${DOMAIN_API_URL}/openapi.json`);
+            const response = await fetch(`${FASTAPI_CORE_URL}/openapi.json`);
             const schema = await response.json();
 
             // Verify expected endpoints exist
@@ -50,12 +50,12 @@ describe('API Contract Drift Detection', () => {
         });
 
         it('should maintain health endpoint contract', async () => {
-            if (!domainAvailable) {
-                console.warn('Domain API not available, skipping contract test');
+            if (!coreAvailable) {
+                console.warn('Core API not available, skipping contract test');
                 return;
             }
 
-            const response = await fetch(`${DOMAIN_API_URL}/health`);
+            const response = await fetch(`${FASTAPI_CORE_URL}/health`);
             const data = await response.json();
 
             // These properties must exist for the contract to be valid
@@ -110,13 +110,13 @@ describe('API Contract Drift Detection', () => {
     });
 
     describe('OpenAPI Schema Versions', () => {
-        it('should use valid OpenAPI version in domain API', async () => {
-            if (!domainAvailable) {
-                console.warn('Domain API not available, skipping contract test');
+        it('should use valid OpenAPI version in core API', async () => {
+            if (!coreAvailable) {
+                console.warn('Core API not available, skipping contract test');
                 return;
             }
 
-            const response = await fetch(`${DOMAIN_API_URL}/openapi.json`);
+            const response = await fetch(`${FASTAPI_CORE_URL}/openapi.json`);
             const schema = await response.json();
 
             expect(schema.openapi).toMatch(/^3\.\d+\.\d+$/);

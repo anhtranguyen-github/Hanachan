@@ -22,6 +22,8 @@ from app.schemas.memory import (
 from app.services.memory import episodic_memory as ep_mem
 from app.services.memory import semantic_memory as sem_mem
 from app.services.memory.consolidation import consolidate_memories
+from app.core.llm import make_embedding_model
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -137,3 +139,21 @@ async def clear_test_data(
         items_deleted=ep_count,
         user_id=user_id,
     )
+
+
+@router.get("/health/llm", tags=["Maintenance"]) 
+async def health_llm():
+    """Lightweight LLM auth check. Returns 200 if OpenAI key works, 401 if auth fails."""
+    if not settings.openai_api_key:
+        raise HTTPException(status_code=503, detail="OPENAI_API_KEY not set")
+
+    try:
+        emb = make_embedding_model()
+        # run in threadpool since the embedding client is sync
+        await run_in_threadpool(emb.embed_documents, ["health-check"])
+        return {"status": "ok"}
+    except Exception as exc:
+        msg = str(exc)
+        if "401" in msg or "Incorrect API key" in msg or "invalid_api_key" in msg:
+            raise HTTPException(status_code=401, detail=f"LLM auth failed: {msg}")
+        raise HTTPException(status_code=502, detail=f"LLM request failed: {msg}")

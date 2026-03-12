@@ -248,5 +248,14 @@ null
 /*.jpg
 /*.webp
 
-# Project specific backups
-/fastapi-agents/app/agents/memory_agent.py.bak
+# Project specific backups and temporary files
+*.bak
+*.tmp
+*.temp
+.import_linter_cache/
+
+# Test credentials
+scripts/test_user_credentials.txt
+
+# Playwright debug artifacts
+pw-*.png

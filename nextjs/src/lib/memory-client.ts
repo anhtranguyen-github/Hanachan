@@ -1,27 +1,9 @@
 /**
- * Memory API Client
- * 
- * ⚠️ ARCHITECTURE VIOLATION WARNING ⚠️
- * 
- * This module previously called FastAPI directly, which violates the architecture rule:
- * - FastAPI = Agents ONLY (stateless, no auth)
- * - Next.js = Business Logic Owner (BFF pattern)
- * - Supabase = Single Source of Truth
- * 
- * As part of Phase 2 migration, direct FastAPI calls have been disabled.
- * The functions below now return mock data or throw descriptive errors.
- * 
- * Migration Path:
- * 1. Memory operations should use Supabase client directly
- * 2. Or call Next.js API routes that manage the business logic
- * 3. FastAPI memory agents are triggered via Supabase changes
- * 
- * See: documentation/ARCHITECTURE_RULES.md
+ * Memory API Client (browser-safe)
+ *
+ * Frontend code must not call Supabase/OpenAI directly.
+ * All authenticated memory/session operations go through Next.js API routes (BFF).
  */
-
-import { supabase } from "@/lib/supabase";
-
-const MEMORY_API_BASE = process.env.MEMORY_API_URL ?? '';
 
 // ---------------------------------------------------------------------------
 // Types (mirrors Python models)
@@ -37,6 +19,7 @@ export interface MemoryChatResponse {
     thread_context: string;
 }
 
+// Chat threads (conversation containers)
 export interface MemorySession {
     session_id: string;
     user_id: string;
@@ -79,169 +62,139 @@ export interface UserProfile {
 }
 
 // ---------------------------------------------------------------------------
-// Architecture Violation Error
+// Helpers
 // ---------------------------------------------------------------------------
 
-class ArchitectureViolationError extends Error {
-    constructor(feature: string) {
-        super(
-            `Architecture Violation: ${feature} cannot call FastAPI directly. ` +
-            `FastAPI = Agents ONLY. Use Supabase client or Next.js API routes. ` +
-            `See documentation/ARCHITECTURE_RULES.md`
-        );
-        this.name = 'ArchitectureViolationError';
+async function parseJsonOrThrow(res: Response) {
+    const text = await res.text();
+    const ct = res.headers.get('content-type') || '';
+    const isJson = ct.includes('application/json');
+    const payload = isJson ? (text ? JSON.parse(text) : null) : text;
+    if (!res.ok) {
+        if (res.status === 401) {
+            throw new Error('Unauthorized');
+        }
+        const msg =
+            typeof payload === 'string'
+                ? payload
+                : (payload && typeof payload === 'object' && 'error' in payload)
+                    ? String((payload as any).error)
+                    : `Request failed (${res.status})`;
+        throw new Error(msg);
+    }
+    return payload;
+}
+
+async function getBrowserAccessToken(): Promise<string | null> {
+    if (typeof window === 'undefined') return null;
+    try {
+        const { supabase } = await import('@/lib/supabase');
+        const { data: sessionData } = await supabase.auth.getSession();
+        return sessionData?.session?.access_token ?? null;
+    } catch {
+        return null;
     }
 }
 
-// ---------------------------------------------------------------------------
-// Stubbed Functions (Phase 2 Migration)
-// These functions previously called FastAPI - now they use Supabase or return stubs
-// ---------------------------------------------------------------------------
+// Backward-compatible alias types
+export type ChatThread = MemorySession;
+export type ChatThreadFull = MemorySessionFull;
 
 /** 
- * Create a new conversation thread via Supabase.
- * Previously called FastAPI - now uses Supabase directly.
+ * Create a new conversation thread via Next.js BFF.
  */
 export async function createMemorySession(
-    userId: string,
-    metadata?: Record<string, unknown>,
+    _userId: string,
+    _metadata?: Record<string, unknown>,
 ): Promise<string> {
-    console.warn('[memory-client] Using Supabase for session creation (was FastAPI)');
-
-    const { data, error } = await supabase
-        .from('chat_sessions')
-        .insert({
-            user_id: userId,
-            metadata: metadata || {},
-        })
-        .select('id')
-        .single();
-
-    if (error) {
-        console.error('[memory-client] Error creating session:', error);
-        throw new Error('Failed to create chat session');
+    const token = await getBrowserAccessToken();
+    if (!token) {
+        // User not authenticated in browser; skip thread creation.
+        throw new Error('Unauthorized');
     }
 
-    return data.id;
+    const res = await fetch('/api/thread/session', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = await parseJsonOrThrow(res);
+    const sessionId = (json as any)?.session_id || (json as any)?.id || (json as any);
+    if (!sessionId || typeof sessionId !== 'string') throw new Error('Invalid session response');
+    return sessionId;
 }
 
 /** 
- * List user sessions from Supabase.
- * Previously called FastAPI - now uses Supabase directly.
+ * List user threads via Next.js BFF.
  */
-export async function listMemorySessions(userId: string): Promise<MemorySession[]> {
-    console.warn('[memory-client] Using Supabase for session list (was FastAPI)');
-
-    const { data, error } = await supabase
-        .from('chat_sessions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('updated_at', { ascending: false });
-
-    if (error) {
-        console.error('[memory-client] Error listing sessions:', error);
+export async function listMemorySessions(_userId: string): Promise<MemorySession[]> {
+    const token = await getBrowserAccessToken();
+    if (!token) {
+        // Not logged in: no threads to show, and avoid 401 spam.
         return [];
     }
-
-    return (data || []).map(session => ({
-        session_id: session.id,
-        user_id: session.user_id,
-        title: session.title,
-        summary: session.summary,
-        created_at: session.created_at,
-        updated_at: session.updated_at,
-        message_count: session.message_count || 0,
-        metadata: session.metadata || {},
-    }));
+    const res = await fetch('/api/thread/sessions', {
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = await parseJsonOrThrow(res);
+    return Array.isArray(json) ? (json as MemorySession[]) : [];
 }
 
 /** 
- * Get session details from Supabase.
- * Previously called FastAPI - now uses Supabase directly.
+ * Get thread details via Next.js BFF.
  */
 export async function getMemorySession(
     sessionId: string,
 ): Promise<MemorySessionFull | null> {
-    console.warn('[memory-client] Using Supabase for session details (was FastAPI)');
-
-    const { data: session, error: sessionError } = await supabase
-        .from('chat_sessions')
-        .select('*')
-        .eq('id', sessionId)
-        .single();
-
-    if (sessionError || !session) {
-        console.error('[memory-client] Error fetching session:', sessionError);
+    const token = await getBrowserAccessToken();
+    if (!token) {
         return null;
     }
-
-    const { data: messages, error: messagesError } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .eq('session_id', sessionId)
-        .order('created_at', { ascending: true });
-
-    if (messagesError) {
-        console.error('[memory-client] Error fetching messages:', messagesError);
-    }
-
-    return {
-        session_id: session.id,
-        user_id: session.user_id,
-        title: session.title,
-        summary: session.summary,
-        created_at: session.created_at,
-        updated_at: session.updated_at,
-        message_count: session.message_count || 0,
-        metadata: session.metadata || {},
-        messages: (messages || []).map(m => ({
-            role: m.role,
-            content: m.content,
-            timestamp: m.created_at,
-        })),
-    };
+    const res = await fetch(`/api/thread/session/${encodeURIComponent(sessionId)}`, {
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.status === 404) return null;
+    const json = await parseJsonOrThrow(res);
+    return json as MemorySessionFull;
 }
 
 /** 
- * Update session metadata in Supabase.
- * Previously called FastAPI - now uses Supabase directly.
+ * Update thread metadata via Next.js BFF.
  */
 export async function updateMemorySession(
     sessionId: string,
-    updates: Partial<Pick<MemorySession, 'title' | 'summary' | 'metadata'>>,
+    updates: Partial<Pick<MemorySession, 'title' | 'summary'>>,
 ): Promise<void> {
-    console.warn('[memory-client] Using Supabase for session update (was FastAPI)');
-
-    const { error } = await supabase
-        .from('chat_sessions')
-        .update({
-            ...updates,
-            updated_at: new Date().toISOString(),
-        })
-        .eq('id', sessionId);
-
-    if (error) {
-        console.error('[memory-client] Error updating session:', error);
-        throw new Error('Failed to update session');
+    const token = await getBrowserAccessToken();
+    if (!token) {
+        throw new Error('Unauthorized');
     }
+
+    const res = await fetch(`/api/thread/session/${encodeURIComponent(sessionId)}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ title: updates.title ?? null, summary: updates.summary ?? null }),
+    });
+    await parseJsonOrThrow(res);
 }
 
 /** 
- * Delete session from Supabase.
- * Previously called FastAPI - now uses Supabase directly.
+ * Delete thread via Next.js BFF.
  */
 export async function deleteMemorySession(sessionId: string): Promise<void> {
-    console.warn('[memory-client] Using Supabase for session delete (was FastAPI)');
-
-    const { error } = await supabase
-        .from('chat_sessions')
-        .delete()
-        .eq('id', sessionId);
-
-    if (error) {
-        console.error('[memory-client] Error deleting session:', error);
-        throw new Error('Failed to delete session');
+    const token = await getBrowserAccessToken();
+    if (!token) {
+        return;
     }
+    const res = await fetch(`/api/thread/session/${encodeURIComponent(sessionId)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    await parseJsonOrThrow(res);
 }
 
 // ---------------------------------------------------------------------------
@@ -260,7 +213,6 @@ export async function searchEpisodicMemory(
     query: string,
     k: number = 5,
 ): Promise<EpisodicMemory[]> {
-    console.warn('[memory-client] Episodic memory search stubbed - agent should be triggered via Supabase');
     return [];
 }
 
@@ -275,33 +227,13 @@ export async function searchEpisodicMemory(
  * Stub implementation returns basic profile.
  */
 export async function getUserProfile(userId: string): Promise<UserProfile> {
-    console.warn('[memory-client] Using Supabase for user profile (was FastAPI)');
-
-    const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-    if (error || !data) {
-        console.error('[memory-client] Error fetching user profile:', error);
-        return {
-            user_id: userId,
-            name: null,
-            preferences: [],
-            goals: [],
-            interests: [],
-            facts: [],
-        };
-    }
-
     return {
         user_id: userId,
-        name: data.display_name,
-        preferences: data.preferences || [],
-        goals: data.goals || [],
-        interests: data.interests || [],
-        facts: data.facts || [],
+        name: null,
+        preferences: [],
+        goals: [],
+        interests: [],
+        facts: [],
     };
 }
 
@@ -313,23 +245,9 @@ export async function updateUserProfile(
     userId: string,
     updates: Partial<Omit<UserProfile, 'user_id'>>,
 ): Promise<void> {
-    console.warn('[memory-client] Using Supabase for profile update (was FastAPI)');
-
-    const { error } = await supabase
-        .from('users')
-        .update({
-            display_name: updates.name,
-            preferences: updates.preferences,
-            goals: updates.goals,
-            interests: updates.interests,
-            facts: updates.facts,
-        })
-        .eq('id', userId);
-
-    if (error) {
-        console.error('[memory-client] Error updating profile:', error);
-        throw new Error('Failed to update profile');
-    }
+    void userId;
+    void updates;
+    throw new Error('User profile update is not available from the browser');
 }
 
 // ---------------------------------------------------------------------------
@@ -346,11 +264,7 @@ export async function memoryChatStream(
     sessionId?: string,
     ttsEnabled?: boolean,
 ): Promise<ReadableStream<Uint8Array>> {
-    const isServer = typeof window === 'undefined';
-    const baseUrl = isServer ? MEMORY_API_BASE : '';
-    const url = isServer ? `${baseUrl}/chat/stream` : '/api/chat/stream';
-
-    const res = await fetch(url, {
+    const res = await fetch('/api/agent/chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -403,39 +317,24 @@ export async function getMemoryContext(
 export const getMemoryContextBlock = getMemoryContext;
 
 /**
- * End memory session and return updated session data
+ * End thread and return updated session data
  */
 export async function endMemorySession(
     sessionId: string,
     _saveContext?: boolean
 ): Promise<{ title: string | null; summary: string | null }> {
-    console.warn('[memory-client] Using Supabase for end session (was FastAPI)');
-
-    // First get current session data
-    const { data: session, error: fetchError } = await supabase
-        .from('chat_sessions')
-        .select('title, summary')
-        .eq('id', sessionId)
-        .single();
-
-    if (fetchError) {
-        console.error('[memory-client] Error fetching session:', fetchError);
+    const token = await getBrowserAccessToken();
+    if (!token) {
+        return { title: null, summary: null };
     }
-
-    // Update ended_at
-    const { error } = await supabase
-        .from('chat_sessions')
-        .update({ ended_at: new Date().toISOString() })
-        .eq('id', sessionId);
-
-    if (error) {
-        console.error('[memory-client] Error ending session:', error);
-        throw new Error('Failed to end session');
-    }
-
+    const res = await fetch(`/api/thread/session/${encodeURIComponent(sessionId)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = await parseJsonOrThrow(res);
     return {
-        title: session?.title ?? null,
-        summary: session?.summary ?? null,
+        title: (json as any)?.title ?? null,
+        summary: (json as any)?.summary ?? null,
     };
 }
 
@@ -443,7 +342,14 @@ export async function endMemorySession(
 // Default export for convenience
 // ---------------------------------------------------------------------------
 
-export default {
+const memoryClient = {
+    // Thread-oriented aliases (preferred)
+    createThread: createMemorySession,
+    listThreads: listMemorySessions,
+    getThread: getMemorySession,
+    updateThread: updateMemorySession,
+    deleteThread: deleteMemorySession,
+    // Legacy names (session/memory)
     createSession: createMemorySession,
     listSessions: listMemorySessions,
     getSession: getMemorySession,
@@ -455,3 +361,5 @@ export default {
     streamChat: streamMemoryChat,
     getContextBlock: getMemoryContextBlock,
 };
+
+export default memoryClient;

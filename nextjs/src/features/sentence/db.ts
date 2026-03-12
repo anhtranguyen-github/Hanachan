@@ -50,11 +50,10 @@ export const sentenceRepository = {
         }
 
         const { error } = await supabase
-            .from('ku_to_sentence')
+            .from('sentence_knowledge')
             .upsert({
                 ku_id: unitId,
-                sentence_id: sentenceId,
-                is_primary: isPrimary
+                sentence_id: sentenceId
             });
 
         if (error) {

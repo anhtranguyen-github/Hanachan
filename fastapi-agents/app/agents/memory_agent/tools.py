@@ -3,7 +3,8 @@ import logging
 from langchain_core.tools import tool
 
 from app.agents.deck_manager import DECK_TOOLS
-from app.services.mcp_domain_client import MCPDomainClient
+from app.core.config import settings
+from app.mcp.client import McpClient
 from app.services.memory import episodic_memory as ep_mem
 from app.services.memory import semantic_memory as sem_mem
 
@@ -51,10 +52,10 @@ async def get_user_learning_progress(
     (Note: user_id is handled automatically)
     """
     try:
-        client = MCPDomainClient(jwt)
+        client = McpClient(settings.fastapi_core_mcp_url)
         # Call via MCP Tool
         status_data = await client.call_tool(
-            "get_learning_progress", {"user_id": user_id, "identifier": identifier}
+            "get_learning_progress", {"user_id": user_id, "identifier": identifier}, jwt=jwt
         )
 
         if not status_data:
@@ -72,8 +73,8 @@ async def search_knowledge_units(jwt: str, query: str, user_id: str = "INJECTED"
     Use this if the user asks 'What does X mean?' or 'How do you write Y?'.
     """
     try:
-        client = MCPDomainClient(jwt)
-        results = await client.call_tool("search_knowledge", {"user_id": user_id, "query": query})
+        client = McpClient(settings.fastapi_core_mcp_url)
+        results = await client.call_tool("search_knowledge", {"user_id": user_id, "query": query}, jwt=jwt)
 
         if not results:
             return f"No knowledge units found for '{query}'."
@@ -91,11 +92,10 @@ async def append_to_learning_notes(
     Use this if the user explicitly asks you to save a note or remember a rule for a specific item.
     """
     try:
-        client = MCPDomainClient(jwt)
-
+        client = McpClient(settings.fastapi_core_mcp_url)
         # Searching via MCP
         results = await client.call_tool(
-            "search_knowledge", {"user_id": user_id, "query": identifier}
+            "search_knowledge", {"user_id": user_id, "query": identifier}, jwt=jwt
         )
         if not results or "error" in str(results).lower():
             return f"Could not find any knowledge unit matching '{identifier}' to save the note to."
@@ -112,10 +112,9 @@ async def get_recent_reviews(jwt: str, limit: int = 5, user_id: str = "INJECTED"
     Use this if the user asks 'What did I just study?' or 'How did my last session go?'.
     """
     try:
-        client = MCPDomainClient(jwt)
-
+        client = McpClient(settings.fastapi_core_mcp_url)
         # Call MCP for data
-        results = await client.call_tool("get_recent_reviews", {"user_id": user_id, "limit": limit})
+        results = await client.call_tool("get_recent_reviews", {"user_id": user_id, "limit": limit}, jwt=jwt)
 
         if not results:
             return "No recent reviews found."
@@ -126,6 +125,35 @@ async def get_recent_reviews(jwt: str, limit: int = 5, user_id: str = "INJECTED"
         return f"Failed to retrieve recent reviews: {str(e)}"
 
 
+@tool
+async def get_database_schema(jwt: str, user_id: str = "INJECTED") -> str:
+    """Retrieve the SQL database schema (tables, columns, types).
+    Use this to see what data is available in the structured database before writing SQL.
+    """
+    try:
+        client = McpClient(settings.fastapi_core_mcp_url)
+        results = await client.call_tool("get_database_schema", {"user_id": user_id}, jwt=jwt)
+        return str(results)
+    except Exception as e:
+        logger.error(f"Error getting schema: {e}")
+        return f"Failed to retrieve schema: {str(e)}"
+
+
+@tool
+async def execute_read_only_sql(jwt: str, sql: str, user_id: str = "INJECTED") -> str:
+    """Execute a read-only SELECT query against the database.
+    ALWAYS call get_database_schema first to know the table names.
+    Only SELECT/WITH queries are allowed.
+    """
+    try:
+        client = McpClient(settings.fastapi_core_mcp_url)
+        results = await client.call_tool("execute_read_only_sql", {"user_id": user_id, "sql": sql}, jwt=jwt)
+        return str(results)
+    except Exception as e:
+        logger.error(f"Error executing SQL: {e}")
+        return f"Failed to execute SQL: {str(e)}"
+
+
 # Tool list for the Planner
 TOOLS = [
     get_episodic_memory,
@@ -134,4 +162,6 @@ TOOLS = [
     get_recent_reviews,
     search_knowledge_units,
     append_to_learning_notes,
+    get_database_schema,
+    execute_read_only_sql,
 ] + DECK_TOOLS

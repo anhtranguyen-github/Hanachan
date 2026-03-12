@@ -12,7 +12,7 @@ security = HTTPBearer()
 def get_current_user(token: HTTPAuthorizationCredentials = Depends(security)) -> dict[str, Any]:
     """
     Extracts user context from the supplied JWT without performing cryptographic validation.
-    This complies with the architecture rule: JWT validation is forbidden in FastAPI (handled by Domain SSOT).
+    This complies with the architecture rule: JWT validation is forbidden in FastAPI (handled by Core SSOT).
     The response contains the user's ID and the raw JWT for passing to downstream clients.
     """
     try:

@@ -34,8 +34,8 @@ repos:
         entry: bash -c "cd fastapi-agents && uv run lint-imports"
         language: system
         pass_filenames: false
-    -   id: import-linter-domain
-        name: import-linter (fastapi-domain)
-        entry: bash -c "cd fastapi-domain && uv run lint-imports"
+    -   id: import-linter-core
+        name: import-linter (fastapi-core)
+        entry: bash -c "cd fastapi-core && uv run lint-imports"
         language: system
         pass_filenames: false

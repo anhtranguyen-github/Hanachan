@@ -12,20 +12,18 @@ vi.mock('next/headers', () => ({
     }))
 }));
 
-const { mockDomainClient } = vi.hoisted(() => {
+const { mockCoreClient } = vi.hoisted(() => {
     return {
-        mockDomainClient: {
+        mockCoreClient: {
             startLessonSession: vi.fn().mockResolvedValue({ success: true, batch_id: 'sess-1' })
         }
     };
 });
 
-vi.mock('@/lib/domain-client', () => {
+vi.mock('@/lib/core-client', () => {
     return {
-        domainClient: mockDomainClient,
-        DomainClient: {
-            getInstance: () => mockDomainClient
-        }
+        coreClient: mockCoreClient,
+        CoreClient: vi.fn().mockImplementation(() => mockCoreClient)
     };
 });
 
@@ -95,7 +93,7 @@ describe('Lesson Batch Daily Limit', () => {
         const result = await startLessonSession(userId, 1);
 
         expect(result.batch).not.toBeNull();
-        expect(mockDomainClient.startLessonSession).toHaveBeenCalled();
+        expect(mockCoreClient.startLessonSession).toHaveBeenCalled();
     });
 
     it('should block starting a session when at the limit (10 batches)', async () => {

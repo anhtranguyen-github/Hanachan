@@ -14,12 +14,12 @@ vi.mock('@/features/analytics/service', () => ({
         logReview: vi.fn().mockResolvedValue(undefined),
     }
 }));
-vi.mock('@/lib/domain-client', () => ({
-    domainClient: {
+vi.mock('@/lib/core-client', () => ({
+    coreClient: {
         submitReview: vi.fn(),
     }
 }));
-import { domainClient } from '@/lib/domain-client';
+import { coreClient } from '@/lib/core-client';
 
 describe('Study Session Integration Flow', () => {
     const userId = '00000000-0000-4000-8000-000000000001';
@@ -40,7 +40,7 @@ describe('Study Session Integration Flow', () => {
         };
 
         const updateSpy = vi.spyOn(srsRepository, 'updateUserState').mockResolvedValue(undefined as any);
-        (domainClient.submitReview as any).mockResolvedValue({
+        (coreClient.submitReview as any).mockResolvedValue({
             new_stability: 0.333,
             next_review: new Date().toISOString()
         });
@@ -63,7 +63,7 @@ describe('Study Session Integration Flow', () => {
         };
 
         const updateSpy = vi.spyOn(srsRepository, 'updateUserState').mockResolvedValue(undefined as any);
-        (domainClient.submitReview as any).mockResolvedValue({
+        (coreClient.submitReview as any).mockResolvedValue({
             new_stability: 5,
             next_review: new Date().toISOString()
         });

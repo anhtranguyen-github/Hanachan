@@ -8,7 +8,7 @@ import { startLessonSessionAction, completeLessonBatchAction } from '@/features/
 import { useUser } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { QuizItem } from '@/features/learning/LearningController';
-import { Rating } from '@/features/learning/domain/SRSAlgorithm';
+import { Rating } from '@/features/learning/core/SRSAlgorithm';
 import { ReviewCardDisplay } from '@/features/learning/components/ReviewCardDisplay';
 import { GlassCard } from '@/components/premium/GlassCard';
 

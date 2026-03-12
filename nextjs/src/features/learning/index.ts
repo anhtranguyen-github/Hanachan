@@ -5,11 +5,11 @@
 // Types
 export * from './types/review-cards';
 
-// Domain
-export * from './domain/grammar-cloze';
-export * from './domain/review-card-generator';
-export * from './domain/review-session';
-export * from './domain/SRSAlgorithm';
+// Core
+export * from './core/grammar-cloze';
+export * from './core/review-card-generator';
+export * from './core/review-session';
+export * from './core/SRSAlgorithm';
 
 // Components
 export { ReviewCardDisplay } from './components/ReviewCardDisplay';

@@ -9,7 +9,7 @@ from fastapi.concurrency import run_in_threadpool
 from app.agents.user_profile import build_user_profile, profile_to_system_prompt
 from app.api.deps import get_current_user
 from app.core.config import settings
-from app.core.domain_client import DomainClient
+from app.core.core_client import CoreClient
 from app.core.rate_limit import limiter
 from app.schemas.context import ContextRequest, ContextResponse
 from app.schemas.memory import (
@@ -80,8 +80,8 @@ async def get_chat_context(
         thread_msgs = []
         thread_text = ""
         if req.session_id:
-            domain = DomainClient(current_user["jwt"])
-            raw = await domain.get_chat_messages(req.session_id)
+            core = CoreClient(current_user["jwt"])
+            raw = await core.get_chat_messages(req.session_id)
             thread_msgs = raw[-10:]
 
             recent = thread_msgs  # use for context

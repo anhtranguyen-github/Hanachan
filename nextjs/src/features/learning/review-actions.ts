@@ -12,8 +12,8 @@ import {
     getReviewStats,
     getDueReviewItems,
     getNewItems
-} from './domain/review-session';
-import { generateReviewCards } from './domain/review-card-generator';
+} from './core/review-session';
+import { generateReviewCards } from './core/review-card-generator';
 import { ReviewCard, ReviewSession, ReviewAnswer } from './types/review-cards';
 import { revalidatePath } from 'next/cache';
 

@@ -75,7 +75,7 @@ export async function getVocabData(character: string) {
             vocab_kanji!vocab_kanji_vocab_fkey (
                 kanji:knowledge_units!vocab_kanji_kanji_fkey (character, meaning, ku_kanji(reading_data))
             ),
-            ku_to_sentence (
+            sentence_knowledge (
                 sentences (text_ja, text_en)
             )
         `)
@@ -108,7 +108,7 @@ export async function getVocabData(character: string) {
             meaning: k.kanji?.meaning,
             reading: ensureObject(k.kanji?.ku_kanji)?.reading_data?.onyomi?.[0] || '?'
         })) || [],
-        context_sentences: ku.ku_to_sentence?.map((s: any) => ({
+        context_sentences: ku.sentence_knowledge?.map((s: any) => ({
             ja: s.sentences?.text_ja,
             en: s.sentences?.text_en
         })) || [],
@@ -197,7 +197,7 @@ export async function getGrammarData(slug: string) {
                     level
                 )
             ),
-            ku_to_sentence (
+            sentence_knowledge (
                 sentences (
                     text_ja,
                     text_en,
@@ -239,7 +239,7 @@ export async function getGrammarData(slug: string) {
             slug: r.related_grammar?.slug?.replace('grammar:', ''),
             comparison_note: r.comparison_note
         })) || [],
-        examples: ku.ku_to_sentence?.map((s: any) => ({
+        examples: ku.sentence_knowledge?.map((s: any) => ({
             japanese: s.sentences?.text_ja,
             english: s.sentences?.text_en,
             sentence_structure: s.sentences?.metadata?.structure || [],

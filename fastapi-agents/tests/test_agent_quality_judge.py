@@ -61,13 +61,13 @@ def _base_state(**overrides) -> dict:
     return state
 
 
-# Standard patches for all tests (Domain client + memory backends)
+# Standard patches for all tests (Core client + memory backends)
 def _common_patches():
     """Return a dict of common patch targets."""
     return {
-        "domain_client": patch("app.core.domain_client.DomainClient"),
+        "core_client": patch("app.core.core_client.CoreClient"),
         "mcp_call": patch(
-            "app.services.mcp_domain_client.MCPDomainClient.call_tool",
+            "app.services.mcp_core_client.MCPCoreClient.call_tool",
             new_callable=AsyncMock,
         ),
         "ep_mem_search": patch(
@@ -98,7 +98,7 @@ async def test_graph_completes_with_output():
 
     patches = _common_patches()
     with (
-        patches["domain_client"] as mock_dc,
+        patches["core_client"] as mock_dc,
         patches["mcp_call"] as mock_mcp,
         patches["ep_mem_search"] as mock_ep,
         patches["sem_mem_search"] as mock_sem,
@@ -145,7 +145,7 @@ async def test_episodic_memory_tool_called():
 
     patches = _common_patches()
     with (
-        patches["domain_client"] as mock_dc,
+        patches["core_client"] as mock_dc,
         patches["mcp_call"] as mock_mcp,
         patches["ep_mem_search"] as mock_ep,
         patches["sem_mem_search"] as mock_sem,
@@ -211,7 +211,7 @@ async def test_semantic_facts_tool_called():
 
     patches = _common_patches()
     with (
-        patches["domain_client"] as mock_dc,
+        patches["core_client"] as mock_dc,
         patches["mcp_call"] as mock_mcp,
         patches["ep_mem_search"] as mock_ep,
         patches["sem_mem_search"] as mock_sem,
@@ -261,7 +261,7 @@ async def test_semantic_facts_tool_called():
 async def test_learning_progress_tool_called():
     """
     [QA-Func-04] When the planner calls get_user_learning_progress,
-    it should invoke MCPDomainClient.call_tool.
+    it should invoke MCPCoreClient.call_tool.
     """
     user_input = "Tiến độ học chữ 桜 của tôi thế nào?"
     state = _base_state(
@@ -271,7 +271,7 @@ async def test_learning_progress_tool_called():
 
     patches = _common_patches()
     with (
-        patches["domain_client"] as mock_dc,
+        patches["core_client"] as mock_dc,
         patches["mcp_call"] as mock_mcp,
         patches["ep_mem_search"] as mock_ep,
         patches["sem_mem_search"] as mock_sem,
@@ -329,7 +329,7 @@ async def test_thread_context_preserved():
 
     patches = _common_patches()
     with (
-        patches["domain_client"] as mock_dc,
+        patches["core_client"] as mock_dc,
         patches["mcp_call"] as mock_mcp,
         patches["ep_mem_search"] as mock_ep,
         patches["sem_mem_search"] as mock_sem,
@@ -376,7 +376,7 @@ async def test_reviewer_rewrite_loop():
 
     patches = _common_patches()
     with (
-        patches["domain_client"] as mock_dc,
+        patches["core_client"] as mock_dc,
         patches["mcp_call"] as mock_mcp,
         patches["ep_mem_search"] as mock_ep,
         patches["sem_mem_search"] as mock_sem,

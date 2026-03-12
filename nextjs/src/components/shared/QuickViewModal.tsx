@@ -125,7 +125,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ isOpen, onClose,
                                 {data.examples.slice(0, 3).map((ex, i) => (
                                     <div key={i} className="bg-[#F7FAFC] p-3.5 rounded-2xl border border-[#F0E0E0]">
                                         <div className="font-bold text-[#3E4A61] text-sm mb-1 leading-snug jp-text">{ex.ja}</div>
-                                        <div className="text-xs text-[#A0AEC0] font-medium leading-snug">"{ex.en}"</div>
+                                        <div className="text-xs text-[#A0AEC0] font-medium leading-snug">“{ex.en}”</div>
                                     </div>
                                 ))}
                             </div>

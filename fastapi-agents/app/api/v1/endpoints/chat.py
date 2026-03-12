@@ -108,6 +108,8 @@ async def chat_stream(
             "tts_enabled": req.tts_enabled,
         }
 
+        tokens_emitted = False
+
         try:
             # astream_events v2 provides deep tracing of thoughts, tools, and tokens
             async for event in memory_graph.astream_events(
@@ -142,17 +144,55 @@ async def chat_stream(
                     yield f"data: {json.dumps({'type': 'status', 'content': f'Finished {tool_name}.'})}\n\n"
 
                 # 3. Token Streaming (Reasoning & Generation)
-                # We filter for the 'generator' node's LLM stream
+                # We prefer true LLM streaming events when available…
                 if kind == "on_chat_model_stream":
                     content = event["data"]["chunk"].content
                     if content:
+                        tokens_emitted = True
                         yield f"data: {json.dumps({'type': 'token', 'content': content})}\n\n"
+
+                # …but many nodes (like our generator) use non-streaming invoke.
+                # When the generate node finishes, emit the full generation as a single token event
+                # so the frontend still receives the answer via SSE.
+                if kind == "on_chain_end" and event["name"] == "generate":
+                    output = event["data"].get("output")
+                    if isinstance(output, dict) and output.get("generation"):
+                        tokens_emitted = True
+                        yield f"data: {json.dumps({'type': 'token', 'content': output['generation']})}\n\n"
+
+            # Fallback: if for some reason no token events were emitted during the graph run,
+            # call the non-streaming chat path once and emit its response as a single token.
+            if not tokens_emitted:
+                try:
+                    result = await run_chat(
+                        user_id=user_id,
+                        jwt=current_user["jwt"],
+                        message=req.message,
+                        session_id=req.session_id,
+                    )
+                    if result.get("response"):
+                        yield f"data: {json.dumps({'type': 'token', 'content': result['response']})}\n\n"
+                except Exception as exc:
+                    logger.error(
+                        "chat_stream_fallback_error",
+                        extra={"user_id": user_id, "error": str(exc)},
+                        exc_info=True,
+                    )
+                    msg = str(exc)
+                    if "Incorrect API key" in msg or "401" in msg:
+                        yield f"data: {json.dumps({'type': 'error', 'message': 'Streaming fallback failed: LLM authentication error. Check OPENAI_API_KEY in agents configuration.'})}\n\n"
+                    else:
+                        yield f"data: {json.dumps({'type': 'error', 'message': 'Streaming fallback failed'})}\n\n"
 
             yield f"data: {json.dumps({'type': 'done', 'session_id': req.session_id})}\n\n"
 
         except Exception as exc:
             logger.error("stream_graph_error", extra={"user_id": user_id, "error": str(exc)})
-            yield f"data: {json.dumps({'type': 'error', 'message': f'Processing failed: {str(exc)}'})}\n\n"
+            msg = str(exc)
+            if "Incorrect API key" in msg or "401" in msg:
+                yield f"data: {json.dumps({'type': 'error', 'message': 'Processing failed: LLM authentication error. Check OPENAI_API_KEY in agents configuration.'})}\n\n"
+            else:
+                yield f"data: {json.dumps({'type': 'error', 'message': f'Processing failed: {str(exc)}'})}\n\n"
 
     return StreamingResponse(
         event_stream(),

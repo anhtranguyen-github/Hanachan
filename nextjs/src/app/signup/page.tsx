@@ -88,7 +88,7 @@ export default function SignupPage() {
                                 <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider ml-1">Email</label>
                                 <input
                                     type="email"
-                                    placeholder="name@domain.com"
+                                    placeholder="name@example.com"
                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder:text-white/20 outline-none focus:border-[#B7E4C7] focus:ring-2 focus:ring-[#B7E4C710] transition-all duration-300 text-sm"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}

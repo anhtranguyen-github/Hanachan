@@ -10,9 +10,11 @@ import {
     listMemorySessions,
     getMemorySession,
     updateMemorySession,
-    type MemorySession,
-    type MemorySessionFull,
+    type ChatThread,
+    type ChatThreadFull,
 } from '@/lib/memory-client';
+import { useAuth } from '@/features/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -28,18 +30,19 @@ export interface StreamingState {
 // ---------------------------------------------------------------------------
 
 export function useChatSession(userId?: string, conversationId?: string) {
+    const { openLoginModal } = useAuth();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [sessions, setSessions] = useState<any[]>([]);
 
-    // Memory state
-    const [memorySessions, setMemorySessions] = useState<MemorySession[]>([]);
-    const [activeMemorySession, setActiveMemorySession] = useState<MemorySessionFull | null>(null);
+        // Thread state (chat containers)
+        const [threads, setThreads] = useState<ChatThread[]>([]);
+        const [activeThread, setActiveThread] = useState<ChatThreadFull | null>(null);
     const [streaming, setStreaming] = useState<StreamingState>({ isStreaming: false, partial: '' });
     const [sessionTitle, setSessionTitle] = useState<string | null>(null);
     const [sessionSummary, setSessionSummary] = useState<string | null>(null);
 
-    // Track the memory session_id independently from the Supabase session_id
+    // Track the thread_id independently from the Supabase session_id
     const memorySessionIdRef = useRef<string | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -74,14 +77,14 @@ export function useChatSession(userId?: string, conversationId?: string) {
     }, [conversationId, loadHistory]);
 
     // ---------------------------------------------------------------------------
-    // Memory session management
+    // Thread management (backed by memory service)
     // ---------------------------------------------------------------------------
 
     const loadMemorySessions = useCallback(async () => {
         if (!userId) return;
         try {
             const data = await listMemorySessions(userId);
-            setMemorySessions(data);
+            setThreads(data);
         } catch {
             // Memory API may be offline
         }
@@ -89,7 +92,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
 
     useEffect(() => { loadMemorySessions(); }, [loadMemorySessions]);
 
-    /** Load or create the memory session paired to this Supabase conversation. */
+    /** Load or create the chat thread paired to this Supabase conversation. */
     const ensureMemorySession = useCallback(async (): Promise<string | null> => {
         if (!userId) return null;
         if (memorySessionIdRef.current) return memorySessionIdRef.current;
@@ -104,7 +107,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
         }
     }, [userId, conversationId]);
 
-    /** Refresh the title and summary from the memory API (after a response). */
+    /** Refresh the title and summary from the thread API (after a response). */
     const refreshMemorySessionMeta = useCallback(async () => {
         const sid = memorySessionIdRef.current;
         if (!sid) return;
@@ -112,7 +115,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
             const data = await getMemorySession(sid);
             if (data.title) setSessionTitle(data.title);
             if (data.summary) setSessionSummary(data.summary);
-            setActiveMemorySession(data);
+            setActiveThread(data);
         } catch {
             // ignore
         }
@@ -135,7 +138,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
             setMessages(mapped);
             setSessionTitle(data.title ?? null);
             setSessionSummary(data.summary ?? null);
-            setActiveMemorySession(data);
+            setActiveThread(data);
             memorySessionIdRef.current = memSessionId;
         } catch {
             // fall back to Supabase history
@@ -166,9 +169,15 @@ export function useChatSession(userId?: string, conversationId?: string) {
         abortControllerRef.current = new AbortController();
 
         try {
-            const res = await fetch('/api/chat/stream', {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const accessToken = sessionData?.session?.access_token;
+
+            const res = await fetch('/api/agent/chat/stream', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+                },
                 body: JSON.stringify({
                     message: content,
                     userId,
@@ -178,6 +187,10 @@ export function useChatSession(userId?: string, conversationId?: string) {
                 signal: abortControllerRef.current.signal,
             });
 
+            if (res.status === 401) {
+                openLoginModal();
+                throw new Error('Unauthorized');
+            }
             if (!res.ok || !res.body) throw new Error(`Stream failed: ${res.status}`);
 
             const reader = res.body.getReader();
@@ -240,7 +253,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
             }
             setStreaming({ isStreaming: false, partial: '' });
         }
-    }, [userId, ensureMemorySession, refreshMemorySessionMeta, loadMemorySessions]);
+    }, [userId, ensureMemorySession, refreshMemorySessionMeta, loadMemorySessions, openLoginModal]);
 
     // ---------------------------------------------------------------------------
     // Regular (non-streaming) send message — kept for fallback/compatibility
@@ -281,11 +294,11 @@ export function useChatSession(userId?: string, conversationId?: string) {
 
     const createNewConversation = useCallback(async () => {
         if (!userId) return null;
-        // Reset memory session so next message creates a fresh one
+        // Reset thread so next message creates a fresh one
         memorySessionIdRef.current = null;
         setSessionTitle(null);
         setSessionSummary(null);
-        setActiveMemorySession(null);
+        setActiveThread(null);
         setMessages([]);
         return null;
     }, [userId]);
@@ -332,9 +345,9 @@ export function useChatSession(userId?: string, conversationId?: string) {
         // Supabase sessions
         sessions,
 
-        // Memory sessions
-        memorySessions,
-        activeMemorySession,
+        // Threads
+        threads,
+        activeThread,
         sessionTitle,
         sessionSummary,
 
