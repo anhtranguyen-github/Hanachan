@@ -5,8 +5,16 @@ export async function getBearerFromSupabaseCookie(): Promise<string | null> {
     const allCookies = typeof cookieStore.getAll === 'function' ? cookieStore.getAll() : [];
 
     // Supabase auth cookie is typically `sb-<project-ref>-auth-token`.
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const projectRef = supabaseUrl.split('.')[0].split('//')[1] || '';
+    const matchSuffix = '-auth-token';
+
     for (const cookie of allCookies) {
-        if (!cookie.name.includes('-auth-token')) continue;
+        const isMatch = projectRef 
+            ? cookie.name === `sb-${projectRef}-auth-token` || cookie.name.includes(`sb-${projectRef}-auth-token`)
+            : cookie.name.includes(matchSuffix);
+            
+        if (!isMatch) continue;
         try {
             let raw = cookie.value;
             if (raw.startsWith('base64-')) {

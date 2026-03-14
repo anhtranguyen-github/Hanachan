@@ -8,5 +8,8 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_KEY: str
     SUPABASE_JWT_SECRET: str
     FASTAPI_CORE_URL: str = "http://127.0.0.1:6200/api/v1"
+    ENVIRONMENT: str = "development"
+    ALLOW_MASTER_TOKEN: bool = False
+
 
 settings = Settings()

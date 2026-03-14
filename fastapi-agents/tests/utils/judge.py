@@ -16,8 +16,14 @@ class AgentJudge:
         from langchain_openai import ChatOpenAI
 
         judge_key = os.environ.get("LLM_JUDGE_API_KEY")
+        judge_base = os.environ.get("LLM_JUDGE_API_BASE")
         if judge_key and "sk-test-key" not in judge_key:
-            self.llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=judge_key)
+            self.llm = ChatOpenAI(
+                model="gpt-4o",
+                temperature=0,
+                openai_api_key=judge_key,
+                base_url=judge_base,
+            )
         else:
             self.llm = make_llm(temperature=0)
 

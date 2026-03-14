@@ -4,6 +4,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { clsx } from 'clsx';
 import { BookmarkPlus, BookmarkCheck, X, ExternalLink, Volume2 } from 'lucide-react';
 import { JLPTBadge } from './JLPTBadge';
+import { videoClient } from '@/services/videoClient';
 import type { VideoSubtitle, SubtitleToken, GrammarPoint, WordLookupResult } from '../types';
 import { JLPT_COLORS } from '../types';
 
@@ -104,11 +105,8 @@ export function InteractiveSubtitles({
       }
 
       try {
-        const res = await fetch(`/api/videos/lookup?word=${encodeURIComponent(word)}`, {
-          headers: userId ? { 'Authorization': `Bearer ${await getToken()}` } : {},
-        });
-        const data = await res.json();
-        const result = data.result;
+        const data = await videoClient.lookupWord(word, videoId);
+        const result = data;
 
         lookupCache.set(word, result);
         setTooltip(prev => prev?.word === word ? {
@@ -123,7 +121,7 @@ export function InteractiveSubtitles({
         } : prev);
       }
     }, 150);
-  }, [onWordClick, userId]);
+  }, [onWordClick, videoId]);
 
   const handleSaveWord = useCallback(async () => {
     if (!tooltip?.result || !onSaveWord) return;
@@ -361,13 +359,4 @@ const WordTooltip = React.forwardRef<HTMLDivElement, WordTooltipProps>(
 
 WordTooltip.displayName = 'WordTooltip';
 
-// Helper to get auth token (simplified)
-async function getToken(): Promise<string> {
-  try {
-    const { supabase } = await import('@/lib/supabase');
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token || '';
-  } catch {
-    return '';
-  }
-}
+

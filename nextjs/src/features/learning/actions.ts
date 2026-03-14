@@ -26,7 +26,14 @@ export async function initializeSRSAction(userId: string, unitId: string, facets
 
 export async function submitReviewAction(sessionId: string, unitId: string, facet: string, rating: any, attemptCount: number, wrongCount: number) {
     try {
-        const result = await coreClient.submitReview(sessionId, unitId, facet, rating, attemptCount, wrongCount);
+        const result = await coreClient.submitReview({
+            sessionId,
+            kuId: unitId,
+            facet,
+            rating,
+            attemptCount,
+            wrongCount
+        });
         // Do not revalidate everything yet to keep UI fast
         return { success: true, data: result };
     } catch (e: unknown) {
@@ -102,7 +109,7 @@ export async function startLessonSessionAction(userId: string, level: number) {
     }
 }
 
-import { coreClient } from '@/lib/core-client';
+import { coreClient } from '@/services/coreClient';
 
 export async function completeLessonBatchAction(batchId: string) {
     try {

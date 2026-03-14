@@ -55,7 +55,7 @@ async def get_user_learning_progress(
         client = McpClient(settings.fastapi_core_mcp_url)
         # Call via MCP Tool
         status_data = await client.call_tool(
-            "get_learning_progress", {"user_id": user_id, "identifier": identifier}, jwt=jwt
+            "get_learning_progress", {"identifier": identifier}, jwt=jwt
         )
 
         if not status_data:
@@ -74,7 +74,7 @@ async def search_knowledge_units(jwt: str, query: str, user_id: str = "INJECTED"
     """
     try:
         client = McpClient(settings.fastapi_core_mcp_url)
-        results = await client.call_tool("search_knowledge", {"user_id": user_id, "query": query}, jwt=jwt)
+        results = await client.call_tool("search_knowledge", {"query": query}, jwt=jwt)
 
         if not results:
             return f"No knowledge units found for '{query}'."
@@ -95,7 +95,7 @@ async def append_to_learning_notes(
         client = McpClient(settings.fastapi_core_mcp_url)
         # Searching via MCP
         results = await client.call_tool(
-            "search_knowledge", {"user_id": user_id, "query": identifier}, jwt=jwt
+            "search_knowledge", {"query": identifier}, jwt=jwt
         )
         if not results or "error" in str(results).lower():
             return f"Could not find any knowledge unit matching '{identifier}' to save the note to."
@@ -114,7 +114,7 @@ async def get_recent_reviews(jwt: str, limit: int = 5, user_id: str = "INJECTED"
     try:
         client = McpClient(settings.fastapi_core_mcp_url)
         # Call MCP for data
-        results = await client.call_tool("get_recent_reviews", {"user_id": user_id, "limit": limit}, jwt=jwt)
+        results = await client.call_tool("get_recent_reviews", {"limit": limit}, jwt=jwt)
 
         if not results:
             return "No recent reviews found."
@@ -132,7 +132,7 @@ async def get_database_schema(jwt: str, user_id: str = "INJECTED") -> str:
     """
     try:
         client = McpClient(settings.fastapi_core_mcp_url)
-        results = await client.call_tool("get_database_schema", {"user_id": user_id}, jwt=jwt)
+        results = await client.call_tool("get_database_schema", {}, jwt=jwt)
         return str(results)
     except Exception as e:
         logger.error(f"Error getting schema: {e}")
@@ -147,7 +147,7 @@ async def execute_read_only_sql(jwt: str, sql: str, user_id: str = "INJECTED") -
     """
     try:
         client = McpClient(settings.fastapi_core_mcp_url)
-        results = await client.call_tool("execute_read_only_sql", {"user_id": user_id, "sql": sql}, jwt=jwt)
+        results = await client.call_tool("execute_read_only_sql", {"sql": sql}, jwt=jwt)
         return str(results)
     except Exception as e:
         logger.error(f"Error executing SQL: {e}")

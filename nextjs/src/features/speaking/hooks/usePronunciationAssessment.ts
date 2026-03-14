@@ -6,6 +6,7 @@ import type {
     PronunciationAssessmentStatus,
     WordResult,
 } from '../types';
+import { speakingClient } from '@/services/speakingClient';
 
 // ─── Azure Speech Token Cache ─────────────────────────────────────────────────
 
@@ -17,12 +18,7 @@ async function getSpeechToken(): Promise<{ token: string; region: string }> {
         return { token: cachedToken.token, region: cachedToken.region };
     }
 
-    const response = await fetch('/api/speech-token');
-    if (!response.ok) {
-        throw new Error('Failed to fetch speech token');
-    }
-
-    const data = await response.json();
+    const data = await speakingClient.getSpeechToken();
     cachedToken = {
         token: data.token,
         region: data.region,

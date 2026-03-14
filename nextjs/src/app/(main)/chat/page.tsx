@@ -14,12 +14,7 @@ import { getKnowledgeUnit } from '@/features/knowledge/actions';
 import { HanaTime } from '@/lib/time';
 import { useChatSession } from '@/features/chat/hooks/useChatSession';
 import { VoiceRecorder } from '@/components/shared/VoiceRecorder';
-import {
-    listMemorySessions,
-    endMemorySession,
-    updateMemorySession,
-    type MemorySession,
-} from '@/lib/memory-client';
+import { AgentSession } from '@/types/chat';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,7 +55,7 @@ function ThreadItem({
     onRename,
     onDelete,
 }: {
-    session: MemorySession;
+    session: AgentSession;
     isActive: boolean;
     onSelect: () => void;
     onRename: (title: string) => void;

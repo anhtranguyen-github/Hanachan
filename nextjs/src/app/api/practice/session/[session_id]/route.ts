@@ -8,8 +8,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { recordPracticeAttempt, endPracticeSession, getPracticeStats } from '@/features/speaking/speakingService';
+import { getBearerFromCookieHeader, getBearerFromSupabaseCookie } from '../../../memory/_auth';
 
 export const dynamic = 'force-dynamic';
+
 
 /**
  * GET /api/practice/session/{session_id}
@@ -22,8 +24,11 @@ export async function GET(
     try {
         const sessionId = params.session_id;
 
-        // Get user from authorization header
-        const authHeader = req.headers.get('authorization');
+        // Get user from authorization header or cookies
+        const authHeader = req.headers.get('authorization') || 
+                          getBearerFromCookieHeader(req.headers.get('cookie')) ||
+                          (await getBearerFromSupabaseCookie());
+                          
         if (!authHeader?.startsWith('Bearer ')) {
             return NextResponse.json(
                 { success: false, error: 'Unauthorized' },
@@ -41,9 +46,15 @@ export async function GET(
                 auth: {
                     autoRefreshToken: false,
                     persistSession: false
+                },
+                global: {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
                 }
             }
         );
+
 
         const { data: { user }, error: authError } = await supabase.auth.getUser(token);
         
@@ -101,8 +112,11 @@ export async function POST(
     try {
         const sessionId = params.session_id;
 
-        // Get user from authorization header
-        const authHeader = req.headers.get('authorization');
+        // Get user from authorization header or cookies
+        const authHeader = req.headers.get('authorization') || 
+                          getBearerFromCookieHeader(req.headers.get('cookie')) ||
+                          (await getBearerFromSupabaseCookie());
+                          
         if (!authHeader?.startsWith('Bearer ')) {
             return NextResponse.json(
                 { success: false, error: 'Unauthorized' },
@@ -120,9 +134,15 @@ export async function POST(
                 auth: {
                     autoRefreshToken: false,
                     persistSession: false
+                },
+                global: {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
                 }
             }
         );
+
 
         const { data: { user }, error: authError } = await supabase.auth.getUser(token);
         
@@ -145,7 +165,8 @@ export async function POST(
         }
 
         // Record attempt using local service
-        const result = await recordPracticeAttempt(user.id, sessionId, sentence, word, score);
+        const result = await recordPracticeAttempt(user.id, sessionId, sentence, word, score, supabase);
+
 
         if (!result.success) {
             return NextResponse.json(
@@ -179,8 +200,11 @@ export async function DELETE(
     try {
         const sessionId = params.session_id;
 
-        // Get user from authorization header
-        const authHeader = req.headers.get('authorization');
+        // Get user from authorization header or cookies
+        const authHeader = req.headers.get('authorization') || 
+                          getBearerFromCookieHeader(req.headers.get('cookie')) ||
+                          (await getBearerFromSupabaseCookie());
+                          
         if (!authHeader?.startsWith('Bearer ')) {
             return NextResponse.json(
                 { success: false, error: 'Unauthorized' },
@@ -198,9 +222,15 @@ export async function DELETE(
                 auth: {
                     autoRefreshToken: false,
                     persistSession: false
+                },
+                global: {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
                 }
             }
         );
+
 
         const { data: { user }, error: authError } = await supabase.auth.getUser(token);
         
@@ -212,7 +242,8 @@ export async function DELETE(
         }
 
         // End session using local service
-        const result = await endPracticeSession(user.id, sessionId);
+        const result = await endPracticeSession(user.id, sessionId, supabase);
+
 
         if (!result.success) {
             return NextResponse.json(

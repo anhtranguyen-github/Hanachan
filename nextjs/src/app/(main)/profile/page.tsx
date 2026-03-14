@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { userClient } from '@/services/userClient';
 import { getUserProfile, updateUserProfile } from '@/features/auth/db';
 import { fetchUserDashboardStatsAction, fetchLevelStatsAction } from '@/features/learning/actions';
 import {
@@ -81,8 +82,8 @@ export default function ProfilePage() {
                 fetchUserDashboardStatsAction(user.id),
                 fetchLevelStatsAction(user.id, `level-${userLevel}`)
             ]);
-            const statsData = statsRes.data || {};
-            const levelStatsData = levelStatsRes.data || {};
+            const statsData = (statsRes.data || {}) as Record<string, any>;
+            const levelStatsData = (levelStatsRes.data || {}) as Record<string, any>;
 
             setProfile(profileData);
             setStats({ ...statsData, levelStats: levelStatsData });
@@ -107,11 +108,8 @@ export default function ProfilePage() {
         if (!user || memories) return;
         setLoadingMemories(true);
         try {
-            const res = await fetch(`/api/memory/profile?userId=${user.id}`);
-            if (res.ok) {
-                const data = await res.json();
-                setMemories(data);
-            }
+            const data = await userClient.getMemories(user.id);
+            setMemories(data);
         } catch (e) {
             setMemories({ goals: [], interests: [], facts: [], preferences: [] });
         } finally {

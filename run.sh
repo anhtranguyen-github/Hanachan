@@ -12,7 +12,7 @@ set -Eeuo pipefail
 #
 
 FRONTEND_PORT=${FRONTEND_PORT:-3000}
-BACKEND_PORT=${BACKEND_PORT:-8765}
+BACKEND_PORT=${BACKEND_PORT:-6100}
 MODE="${1:-dev}"   # dev | build | start (or prod)
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -195,6 +195,14 @@ case "$MODE" in
     PORT="$FRONTEND_PORT" pnpm run dev &
     ;;
   start|prod|product)
+    log "🚀 Starting core service on port 6200"
+    cd "$ROOT_DIR/fastapi-core"
+    uv run python -m uvicorn app.main:app \
+      --host 127.0.0.1 \
+      --port 6200 \
+      > "$ROOT_DIR/fastapi-core/core.log" 2>&1 &
+    CORE_PID=$!
+
     log "🚀 Starting backend on port $BACKEND_PORT"
     cd "$ROOT_DIR/fastapi-agents"
 
@@ -206,7 +214,7 @@ case "$MODE" in
     BACKEND_PID=$!
 
     log "⏳ Waiting for backend health..."
-    for i in {1..10}; do
+    for i in {1..15}; do
       if curl -sf "http://localhost:$BACKEND_PORT/api/v1/health" >/dev/null; then
         log "✅ Backend ready"
         break

@@ -30,6 +30,7 @@ import { useToastHelpers } from '@/components/shared/Toast';
 import { ErrorModal, useErrorModal } from '@/components/shared/ErrorModal';
 import { VideoUploadProgress } from '@/components/shared/VideoUploadProgress';
 import type { LibraryFilterBy, LibrarySortBy, CreateCategoryRequest } from '@/features/video/types';
+import { videoClient } from '@/services/videoClient';
 
 const CATEGORY_COLORS = [
   '#F4ACB7', '#A2D2FF', '#CDB4DB', '#B7E4C7', '#FFD6A5',
@@ -88,17 +89,7 @@ export default function VideoLibraryPage() {
 
   const handleAddVideo = useCallback(async (youtubeId: string) => {
     // First ensure video exists in DB
-    const res = await fetch('/api/videos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ youtube_id: youtubeId }),
-    });
-    
-    const data = await res.json();
-    
-    if (!res.ok) {
-      throw new Error(data.error || 'Failed to create video');
-    }
+    const data = await videoClient.ensureVideo(youtubeId);
     
     if (data.video) {
       const result = await addVideo({ video_id: data.video.id });

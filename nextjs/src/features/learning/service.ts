@@ -6,7 +6,7 @@ import { curriculumRepository } from '../knowledge/db';
 import { analyticsService } from '../analytics/service';
 import { getUserProfile, updateUserProfile } from '../auth/db';
 import { HanaTime } from '@/lib/time';
-import { coreClient } from '@/lib/core-client';
+import { coreClient } from '@/services/coreClient';
 
 export async function initializeSRS(userId: string, unitId: string, facets: string[]) {
     const initialStability = 0.166; // Approx 4 hours
@@ -30,7 +30,12 @@ export async function initializeSRS(userId: string, unitId: string, facets: stri
 
 export async function submitReview(userId: string, unitId: string, facet: string, rating: any, currentState: any, wrongCount: number = 0) {
     // 1. Call Core Authority
-    const response = await coreClient.submitReviewV2(unitId, facet, rating, wrongCount);
+    const response = await coreClient.submitReviewV2({
+        kuId: unitId,
+        facet,
+        rating,
+        wrongCount
+    }) as any;
 
     // 2. Track Analytics
     const isNew = currentState?.stage === 'new';
@@ -58,7 +63,7 @@ export async function startLessonSession(userId: string, level: number) {
     }
 
     // Call core authority
-    const response = await coreClient.startLessonSession(items.map((i: any) => i.ku_id));
+    const response = await coreClient.startLessonSession(items.map((i: any) => i.ku_id)) as any;
     const batch = { id: response.batch_id };
 
     return { items, batch };

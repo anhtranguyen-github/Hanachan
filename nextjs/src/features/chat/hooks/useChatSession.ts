@@ -4,17 +4,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { sendMessageAction, getSessionHistoryAction, createSessionAction, getUserSessionsAction } from '../actions';
 import { ChatMessage, ChatSession } from '../types';
-import {
-    createMemorySession,
-    endMemorySession,
-    listMemorySessions,
-    getMemorySession,
-    updateMemorySession,
-    type ChatThread,
-    type ChatThreadFull,
-} from '@/lib/memory-client';
+import { browserAgentsClient } from '@/services/browserAgentsClient';
+import { chatClient } from '@/services/chatClient';
 import { useAuth } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { AgentSession } from '@/types/chat';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -35,9 +29,9 @@ export function useChatSession(userId?: string, conversationId?: string) {
     const [isLoading, setIsLoading] = useState(false);
     const [sessions, setSessions] = useState<any[]>([]);
 
-        // Thread state (chat containers)
-        const [threads, setThreads] = useState<ChatThread[]>([]);
-        const [activeThread, setActiveThread] = useState<ChatThreadFull | null>(null);
+    // Thread state (chat containers)
+    const [threads, setThreads] = useState<AgentSession[]>([]);
+    const [activeThread, setActiveThread] = useState<AgentSession | null>(null);
     const [streaming, setStreaming] = useState<StreamingState>({ isStreaming: false, partial: '' });
     const [sessionTitle, setSessionTitle] = useState<string | null>(null);
     const [sessionSummary, setSessionSummary] = useState<string | null>(null);
@@ -83,7 +77,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
     const loadMemorySessions = useCallback(async () => {
         if (!userId) return;
         try {
-            const data = await listMemorySessions(userId);
+            const data = await browserAgentsClient.listThreads();
             setThreads(data);
         } catch {
             // Memory API may be offline
@@ -97,9 +91,12 @@ export function useChatSession(userId?: string, conversationId?: string) {
         if (!userId) return null;
         if (memorySessionIdRef.current) return memorySessionIdRef.current;
         try {
-            const sid = await createMemorySession(userId, {
-                supabase_session_id: conversationId ?? null,
+            const session = await browserAgentsClient.createThread({
+                config_override: {
+                    supabase_session_id: conversationId ?? null,
+                }
             });
+            const sid = session.id;
             memorySessionIdRef.current = sid;
             return sid;
         } catch {
@@ -112,7 +109,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
         const sid = memorySessionIdRef.current;
         if (!sid) return;
         try {
-            const data = await getMemorySession(sid);
+            const data = await browserAgentsClient.getThread(sid);
             if (data.title) setSessionTitle(data.title);
             if (data.summary) setSessionSummary(data.summary);
             setActiveThread(data);
@@ -128,9 +125,10 @@ export function useChatSession(userId?: string, conversationId?: string) {
     /** Load messages from a specific memory thread. */
     const loadThreadHistory = useCallback(async (memSessionId: string) => {
         try {
-            const data = await getMemorySession(memSessionId);
+            const data = (await browserAgentsClient.getThread(memSessionId)) as any;
             // Merge memory messages into the local messages state
-            const mapped: ChatMessage[] = data.messages.map(m => ({
+            const messages = data.messages || [];
+            const mapped: ChatMessage[] = messages.map((m: any) => ({
                 role: m.role as 'user' | 'assistant',
                 content: m.content,
                 timestamp: m.timestamp ?? new Date().toISOString(),
@@ -169,31 +167,14 @@ export function useChatSession(userId?: string, conversationId?: string) {
         abortControllerRef.current = new AbortController();
 
         try {
-            const { data: sessionData } = await supabase.auth.getSession();
-            const accessToken = sessionData?.session?.access_token;
-
-            const res = await fetch('/api/agent/chat/stream', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-                },
-                body: JSON.stringify({
-                    message: content,
-                    userId,
-                    sessionId: memSessionId,
-                    ttsEnabled,
-                }),
-                signal: abortControllerRef.current.signal,
+            const stream = await chatClient.streamChat({
+                message: content,
+                user_id: userId,
+                session_id: memSessionId,
+                tts_enabled: ttsEnabled,
             });
 
-            if (res.status === 401) {
-                openLoginModal();
-                throw new Error('Unauthorized');
-            }
-            if (!res.ok || !res.body) throw new Error(`Stream failed: ${res.status}`);
-
-            const reader = res.body.getReader();
+            const reader = stream.getReader();
             const decoder = new TextDecoder();
             let fullResponse = '';
             let buffer = '';
@@ -253,7 +234,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
             }
             setStreaming({ isStreaming: false, partial: '' });
         }
-    }, [userId, ensureMemorySession, refreshMemorySessionMeta, loadMemorySessions, openLoginModal]);
+    }, [userId, ensureMemorySession, refreshMemorySessionMeta, loadMemorySessions]);
 
     // ---------------------------------------------------------------------------
     // Regular (non-streaming) send message — kept for fallback/compatibility
@@ -307,7 +288,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
         const sid = memorySessionIdRef.current;
         if (!sid) return;
         try {
-            const result = await endMemorySession(sid, true);
+            const result = await browserAgentsClient.deleteThread(sid);
             setSessionTitle(result.title ?? null);
             setSessionSummary(result.summary ?? null);
         } catch {
@@ -322,7 +303,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
         const sid = memorySessionIdRef.current;
         if (!sid) return;
         try {
-            await updateMemorySession(sid, { title });
+            await browserAgentsClient.updateThread(sid, { title });
             setSessionTitle(title);
             await loadMemorySessions();
         } catch {

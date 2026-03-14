@@ -31,6 +31,10 @@ def get_current_user(token: HTTPAuthorizationCredentials = Depends(security)) ->
         payload = json.loads(payload_json)
 
         user_id = payload.get("sub")
+        if not user_id and payload.get("role") == "service_role":
+            # Default system/service user ID if sub is missing in service token
+            user_id = "00000000-0000-0000-0000-000000000000"
+
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token: missing sub claim")
 

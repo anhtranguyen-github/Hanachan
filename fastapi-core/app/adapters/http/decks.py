@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from supabase import Client, create_client
 
+from app.core.config import settings
 from app.auth.jwt import get_current_user_id
 from app.core.services.deck_service import DeckService
 
@@ -22,8 +23,8 @@ class DeckItem(BaseModel):
 
 
 def get_db_client() -> Client:
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_SERVICE_KEY")
+    url = settings.SUPABASE_URL
+    key = settings.SUPABASE_SERVICE_KEY
     return create_client(url, key)
 
 

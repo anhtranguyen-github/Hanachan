@@ -26,6 +26,7 @@ import type {
   DictationSessionStatus,
   DictationStats,
 } from './types';
+import { videoClient } from '@/services/videoClient';
 
 // ==========================================
 // VIDEO MANAGEMENT
@@ -52,10 +53,10 @@ export async function getOrCreateVideo(youtubeId: string): Promise<Video> {
   // Try to process subtitles
   // Architecture: Use Next.js API route instead of direct FastAPI call
   try {
-    console.log(`[VideoService] Fetching transcripts via API route for ${youtubeId}`);
-    const res = await fetch(`/api/videos/transcript/${youtubeId}`);
-    if (res.ok) {
-      const { transcript } = await res.json();
+    console.log(`[VideoService] Fetching transcripts via videoClient for ${youtubeId}`);
+    const { transcript } = await videoClient.getTranscript(youtubeId);
+
+    if (transcript) {
 
       const subtitleEntries = [];
       const wordFrequencies = new Map<string, any>();
@@ -101,8 +102,6 @@ export async function getOrCreateVideo(youtubeId: string): Promise<Video> {
       }
 
       console.log(`[VideoService] Processing for ${youtubeId} complete.`);
-    } else {
-      console.error(`[VideoService] Failed to fetch transcripts: ${res.status}`);
     }
   } catch (err) {
     console.error(`[VideoService] Error processing video ${youtubeId}:`, err);
@@ -503,29 +502,7 @@ export async function createDictationSession(
   settings?: DictationSettings
 ): Promise<DictationSession> {
   try {
-    const response = await fetch('/api/dictation/session', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        video_id: videoId,
-        settings,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Failed to create session' }));
-      return {
-        success: false,
-        video_id: videoId,
-        subtitles: [],
-        total_subtitles: 0,
-        error: error.error || 'Failed to create session',
-      };
-    }
-
-    return await response.json();
+    return await videoClient.createDictationSession(videoId, settings);
   } catch (error: unknown) {
     console.error('Error creating dictation session:', error);
     return {
@@ -548,29 +525,11 @@ export async function submitDictationAttempt(
   timeTakenMs: number = 0
 ): Promise<DictationAttemptResponse> {
   try {
-    const response = await fetch(`/api/dictation/session/${sessionId}/attempt`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        subtitle_id: subtitleId,
-        user_input: userInput,
-        time_taken_ms: timeTakenMs,
-      }),
+    return await videoClient.submitDictationAttempt(sessionId, {
+      subtitle_id: subtitleId,
+      user_input: userInput,
+      time_taken_ms: timeTakenMs,
     });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Failed to submit attempt' }));
-      return {
-        success: false,
-        is_complete: false,
-        remaining: 0,
-        error: error.error || 'Failed to submit attempt',
-      };
-    }
-
-    return await response.json();
   } catch (error: unknown) {
     console.error('Error submitting dictation attempt:', error);
     return {
@@ -587,20 +546,7 @@ export async function submitDictationAttempt(
  */
 export async function getDictationStats(): Promise<DictationStats> {
   try {
-    const response = await fetch('/api/dictation/stats');
-
-    if (!response.ok) {
-      return {
-        total_sessions: 0,
-        total_attempts: 0,
-        average_accuracy: 0,
-        videos_practiced: 0,
-        current_streak: 0,
-        best_accuracy: 0,
-      };
-    }
-
-    return await response.json();
+    return await videoClient.getDictationStats();
   } catch (error: unknown) {
     console.error('Error getting dictation stats:', error);
     return {

@@ -20,6 +20,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { Mic, Square, Loader2, MicOff } from 'lucide-react';
 import { clsx } from 'clsx';
+import { chatClient } from '@/services/chatClient';
 
 type RecorderState = 'idle' | 'recording' | 'processing' | 'error';
 
@@ -105,14 +106,9 @@ export function VoiceRecorder({ onTranscript, disabled = false, className }: Voi
             const formData = new FormData();
             formData.append('audio', blob, `recording.${ext}`);
 
-            const res = await fetch('/api/chat/transcribe', {
-                method: 'POST',
-                body: formData,
-            });
+            const data = await chatClient.transcribe(formData);
 
-            const data = await res.json();
-
-            if (!res.ok || !data.success) {
+            if (!data.success) {
                 throw new Error(data.error ?? 'Transcription failed');
             }
 

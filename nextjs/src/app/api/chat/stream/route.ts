@@ -15,26 +15,42 @@
  */
 
 import { NextRequest } from 'next/server';
+import { AGENTS_BASE_URL } from '@/config/env';
 import { getBearerFromCookieHeader, getBearerFromSupabaseCookie } from '../../memory/_auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
-    const { message, userId, sessionId, ttsEnabled } = await req.json();
+    const body = await req.json();
+    const message = body.message;
+    const userId = body.userId || body.user_id;
+    const sessionId = body.sessionId || body.session_id;
+    const ttsEnabled = body.ttsEnabled ?? body.tts_enabled;
 
     if (!message || !userId) {
+        console.error('[BFF] Missing message or userId:', { message: !!message, userId: !!userId });
         return new Response(
             `data: ${JSON.stringify({ type: 'error', message: 'message and userId are required' })}\n\n`,
             { status: 400, headers: { 'Content-Type': 'text/event-stream' } },
         );
     }
 
-    const authHeader =
-        req.headers.get('authorization') ||
-        getBearerFromCookieHeader(req.headers.get('cookie')) ||
-        (await getBearerFromSupabaseCookie());
+    let authHeader = req.headers.get('authorization');
+    if (authHeader) console.log('[BFF] Auth from header');
+    
+    if (!authHeader) {
+        authHeader = getBearerFromCookieHeader(req.headers.get('cookie'));
+        if (authHeader) console.log('[BFF] Auth from cookie header');
+    }
+
+    if (!authHeader) {
+        authHeader = await getBearerFromSupabaseCookie();
+        if (authHeader) console.log('[BFF] Auth from supabase cookie store');
+    }
+
     if (!authHeader?.startsWith('Bearer ')) {
+        console.error('[BFF] Auth failed: No bearer token found');
         return new Response(
             `data: ${JSON.stringify({ type: 'error', message: 'Authorization Bearer token required' })}\n\n`,
             { status: 401, headers: { 'Content-Type': 'text/event-stream' } },
@@ -45,16 +61,7 @@ export async function POST(req: NextRequest) {
     let resolvedSessionId: string | undefined = sessionId;
 
     try {
-        // Agent API base URL (no trailing /api/v1).
-        // - AGENTS_API_URL is expected to be a bare base (e.g. http://localhost:8765)
-        // - MEMORY_API_URL may already include /api/v1, so we strip it.
-        const normalizedMemoryUrl = process.env.MEMORY_API_URL
-            ? process.env.MEMORY_API_URL.replace(/\/api\/v1\/?$/, '')
-            : undefined;
-        const baseUrl =
-            (process.env.AGENTS_API_URL && process.env.AGENTS_API_URL.replace(/\/+$/, '')) ||
-            (normalizedMemoryUrl && normalizedMemoryUrl.replace(/\/+$/, '')) ||
-            'http://127.0.0.1:8765';
+        const baseUrl = AGENTS_BASE_URL;
         const upstreamRes = await fetch(`${baseUrl}/api/v1/chat/stream`, {
             method: 'POST',
             headers: {
@@ -72,6 +79,7 @@ export async function POST(req: NextRequest) {
 
         if (!upstreamRes.ok || !upstreamRes.body) {
             const errText = await upstreamRes.text().catch(() => '');
+            console.error('[BFF] Upstream error:', upstreamRes.status, errText);
             const errEvent = `data: ${JSON.stringify({ type: 'error', message: `Upstream error: ${upstreamRes.status} ${errText}`.trim() })}\n\n`;
             return new Response(errEvent, { status: 502, headers: { 'Content-Type': 'text/event-stream' } });
         }
@@ -123,6 +131,7 @@ export async function POST(req: NextRequest) {
             },
         });
     } catch (err: unknown) {
+        console.error('[BFF] Stream Proxy Exception:', err);
         const errEvent = `data: ${JSON.stringify({ type: 'error', message: (err instanceof Error ? err.message : String(err)) })}\n\n`;
         return new Response(errEvent, {
             status: 502,

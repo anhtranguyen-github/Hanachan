@@ -15,6 +15,7 @@ def make_llm(temperature: float = 0, streaming: bool = False) -> ChatOpenAI:
         model=settings.llm_model,
         temperature=temperature,
         openai_api_key=settings.openai_api_key,
+        base_url=settings.openai_api_base,
         streaming=streaming,
         request_timeout=25,  # fail fast — don't block workers
         max_retries=2,  # built-in retry with exponential backoff
@@ -26,6 +27,7 @@ def make_embedding_model() -> OpenAIEmbeddings:
     return OpenAIEmbeddings(
         model=settings.embedding_model,
         openai_api_key=settings.openai_api_key,
+        base_url=settings.openai_api_base,
         request_timeout=10,
         max_retries=2,
     )

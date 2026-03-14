@@ -22,10 +22,12 @@ async def memory_worker_node(state: AgentState) -> dict[str, Any]:
         SystemMessage(content=(
             "You are a Memory Specialist for Hanachan.\n"
             "Your goal is to retrieve past conversation context and personal facts about the user.\n"
-            "Use 'get_episodic_memory' for history and 'get_semantic_facts' for specific user traits/interests."
+            "Use 'get_episodic_memory' for history and 'get_semantic_facts' for specific user traits/interests.\n"
+            "Review previous tool outputs before calling tools again to avoid loops."
         )),
-        HumanMessage(content=state["user_input"])
     ]
+    # Include existing messages to provide context of what's already been retrieved
+    prompt.extend(state["messages"])
     
     response = await llm.ainvoke(prompt)
     return {"messages": [response], "thought": "Memory worker identifies relevant retrieval tools."}
@@ -40,10 +42,13 @@ async def sql_worker_node(state: AgentState) -> dict[str, Any]:
             "You are a SQL Expert for Hanachan.\n"
             "Your goal is to query the Supabase database for structured information.\n"
             "1. ALWAYS call 'get_database_schema' first if you don't know the table structure.\n"
-            "2. Then use 'execute_read_only_sql' to fetch the data."
+            "2. Then use 'execute_read_only_sql' to fetch the data.\n"
+            "Review previous tool outputs to avoid redundant queries."
         )),
-        HumanMessage(content=state["user_input"])
     ]
+    # Include existing messages
+    prompt.extend(state["messages"])
     
     response = await llm.ainvoke(prompt)
     return {"messages": [response], "thought": "SQL worker identifies necessary database queries."}
+

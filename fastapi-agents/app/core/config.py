@@ -24,6 +24,7 @@ class Settings(BaseSettings):
 
     # OpenAI
     openai_api_key: str = ""
+    openai_api_base: str | None = None
     llm_model: str = "gpt-4o"
     embedding_model: str = "text-embedding-3-small"
     embedding_dimensions: int = 1536  # text-embedding-3-small dimension
@@ -60,8 +61,10 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = 20
 
     # FastAPI Core
-    fastapi_core_url: str = Field("http://fastapi-core:6100/api/v1", alias="FASTAPI_CORE_URL")
-    fastapi_core_mcp_url: str = Field("http://fastapi-core:6100/mcp/sse", alias="FASTAPI_CORE_MCP_URL")
+    fastapi_core_url: str = Field("http://fastapi-core:6200/api/v1", alias="FASTAPI_CORE_URL")
+    fastapi_core_mcp_url: str = Field("http://fastapi-core:6200/mcp/sse", alias="FASTAPI_CORE_MCP_URL")
+    admin_emails: list[str] = ["admin@hanachan.test"]
+
 
     @field_validator("allowed_origins", mode="before")
     @classmethod

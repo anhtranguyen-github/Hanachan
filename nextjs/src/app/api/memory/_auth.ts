@@ -17,10 +17,18 @@ function parseCookieHeader(cookieHeader: string): Record<string, string> {
 export function getBearerFromCookieHeader(cookieHeader: string | null | undefined): string | null {
   if (!cookieHeader) return null;
   const parsedCookies = parseCookieHeader(cookieHeader);
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const projectRef = supabaseUrl.split('.')[0].split('//')[1] || '';
+  const matchSuffix = '-auth-token';
+
   for (const [name, value] of Object.entries(parsedCookies)) {
-    if (!name.includes('-auth-token')) continue;
+    const isMatch = projectRef 
+        ? name === `sb-${projectRef}-auth-token` || name.includes(`sb-${projectRef}-auth-token`)
+        : name.includes(matchSuffix);
+        
+    if (!isMatch) continue;
     try {
-      let raw = value;
+      let raw = value as string;
       if (raw.startsWith('base64-')) {
         raw = Buffer.from(raw.slice(7), 'base64').toString('utf8');
       }
@@ -40,4 +48,3 @@ export function getBearerFromCookieHeader(cookieHeader: string | null | undefine
 export async function getBearerFromSupabaseCookie(): Promise<string | null> {
   return getBearerFromStore();
 }
-
