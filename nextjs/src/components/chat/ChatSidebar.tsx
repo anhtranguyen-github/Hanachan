@@ -17,7 +17,8 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useChat } from '@/features/chat/context/ChatContext';
-import { MemorySession, updateMemorySession, endMemorySession } from '@/lib/memory-client';
+import { AgentSession } from '@/types/chat';
+import { browserAgentsClient } from '@/services/browserAgentsClient';
 
 // ─── Formatting Helper ────────────────────────────────────────────────────────
 
@@ -45,7 +46,7 @@ function ThreadItem({
     onRename,
     onDelete,
 }: {
-    session: MemorySession;
+    session: AgentSession;
     isActive: boolean;
     onSelect: () => void;
     onRename: (title: string) => void;
@@ -82,7 +83,8 @@ function ThreadItem({
     const title = session.title || 'Untitled Thread';
     const subtitle = session.summary
         ? session.summary.slice(0, 60) + (session.summary.length > 60 ? '…' : '')
-        : `${session.message_count} message${session.message_count !== 1 ? 's' : ''}`;
+        : `${session.message_count || 0} message${(session.message_count || 0) !== 1 ? 's' : ''}`;
+
 
     return (
         <div
@@ -193,7 +195,7 @@ export function ChatSidebar({ isOpen, onToggle }: { isOpen: boolean; onToggle: (
 
     useEffect(() => {
         if (activeThread) {
-            setActiveId(activeThread.session_id);
+            setActiveId(activeThread.id);
         } else {
             setActiveId(null);
         }
@@ -204,21 +206,21 @@ export function ChatSidebar({ isOpen, onToggle }: { isOpen: boolean; onToggle: (
         setActiveId(null);
     };
 
-    const handleSelectThread = async (session: MemorySession) => {
-        setActiveId(session.session_id);
-        await loadThreadHistory(session.session_id);
+    const handleSelectThread = async (session: AgentSession) => {
+        setActiveId(session.id);
+        await loadThreadHistory(session.id);
     };
 
     const handleRename = async (sessionId: string, newTitle: string) => {
         try {
-            await updateMemorySession(sessionId, { title: newTitle });
+            await browserAgentsClient.updateThread(sessionId, { title: newTitle });
             await loadMemorySessions();
         } catch { /* ignore */ }
     };
 
     const handleDelete = async (sessionId: string) => {
         try {
-            await endMemorySession(sessionId, false);
+            await browserAgentsClient.deleteThread(sessionId);
             await loadMemorySessions();
             if (activeId === sessionId) {
                 setActiveId(null);
@@ -291,12 +293,12 @@ export function ChatSidebar({ isOpen, onToggle }: { isOpen: boolean; onToggle: (
                     <div className="h-full overflow-y-auto custom-scrollbar p-4 space-y-1.5">
                         {threads.map(session => (
                             <ThreadItem
-                                key={session.session_id}
+                                key={session.id}
                                 session={session}
-                                isActive={activeId === session.session_id}
+                                isActive={activeId === session.id}
                                 onSelect={() => handleSelectThread(session)}
-                                onRename={(title) => handleRename(session.session_id, title)}
-                                onDelete={() => handleDelete(session.session_id)}
+                                onRename={(title) => handleRename(session.id, title)}
+                                onDelete={() => handleDelete(session.id)}
                             />
                         ))}
                     </div>

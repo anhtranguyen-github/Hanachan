@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from supabase import Client, create_client
 
+from app.core.config import settings
 from app.auth.jwt import get_current_user_id
 from app.core.services.chat_service import ChatService
 
@@ -21,8 +22,8 @@ class ChatSessionUpdatePayload(BaseModel):
 
 
 def get_chat_service() -> ChatService:
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_SERVICE_KEY")
+    url = settings.SUPABASE_URL
+    key = settings.SUPABASE_SERVICE_KEY
     client: Client = create_client(url, key)
     return ChatService(client)
 
@@ -49,10 +50,13 @@ async def get_session(
     user_id: str = Depends(get_current_user_id),
     service: ChatService = Depends(get_chat_service),
 ):
-    res = await service.get_chat_session(user_id, session_id)
-    if not res:
-        raise HTTPException(status_code=404, detail="Session not found")
-    return res
+    try:
+        res = await service.get_chat_session(user_id, session_id)
+        if not res:
+            raise HTTPException(status_code=404, detail="Session not found")
+        return res
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
 
 @router.patch("/sessions/{session_id}")
@@ -62,7 +66,10 @@ async def update_session(
     user_id: str = Depends(get_current_user_id),
     service: ChatService = Depends(get_chat_service),
 ):
-    return await service.update_chat_session(user_id, session_id, payload.title, payload.summary)
+    try:
+        return await service.update_chat_session(user_id, session_id, payload.title, payload.summary)
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
 
 @router.delete("/sessions/{session_id}")
@@ -71,7 +78,10 @@ async def delete_session(
     user_id: str = Depends(get_current_user_id),
     service: ChatService = Depends(get_chat_service),
 ):
-    return await service.delete_chat_session(user_id, session_id)
+    try:
+        return await service.delete_chat_session(user_id, session_id)
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
 
 @router.post("/sessions/{session_id}/messages")
@@ -93,4 +103,7 @@ async def get_messages(
     user_id: str = Depends(get_current_user_id),
     service: ChatService = Depends(get_chat_service),
 ):
-    return await service.get_chat_messages(user_id, session_id)
+    try:
+        return await service.get_chat_messages(user_id, session_id)
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))

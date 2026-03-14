@@ -41,7 +41,6 @@ class ChatService:
             .insert(
                 {
                     "session_id": session_id,
-                    "user_id": user_id,
                     "role": role,
                     "content": content,
                     "created_at": datetime.utcnow().isoformat(),
@@ -70,21 +69,41 @@ class ChatService:
     async def list_chat_sessions(self, user_id: str) -> list[dict[str, Any]]:
         res = (
             self.client.table("chat_sessions")
-            .select("*")
+            .select("id, title, summary, updated_at, chat_messages(count)")
             .eq("user_id", user_id)
             .order("updated_at", desc=True)
             .execute()
         )
-        return res.data
+
+        data = res.data
+        for doc in data:
+            if "chat_messages" in doc and isinstance(doc["chat_messages"], list):
+                doc["message_count"] = (
+                    doc["chat_messages"][0].get("count", 0) if doc["chat_messages"] else 0
+                )
+            else:
+                doc["message_count"] = 0
+        return data
+
 
     async def get_chat_messages(
         self, user_id: str, session_id: str, limit: int = 50
     ) -> list[dict[str, Any]]:
+        # Verify ownership via chat_sessions
+        sess = (
+            self.client.table("chat_sessions")
+            .select("user_id")
+            .eq("id", session_id)
+            .single()
+            .execute()
+        )
+        if sess.data and sess.data["user_id"] != user_id:
+            raise ValueError("Unauthorized: User does not own this session")
+
         res = (
             self.client.table("chat_messages")
             .select("*")
             .eq("session_id", session_id)
-            .eq("user_id", user_id)
             .order("created_at", desc=False)
             .limit(limit)
             .execute()

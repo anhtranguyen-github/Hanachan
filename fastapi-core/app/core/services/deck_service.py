@@ -4,9 +4,12 @@ from typing import Any
 from supabase import Client, create_client
 
 
+from app.core.config import settings
+
+
 def get_db_client() -> Client:
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_SERVICE_KEY")
+    url = settings.SUPABASE_URL
+    key = settings.SUPABASE_SERVICE_KEY
     return create_client(url, key)
 
 

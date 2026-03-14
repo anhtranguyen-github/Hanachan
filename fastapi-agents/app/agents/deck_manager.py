@@ -28,7 +28,7 @@ async def create_user_deck(
     try:
         client = McpClient(settings.fastapi_core_mcp_url)
         result = await client.call_tool(
-            "create_deck", {"user_id": user_id, "name": name, "description": description}, jwt=jwt
+            "create_deck", {"name": name, "description": description}, jwt=jwt
         )
         if isinstance(result, str) and "Error" in result:
             return result
@@ -47,7 +47,7 @@ async def list_my_decks(jwt: str, user_id: str = "INJECTED") -> str:
     """
     try:
         client = McpClient(settings.fastapi_core_mcp_url)
-        decks_str = await client.call_tool("list_decks", {"user_id": user_id}, jwt=jwt)
+        decks_str = await client.call_tool("list_decks", {}, jwt=jwt)
 
         if not decks_str or decks_str == "[]" or decks_str == "None":
             return "You don't have any custom decks yet. Would you like to create one?"
@@ -71,7 +71,7 @@ async def add_to_deck(
             UUID(deck_name_or_id)
             deck_id = deck_name_or_id
         except ValueError:
-            decks_str = await client.call_tool("list_decks", {"user_id": user_id}, jwt=jwt)
+            decks_str = await client.call_tool("list_decks", {}, jwt=jwt)
             # Simplistic fallback check, letting core handle exact name lookups if implemented or expecting ID.
             import ast
 
@@ -87,7 +87,6 @@ async def add_to_deck(
         await client.call_tool(
             "add_to_deck",
             {
-                "user_id": user_id,
                 "deck_id": str(deck_id),
                 "item_identifier": item_identifier,
                 "item_type": item_type,
@@ -113,7 +112,7 @@ async def remove_from_deck(
             UUID(deck_name_or_id)
             deck_id = deck_name_or_id
         except ValueError:
-            decks_str = await client.call_tool("list_decks", {"user_id": user_id}, jwt=jwt)
+            decks_str = await client.call_tool("list_decks", {}, jwt=jwt)
             import ast
 
             try:
@@ -128,7 +127,6 @@ async def remove_from_deck(
         await client.call_tool(
             "remove_from_deck",
             {
-                "user_id": user_id,
                 "deck_id": str(deck_id),
                 "item_identifier": item_identifier,
                 "item_type": item_type,
@@ -152,7 +150,7 @@ async def view_deck_contents(deck_name_or_id: str, jwt: str, user_id: str = "INJ
             UUID(deck_name_or_id)
             deck_id = deck_name_or_id
         except ValueError:
-            decks_str = await client.call_tool("list_decks", {"user_id": user_id}, jwt=jwt)
+            decks_str = await client.call_tool("list_decks", {}, jwt=jwt)
             import ast
 
             try:
@@ -165,7 +163,7 @@ async def view_deck_contents(deck_name_or_id: str, jwt: str, user_id: str = "INJ
                 return f"Could not parse decks or find deck named '{deck_name_or_id}'."
 
         result = await client.call_tool(
-            "view_deck_contents", {"user_id": user_id, "deck_id": str(deck_id)}, jwt=jwt
+            "view_deck_contents", {"deck_id": str(deck_id)}, jwt=jwt
         )
         return f"Contents of deck {deck_id}: {result}"
     except Exception as e:

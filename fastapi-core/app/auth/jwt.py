@@ -16,7 +16,9 @@ _JWKS_TTL_SECONDS = 10 * 60
 
 
 async def _get_jwks() -> dict[str, Any]:
-    if not SUPABASE_URL:
+    from app.core.config import settings
+
+    if not settings.SUPABASE_URL:
         raise HTTPException(status_code=500, detail="SUPABASE_URL is not configured")
 
     now = time.time()
@@ -25,7 +27,7 @@ async def _get_jwks() -> dict[str, Any]:
     if cached and (now - fetched_at) < _JWKS_TTL_SECONDS:
         return cached
 
-    url = f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json"
+    url = f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/.well-known/jwks.json"
     async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.get(url)
         resp.raise_for_status()

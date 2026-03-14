@@ -3,6 +3,7 @@ import os
 from fastapi import APIRouter, Depends, HTTPException
 from supabase import Client, create_client
 
+from app.core.config import settings
 from app.adapters.supabase.reading_repo import SupabaseReadingRepository
 from app.auth.jwt import get_current_user_id
 from app.core.reading.errors import ReadingCoreError
@@ -12,11 +13,14 @@ from app.core.reading.services import ReadingService
 router = APIRouter(prefix="/reading", tags=["reading"])
 
 
+def get_db_client() -> Client:
+    url = settings.SUPABASE_URL
+    key = settings.SUPABASE_SERVICE_KEY
+    return create_client(url, key)
+
+
 # Dependency injection for the service
-def get_reading_service() -> ReadingService:
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_ANON_KEY")  # RLS enforced, so anon key is fine
-    client: Client = create_client(url, key)
+def get_reading_service(client: Client = Depends(get_db_client)) -> ReadingService:
     repo = SupabaseReadingRepository(client)
     return ReadingService(repo)
 

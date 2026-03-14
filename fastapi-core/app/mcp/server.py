@@ -10,9 +10,10 @@ from pydantic import BaseModel, ConfigDict, Field
 from supabase import Client, create_client
 
 from app.auth.middleware import get_user_id_from_request
-from app.mcp.tools.homework import get_homework
 from app.mcp.tools.profile import get_my_profile
 from app.mcp.tools.progress import get_learning_progress
+from app.mcp.tools.homework import get_homework
+from app.auth.context import get_current_user_id
 
 
 class ToolCallRequest(BaseModel):
@@ -28,12 +29,13 @@ class ToolCallResponse(BaseModel):
 ToolFn = Callable[[Client, str, dict[str, Any]], Awaitable[Any]]
 
 def _get_supabase() -> Client:
-    url = os.getenv("SUPABASE_URL", "")
-    key = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_KEY", "")
+    from app.core.config import settings
+    url = settings.SUPABASE_URL
+    key = settings.SUPABASE_SERVICE_KEY
     if not url or not key:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Supabase config missing (SUPABASE_URL and SUPABASE_SERVICE_KEY/SUPABASE_KEY required)",
+            detail="Supabase config missing (SUPABASE_URL and SUPABASE_SERVICE_KEY required)",
         )
     return create_client(url, key)
 
@@ -83,61 +85,7 @@ def _apply_sql_limit(sql: str, default_limit: int = 100) -> str:
     return sql
 
 
-async def _tool_get_my_profile(sb: Client, user_id: str, _args: dict[str, Any]) -> Any:
-    return await get_my_profile(supabase=sb, user_id=user_id)
-
-
-async def _tool_get_learning_progress(sb: Client, user_id: str, _args: dict[str, Any]) -> Any:
-    return await get_learning_progress(supabase=sb, user_id=user_id)
-
-
-async def _tool_get_homework(sb: Client, user_id: str, _args: dict[str, Any]) -> Any:
-    return await get_homework(supabase=sb, user_id=user_id)
-
-
-TOOLS: dict[str, ToolFn] = {
-    # Security constraint: these tools do NOT accept user_id in arguments.
-    "get_my_profile": _tool_get_my_profile,
-    "get_learning_progress": _tool_get_learning_progress,
-    "get_homework": _tool_get_homework,
-}
-
-
-router = APIRouter(prefix="/mcp", tags=["MCP"])
-
-
-@router.get("/tools")
-async def list_tools() -> dict[str, Any]:
-    return {"tools": sorted(TOOLS.keys())}
-
-
-@router.post("/tools/{tool_name}", response_model=ToolCallResponse)
-async def call_tool(tool_name: str, body: ToolCallRequest, request: Request) -> ToolCallResponse:
-    """
-    MCP tool call endpoint.
-
-    - Verifies the caller is authenticated (user_id comes from verified JWT).
-    - Does NOT accept `user_id` as an argument.
-    - Ensures tools can only act on the authenticated user.
-    """
-    tool = TOOLS.get(tool_name)
-    if not tool:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown tool")
-
-    # Security: enforce that user identity comes ONLY from JWT.
-    if "user_id" in body.arguments or "userId" in body.arguments:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="user_id must not be provided as a tool argument",
-        )
-
-    user_id = get_user_id_from_request(request)
-    sb = _get_supabase()
-    result = await tool(sb, user_id, body.arguments)
-    return ToolCallResponse(tool_name=tool_name, result=result)
-
 from mcp.server.fastmcp import FastMCP
-
 from app.adapters.http.learning import get_learning_service
 from app.adapters.http.reading import get_reading_service
 from app.core.reading.models import AnswerSubmission
@@ -145,36 +93,64 @@ from app.core.services.deck_service import DeckService
 
 mcp = FastMCP("hanachan-core-mcp")
 
+# CORE TOOLS
+@mcp.tool()
+async def get_my_profile():
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
+    sb = _get_supabase()
+    return await get_my_profile(supabase=sb, user_id=user_id)
+
+
+@mcp.tool()
+async def get_homework():
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
+    sb = _get_supabase()
+    return await get_homework(supabase=sb, user_id=user_id)
+
 
 # DECK TOOLS
 @mcp.tool()
-async def create_deck(user_id: str, name: str, description: str | None = None):
+async def create_deck(name: str, description: str | None = None):
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
     return await DeckService.create_deck(user_id, name, description)
 
 
 @mcp.tool()
-async def list_decks(user_id: str):
+async def list_decks():
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
     return await DeckService.list_decks(user_id)
 
 
 @mcp.tool()
-async def add_to_deck(user_id: str, deck_id: str, item_identifier: str, item_type: str = "ku"):
+async def add_to_deck(deck_id: str, item_identifier: str, item_type: str = "ku"):
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
     return await DeckService.add_deck_item(user_id, deck_id, item_identifier, item_type)
 
 
 @mcp.tool()
-async def remove_from_deck(user_id: str, deck_id: str, item_identifier: str, item_type: str = "ku"):
+async def remove_from_deck(deck_id: str, item_identifier: str, item_type: str = "ku"):
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
     await DeckService.remove_deck_item(user_id, deck_id, item_identifier, item_type)
     return "successfully removed"
 
 
 @mcp.tool()
-async def view_deck_contents(user_id: str, deck_id: str):
+async def view_deck_contents(deck_id: str):
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
     return await DeckService.view_deck_contents(user_id, deck_id)
 
 
 @mcp.tool()
-async def get_learning_progress(user_id: str, identifier: str):
+async def get_learning_progress(identifier: str):
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
     service = get_learning_service()
     data = await service.get_ku_progress(user_id, identifier)
     # convert Pydantic model to dict if needed for MCP JSON serialization
@@ -182,20 +158,27 @@ async def get_learning_progress(user_id: str, identifier: str):
 
 
 @mcp.tool()
-async def search_knowledge(user_id: str, query: str):
+async def search_knowledge(query: str):
+    # Knowledge search is public-ish but we still want the user context for logging/future RLS
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
     service = get_learning_service()
     results = await service.search_knowledge(query, 5)
     return [r.dict() for r in results]
 
 
 @mcp.tool()
-async def get_recent_reviews(user_id: str, limit: int = 5):
+async def get_recent_reviews(limit: int = 5):
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
     # Dummy implementation parity with REST route
     return []
 
 
 @mcp.tool()
-async def add_ku_note(user_id: str, ku_id: str, note_content: str):
+async def add_ku_note(ku_id: str, note_content: str):
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
     service = get_learning_service()
     await service.add_note(user_id, ku_id, note_content)
     return "note added"
@@ -204,12 +187,13 @@ async def add_ku_note(user_id: str, ku_id: str, note_content: str):
 # READING TOOLS
 @mcp.tool()
 async def submit_reading_answer(
-    user_id: str,
     exercise_id: str,
     question_index: int,
     user_answer: str,
     time_spent_seconds: int = 0,
 ):
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
     service = get_reading_service()
     submission = AnswerSubmission(
         exercise_id=exercise_id,
@@ -223,35 +207,39 @@ async def submit_reading_answer(
 
 # CHAT TOOLS
 @mcp.tool()
-async def upsert_chat_session(user_id: str, session_id: str):
+async def upsert_chat_session(session_id: str):
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
     from app.adapters.http.chat import get_chat_service
-
     service = get_chat_service()
     return await service.upsert_chat_session(user_id, session_id)
 
 
 @mcp.tool()
-async def add_chat_message(user_id: str, session_id: str, role: str, content: str):
+async def add_chat_message(session_id: str, role: str, content: str):
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
     from app.adapters.http.chat import get_chat_service
-
     service = get_chat_service()
     return await service.add_chat_message(user_id, session_id, role, content)
 
 
 @mcp.tool()
-async def get_chat_messages(user_id: str, session_id: str):
+async def get_chat_messages(session_id: str):
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
     from app.adapters.http.chat import get_chat_service
-
     service = get_chat_service()
     return await service.get_chat_messages(user_id, session_id)
 
 
 @mcp.tool()
 async def update_chat_session(
-    user_id: str, session_id: str, title: str | None = None, summary: str | None = None
+    session_id: str, title: str | None = None, summary: str | None = None
 ):
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
     from app.adapters.http.chat import get_chat_service
-
     service = get_chat_service()
     return await service.update_chat_session(user_id, session_id, title, summary)
 
@@ -259,8 +247,11 @@ async def update_chat_session(
 # NEW TEXT-TO-SQL TOOLS
 
 @mcp.tool()
-async def get_database_schema(user_id: str):
+async def get_database_schema():
     """Retrieves the public schema structure (tables, columns, types)."""
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
+
     pool = await _get_db_pool()
     query = """
     SELECT 
@@ -295,8 +286,11 @@ async def get_database_schema(user_id: str):
 
 
 @mcp.tool()
-async def execute_read_only_sql(user_id: str, sql: str):
+async def execute_read_only_sql(sql: str):
     """Executes a read-only SELECT query against the database."""
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
+
     if not _is_safe_sql(sql):
         return {"error": "SQL injection detected or forbidden mutating keyword used. Only SELECT/WITH allowed."}
     
@@ -305,12 +299,14 @@ async def execute_read_only_sql(user_id: str, sql: str):
     
     try:
         async with pool.acquire() as conn:
-            # We use a transaction to be extra safe, although the user should also 
-            # set up a readonly role at the DB level.
             async with conn.transaction():
-                # Potential extra safety: SET TRANSACTION READ ONLY;
+                # Enforce RLS by setting the claims
+                claims_json = f'{{"sub": "{user_id}"}}'
+                await conn.execute(f"SELECT set_config('request.jwt.claims', '{claims_json}', true)")
+                
                 await conn.execute("SET TRANSACTION READ ONLY")
                 rows = await conn.fetch(sql)
                 return [dict(r) for r in rows]
+
     except Exception as e:
         return {"error": str(e)}

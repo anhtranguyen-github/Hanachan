@@ -80,7 +80,11 @@ async def run_consolidation(
 async def seed_test_data(
     current_user: dict[str, Any] = Depends(get_current_user),
 ):
+    if current_user.get("email") not in settings.admin_emails:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
     user_id = current_user["id"]
+
     await run_in_threadpool(
         ep_mem.add_episodic_memory,
         user_id,
@@ -129,7 +133,11 @@ async def seed_test_data(
 async def clear_test_data(
     current_user: dict[str, Any] = Depends(get_current_user),
 ):
+    if current_user.get("email") not in settings.admin_emails:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
     user_id = current_user["id"]
+
     ep_count = await run_in_threadpool(ep_mem.clear_episodic_memory, user_id)
     await run_in_threadpool(sem_mem.clear_semantic_memory, user_id)
 

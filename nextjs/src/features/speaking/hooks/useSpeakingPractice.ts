@@ -9,6 +9,7 @@ import type {
     PronunciationAssessmentResult,
     PromptDifficulty,
 } from '../types';
+import { speakingClient } from '@/services/speakingClient';
 
 
 export interface UseSpeakingPracticeReturn {
@@ -57,31 +58,7 @@ export function useSpeakingPractice(): UseSpeakingPracticeReturn {
         setError(null);
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const params = new URLSearchParams();
-            if (targetDifficulty) {
-                params.append('target_difficulty', targetDifficulty);
-            }
-
-            const response = await fetch(`/api/practice/session?${params}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(session?.access_token && {
-                        'Authorization': `Bearer ${session.access_token}`,
-                    }),
-                },
-                body: JSON.stringify({
-                    target_difficulty: targetDifficulty,
-                }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || 'Failed to create session');
-            }
-
-            const data: PracticeSessionData = await response.json();
+            const data: PracticeSessionData = await speakingClient.createSession(1, targetDifficulty ? [targetDifficulty] : []);
 
             if (!data.success) {
                 throw new Error(data.error || 'Failed to create session');
@@ -118,34 +95,15 @@ export function useSpeakingPractice(): UseSpeakingPracticeReturn {
         if (!sessionId) return;
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
             const currentSentence = sentences[currentIndex];
             if (!currentSentence) return;
 
-            const response = await fetch(`/api/practice/session/${sessionId}/record`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(session?.access_token && {
-                        'Authorization': `Bearer ${session.access_token}`,
-                    }),
-                },
-                body: JSON.stringify({
-                    session_id: sessionId,
-                    sentence: currentSentence.japanese,
-                    score: score,
-                    word: word || currentSentence.source_word,
-                }),
+            const data = await speakingClient.recordAttempt(sessionId, {
+                session_id: sessionId,
+                sentence: currentSentence.japanese,
+                score: score,
+                word: word || currentSentence.source_word,
             });
-
-            if (!response.ok) {
-                // If API fails, calculate feedback locally
-                const feedback = calculateLocalFeedback(score);
-                setLastFeedback(feedback);
-                return;
-            }
-
-            const data = await response.json();
 
             // Update state based on feedback
             if (data.feedback) {
@@ -173,15 +131,7 @@ export function useSpeakingPractice(): UseSpeakingPracticeReturn {
     const endSession = useCallback(async () => {
         if (sessionId) {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                await fetch(`/api/practice/session/${sessionId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        ...(session?.access_token && {
-                            'Authorization': `Bearer ${session.access_token}`,
-                        }),
-                    },
-                });
+                await speakingClient.completeSession(sessionId);
             } catch (err) {
                 console.error('Failed to end session:', err);
             }

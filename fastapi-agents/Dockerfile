@@ -34,9 +34,9 @@ COPY --chown=appuser:appgroup . .
 RUN uv sync --frozen
 
 USER appuser
-EXPOSE 8765
+EXPOSE 6100
 # Use a healthcheck for better reliability
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8765/openapi.json')"]
+    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:6100/openapi.json')"]
 
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8765"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "6100"]

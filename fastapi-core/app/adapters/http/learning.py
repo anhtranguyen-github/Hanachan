@@ -3,6 +3,7 @@ import os
 from fastapi import APIRouter, Depends
 from supabase import Client, create_client
 
+from app.core.config import settings
 from app.adapters.supabase.learning_repo import LearningRepository
 from app.auth.jwt import get_current_user_id
 from app.core.learning.models import KnowledgeUnit, KUStatus, Rating
@@ -12,10 +13,8 @@ router = APIRouter(prefix="/learning", tags=["learning"])
 
 
 def get_learning_service() -> LearningService:
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv(
-        "SUPABASE_SERVICE_KEY"
-    )  # We use service key for complex cross-item logic if needed, or anon
+    url = settings.SUPABASE_URL
+    key = settings.SUPABASE_SERVICE_KEY
     client: Client = create_client(url, key)
     repo = LearningRepository(client)
     return LearningService(repo)

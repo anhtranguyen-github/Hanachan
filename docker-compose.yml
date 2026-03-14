@@ -3,7 +3,7 @@ version: '3.8'
 # ─── Hanachan — Full Stack Docker Compose ────────────────────────────────────
 # Services:
 #   nextjs   — Next.js 14 frontend (port 3000)
-#   fastapi-agents  — FastAPI memory backend (port 8765)
+#   fastapi-agents  — FastAPI memory backend (port 6100)
 #   qdrant   — Vector database (ports 6333, 6334)
 #   neo4j    — Graph database (ports 7474, 7687)
 #
@@ -47,11 +47,11 @@ services:
       dockerfile: Dockerfile
       target: runner
     ports:
-      - "8765:8765"
+      - "6100:6100"
     env_file:
       - ./fastapi-agents/.env
     environment:
-      - FASTAPI_CORE_URL=http://core:6100/api/v1
+      - FASTAPI_CORE_URL=http://core:6200/api/v1
     depends_on:
       core:
         condition: service_healthy
@@ -63,7 +63,7 @@ services:
       - app-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8765/openapi.json')\" || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:6100/openapi.json')\" || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -76,14 +76,14 @@ services:
       dockerfile: Dockerfile
       target: runner
     ports:
-      - "6100:6100"
+      - "6200:6200"
     env_file:
       - ./fastapi-core/.env
     networks:
       - app-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:6100/openapi.json')\" || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:6200/openapi.json')\" || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -179,8 +179,8 @@ services:
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-https://test.supabase.co}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-test-anon-key}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test-key}
-      - AGENTS_API_URL=${AGENTS_API_URL:-http://fastapi:8765}
-      - FASTAPI_CORE_URL=${FASTAPI_CORE_URL:-http://core:6100}
+      - AGENTS_API_URL=${AGENTS_API_URL:-http://fastapi:6100}
+      - FASTAPI_CORE_URL=${FASTAPI_CORE_URL:-http://core:6200}
     networks:
       - app-network
     profiles:

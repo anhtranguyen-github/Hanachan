@@ -18,6 +18,10 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# Apply global authentication and context middleware
+app.add_middleware(SupabaseJwtMiddleware)
+
+
 @app.exception_handler(CoreError)
 async def core_error_handler(request: Request, exc: CoreError):
     status_code = 400
@@ -48,11 +52,11 @@ app.include_router(decks_router, prefix=API_PREFIX)
 app.include_router(sessions_router, prefix=API_PREFIX)
 app.include_router(chat_router, prefix=API_PREFIX)
 
-# FastMCP tool gateway — requires Supabase JWT
+# FastMCP tool gateway
 from app.mcp.server import mcp
 mcp_sse_app = mcp.sse_app()
-# Apply middleware directly to the mcp app's internal sse_app
-mcp_sse_app.add_middleware(SupabaseJwtMiddleware)
+# Middleware already applied globally to 'app', which includes mounted apps.
+# But for absolute safety in sub-app routing, we can keep it or rely on parent.
 app.mount("/mcp", mcp_sse_app)
 
 

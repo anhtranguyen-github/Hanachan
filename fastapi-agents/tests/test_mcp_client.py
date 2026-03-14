@@ -6,14 +6,14 @@ from app.core.config import settings
 @pytest.mark.asyncio
 async def test_mcp_universal_client_init():
     """Test McpClient initialization"""
-    url = "http://test-mcp:6100"
+    url = "http://test-mcp:6200"
     client = McpClient(url)
     assert client.url == url
 
 @pytest.mark.asyncio
 async def test_mcp_call_tool_success():
     """Test tool call successfully invoking the mock SSE client"""
-    client = McpClient("http://test-mcp:6100")
+    client = McpClient("http://test-mcp:6200")
     jwt = "test-jwt-token"
 
     # Create mock result object
@@ -50,7 +50,7 @@ async def test_mcp_call_tool_success():
 @pytest.mark.asyncio
 async def test_mcp_call_tool_failure():
     """Test tool call handles failures properly"""
-    client = McpClient("http://test-mcp:6100")
+    client = McpClient("http://test-mcp:6200")
 
     with patch("app.mcp.client.sse_client", side_effect=Exception("Network Error")):
         with pytest.raises(Exception, match="Network Error"):

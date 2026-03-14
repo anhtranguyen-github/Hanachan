@@ -1,5 +1,7 @@
 'use server';
 
+import { sentenceClient } from '@/services/sentenceClient';
+
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
@@ -31,10 +33,10 @@ export async function addSentenceAction(japaneseRaw: string, englishRaw: string)
     const { data, error } = await supabase
         .from('sentences')
         .insert({
-            japanese_raw: japaneseRaw,
-            english_raw: englishRaw,
-            source: 'user',
-            created_by: user.id
+            japanese: japaneseRaw,
+            english: englishRaw,
+            source_type: 'manual',
+            user_id: user.id
         })
         .select()
         .single();
@@ -44,20 +46,10 @@ export async function addSentenceAction(japaneseRaw: string, englishRaw: string)
         return { success: false, error: (error instanceof Error ? error.message : String(error)) };
     }
 
-    // 2. Trigger annotation via Next.js API route (architecture: no direct FastAPI calls)
+    // 2. Trigger annotation via sentenceClient (architecture: service layer refactor)
     try {
-        const annotRes = await fetch('/api/sentences/annotate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                sentence_id: data.id,
-                japanese_raw: japaneseRaw,
-            }),
-        });
-        if (annotRes.ok) {
-            const annotations = await annotRes.json();
-            return { success: true, data: { ...data, annotations } };
-        }
+        const annotations = await sentenceClient.annotate(data.id, japaneseRaw);
+        return { success: true, data: { ...data, annotations } };
     } catch (err) {
         console.warn('Annotation failed (non-fatal):', err);
     }
@@ -78,8 +70,9 @@ export async function fetchUserSentencesAction() {
     const { data: sentences, error } = await supabase
         .from('sentences')
         .select('*')
-        .eq('created_by', user.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+
 
     if (error) {
         return { success: false, error: (error instanceof Error ? error.message : String(error)) };

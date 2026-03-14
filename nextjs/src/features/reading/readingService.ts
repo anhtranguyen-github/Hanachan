@@ -429,7 +429,7 @@ export async function completeReadingSession(
     }
 }
 
-import { coreClient } from "@/lib/core-client";
+import { coreClient } from "@/services/coreClient";
 
 /**
  * Submit an answer for an exercise question
@@ -442,12 +442,12 @@ export async function submitAnswer(
     timeSpentSeconds: number = 0
 ): Promise<AnswerResult | null> {
     try {
-        const response = await coreClient.submitReadingAnswer(
+        const response = await coreClient.submitReadingAnswer({
             exerciseId,
             questionIndex,
             userAnswer,
-            timeSpentSeconds
-        );
+            timeSpent: timeSpentSeconds
+        }) as any;
         return {
             is_correct: response.is_correct,
             correct_answer: response.correct_answer,

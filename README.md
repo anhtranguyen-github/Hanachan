@@ -70,7 +70,7 @@ docker compose down
 | Service | Port | Description |
 |---------|------|-------------|
 | nextjs | 3000 | Next.js frontend |
-| fastapi-agents | 8765 | FastAPI backend API |
+| fastapi-agents | 6100 | FastAPI backend API |
 
 ### Docker Commands
 
@@ -116,7 +116,7 @@ docker compose --profile test run --rm nextjs-test
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-MEMORY_API_URL=http://fastapi-agents:8765
+AGENTS_API_URL=http://fastapi-agents:6100
 OPENAI_API_KEY=your_openai_key
 
 # Optional

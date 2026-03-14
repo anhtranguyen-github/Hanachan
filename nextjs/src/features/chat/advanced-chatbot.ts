@@ -4,18 +4,12 @@
 import { getBearerFromSupabaseCookie } from '@/lib/auth-utils';
 import { chatRepo } from './chat-repo';
 import { kuRepository } from '@/features/knowledge/db';
+import { agentsClient } from '@/services/agentsClient';
 
 export class HanachanChatService {
-    private baseUrl: string;
 
-    constructor() {
-        // AGENTS_API_URL should point at the FastAPI agents service base URL (no trailing /api/v1).
-        // Back-compat: fall back to MEMORY_API_URL if still present.
-        this.baseUrl =
-            process.env.AGENTS_API_URL ||
-            process.env.MEMORY_API_URL ||
-            'http://127.0.0.1:6100';
-    }
+
+    constructor() {}
 
     private async getAuthHeader(): Promise<string | null> {
         return getBearerFromSupabaseCookie();
@@ -26,36 +20,11 @@ export class HanachanChatService {
         if (!session) session = await chatRepo.createSession(sessionId, userId);
         const resolvedSessionId = session.id;
 
-        const authHeader = await this.getAuthHeader();
-        if (!authHeader) {
-            throw new Error('Missing auth token (expected Supabase auth cookie).');
-        }
-
-        const res = await fetch(`${this.baseUrl}/api/v1/chat`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: authHeader,
-            },
-            body: JSON.stringify({
-                user_id: userId,
-                message: text,
-                session_id: resolvedSessionId,
-            }),
-            cache: 'no-store',
+        const data = await agentsClient.sendMessage({
+            user_id: userId,
+            message: text,
+            session_id: resolvedSessionId,
         });
-
-        if (!res.ok) {
-            const errText = await res.text().catch(() => '');
-            throw new Error(`Memory API error: ${res.status} ${errText}`.trim());
-        }
-
-        const data = (await res.json()) as {
-            response: string;
-            episodic_context?: string;
-            semantic_context?: string;
-            thread_context?: string;
-        };
 
         const cleanReply = data.response ?? '';
 

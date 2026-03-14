@@ -7,6 +7,7 @@ from fastapi import HTTPException, Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.auth.jwt import verify_supabase_jwt
+from app.auth.context import set_current_user_id
 
 
 @dataclass(frozen=True)
@@ -37,18 +38,26 @@ class SupabaseJwtMiddleware:
             return await self.app(scope, receive, send)
 
         request = Request(scope, receive)
+        path = scope.get("path", "")
         
+        # Public paths bypass
+        if path in ["/health", "/docs", "/openapi.json"]:
+            return await self.app(scope, receive, send)
+
         # When applied directly to mcp_app, we want to protect all paths.
         token = _extract_bearer_token(request.headers.get("authorization"))
         
-        # Bypass for MASTER_TEST_TOKEN
-        if token == "MASTER_TEST_TOKEN":
+        # Bypass for MASTER_TEST_TOKEN - only in development and if explicitly allowed
+        from app.core.config import settings
+        if token == "MASTER_TEST_TOKEN" and settings.ENVIRONMENT == "development" and settings.ALLOW_MASTER_TOKEN:
             user_id = "a1111111-1111-1111-1111-111111111111"
             claims = {"sub": user_id, "email": "test.user@hanachan.test"}
             request.state.user_id = user_id
             request.state.jwt = token
             request.state.jwt_claims = claims
+            set_current_user_id(user_id)
             return await self.app(scope, receive, send)
+
 
         if not token:
             # We must return a 401 response here manually as an ASGI response
@@ -72,6 +81,7 @@ class SupabaseJwtMiddleware:
             request.state.user_id = str(user_id)
             request.state.jwt = token
             request.state.jwt_claims = claims
+            set_current_user_id(str(user_id))
         except Exception as e:
             async def send_403(err_msg):
                 await send({

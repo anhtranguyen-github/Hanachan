@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createPracticeSession } from '@/features/speaking/speakingService';
 import { z } from 'zod';
+import { getBearerFromCookieHeader, getBearerFromSupabaseCookie } from '../../memory/_auth';
+
 
 export const dynamic = 'force-dynamic';
 
@@ -18,8 +20,11 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(req: NextRequest) {
     try {
-        // Get user from authorization header
-        const authHeader = req.headers.get('authorization');
+        // Get user from authorization header or cookies
+        const authHeader = req.headers.get('authorization') || 
+                          getBearerFromCookieHeader(req.headers.get('cookie')) ||
+                          (await getBearerFromSupabaseCookie());
+                          
         if (!authHeader?.startsWith('Bearer ')) {
             return NextResponse.json(
                 { success: false, error: 'Unauthorized' },
@@ -29,6 +34,7 @@ export async function POST(req: NextRequest) {
 
         const token = authHeader.split(' ')[1];
 
+
         // Verify token with Supabase
         const supabase = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -37,8 +43,14 @@ export async function POST(req: NextRequest) {
                 auth: {
                     autoRefreshToken: false,
                     persistSession: false
+                },
+                global: {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
                 }
             }
+
         );
 
         const { data: { user }, error: authError } = await supabase.auth.getUser(token);
@@ -63,7 +75,8 @@ export async function POST(req: NextRequest) {
         const { target_difficulty } = parsed.data;
 
         // Create session using local service
-        const result = await createPracticeSession(user.id, target_difficulty);
+        const result = await createPracticeSession(user.id, target_difficulty, supabase);
+
 
         if (!result.success) {
             return NextResponse.json(

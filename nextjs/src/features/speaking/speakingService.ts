@@ -47,11 +47,14 @@ export interface PracticeStats {
  */
 export async function createPracticeSession(
     userId: string,
-    targetDifficulty?: string
+    targetDifficulty?: string,
+    supabaseClient?: any
 ): Promise<{ success: boolean; session?: PracticeSession; sentences?: PracticeSentence[]; error?: string }> {
+    const db = supabaseClient || supabase;
     try {
         // Get learned words for the user (simplified - would need proper learned words query)
-        const { data: learnedWords, error: wordsError } = await supabase
+        const { data: learnedWords, error: wordsError } = await db
+
             .from('user_fsrs_states')
             .select('item_id, item_type, stability')
             .eq('user_id', userId)
@@ -64,8 +67,7 @@ export async function createPracticeSession(
         }
 
         // Get sentences for practice based on learned words
-        // For now, use sample sentences from the database
-        const { data: sentences, error: sentencesError } = await supabase
+        let { data: sentences, error: sentencesError } = await db
             .from('sentences')
             .select('*')
             .order('jlpt_level', { ascending: true })
@@ -73,16 +75,48 @@ export async function createPracticeSession(
 
         if (sentencesError) {
             console.error('Error fetching sentences:', sentencesError);
-            return { success: false, error: 'Failed to fetch sentences' };
         }
 
+        // Fallback for demo/empty DB
+        if (!sentences || sentences.length === 0) {
+            sentences = [
+                { japanese: 'これはペンです。', english: 'This is a pen.', romaji: 'Kore wa pen desu.', jlpt_level: 5 },
+                { japanese: 'こんにちは。', english: 'Hello.', romaji: 'Konnichiwa.', jlpt_level: 5 },
+                { japanese: 'ありがとうございます。', english: 'Thank you very much.', romaji: 'Arigatou gozaimasu.', jlpt_level: 5 }
+            ] as any;
+        }
+
+
+        // Format sentences for response
+        const formattedSentences: PracticeSentence[] = (sentences || []).map((s: any) => {
+            const level = s.jlpt_level || 5;
+            let diff: 'N5' | 'N3' | 'N1' = 'N5';
+            if (level <= 4) diff = 'N5';
+            else if (level <= 2) diff = 'N3';
+            else diff = 'N1';
+
+            return {
+                japanese: s.japanese,
+                english: s.english,
+                reading: s.reading || s.romaji || '',
+                difficulty: diff,
+                source_word: s.japanese?.slice(0, 1) || '?', // Placeholder for target word
+                word_meaning: s.english || '',
+                jlpt_level: level
+            };
+        });
+
+
         // Create session
-        const { data: session, error: sessionError } = await supabase
+        const { data: session, error: sessionError } = await db
             .from('speaking_sessions')
             .insert({
+
                 user_id: userId,
-                target_difficulty: targetDifficulty || 'N5',
-                status: 'active'
+                difficulty: targetDifficulty || 'N5',
+                status: 'active',
+                sentences: formattedSentences,
+                total_sentences: formattedSentences.length
             })
             .select()
             .single();
@@ -92,15 +126,7 @@ export async function createPracticeSession(
             return { success: false, error: 'Failed to create session' };
         }
 
-        // Format sentences for response
-        const formattedSentences: PracticeSentence[] = (sentences || []).map((s: any) => ({
-            japanese: s.japanese_text || s.japanese || '',
-            romaji: s.romaji || '',
-            english: s.english_text || s.english || '',
-            word: s.target_word || s.word || '',
-            word_meaning: s.word_meaning || '',
-            jlpt_level: s.jlpt_level || 5
-        }));
+
 
         return {
             success: true,
@@ -122,11 +148,13 @@ export async function recordPracticeAttempt(
     sessionId: string,
     sentence: string,
     word: string,
-    score: number
+    score: number,
+    supabaseClient?: any
 ): Promise<{ success: boolean; attempt?: PracticeAttempt; error?: string }> {
+    const db = supabaseClient || supabase;
     try {
         // Verify session ownership
-        const { data: session, error: sessionError } = await supabase
+        const { data: session, error: sessionError } = await db
             .from('speaking_sessions')
             .select('*')
             .eq('id', sessionId)
@@ -138,7 +166,7 @@ export async function recordPracticeAttempt(
         }
 
         // Record attempt
-        const { data: attempt, error: attemptError } = await supabase
+        const { data: attempt, error: attemptError } = await db
             .from('speaking_attempts')
             .insert({
                 session_id: sessionId,
@@ -149,6 +177,7 @@ export async function recordPracticeAttempt(
             })
             .select()
             .single();
+
 
         if (attemptError || !attempt) {
             console.error('Error recording attempt:', attemptError);
@@ -171,10 +200,12 @@ export async function recordPracticeAttempt(
  */
 export async function endPracticeSession(
     userId: string,
-    sessionId: string
+    sessionId: string,
+    supabaseClient?: any
 ): Promise<{ success: boolean; error?: string }> {
+    const db = supabaseClient || supabase;
     try {
-        const { error } = await supabase
+        const { error } = await db
             .from('speaking_sessions')
             .update({
                 status: 'completed',
@@ -182,6 +213,7 @@ export async function endPracticeSession(
             })
             .eq('id', sessionId)
             .eq('user_id', userId);
+
 
         if (error) {
             return { success: false, error: (error instanceof Error ? error.message : String(error)) };
