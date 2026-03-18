@@ -6,7 +6,7 @@ RUN corepack enable
 FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
-RUN ppnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
 WORKDIR /app
@@ -18,7 +18,7 @@ ARG NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
-RUN ppnpm run build
+RUN pnpm run build
 
 FROM base AS runner
 WORKDIR /app

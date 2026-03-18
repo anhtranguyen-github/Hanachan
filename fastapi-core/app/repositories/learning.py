@@ -32,12 +32,42 @@ class ILearningRepository(ABC):
     async def get_review_logs(self, user_id: str, days: int = 365) -> list[dict]:
         pass
 
-    @abstractmethod
-    async def get_review_forecast(self, user_id: str) -> list[dict]:
-        pass
+
 
     @abstractmethod
     async def get_total_ku_count(self) -> int:
+        pass
+
+    @abstractmethod
+    async def get_recent_reviews(self, user_id: str, limit: int = 5) -> list[dict]:
+        pass
+
+    @abstractmethod
+    async def get_user_fsrs_settings(self, user_id: str) -> dict:
+        pass
+
+    @abstractmethod
+    async def log_review(self, user_id: str, item_id: str, facet: str, rating: int, state: str, stability: float, difficulty: float, interval_days: float) -> None:
+        pass
+
+    @abstractmethod
+    async def get_enabled_deck_ids(self, user_id: str) -> list[str]:
+        pass
+
+    @abstractmethod
+    async def get_due_items_filtered(self, user_id: str, deck_ids: list[str], limit: int = 20) -> list[KUStatus]:
+        pass
+
+    @abstractmethod
+    async def get_deck_items(self, deck_id: str) -> list[str]:
+        pass
+
+    @abstractmethod
+    async def get_all_decks_with_settings(self, user_id: str) -> list[dict]:
+        pass
+
+    @abstractmethod
+    async def upsert_user_deck_settings(self, user_id: str, deck_id: str, is_enabled: bool) -> None:
         pass
 
 class SupabaseLearningRepository(ILearningRepository):
@@ -94,7 +124,7 @@ class SupabaseLearningRepository(ILearningRepository):
         }
 
         self.client.table("user_fsrs_states").upsert(
-            data, on_conflict="user_id,item_id,facet"
+            data
         ).execute()
 
     async def search_kus(self, query: str, limit: int = 10) -> list[KnowledgeUnit]:
@@ -175,17 +205,7 @@ class SupabaseLearningRepository(ILearningRepository):
         )
         return response.data if response and response.data else []
 
-    async def get_review_forecast(self, user_id: str) -> list[dict]:
-        response = (
-            self.client.table("user_fsrs_states")
-            .select("next_review")
-            .eq("user_id", user_id)
-            .neq("state", "burned")
-            .filter("next_review", "is", "not_null")
-            .order("next_review")
-            .execute()
-        )
-        return response.data if response and response.data else []
+
 
     async def get_total_ku_count(self) -> int:
         response = (
@@ -195,3 +215,147 @@ class SupabaseLearningRepository(ILearningRepository):
             .execute()
         )
         return (response.count if response else 0) or 1
+
+    async def get_recent_reviews(self, user_id: str, limit: int = 5) -> list[dict]:
+        response = (
+            self.client.table("fsrs_review_logs")
+            .select("*, knowledge_units(character, meaning)")
+            .eq("user_id", user_id)
+            .order("reviewed_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        return response.data if response and response.data else []
+
+    async def get_user_fsrs_settings(self, user_id: str) -> dict:
+        response = (
+            self.client.table("user_fsrs_settings")
+            .select("*")
+            .eq("user_id", user_id)
+            .maybe_single()
+            .execute()
+        )
+        if response and response.data:
+            return response.data
+        
+        # Create default
+        default_data = {"user_id": user_id}
+        resp = self.client.table("user_fsrs_settings").insert(default_data).execute()
+        return resp.data[0] if resp.data else default_data
+
+    async def log_review(self, user_id: str, item_id: str, facet: str, rating: int, state: str, stability: float, difficulty: float, interval_days: float) -> None:
+        data = {
+            "user_id": user_id,
+            "item_id": item_id,
+            "item_type": "ku",
+            "facet": facet,
+            "rating": rating,
+            "state": state,
+            "stability": stability,
+            "difficulty": difficulty,
+            "interval_days": interval_days,
+            "reviewed_at": datetime.utcnow().isoformat(),
+        }
+        self.client.table("fsrs_review_logs").insert(data).execute()
+
+    async def get_enabled_deck_ids(self, user_id: str) -> list[str]:
+        response = (
+            self.client.table("user_deck_settings")
+            .select("deck_id")
+            .eq("user_id", user_id)
+            .eq("is_enabled", True)
+            .execute()
+        )
+        return [item["deck_id"] for item in response.data] if response and response.data else []
+
+    async def get_due_items_filtered(self, user_id: str, deck_ids: list[str], limit: int = 20) -> list[KUStatus]:
+        if not deck_ids:
+            return []
+            
+        # Get item IDs in these decks
+        deck_items_resp = (
+            self.client.table("deck_items")
+            .select("item_id")
+            .in_("deck_id", deck_ids)
+            .execute()
+        )
+        item_ids = [item["item_id"] for item in deck_items_resp.data] if deck_items_resp and deck_items_resp.data else []
+        
+        if not item_ids:
+            return []
+
+        now = datetime.utcnow().isoformat()
+        response = (
+            self.client.table("user_fsrs_states")
+            .select("*, knowledge_units(*)")
+            .eq("user_id", user_id)
+            .in_("item_id", item_ids)
+            .lte("next_review", now)
+            .neq("state", "burned")
+            .order("next_review")
+            .limit(limit)
+            .execute()
+        )
+
+        results = []
+        if response and response.data:
+            for data in response.data:
+                ku_data = data.get("knowledge_units", {})
+                results.append(
+                    KUStatus(
+                        user_id=data["user_id"],
+                        item_id=data["item_id"],
+                        facet=data["facet"],
+                        state=data["state"],
+                        stability=data["stability"],
+                        difficulty=data["difficulty"],
+                        reps=data["reps"],
+                        lapses=data["lapses"],
+                        next_review=datetime.fromisoformat(data["next_review"]) if data.get("next_review") else None,
+                        character=ku_data.get("character"),
+                        meaning=ku_data.get("meaning"),
+                    )
+                )
+        return results
+
+    async def get_deck_items(self, deck_id: str) -> list[str]:
+        response = (
+            self.client.table("deck_items")
+            .select("item_id")
+            .eq("deck_id", deck_id)
+            .execute()
+        )
+        return [item["item_id"] for item in response.data] if response and response.data else []
+
+    async def get_all_decks_with_settings(self, user_id: str) -> list[dict]:
+        # Fetch all decks (system and user's)
+        decks_resp = (
+            self.client.table("decks")
+            .select("*")
+            .or_(f"user_id.eq.{user_id},is_system.eq.true")
+            .execute()
+        )
+        decks = decks_resp.data if decks_resp else []
+        
+        # Fetch user settings
+        settings_resp = (
+            self.client.table("user_deck_settings")
+            .select("*")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        settings_dict = {item["deck_id"]: item["is_enabled"] for item in settings_resp.data} if settings_resp else {}
+        
+        for deck in decks:
+            deck["is_enabled"] = settings_dict.get(deck["id"], False)
+            
+        return decks
+
+    async def upsert_user_deck_settings(self, user_id: str, deck_id: str, is_enabled: bool) -> None:
+        data = {
+            "user_id": user_id,
+            "deck_id": deck_id,
+            "is_enabled": is_enabled,
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        self.client.table("user_deck_settings").upsert(data, on_conflict="user_id,deck_id").execute()

@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm';
 import { useUser } from '@/features/auth/AuthContext';
 import { useChatSession } from '../hooks/useChatSession';
 import { VoiceRecorder } from '@/components/shared/VoiceRecorder';
+import { MessageTraces, TraceEvent } from '@/components/chat/MessageTraces';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -242,6 +243,10 @@ export function KUInlineChat({ kuId, kuType, character, meaning, extraContext }:
                                 ? 'bg-foreground text-white rounded-tr-sm'
                                 : 'bg-[#F7FAFC] text-foreground border border-border/50 rounded-tl-sm'
                         )}>
+                            {m.role === 'assistant' && (m as any).traces && (m as any).traces.length > 0 && (
+                                <MessageTraces traces={(m as any).traces} />
+                            )}
+                            
                             {m.role === 'assistant' ? (
                                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                                     {m.content}
@@ -260,10 +265,17 @@ export function KUInlineChat({ kuId, kuType, character, meaning, extraContext }:
 
                 {/* Streaming */}
                 {isTyping && (
-                    <div className="flex gap-2 justify-start animate-in fade-in duration-300">
-                        <div className="w-6 h-6 rounded-lg bg-[#FFF5F5] border border-[#FFDADA] text-[#FFB5B5] flex items-center justify-center shrink-0 mt-1">
-                            <Bot size={11} />
+                    <div className="flex flex-col gap-2 justify-start animate-in fade-in duration-300">
+                        <div className="flex gap-2">
+                            <div className="w-6 h-6 rounded-lg bg-[#FFF5F5] border border-[#FFDADA] text-[#FFB5B5] flex items-center justify-center shrink-0 mt-1">
+                                <Bot size={11} />
+                            </div>
+                            
+                            {streaming.traces && streaming.traces.length > 0 && (
+                                <MessageTraces traces={streaming.traces} isStreaming={true} />
+                            )}
                         </div>
+                        
                         {streamingContent ? (
                             <div className="max-w-[85%] px-3.5 py-2.5 rounded-2xl rounded-tl-sm bg-[#F7FAFC] text-foreground border border-border/50 text-[13px] leading-relaxed font-medium shadow-sm">
                                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>

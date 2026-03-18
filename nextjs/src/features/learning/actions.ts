@@ -50,10 +50,10 @@ export async function startReviewSessionAction(limit: number = 20, contentType: 
     }
 }
 
-export async function fetchUserDashboardStatsAction(userId: string) {
-    console.log('[LearningActions] fetchUserDashboardStatsAction called for userId:', userId);
+export async function fetchUserDashboardStatsAction(userId: string, deckId?: string) {
+    console.log('[LearningActions] fetchUserDashboardStatsAction called for userId:', userId, 'deckId:', deckId);
     try {
-        const stats = await fetchUserDashboardStats(userId);
+        const stats = await fetchUserDashboardStats(userId, deckId);
         console.log('[LearningActions] Stats received:', !!stats);
         return { success: true, data: stats };
     } catch (e: unknown) {
@@ -61,9 +61,10 @@ export async function fetchUserDashboardStatsAction(userId: string) {
         return { success: false, error: (e instanceof Error ? e.message : String(e)) };
     }
 }
-export async function fetchDueItemsAction(userId: string) {
+
+export async function fetchDueItemsAction(userId: string, deckId?: string) {
     try {
-        const items = await fetchDueItems(userId);
+        const items = await fetchDueItems(userId, deckId);
         return { success: true, data: items };
     } catch (e: unknown) {
         return { success: false, error: (e instanceof Error ? e.message : String(e)) };
@@ -99,9 +100,9 @@ export async function fetchCurriculumStatsAction() {
     }
 }
 
-export async function startLessonSessionAction(userId: string, level: number) {
+export async function startLessonSessionAction(userId: string, level?: number, deckId?: string) {
     try {
-        const result = await startLessonSession(userId, level);
+        const result = await startLessonSession(userId, level, deckId);
         return { success: true, data: result };
     } catch (e: unknown) {
         console.error("[LearningActions] startLessonSession error:", e);

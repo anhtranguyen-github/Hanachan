@@ -1,11 +1,9 @@
-from datetime import datetime
-
+from datetime import datetime, timedelta
 from supabase import Client
-
 from app.core.learning.models import KnowledgeUnit, KUStatus
+from app.repositories.learning import ILearningRepository
 
-
-class LearningRepository:
+class LearningRepository(ILearningRepository):
     def __init__(self, client: Client):
         self.client = client
 
@@ -19,8 +17,7 @@ class LearningRepository:
             .maybe_single()
             .execute()
         )
-
-        if not response.data:
+        if response is None or not response.data:
             return None
 
         data = response.data
@@ -36,18 +33,14 @@ class LearningRepository:
             difficulty=data["difficulty"],
             reps=data["reps"],
             lapses=data["lapses"],
-            last_review=datetime.fromisoformat(data["last_review"])
-            if data.get("last_review")
-            else None,
-            next_review=datetime.fromisoformat(data["next_review"])
-            if data.get("next_review")
-            else None,
+            last_review=datetime.fromisoformat(data["last_review"]) if data.get("last_review") else None,
+            next_review=datetime.fromisoformat(data["next_review"]) if data.get("next_review") else None,
             character=ku_data.get("character"),
             meaning=ku_data.get("meaning"),
-            notes=data.get("notes"),  # If notes are stored in states
+            notes=data.get("notes"),
         )
 
-    async def upsert_ku_status(self, status: KUStatus):
+    async def upsert_ku_status(self, status: KUStatus) -> None:
         data = {
             "user_id": status.user_id,
             "item_id": status.item_id,
@@ -68,7 +61,6 @@ class LearningRepository:
         ).execute()
 
     async def search_kus(self, query: str, limit: int = 10) -> list[KnowledgeUnit]:
-        # Search by character, meaning or slug
         response = (
             self.client.table("knowledge_units")
             .select("*")
@@ -76,7 +68,8 @@ class LearningRepository:
             .limit(limit)
             .execute()
         )
-
+        if response is None or not response.data:
+            return []
         return [KnowledgeUnit(**item) for item in response.data]
 
     async def get_due_items(self, user_id: str, limit: int = 20) -> list[KUStatus]:
@@ -92,38 +85,77 @@ class LearningRepository:
             .execute()
         )
 
-        # Parse results...
         results = []
-        for data in response.data:
-            ku_data = data.get("knowledge_units", {})
-            results.append(
-                KUStatus(
-                    user_id=data["user_id"],
-                    item_id=data["item_id"],
-                    facet=data["facet"],
-                    state=data["state"],
-                    stability=data["stability"],
-                    difficulty=data["difficulty"],
-                    reps=data["reps"],
-                    lapses=data["lapses"],
-                    next_review=datetime.fromisoformat(data["next_review"])
-                    if data.get("next_review")
-                    else None,
-                    character=ku_data.get("character"),
-                    meaning=ku_data.get("meaning"),
+        if response and response.data:
+            for data in response.data:
+                ku_data = data.get("knowledge_units", {})
+                results.append(
+                    KUStatus(
+                        user_id=data["user_id"],
+                        item_id=data["item_id"],
+                        facet=data["facet"],
+                        state=data["state"],
+                        stability=data["stability"],
+                        difficulty=data["difficulty"],
+                        reps=data["reps"],
+                        lapses=data["lapses"],
+                        next_review=datetime.fromisoformat(data["next_review"]) if data.get("next_review") else None,
+                        character=ku_data.get("character"),
+                        meaning=ku_data.get("meaning"),
+                    )
                 )
-            )
         return results
 
-    async def add_ku_note(self, user_id: str, ku_id: str, note_content: str):
-        # We append to existing or overwrite? Let's assume overwrite/set as per current logic
+    async def add_ku_note(self, user_id: str, ku_id: str, note_content: str) -> None:
         data = {
             "user_id": user_id,
             "item_id": ku_id,
-            "facet": "meaning",  # Notes are usually tied to meaning/general
+            "facet": "meaning",
             "notes": note_content,
             "updated_at": datetime.utcnow().isoformat(),
         }
         self.client.table("user_fsrs_states").upsert(
             data, on_conflict="user_id,item_id,facet"
         ).execute()
+
+    async def get_all_user_states(self, user_id: str) -> list[dict]:
+        response = (
+            self.client.table("user_fsrs_states")
+            .select("state, item_id, last_review, next_review, stability, knowledge_units(type, level)")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        return response.data if response and response.data else []
+
+    async def get_review_logs(self, user_id: str, days: int = 365) -> list[dict]:
+        start_date = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        response = (
+            self.client.table("fsrs_review_logs")
+            .select("reviewed_at, rating")
+            .eq("user_id", user_id)
+            .gte("reviewed_at", start_date)
+            .execute()
+        )
+        return response.data if response and response.data else []
+
+
+
+    async def get_total_ku_count(self) -> int:
+        response = (
+            self.client.table("knowledge_units")
+            .select("*", count="exact")
+            .limit(1)
+            .execute()
+        )
+        return (response.count if response else 0) or 1
+
+    async def get_recent_reviews(self, user_id: str, limit: int = 5) -> list[dict]:
+        response = (
+            self.client.table("fsrs_review_logs")
+            .select("*, knowledge_units(character, meaning)")
+            .eq("user_id", user_id)
+            .order("reviewed_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        return response.data if response and response.data else []

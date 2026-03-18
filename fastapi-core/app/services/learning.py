@@ -1,6 +1,6 @@
 import math
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.core.exceptions import NotFoundError
 from app.models.learning import KUStatus, Rating, SRSStage, SRSState
 from app.repositories.learning import ILearningRepository
@@ -8,69 +8,62 @@ from app.repositories.learning import ILearningRepository
 logger = logging.getLogger(__name__)
 
 class FSRSEngine:
-    DEFAULT_DIFFICULTY = 3.0
-    BURNED_THRESHOLD_DAYS = 120
-    REVIEW_THRESHOLD_DAYS = 3
-
     @classmethod
     def calculate_next_review(
-        cls, current: SRSState, rating: Rating, wrong_count: int = 0
+        cls, current: SRSState, rating: int, w: list[float]
     ) -> tuple[datetime, SRSState]:
-        stage = current.stage
-        stability = current.stability
-        difficulty = current.difficulty
-        reps = current.reps
-        lapses = current.lapses
-
-        # 1. FIF: Failure Intensity Framework
-        failure_intensity = min(math.log2(wrong_count + 1), 4.0)
-
-        # Initialize defaults
-        if not difficulty: difficulty = cls.DEFAULT_DIFFICULTY
-        if not stability: stability = 0.1
-        if reps is None: reps = 0
-        if lapses is None: lapses = 0
-
-        # 2. State Transition Logic
-        if rating == Rating.AGAIN:
-            reps = 0
-            lapses += 1
-            stability = max(0.1, stability * 0.5)
-            stage = SRSStage.LEARNING
-        elif wrong_count > 0:
-            reps += 1
-            alpha = 0.2
-            difficulty = min(5.0, difficulty + (alpha * failure_intensity))
-            beta = 0.3
-            decay = math.exp(-beta * failure_intensity)
-            stability = max(0.1, stability * decay)
-            if failure_intensity > 0.8:
-                lapses += 1
-                stage = SRSStage.LEARNING
-                reps = max(1, math.floor(reps * 0.5))
-            else:
-                stage = SRSStage.REVIEW
+        """
+        Implements FSRS-4.5 scheduling logic.
+        rating: 1=Again, 2=Hard, 3=Good, 4=Easy
+        """
+        if current.stage == SRSStage.NEW:
+            # First review (Initial Stability & Difficulty)
+            stability = max(0.1, w[rating - 1])
+            difficulty = max(1.0, min(10.0, w[4] - math.exp(w[5] * (rating - 1)) + 1))
+            reps = 1 if rating > 1 else 0
+            lapses = 0
+            stage = SRSStage.REVIEW if rating == 4 else SRSStage.LEARNING
         else:
-            reps += 1
-            factor = 1.65
-            difficulty = max(1.3, difficulty - 0.1)
-            if reps == 1 and stability < 0.166: stability = 0.166
-            elif reps == 2 and stability < 0.333: stability = 0.333
-            elif reps == 3 and stability < 1.0: stability = 1.0
-            elif reps == 4 and stability < 3.0: stability = 3.0
-            else: stability = stability * factor * (1.0 + (5.0 - difficulty) * 0.1)
-            stability = max(stability, current.stability)
-            if stability >= cls.BURNED_THRESHOLD_DAYS: stage = SRSStage.BURNED
-            elif stability >= cls.REVIEW_THRESHOLD_DAYS: stage = SRSStage.REVIEW
-            else: stage = SRSStage.LEARNING
+            # Subsequent review
+            # 1. Update Difficulty
+            difficulty = max(1.0, min(10.0, current.difficulty - w[6] * (rating - 3)))
+            
+            # 2. Update Stability
+            if rating == 1: # Again (Failure)
+                stability = max(
+                    0.1,
+                    w[11] * (difficulty ** -w[12]) * ((current.stability + 1) ** w[13] - 1) * math.exp((1 - 1) * w[14])
+                )
+                reps = max(0, current.reps - 2)
+                lapses = current.lapses + 1
+                stage = SRSStage.RELEARNING
+            else: # Success
+                # Retrievability (simplified check at t=S)
+                retrievability = 0.9
+                hard_penalty = w[15] if rating == 2 else 1.0
+                easy_bonus = w[16] if rating == 4 else 1.0
+                
+                next_s = current.stability * (
+                    1 + math.exp(w[8]) * (11 - difficulty) * (current.stability ** -w[9]) * 
+                    (math.exp((1 - retrievability) * w[10]) - 1) * hard_penalty * easy_bonus
+                )
+                stability = max(0.1, next_s)
+                reps = current.reps + 1
+                lapses = current.lapses
+                stage = SRSStage.REVIEW if reps >= 2 else SRSStage.LEARNING
 
-        # 3. Final Scheduling
-        interval_minutes = max(1, round(stability * 1440))
-        next_review = datetime.utcnow() + timedelta(minutes=interval_minutes)
+        # Final Scheduling
+        interval_days = stability
+        next_review = datetime.now(timezone.utc) + timedelta(days=interval_days)
+        
+        # Guard: Ensure next review is at least in the future
+        if next_review <= datetime.now(timezone.utc):
+            next_review = datetime.now(timezone.utc) + timedelta(minutes=10)
+
         next_state = SRSState(
             stage=stage,
             stability=round(stability, 4),
-            difficulty=difficulty,
+            difficulty=round(difficulty, 4),
             reps=reps,
             lapses=lapses,
         )
@@ -83,14 +76,28 @@ class LearningService:
     def __init__(self, repo: ILearningRepository):
         self.repo = repo
 
-    async def get_dashboard_stats(self, user_id: str) -> DashboardStats:
+    async def get_dashboard_stats(self, user_id: str, deck_id: str | None = None) -> DashboardStats:
         # 1. Fetch data in parallel
-        states, logs, forecast_raw, total_kus = await asyncio.gather(
+        tasks = [
             self.repo.get_all_user_states(user_id),
             self.repo.get_review_logs(user_id),
-            self.repo.get_review_forecast(user_id),
             self.repo.get_total_ku_count()
-        )
+        ]
+        
+        if deck_id:
+            tasks.append(self.repo.get_deck_items(deck_id))
+            states_raw, logs, total_kus, deck_item_ids = await asyncio.gather(*tasks)
+            filter_item_ids = set(deck_item_ids)
+            states = [s for s in states_raw if s["item_id"] in filter_item_ids]
+        else:
+            states_raw, logs, total_kus = await asyncio.gather(*tasks)
+            states = states_raw
+            
+        forecast_raw = [
+            {"next_review": s["next_review"]}
+            for s in states
+            if s.get("state") != "burned" and s.get("next_review")
+        ]
 
         # 2. Process States
         unit_groups = {}
@@ -98,7 +105,7 @@ class LearningService:
         level_set = set()
         due_items_count = 0
         due_breakdown = {"learning": 0, "review": 0}
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         for s in states:
             ku_id = s["item_id"]
@@ -156,7 +163,8 @@ class LearningService:
         # 3. Process Logs (Heatmap, Retention, Streak)
         heatmap = {}
         last_7_days = [0] * 7
-        today_str = now.date().isoformat()
+        now_utc = datetime.now(timezone.utc)
+        today_str = now_utc.date().isoformat()
         today_reviews = 0
         correct_today = 0
 
@@ -177,19 +185,19 @@ class LearningService:
                     correct_today += 1
 
         retention = round((correct_today / max(today_reviews, 1)) * 100) if today_reviews > 0 else 100
-        streak = self._calculate_streak(heatmap, now.date())
+        streak = self._calculate_streak(heatmap, now_utc.date())
 
         # 4. Process Forecast
         hourly_f = []
         for i in range(24):
-            h_start = now + timedelta(hours=i)
+            h_start = now_utc + timedelta(hours=i)
             h_end = h_start + timedelta(hours=1)
             count = len([f for f in forecast_raw if h_start <= datetime.fromisoformat(f["next_review"].replace("Z", "+00:00")) < h_end])
             hourly_f.append(ForecastItem(time=h_start.isoformat(), count=count))
 
         daily_f = []
         for i in range(14):
-            d_start = (now + timedelta(days=i)).date()
+            d_start = (now_utc + timedelta(days=i)).date()
             count = len([f for f in forecast_raw if datetime.fromisoformat(f["next_review"].replace("Z", "+00:00")).date() == d_start])
             daily_f.append(DailyForecastItem(date=d_start.isoformat(), count=count))
 
@@ -210,7 +218,8 @@ class LearningService:
             typeMastery=type_mastery_pct,
             srsSpread=srs_spread,
             totalKUCoverage=round((total_learned / max(total_kus, 1)) * 100, 2),
-            streak=streak
+            streak=streak,
+            deckId=deck_id
         )
 
     def _calculate_streak(self, heatmap: dict, today: datetime.date) -> int:
@@ -241,16 +250,40 @@ class LearningService:
     async def submit_review(
         self, user_id: str, ku_id: str, facet: str, rating: Rating, wrong_count: int = 0
     ):
-        status = await self.repo.get_ku_status(user_id, ku_id, facet)
-        current_state = SRSState(
-            stage=status.state,
-            stability=status.stability,
-            difficulty=status.difficulty,
-            reps=status.reps,
-            lapses=status.lapses,
-        ) if status else SRSState()
+        # 1. Map Rating to int (1-4)
+        rating_map = {
+            Rating.AGAIN: 1,
+            Rating.HARD: 2,
+            Rating.GOOD: 3,
+            Rating.PASS: 3,
+            Rating.EASY: 4
+        }
+        rating_int = rating_map.get(rating, 3)
 
-        next_review, next_state = FSRSEngine.calculate_next_review(current_state, rating, wrong_count)
+        # 2. Get current state and settings
+        status, settings = await asyncio.gather(
+            self.repo.get_ku_status(user_id, ku_id, facet),
+            self.repo.get_user_fsrs_settings(user_id)
+        )
+        
+        current_state = SRSState(
+            stage=status.state if status else SRSStage.NEW,
+            stability=status.stability if status else 0.1,
+            difficulty=status.difficulty if status else 3.0,
+            reps=status.reps if status else 0,
+            lapses=status.lapses if status else 0,
+        )
+
+        # Map weights from dict to list
+        w = [settings.get(f"w{i}", 0.0) for i in range(19)]
+        # Default weights if all zeros
+        if all(v == 0.0 for v in w):
+            w = [0.4, 0.6, 2.4, 5.8, 4.93, 0.94, 0.86, 1.01, 1.05, 0.94, 0.74, 0.46, 0.27, 0.29, 0.42, 0.36, 0.29, 1.2, 0.25]
+
+        # 3. Calculate next
+        next_review, next_state = FSRSEngine.calculate_next_review(current_state, rating_int, w)
+        
+        # 4. Update Repository
         new_status = KUStatus(
             user_id=user_id,
             item_id=ku_id,
@@ -260,11 +293,46 @@ class LearningService:
             difficulty=next_state.difficulty,
             reps=next_state.reps,
             lapses=next_state.lapses,
-            last_review=datetime.utcnow(),
+            last_review=datetime.now(timezone.utc),
             next_review=next_review,
         )
-        await self.repo.upsert_ku_status(new_status)
+        
+        # Parallelize state update and log
+        await asyncio.gather(
+            self.repo.upsert_ku_status(new_status),
+            self.repo.log_review(
+                user_id=user_id,
+                item_id=ku_id,
+                facet=facet,
+                rating=rating_int,
+                state=next_state.stage,
+                stability=next_state.stability,
+                difficulty=next_state.difficulty,
+                interval_days=next_state.stability
+            )
+        )
+        
         return new_status
 
     async def add_note(self, user_id: str, ku_id: str, note_content: str):
         return await self.repo.add_ku_note(user_id, ku_id, note_content)
+
+    async def get_recent_reviews(self, user_id: str, limit: int = 5):
+        return await self.repo.get_recent_reviews(user_id, limit)
+
+    async def get_due_items(self, user_id: str, limit: int = 20):
+        # 1. Get enabled decks
+        enabled_deck_ids = await self.repo.get_enabled_deck_ids(user_id)
+        
+        # 2. Get due items from enabled decks
+        return await self.repo.get_due_items_filtered(user_id, enabled_deck_ids, limit)
+
+    async def list_user_decks(self, user_id: str) -> list[dict]:
+        # returns decks and their enabled status for the user
+        # This might need a new repo method or combine existing ones
+        # For now, let's assume we can fetch them via a join or two calls
+        return await self.repo.get_all_decks_with_settings(user_id)
+
+    async def toggle_deck(self, user_id: str, deck_id: str, enabled: bool):
+        await self.repo.upsert_user_deck_settings(user_id, deck_id, enabled)
+        return {"status": "success", "deck_id": deck_id, "is_enabled": enabled}

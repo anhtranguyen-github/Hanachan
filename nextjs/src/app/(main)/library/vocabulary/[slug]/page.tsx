@@ -23,7 +23,7 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                 <Bookmark size={28} className="text-primary mx-auto mb-4" />
                 <h2 className="text-lg font-black uppercase mb-2 text-foreground">Vocabulary Not Found</h2>
                 <p className="text-sm text-foreground/40 mb-6">This vocabulary unit could not be retrieved.</p>
-                <Link href="/content?type=vocabulary" className="block w-full py-3 bg-primary text-white rounded-2xl text-xs font-black uppercase tracking-widest text-center hover:opacity-90 transition-opacity">
+                <Link href="/library?type=vocabulary" className="block w-full py-3 bg-primary text-white rounded-2xl text-xs font-black uppercase tracking-widest text-center hover:opacity-90 transition-opacity">
                     Back to Vocabulary
                 </Link>
             </div>
@@ -45,7 +45,7 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
     return (
         <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-700 pb-8">
             {/* Breadcrumb */}
-            <Link href="/content?type=vocabulary" className="inline-flex items-center gap-2 text-foreground/40 hover:text-foreground transition-colors group text-sm">
+            <Link href="/library?type=vocabulary" className="inline-flex items-center gap-2 text-foreground/40 hover:text-foreground transition-colors group text-sm">
                 <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
                 <span className="font-bold uppercase tracking-widest text-[10px]">Vocabulary</span>
             </Link>
@@ -145,7 +145,7 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                         {(vocab.kanji || []).map((k: any, i: number) => (
                             <Link
                                 key={i}
-                                href={`/content/kanji/${k.character || k.slug}`}
+                                href={`/library/kanji/${k.character || k.slug}`}
                                 className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-surface-muted/40 border border-border hover:border-primary/30 hover:bg-primary/5 transition-all group aspect-square"
                             >
                                 <span className="text-2xl font-black text-foreground group-hover:text-primary-dark transition-colors jp-text leading-none">{k.character}</span>

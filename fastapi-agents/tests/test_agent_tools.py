@@ -10,7 +10,7 @@ from app.agents.memory_agent import get_user_learning_progress, search_knowledge
 async def test_tool_get_user_learning_progress():
     """QA-ToolCall-01: Memory Agent MCP Tool Usage"""
     with patch(
-        "app.services.mcp_core_client.MCPCoreClient.call_tool", new_callable=AsyncMock
+        "app.mcp.client.McpClient.call_tool", new_callable=AsyncMock
     ) as mock_call:
         mock_call.return_value = '{"stage": "review", "stability": 4.5}'
 
@@ -20,7 +20,7 @@ async def test_tool_get_user_learning_progress():
 
         assert "review" in result
         mock_call.assert_awaited_once_with(
-            "get_learning_progress", {"user_id": "u1", "identifier": "桜"}
+            "get_learning_progress", {"identifier": "桜"}, jwt="jwt123"
         )
 
 
@@ -28,7 +28,7 @@ async def test_tool_get_user_learning_progress():
 async def test_tool_search_knowledge_units():
     """QA-ToolCall-02: Memory Agent Knowledge Search MCP"""
     with patch(
-        "app.services.mcp_core_client.MCPCoreClient.call_tool", new_callable=AsyncMock
+        "app.mcp.client.McpClient.call_tool", new_callable=AsyncMock
     ) as mock_call:
         mock_call.return_value = '{"id": "ku123", "meaning": "cherry blossom"}'
 
@@ -37,14 +37,14 @@ async def test_tool_search_knowledge_units():
         )
 
         assert "cherry blossom" in result
-        mock_call.assert_awaited_once_with("search_knowledge", {"user_id": "u1", "query": "sakura"})
+        mock_call.assert_awaited_once_with("search_knowledge", {"query": "sakura"}, jwt="jwt")
 
 
 @pytest.mark.asyncio
 async def test_tool_create_user_deck():
     """QA-ToolCall-03: Deck Manager Create Deck MCP"""
     with patch(
-        "app.services.mcp_core_client.MCPCoreClient.call_tool", new_callable=AsyncMock
+        "app.mcp.client.McpClient.call_tool", new_callable=AsyncMock
     ) as mock_call:
         mock_call.return_value = '{"id": "deck123", "name": "JLPT N2"}'
 
@@ -54,7 +54,7 @@ async def test_tool_create_user_deck():
 
         assert "Successfully created deck" in result
         mock_call.assert_awaited_once_with(
-            "create_deck", {"user_id": "user1", "name": "JLPT N2", "description": "N2 Vocab"}
+            "create_deck", {"name": "JLPT N2", "description": "N2 Vocab"}, jwt="token123"
         )
 
 
@@ -62,11 +62,11 @@ async def test_tool_create_user_deck():
 async def test_tool_list_my_decks():
     """QA-ToolCall-04: Deck Manager List MCP fallback"""
     with patch(
-        "app.services.mcp_core_client.MCPCoreClient.call_tool", new_callable=AsyncMock
+        "app.mcp.client.McpClient.call_tool", new_callable=AsyncMock
     ) as mock_call:
         mock_call.return_value = "[]"
 
         result = await list_my_decks.ainvoke({"jwt": "jwt", "user_id": "u2"})
 
         assert "You don't have any custom decks yet" in result
-        mock_call.assert_awaited_once_with("list_decks", {"user_id": "u2"})
+        mock_call.assert_awaited_once_with("list_decks", {}, jwt="jwt")

@@ -336,7 +336,7 @@ const WordTooltip = React.forwardRef<HTMLDivElement, WordTooltipProps>(
 
               {result.ku_id && (
                 <a
-                  href={`/content/vocabulary/${result.ku_id}`}
+                  href={`/library/vocabulary/${result.ku_id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/10 text-white/40 hover:text-white hover:bg-white/20 transition-all"

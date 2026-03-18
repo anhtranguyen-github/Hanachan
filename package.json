@@ -18,7 +18,7 @@
     "lint": "pnpm run lint:backend && pnpm run lint:frontend",
     "lint:backend": "cd fastapi-agents && uv run ruff check .",
     "lint:frontend": "cd nextjs && pnpm run lint",
-    "preinstall": "npx only-allow pnpm"
+    "preinstall": "pnpm dlx only-allow pnpm"
   },
   "devDependencies": {
     "@kilocode/cli": "^7.0.33"
@@ -27,5 +27,5 @@
     "node": ">=18.0.0",
     "pnpm": ">=8.0.0"
   },
-  "packageManager": "pnpm@10.2.0"
+  "packageManager": "pnpm@10.24.0"
 }

@@ -3,22 +3,26 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Swords, ChevronRight, Target, TrendingUp, X, Clock, Zap } from 'lucide-react';
+import { Swords, ChevronRight, Target, TrendingUp, X, Zap } from 'lucide-react';
 import { fetchUserDashboardStatsAction } from '@/features/learning/actions';
 import { useUser } from '@/features/auth/AuthContext';
+import { useDecks } from '@/features/decks/hooks';
 import { clsx } from 'clsx';
 
-export default function ReviewPage() {
-    const { user, openLoginModal } = useUser();
+const ReviewPage = () => {
+    const { user } = useUser();
     const [stats, setStats] = useState<any>(null);
     const [mounted, setMounted] = useState(false);
+    const { decks } = useDecks();
+    const [selectedDeckId, setSelectedDeckId] = useState<string>('global');
 
     const loadRealStats = async () => {
         try {
             const userId = user?.id;
             if (!userId) return;
 
-            const dashRes = await fetchUserDashboardStatsAction(userId);
+            const deckId = selectedDeckId === 'global' ? undefined : selectedDeckId;
+            const dashRes = await fetchUserDashboardStatsAction(userId, deckId);
             const dashboardStats: any = dashRes.data || {};
             setStats({
                 due: dashboardStats.reviewsDue,
@@ -35,7 +39,7 @@ export default function ReviewPage() {
         setMounted(true);
         loadRealStats();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+    }, [user, selectedDeckId]);
 
     if (!mounted || !stats) {
         return (
@@ -69,7 +73,20 @@ export default function ReviewPage() {
                         </div>
                         <div>
                             <h2 className="text-lg font-black text-[#3E4A61] tracking-tight uppercase">Review</h2>
-                            <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0]">Reinforce what you've learned</p>
+                            <div className="flex items-center gap-2">
+                                <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0]">Reinforce</p>
+                                <span className="text-[#CBD5E0] text-[8px]">•</span>
+                                <select 
+                                    className="bg-transparent text-[8px] font-black uppercase tracking-widest text-[#CDB4DB] outline-none cursor-pointer hover:text-[#9B7DB5] transition-colors"
+                                    value={selectedDeckId}
+                                    onChange={(e) => setSelectedDeckId(e.target.value)}
+                                >
+                                    <option value="global">Enabled Decks</option>
+                                    {decks.map(d => (
+                                        <option key={d.id} value={d.id}>{d.name}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <Link href="/dashboard" className="p-2 bg-white/80 border border-border/40 rounded-xl text-[#A0AEC0] hover:text-[#3E4A61] hover:border-primary/20 shadow-sm transition-all group backdrop-blur-sm">
@@ -105,7 +122,7 @@ export default function ReviewPage() {
 
                     {hasReviews ? (
                         <button
-                            onClick={() => window.location.href = '/review/session'}
+                            onClick={() => window.location.href = `/review/session${selectedDeckId !== 'global' ? `?deckId=${selectedDeckId}` : ''}`}
                             className="w-full py-4 bg-gradient-to-r from-[#9B7DB5] to-[#7B5D95] text-white rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] hover:shadow-xl hover:shadow-[#9B7DB5]/25 hover:scale-[1.02] transition-all duration-300 group/btn relative z-10"
                         >
                             <Zap size={13} />
@@ -160,4 +177,6 @@ export default function ReviewPage() {
             </div>
         </div>
     );
-}
+};
+
+export default ReviewPage;

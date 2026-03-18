@@ -6,6 +6,7 @@ import { Book, Search, Loader2, Lock, Zap, Clock, Flame, ChevronRight, Hash, Lay
 import { clsx } from 'clsx';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/features/auth/AuthContext';
+import { useLibrary } from '@/features/knowledge/hooks';
 import Link from 'next/link';
 
 function ContentDatabase() {
@@ -13,60 +14,24 @@ function ContentDatabase() {
     const searchParams = useSearchParams();
     const typeParam = searchParams.get('type') as any;
 
-    const [items, setItems] = useState<any[]>([]);
-    const [states, setStates] = useState<Record<string, any>>({});
-    const [userLevel, setUserLevel] = useState(1);
     const [filterType, setFilterType] = useState<string>(typeParam || 'all');
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedLevel, setSelectedLevel] = useState<number | 'all'>('all');
-    const [loading, setLoading] = useState(true);
 
-    const loadData = async () => {
-        setLoading(true);
-        try {
-            const userId = user?.id;
-            let query = supabase.from('knowledge_units').select('*');
-            if (selectedLevel !== 'all') query = query.eq('level', selectedLevel);
-            if (filterType !== 'all') query = query.eq('type', filterType);
-            const { data: queryItems } = await query.order('level', { ascending: true }).order('type', { ascending: true }).limit(300);
-
-            let stateMap: Record<string, any> = {};
-            if (userId) {
-                const { data: userStates } = await supabase.from('user_fsrs_states').select('*').eq('user_id', userId);
-                userStates?.forEach((s: any) => { stateMap[s.ku_id] = s; });
-
-                const { data: userData } = await supabase.from('users').select('level').eq('id', userId).maybeSingle();
-                setUserLevel(userData?.level || 1);
-            } else {
-                setUserLevel(1);
-            }
-
-            setItems(queryItems || []);
-            setStates(stateMap);
-        } catch (error) {
-            console.error("Failed to load library data:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        loadData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filterType, selectedLevel]);
+    const { items, states, loading, error } = useLibrary({
+        type: filterType,
+        level: selectedLevel,
+        query: searchQuery
+    });
 
     const filteredItems = useMemo(() => {
         return items.filter(unit => {
             const state = states[unit.id];
             const status = !state ? 'new' : state.state;
-            const matchesStatus = filterStatus === 'all' || status === filterStatus;
-            const matchesSearch = unit.meaning.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                unit.character?.includes(searchQuery) ||
-                unit.slug.toLowerCase().includes(searchQuery.toLowerCase());
-            return matchesStatus && matchesSearch;
+            return filterStatus === 'all' || status === filterStatus;
         });
-    }, [items, states, filterStatus, searchQuery]);
+    }, [items, states, filterStatus]);
 
     const tabs = [
         { id: 'all', label: 'ALL', icon: Layers, color: '#4A4E69' },
@@ -201,7 +166,7 @@ function ContentDatabase() {
                                                     const typeBorderColor: Record<string, string> = { radical: '#A2D2FF', kanji: '#F4ACB7', vocabulary: '#CDB4DB' };
                                                     return (
                                                         <Link
-                                                            href={`/content/${unit.type === 'vocabulary' ? 'vocabulary' : unit.type === 'radical' ? 'radicals' : unit.type}/${unit.slug}`}
+                                                            href={`/library/${unit.type === 'vocabulary' ? 'vocabulary' : unit.type === 'radical' ? 'radicals' : unit.type}/${unit.slug}`}
                                                             key={unit.id}
                                                             className={clsx(
                                                                 "group relative flex flex-col items-center bg-white border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg aspect-square justify-center gap-1 p-2"
@@ -231,7 +196,7 @@ function ContentDatabase() {
                                                     const state = states[unit.id];
                                                     return (
                                                         <Link
-                                                            href={`/content/grammar/${unit.slug}`}
+                                                            href={`/library/grammar/${unit.slug}`}
                                                             key={unit.id}
                                                             className={clsx(
                                                                 "group relative flex items-center gap-3 bg-white border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg px-4 py-3"

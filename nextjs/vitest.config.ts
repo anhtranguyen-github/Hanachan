@@ -4,7 +4,7 @@ import path from 'path';
 export default defineConfig({
     test: {
         globals: true,
-        environment: 'node',
+        environment: 'jsdom',
         setupFiles: ['./tests/setup.ts'],
         // API tests use their own setup file for service health checks
         // Note: API tests in tests/api/ have their own setup.ts

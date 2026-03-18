@@ -29,3 +29,4 @@ class AgentState(TypedDict):
     retrieved_sql: str
     active_workers: list[str]
     current_worker: str | None
+    start_time: float

@@ -10,9 +10,14 @@ from app.agents.memory_agent.nodes.implementation import (
     update_memory_node,
 )
 from app.agents.memory_agent.nodes.workers import (
+    fsrs_worker_node,
     memory_worker_node,
     sql_worker_node,
 )
+import time
+
+MAX_ITERATIONS = 5
+GLOBAL_TIMEOUT = 50.0  # seconds
 from app.agents.memory_agent.state import AgentState
 
 
@@ -32,7 +37,16 @@ def decide_path(state: AgentState):
 
 
 def router_orchestrator(state: AgentState):
-    """Decides which worker to trigger next."""
+    """Decides which worker to trigger next with safety guardrails."""
+    # 1. Guardrail: Iteration Limit
+    if state.get("iterations", 0) >= MAX_ITERATIONS:
+        return "reviewer"
+    
+    # 2. Guardrail: Global Timeout
+    elapsed = time.time() - state.get("start_time", 0)
+    if elapsed > GLOBAL_TIMEOUT:
+        return "reviewer"
+
     active = state.get("active_workers", [])
     if not active:
         return "reviewer"
@@ -65,6 +79,7 @@ def _build_graph():
 
     workflow.add_node("orchestrator", orchestrator_node)
     workflow.add_node("memory_worker", memory_worker_node)
+    workflow.add_node("fsrs_worker", fsrs_worker_node)
     workflow.add_node("sql_worker", sql_worker_node)
     workflow.add_node("tools", tools_node)
     workflow.add_node("orchestrator_pop", orchestrator_pop_node)
@@ -81,12 +96,20 @@ def _build_graph():
     workflow.add_conditional_edges(
         "orchestrator", 
         router_orchestrator, 
-        {"memory_worker": "memory_worker", "sql_worker": "sql_worker", "reviewer": "reviewer"}
+        {
+            "memory_worker": "memory_worker", 
+            "fsrs_worker": "fsrs_worker",
+            "sql_worker": "sql_worker", 
+            "reviewer": "reviewer"
+        }
     )
 
     # Workers conditionally route to tools or back to pop
     workflow.add_conditional_edges(
         "memory_worker", router_worker, {"tools": "tools", "orchestrator_pop": "orchestrator_pop"}
+    )
+    workflow.add_conditional_edges(
+        "fsrs_worker", router_worker, {"tools": "tools", "orchestrator_pop": "orchestrator_pop"}
     )
     workflow.add_conditional_edges(
         "sql_worker", router_worker, {"tools": "tools", "orchestrator_pop": "orchestrator_pop"}
@@ -97,7 +120,12 @@ def _build_graph():
         return state.get("current_worker", "orchestrator")  # Fallback
         
     workflow.add_conditional_edges(
-        "tools", route_after_tools, {"memory_worker": "memory_worker", "sql_worker": "sql_worker", "orchestrator": "orchestrator"}
+        "tools", route_after_tools, {
+            "memory_worker": "memory_worker", 
+            "fsrs_worker": "fsrs_worker",
+            "sql_worker": "sql_worker", 
+            "orchestrator": "orchestrator"
+        }
     )
 
     # After a worker is popped, go back to orchestrator check if more workers are left

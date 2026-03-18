@@ -31,9 +31,11 @@ class CoreClient extends ServerApiClient {
     });
   }
 
-  async startLessonSession(unitIds: string[]) {
+  async startLessonSession(unitIds: string[], level?: number, deckId?: string) {
     return this.post(`${this.baseRoute}/sessions/lesson/start`, { 
-      unit_ids: unitIds 
+      unit_ids: unitIds,
+      level: level,
+      deck_id: deckId
     });
   }
 
@@ -77,6 +79,33 @@ class CoreClient extends ServerApiClient {
       user_answer: payload.userAnswer,
       time_spent_seconds: payload.timeSpent ?? 0
     });
+  }
+
+  // Deck Management APIs
+  async listDecks() {
+    return this.get(`${this.baseRoute}/decks`);
+  }
+
+  async toggleDeck(deckId: string, enabled: boolean) {
+    return this.post(`${this.baseRoute}/learning/decks/${deckId}/toggle`, { enabled });
+  }
+
+  async createDeck(name: string, description?: string) {
+    return this.post(`${this.baseRoute}/decks`, { name, description });
+  }
+
+  async getDeckDashboard(deckId?: string) {
+    return this.get(`${this.baseRoute}/learning/dashboard`, {
+      params: deckId ? { deck_id: deckId } : {}
+    });
+  }
+
+  async getDeck(deckId: string) {
+    return this.get(`${this.baseRoute}/decks/${deckId}`);
+  }
+
+  async deleteDeck(deckId: string) {
+    return this.delete(`${this.baseRoute}/decks/${deckId}`);
   }
 }
 

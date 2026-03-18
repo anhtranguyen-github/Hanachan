@@ -28,6 +28,13 @@ export interface QuizItem {
     sentence_en?: string;
 }
 
+const UNIT_QUIZ_CONFIG: Record<string, string[]> = {
+    radical: ['meaning'],
+    kanji: ['meaning'],
+    vocabulary: ['meaning', 'reading'],
+    grammar: ['cloze']
+};
+
 /**
  * LearningController - Discovery Flow Orchestrator
  * Logic: Batch Persistence & Deferred SRS Initialization
@@ -60,8 +67,20 @@ export class LearningController {
         // Prepare initial facets mapping for SRS initialization later
         items.forEach(item => {
             const unitId = item.ku_id || item.id;
-            const itemQuestions = this.questions.filter(q => q.ku_id === unitId);
-            this.initialFacets.set(unitId, itemQuestions.map(q => q.facet));
+            const kuData = item.knowledge_units || item;
+            const type = kuData.type as string;
+            
+            const allowedFacets = UNIT_QUIZ_CONFIG[type] || ['meaning'];
+            
+            // Filter questions based on allowed facets for this type
+            const itemQuestions = this.questions.filter(q => q.ku_id === unitId && allowedFacets.includes(q.facet));
+            
+            if (itemQuestions.length > 0) {
+                this.initialFacets.set(unitId, itemQuestions.map(q => q.facet));
+            } else {
+                // Fallback to config if no question found in DB
+                this.initialFacets.set(unitId, allowedFacets);
+            }
         });
 
         return this.items;
@@ -101,71 +120,52 @@ export class LearningController {
     private transformToQuizItems(): QuizItem[] {
         let result: QuizItem[] = [];
 
-        if (this.questions && this.questions.length > 0) {
-            // Map stored DB questions
-            result = this.questions.map(q => {
-                const ku = this.items.find(i => (i.ku_id || i.id) === q.ku_id);
-                const kuData = ku?.knowledge_units || ku;
+        // We use the initialFacets map as the source of truth for what questions we want
+        this.items.forEach(item => {
+            const unitId = item.ku_id || item.id;
+            const kuData = item.knowledge_units || item;
+            const allowedFacets = this.initialFacets.get(unitId) || ['meaning'];
 
-                return {
-                    id: `${q.ku_id}-${q.facet}`,
-                    ku_id: q.ku_id,
-                    character: kuData?.character || kuData?.slug?.split(':')[1] || '?',
-                    type: kuData?.type,
-                    prompt: q.prompt || kuData?.character || kuData?.meaning,
-                    prompt_variant: q.facet,
-                    meaning: kuData?.meaning,
-                    reading: kuData?.vocabulary_details?.[0]?.reading ||
-                        kuData?.kanji_details?.[0]?.onyomi?.[0] ||
-                        kuData?.kanji_details?.[0]?.kunyomi?.[0],
-                    cloze_answer: q.facet === 'cloze' ? q.correct_answers?.[0] : undefined,
-                    sentence_ja: q.cloze_text_with_blanks,
-                    sentence_en: q.hints?.[0]
-                };
-            });
-        } else {
-            // FALLBACK: Generate Virtual Questions from KU data
-            console.warn("[LearningController] No questions found in DB. Generating virtual questions.");
-            this.items.forEach(item => {
-                const ku = item.knowledge_units || item;
-                const unitId = item.ku_id || item.id;
-                const facets: string[] = ['meaning'];
+            allowedFacets.forEach(facet => {
+                const q = this.questions.find(dbQ => dbQ.ku_id === unitId && dbQ.facet === facet);
+                
+                if (q) {
+                    result.push({
+                        id: `${q.ku_id}-${q.facet}`,
+                        ku_id: q.ku_id,
+                        character: kuData?.character || kuData?.slug?.split(':')[1] || '?',
+                        type: kuData?.type,
+                        prompt: q.prompt || kuData?.character || kuData?.meaning,
+                        prompt_variant: q.facet,
+                        meaning: kuData?.meaning,
+                        reading: kuData?.vocabulary_details?.[0]?.reading ||
+                            kuData?.kanji_details?.[0]?.onyomi?.[0] ||
+                            kuData?.kanji_details?.[0]?.kunyomi?.[0],
+                        cloze_answer: q.facet === 'cloze' ? q.correct_answers?.[0] : undefined,
+                        sentence_ja: q.cloze_text_with_blanks,
+                        sentence_en: q.hints?.[0]
+                    });
+                } else {
+                    // Virtual Fallback Generation
+                    const reading = kuData?.type === 'vocabulary'
+                        ? kuData?.vocabulary_details?.[0]?.reading
+                        : (kuData?.kanji_details?.[0]?.onyomi?.[0] || kuData?.kanji_details?.[0]?.kunyomi?.[0]);
 
-                // 1. Meaning Question (All types)
-                result.push({
-                    id: `${unitId}-meaning`,
-                    ku_id: unitId,
-                    character: ku.character || ku.slug?.split(':')[1],
-                    type: ku.type,
-                    prompt: ku.character || ku.slug?.split(':')[1],
-                    prompt_variant: 'meaning',
-                    meaning: ku.meaning,
-                    reading: ku.vocabulary_details?.[0]?.reading || ku.kanji_details?.[0]?.onyomi?.[0]
-                });
-
-                // 2. Reading Question (Kanji and Vocab only)
-                if (ku.type === 'kanji' || ku.type === 'vocabulary') {
-                    const reading = ku.type === 'vocabulary'
-                        ? ku.vocabulary_details?.[0]?.reading
-                        : (ku.kanji_details?.[0]?.onyomi?.[0] || ku.kanji_details?.[0]?.kunyomi?.[0]);
-
-                    if (reading) {
-                        facets.push('reading');
-                        result.push({
-                            id: `${unitId}-reading`,
-                            ku_id: unitId,
-                            character: ku.character || ku.slug?.split(':')[1],
-                            type: ku.type,
-                            prompt: ku.character || ku.slug?.split(':')[1],
-                            prompt_variant: 'reading',
-                            meaning: ku.meaning,
-                            reading: reading
-                        });
-                    }
+                    result.push({
+                        id: `${unitId}-${facet}`,
+                        ku_id: unitId,
+                        character: kuData?.character || kuData?.slug?.split(':')[1],
+                        type: kuData?.type,
+                        prompt: kuData?.character || kuData?.slug?.split(':')[1],
+                        get prompt_variant() { return facet; },
+                        meaning: kuData?.meaning,
+                        reading: reading,
+                        cloze_answer: facet === 'cloze' ? kuData?.meaning : undefined, // Very fallback
+                        sentence_ja: facet === 'cloze' ? "Grammar Check: Recall the pattern." : undefined
+                    } as QuizItem);
                 }
-                this.initialFacets.set(unitId, facets);
             });
-        }
+        });
 
         // Sort: Meaning before Reading
         result.sort((a, b) => {
@@ -176,6 +176,7 @@ export class LearningController {
 
         return result;
     }
+
 
     getCurrentQuizItem(): QuizItem | null {
         return this.quizQueue.length > 0 ? this.quizQueue[0] : null;

@@ -28,7 +28,7 @@ export default async function GrammarDetailPage({ params }: { params: { slug: st
                 <Flame size={28} className="text-primary mx-auto mb-4" />
                 <h2 className="text-lg font-black uppercase mb-2 text-foreground">Grammar Not Found</h2>
                 <p className="text-sm text-foreground/40 mb-6">This grammar point could not be retrieved.</p>
-                <Link href="/content?type=grammar" className="block w-full py-3 bg-primary text-white rounded-2xl text-xs font-black uppercase tracking-widest text-center hover:opacity-90 transition-opacity">
+                <Link href="/library?type=grammar" className="block w-full py-3 bg-primary text-white rounded-2xl text-xs font-black uppercase tracking-widest text-center hover:opacity-90 transition-opacity">
                     Back to Grammar
                 </Link>
             </div>
@@ -43,7 +43,7 @@ export default async function GrammarDetailPage({ params }: { params: { slug: st
     return (
         <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-700 pb-8">
             {/* Breadcrumb */}
-            <Link href="/content?type=grammar" className="inline-flex items-center gap-2 text-foreground/40 hover:text-foreground transition-colors group text-sm">
+            <Link href="/library?type=grammar" className="inline-flex items-center gap-2 text-foreground/40 hover:text-foreground transition-colors group text-sm">
                 <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
                 <span className="font-bold uppercase tracking-widest text-[10px]">Grammar</span>
             </Link>
@@ -189,7 +189,7 @@ export default async function GrammarDetailPage({ params }: { params: { slug: st
                                     return (
                                         <Link
                                             key={i}
-                                            href={`/content/grammar/${rel.slug}`}
+                                            href={`/library/grammar/${rel.slug}`}
                                             className="flex items-center gap-2.5 p-3 rounded-2xl bg-surface-muted/30 border border-transparent hover:border-[#B7E4C7]/30 hover:bg-[#B7E4C7]/5 transition-all group"
                                         >
                                             <span className="text-sm font-black text-foreground/60 group-hover:text-[#5A9E72] transition-colors jp-text truncate flex-1">{rel.character || rel.meaning}</span>

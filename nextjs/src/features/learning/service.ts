@@ -45,11 +45,11 @@ export async function submitReview(userId: string, unitId: string, facet: string
     return { next_review: new Date(response.next_review), next_state: { stability: response.stability } };
 }
 
-export async function fetchDueItems(userId: string) {
-    return srsRepository.fetchDueItems(userId);
+export async function fetchDueItems(userId: string, deckId?: string) {
+    return srsRepository.fetchDueItems(userId, deckId);
 }
 
-export async function startLessonSession(userId: string, level: number) {
+export async function startLessonSession(userId: string, level?: number, deckId?: string) {
     const DAILY_LIMIT = 50;
     const todayCount = await lessonRepository.countTodayBatches(userId);
 
@@ -57,24 +57,29 @@ export async function startLessonSession(userId: string, level: number) {
         throw new Error(`Daily limit reached! You have already finished ${DAILY_LIMIT} batches today. Take a rest for better retention.`);
     }
 
-    const items = await lessonRepository.fetchNewItems(userId, 5, level);
+    const items = await lessonRepository.fetchNewItems(userId, 5, level, deckId);
     if (items.length === 0) {
         return { items: [], batch: null };
     }
 
     // Call core authority
-    const response = await coreClient.startLessonSession(items.map((i: any) => i.ku_id)) as any;
+    const response = await coreClient.startLessonSession(items.map((i: any) => i.ku_id), level, deckId) as any;
     const batch = { id: response.batch_id };
 
     return { items, batch };
 }
 
-export async function fetchNewItems(userId: string, levelId: string, limit: number = 5) {
+export async function fetchNewItems(userId: string, identifier: string, limit: number = 5) {
     let level: number | undefined;
-    if (levelId?.startsWith('level-')) {
-        level = parseInt(levelId.split('-')[1]);
+    let deckId: string | undefined;
+
+    if (identifier?.startsWith('level-')) {
+        level = parseInt(identifier.split('-')[1]);
+    } else if (identifier && identifier.length > 30) { // UUID check
+        deckId = identifier;
     }
-    return lessonRepository.fetchNewItems(userId, limit, level);
+    
+    return lessonRepository.fetchNewItems(userId, limit, level, deckId);
 }
 
 
@@ -215,11 +220,11 @@ function calculateStreak(heatmap: Record<string, number>): number {
     return streak;
 }
 
-export async function fetchUserDashboardStats(userId: string) {
-    console.log('[LearningService] fetchUserDashboardStats (V2) called for userId:', userId);
+export async function fetchUserDashboardStats(userId: string, deckId?: string) {
+    console.log(`[LearningService] fetchUserDashboardStats (V2) called for user ${userId}, deck ${deckId}`);
 
     try {
-        const stats = await coreClient.getDashboardStats();
+        const stats = await coreClient.getDeckDashboard(deckId);
         return stats;
     } catch (error) {
         console.error('[LearningService] Error fetching dashboard stats from Core API:', error);

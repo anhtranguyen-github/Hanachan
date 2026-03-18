@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, ArrowLeft, BookOpen, ChevronRight, CheckCircle2, PlayCircle, Zap, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { startLessonSessionAction, completeLessonBatchAction } from '@/features/learning/actions';
@@ -10,11 +10,13 @@ import { supabase } from '@/lib/supabase';
 import { QuizItem } from '@/features/learning/LearningController';
 import { Rating } from '@/features/learning/core/SRSAlgorithm';
 import { ReviewCardDisplay } from '@/features/learning/components/ReviewCardDisplay';
-import { GlassCard } from '@/components/premium/GlassCard';
+import { LessonSlide } from '@/features/learning/components/LessonSlide';
+
 
 function SessionContent() {
     const { user } = useUser();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [controller, setController] = useState<any>(null);
     const [currentCard, setCurrentCard] = useState<QuizItem | null>(null);
     const [lessonQueue, setLessonQueue] = useState<any[]>([]);
@@ -37,9 +39,10 @@ function SessionContent() {
                 .single();
 
             const currentLevel = profile?.level || 1;
+            const deckId = searchParams.get('deckId') || undefined;
 
             // Refactored to use Server Action that enforces limits
-            const result = await startLessonSessionAction(user.id, currentLevel);
+            const result = await startLessonSessionAction(user.id, deckId ? undefined : currentLevel, deckId);
 
             if (!result.success) {
                 setError(result.error || "Failed to start session");
@@ -145,7 +148,9 @@ function SessionContent() {
                         <Zap size={64} fill="currentColor" />
                     </div>
                     <div className="space-y-6 text-center">
-                        <h1 className="text-5xl font-black text-gray-900 tracking-tighter">Daily Limit Reached</h1>
+                        <h1 className="text-5xl font-black text-gray-900 tracking-tighter">
+                            {error.toLowerCase().includes('limit') ? 'Daily Limit Reached' : 'Session Error'}
+                        </h1>
                         <p className="text-gray-500 text-xl font-medium leading-relaxed">
                             {error}
                         </p>
@@ -200,29 +205,25 @@ function SessionContent() {
                 className="w-full h-full bg-white flex flex-col overflow-hidden"
                 data-testid="lesson-view-phase"
             >
-                <header className="flex justify-between items-center shrink-0 px-6 py-4 border-b border-gray-100 bg-white relative z-20">
-                    <div className="flex-1 space-y-2">
-                        <div className="flex gap-2">
-                            {lessonQueue.map((_, i) => (
-                                <div key={i} className={clsx(
-                                    "h-2 rounded-full transition-all duration-700",
-                                    i < lessonIndex ? "w-8 sm:w-12 bg-primary" :
-                                        i === lessonIndex ? "w-10 sm:w-16 bg-primary shadow-lg shadow-primary/20" :
-                                            "w-6 sm:w-8 bg-gray-100"
-                                )} />
-                            ))}
+                <header className="flex justify-between items-center shrink-0 px-5 py-3.5 border-b border-gray-100 bg-white relative z-20">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden max-w-xs">
+                            <div
+                                className="h-full bg-primary rounded-full transition-all duration-700 ease-out"
+                                style={{ width: `${((lessonIndex + 1) / lessonQueue.length) * 100}%` }}
+                            />
                         </div>
-                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                            {lessonIndex + 1} / {lessonQueue.length}
-                        </p>
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">
+                            Step {lessonIndex + 1} of {lessonQueue.length}
+                        </span>
                     </div>
                     <button
                         onClick={() => router.push('/learn')}
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all group"
+                        className="ml-3 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all group"
                         title="Close Session"
                     >
-                        <X size={16} className="text-gray-400 group-hover:text-red-500 transition-colors" />
-                        <span className="text-[10px] font-black text-gray-400 group-hover:text-red-500 tracking-widest uppercase hidden sm:inline">Close</span>
+                        <X size={15} className="text-gray-400 group-hover:text-red-500 transition-colors" />
+                        <span className="text-[10px] font-black text-gray-400 group-hover:text-red-500 tracking-widest uppercase hidden sm:inline">Exit</span>
                     </button>
                 </header>
 
@@ -241,25 +242,25 @@ function SessionContent() {
 
     return (
         <div className="w-full h-full flex flex-col overflow-hidden bg-white" data-testid="quiz-phase">
-            <header className="flex justify-between items-center shrink-0 px-6 py-4 border-b border-gray-100 bg-white relative z-20">
-                <div className="flex items-center gap-4">
-                    <div className="w-32 sm:w-64 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <header className="flex justify-between items-center shrink-0 px-5 py-3.5 border-b border-gray-100 bg-white relative z-20">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden max-w-xs">
                         <div
-                            className={clsx("h-full transition-all duration-700 ease-out", currentCard?.type === 'kanji' ? 'bg-kanji' : 'bg-primary')}
+                            className={clsx('h-full rounded-full transition-all duration-700 ease-out', currentCard?.type === 'kanji' ? 'bg-kanji' : 'bg-primary')}
                             style={{ width: `${progress}%` }}
                         />
                     </div>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] whitespace-nowrap">
-                        {stats.completed + 1} / {controller.getProgress().total}
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">
+                        Step {stats.completed + 1} of {controller.getProgress().total}
                     </span>
                 </div>
                 <button
                     onClick={() => router.push('/learn')}
-                    className="group flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-xl transition-all duration-300 border border-gray-200 hover:border-gray-300"
+                    className="ml-3 group flex items-center gap-1.5 px-3 py-2 hover:bg-gray-50 rounded-xl transition-all duration-300 border border-gray-200 hover:border-gray-300"
                     title="Close Session"
                 >
-                    <X size={16} className="text-gray-400 group-hover:text-red-500 transition-colors duration-300" />
-                    <span className="text-[10px] font-bold text-gray-400 group-hover:text-red-500 tracking-widest uppercase hidden sm:inline">Close</span>
+                    <X size={15} className="text-gray-400 group-hover:text-red-500 transition-colors duration-300" />
+                    <span className="text-[10px] font-bold text-gray-400 group-hover:text-red-500 tracking-widest uppercase hidden sm:inline">Exit</span>
                 </button>
             </header>
 
@@ -275,102 +276,6 @@ function SessionContent() {
     );
 }
 
-function LessonSlide({ item, onNext, isLastLesson }: { item: any, onNext: () => void, isLastLesson: boolean }) {
-    // Robust access to details
-    const details = item.details || item.vocabulary_details?.[0] || item.kanji_details?.[0] || item.grammar_details?.[0];
-
-    // Type colors matching Tailwind variables
-    const typeColors: Record<string, string> = {
-        radical: 'bg-[#A2D2FF]/15 text-[#508CAE]',
-        kanji: 'bg-[#F4ACB7]/15 text-[#C76F80]',
-        vocabulary: 'bg-[#CDB4DB]/15 text-[#9A7BB0]',
-        grammar: 'bg-[#B7E4C7]/15 text-[#6EA885]',
-    };
-    const activeColor = typeColors[item.type] || 'bg-primary/10 text-primary';
-
-    return (
-        <div className="flex-1 flex flex-col relative animate-in fade-in duration-500 overflow-hidden w-full">
-            {/* Type badge */}
-            <div className="absolute top-6 right-6 z-20">
-                <span className="px-3 py-1.5 bg-white/50 backdrop-blur-md text-gray-800 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm border border-black/5">
-                    New Learning
-                </span>
-            </div>
-
-            {/* Character hero - Middle Zone (Top) */}
-            <div className={clsx(
-                "w-full flex flex-col items-center justify-center py-12 sm:py-20 transition-colors duration-500 shrink-0",
-                activeColor.split(' ')[0]
-            )}>
-                <h2 className="text-7xl sm:text-9xl font-black mb-4 relative z-10 drop-shadow-sm jp-text text-gray-900 leading-none">
-                    {item.character || item.slug.split(':')[1]}
-                </h2>
-                <p className="text-base sm:text-lg font-black opacity-80 relative z-10 tracking-[0.2em] uppercase mt-2 text-gray-800">
-                    {item.meaning}
-                </p>
-            </div>
-
-            {/* Details - Middle Zone (Bottom) */}
-            <div className="flex-1 overflow-auto bg-white custom-scrollbar w-full">
-                <div className="max-w-4xl mx-auto p-6 sm:p-12 space-y-10">
-                    <div className="space-y-4">
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400 border-b border-gray-100 pb-2 inline-block">
-                            {item.type === 'grammar' ? "Explanation" : "Mnemonic"}
-                        </h3>
-                        <p className="text-lg sm:text-2xl text-gray-700 leading-relaxed font-medium">
-                            {item.type === 'grammar'
-                                ? (details?.explanation || "Master this grammar pattern.")
-                                : (details?.meaning_mnemonic || "Visualize this character to retain its meaning.")}
-                        </p>
-                    </div>
-
-                    {item.type !== 'radical' && (
-                        <div className="bg-gray-50 p-6 sm:p-8 rounded-[24px] border border-gray-100 grid grid-cols-2 gap-8 shrink-0">
-                            {item.type === 'grammar' ? (
-                                <div className="col-span-2 space-y-3">
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Example</h4>
-                                    <p className="text-xl sm:text-2xl font-black text-gray-800 jp-text leading-relaxed">
-                                        {details?.example_sentences?.[0]?.ja || details?.sentence_ja || "No example available."}
-                                    </p>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="space-y-2">
-                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Reading</h4>
-                                        <p className="text-2xl sm:text-4xl font-black text-gray-800 jp-text">
-                                            {item.type === 'vocabulary' ? details?.reading : (details?.onyomi?.[0] || details?.kunyomi?.[0] || "—")}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Level</h4>
-                                        <p className="text-2xl sm:text-4xl font-black text-gray-800">Lv. {item.level}</p>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Footer - Bottom Zone */}
-            <footer className="w-full p-6 sm:p-8 border-t border-gray-100 bg-white flex justify-between items-center z-10 shrink-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)] mt-auto">
-                <div className="max-w-4xl mx-auto w-full flex justify-between items-center">
-                    <p className="text-[10px] font-bold text-gray-400 hidden sm:block uppercase tracking-widest">
-                        Review each item to continue.
-                    </p>
-                    <button
-                        onClick={onNext}
-                        data-testid="lesson-next-button"
-                        className="ml-auto px-10 sm:px-14 py-4 sm:py-5 bg-gray-900 text-white font-black rounded-full shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all text-sm sm:text-base flex items-center gap-2"
-                    >
-                        {isLastLesson ? 'Start Quiz' : 'Next Item'}
-                        <ChevronRight size={18} />
-                    </button>
-                </div>
-            </footer>
-        </div>
-    );
-}
 
 export default function LearnSessionPage() {
     return (

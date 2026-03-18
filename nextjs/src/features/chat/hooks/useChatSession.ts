@@ -17,6 +17,7 @@ import { AgentSession } from '@/types/chat';
 export interface StreamingState {
     isStreaming: boolean;
     partial: string;
+    traces: { type: string; content: string }[];
 }
 
 // ---------------------------------------------------------------------------
@@ -32,7 +33,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
     // Thread state (chat containers)
     const [threads, setThreads] = useState<AgentSession[]>([]);
     const [activeThread, setActiveThread] = useState<AgentSession | null>(null);
-    const [streaming, setStreaming] = useState<StreamingState>({ isStreaming: false, partial: '' });
+    const [streaming, setStreaming] = useState<StreamingState>({ isStreaming: false, partial: '', traces: [] });
     const [sessionTitle, setSessionTitle] = useState<string | null>(null);
     const [sessionSummary, setSessionSummary] = useState<string | null>(null);
 
@@ -76,11 +77,17 @@ export function useChatSession(userId?: string, conversationId?: string) {
 
     const loadMemorySessions = useCallback(async () => {
         if (!userId) return;
+        setIsLoading(true);
         try {
+            console.log('[useChatSession] Loading memory sessions for user:', userId);
             const data = await browserAgentsClient.listThreads();
+            console.log('[useChatSession] Threads loaded:', data.length);
             setThreads(data);
-        } catch {
+        } catch (error) {
+            console.error('[useChatSession] Failed to load memory sessions:', error);
             // Memory API may be offline
+        } finally {
+            setIsLoading(false);
         }
     }, [userId]);
 
@@ -124,10 +131,13 @@ export function useChatSession(userId?: string, conversationId?: string) {
 
     /** Load messages from a specific memory thread. */
     const loadThreadHistory = useCallback(async (memSessionId: string) => {
+        setIsLoading(true);
         try {
+            console.log('[useChatSession] Loading thread history:', memSessionId);
             const data = (await browserAgentsClient.getThread(memSessionId)) as any;
             // Merge memory messages into the local messages state
             const messages = data.messages || [];
+            console.log('[useChatSession] Messages loaded:', messages.length);
             const mapped: ChatMessage[] = messages.map((m: any) => ({
                 role: m.role as 'user' | 'assistant',
                 content: m.content,
@@ -138,9 +148,12 @@ export function useChatSession(userId?: string, conversationId?: string) {
             setSessionSummary(data.summary ?? null);
             setActiveThread(data);
             memorySessionIdRef.current = memSessionId;
-        } catch {
+        } catch (error) {
+            console.error('[useChatSession] Failed to load thread history:', error);
             // fall back to Supabase history
             if (conversationId) await loadHistory(conversationId);
+        } finally {
+            setIsLoading(false);
         }
     }, [conversationId, loadHistory]);
 
@@ -160,7 +173,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
             timestamp: new Date().toISOString(),
         };
         setMessages(prev => [...prev, userMsg]);
-        setStreaming({ isStreaming: true, partial: '' });
+        setStreaming({ isStreaming: true, partial: '', traces: [] });
 
         // Cancel any previous stream
         abortControllerRef.current?.abort();
@@ -195,17 +208,25 @@ export function useChatSession(userId?: string, conversationId?: string) {
                         if (event.type === 'token') {
                             fullResponse += event.content;
                             setStreaming(s => ({ ...s, partial: s.partial + event.content }));
+                        } else if (event.type === 'thought' || event.type === 'status') {
+                            setStreaming(s => ({
+                                ...s,
+                                traces: [...s.traces, { type: event.type, content: event.content }]
+                            }));
                         } else if (event.type === 'done') {
                             // Commit the full streaming response as a real message
-                            setMessages(prev => [
-                                ...prev,
-                                {
-                                    role: 'assistant',
-                                    content: fullResponse,
-                                    timestamp: new Date().toISOString(),
-                                },
-                            ]);
-                            setStreaming({ isStreaming: false, partial: '' });
+                            setStreaming(s => {
+                                setMessages(prev => [
+                                    ...prev,
+                                    {
+                                        role: 'assistant',
+                                        content: fullResponse,
+                                        timestamp: new Date().toISOString(),
+                                        traces: s.traces,
+                                    },
+                                ]);
+                                return { isStreaming: false, partial: '', traces: [] };
+                            });
 
                             // Update title + summary from memory API (async)
                             await refreshMemorySessionMeta();
@@ -232,7 +253,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
                     },
                 ]);
             }
-            setStreaming({ isStreaming: false, partial: '' });
+            setStreaming({ isStreaming: false, partial: '', traces: [] });
         }
     }, [userId, ensureMemorySession, refreshMemorySessionMeta, loadMemorySessions]);
 
@@ -314,7 +335,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
     // Stop the current stream
     const stopStream = useCallback(() => {
         abortControllerRef.current?.abort();
-        setStreaming({ isStreaming: false, partial: '' });
+        setStreaming({ isStreaming: false, partial: '', traces: [] });
     }, []);
 
     return {
