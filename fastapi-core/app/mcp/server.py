@@ -171,8 +171,17 @@ async def search_knowledge(query: str):
 async def get_recent_reviews(limit: int = 5):
     user_id = get_current_user_id()
     if not user_id: raise HTTPException(401, "Unauthorized")
-    # Dummy implementation parity with REST route
-    return []
+    service = get_learning_service()
+    return await service.get_recent_reviews(user_id, limit)
+
+
+@mcp.tool()
+async def get_due_items(limit: int = 20):
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
+    service = get_learning_service()
+    items = await service.get_due_items(user_id, limit)
+    return [i.dict() for i in items]
 
 
 @mcp.tool()
@@ -182,6 +191,23 @@ async def add_ku_note(ku_id: str, note_content: str):
     service = get_learning_service()
     await service.add_note(user_id, ku_id, note_content)
     return "note added"
+
+
+@mcp.tool()
+async def submit_review(ku_id: str, facet: str = "meaning", rating: str = "pass", wrong_count: int = 0):
+    """Record a review result for a knowledge unit. Ratings: 'again', 'hard', 'good', 'easy'."""
+    user_id = get_current_user_id()
+    if not user_id: raise HTTPException(401, "Unauthorized")
+    from app.models.learning import Rating as RatingEnum
+    service = get_learning_service()
+    result = await service.submit_review(
+        user_id=user_id,
+        ku_id=ku_id,
+        facet=facet,
+        rating=RatingEnum(rating),
+        wrong_count=wrong_count,
+    )
+    return result.dict() if result else None
 
 
 # READING TOOLS

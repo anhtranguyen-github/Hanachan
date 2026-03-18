@@ -4,8 +4,8 @@ import { Rating } from "./core/SRSAlgorithm";
 import { HanaTime } from "@/lib/time";
 
 export const srsRepository = {
-    async fetchDueItems(userId: string) {
-        const { data, error } = await supabase
+    async fetchDueItems(userId: string, deckId?: string) {
+        let query = supabase
             .from('user_fsrs_states')
             .select('*, facet, knowledge_units!inner(*, kanji_details(*), vocabulary_details(*), grammar_details(*))')
             .eq('user_id', userId)
@@ -13,6 +13,18 @@ export const srsRepository = {
             .neq('state', 'burned')
             .lte('next_review', HanaTime.getNowISO())
             .order('next_review', { ascending: true });
+
+        if (deckId) {
+            const { data: deckItems } = await supabase.from('deck_items').select('item_id').eq('deck_id', deckId);
+            const itemIds = deckItems?.map(i => i.item_id) || [];
+            if (itemIds.length > 0) {
+                query = query.in('item_id', itemIds);
+            } else {
+                return [];
+            }
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             console.error("[srsRepository] Error fetching due items:", error);

@@ -18,10 +18,16 @@ import {
     Video,
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { fetchUserDashboardStatsAction, fetchCurriculumStatsAction, fetchLevelStatsAction } from '@/features/learning/actions';
+import { 
+    fetchUserDashboardStatsAction, 
+    fetchCurriculumStatsAction, 
+    fetchLevelStatsAction,
+} from '@/features/learning/actions';
+import { listDecksAction } from '@/features/decks/actions';
 import { useUser } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { HanaTime } from '@/lib/time';
+import { ChevronDown, Layers } from 'lucide-react';
 
 export default function DashboardPage() {
     const { user, openLoginModal } = useUser();
@@ -29,8 +35,11 @@ export default function DashboardPage() {
     const [stats, setStats] = useState<any>(null);
     const [mounted, setMounted] = useState(false);
     const [forecastType, setForecastType] = useState<'hourly' | 'daily'>('hourly');
+    const [decks, setDecks] = useState<any[]>([]);
+    const [selectedDeck, setSelectedDeck] = useState<string | 'all'>('all');
+    const [isDeckSelectorOpen, setIsDeckSelectorOpen] = useState(false);
 
-    const refreshData = async () => {
+    const refreshData = async (deckId: string = selectedDeck) => {
         try {
             const userId = user?.id;
             if (!userId) return;
@@ -39,15 +48,20 @@ export default function DashboardPage() {
             const currentLevel = profile?.level || 1;
             setUserLevel(currentLevel);
 
-            const [dashRes, currRes, lvlRes] = await Promise.all([
-                fetchUserDashboardStatsAction(userId),
+            const [dashRes, currRes, lvlRes, decksRes]: any[] = await Promise.all([
+                fetchUserDashboardStatsAction(userId, deckId === 'all' ? undefined : deckId),
                 fetchCurriculumStatsAction(),
-                fetchLevelStatsAction(userId, `level-${currentLevel}`)
+                fetchLevelStatsAction(userId, `level-${currentLevel}`),
+                listDecksAction()
             ]);
 
             const dashboardStats: any = dashRes.data || {};
             const curriculumStats: any = currRes.data || {};
             const levelStats: any = lvlRes.data || { new: 0, learned: 0, total: 100 };
+            
+            if (decksRes.success) {
+                setDecks(decksRes.data || []);
+            }
 
             setStats({
                 ...dashboardStats,
@@ -83,7 +97,7 @@ export default function DashboardPage() {
         }, 5000);
         return () => clearInterval(checkInterval);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+    }, [user, selectedDeck]);
 
     if (!mounted || !stats) {
         return (
@@ -132,6 +146,74 @@ export default function DashboardPage() {
                         </p>
                     </div>
                 </div>
+
+                {/* Deck Selector */}
+                <div className="relative z-50">
+                    <button 
+                        onClick={() => setIsDeckSelectorOpen(!isDeckSelectorOpen)}
+                        className="flex items-center gap-3 px-5 py-2.5 bg-white/40 backdrop-blur-xl border border-white/40 rounded-2xl shadow-lg hover:bg-white/60 transition-all duration-300 group"
+                    >
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-primary">
+                            <Layers size={16} />
+                        </div>
+                        <div className="flex flex-col items-start min-w-[120px]">
+                            <span className="text-[8px] font-black uppercase tracking-widest text-primary/60">Active Deck</span>
+                            <span className="text-xs font-black text-[#3E4A61] truncate max-w-[150px]">
+                                {selectedDeck === 'all' ? 'All Decks' : decks.find(d => d.id === selectedDeck)?.name || 'Unknown Deck'}
+                            </span>
+                        </div>
+                        <ChevronDown size={14} className={clsx("text-primary/40 transition-transform duration-300", isDeckSelectorOpen && "rotate-180")} />
+                    </button>
+
+                    {isDeckSelectorOpen && (
+                        <div className="absolute top-full right-0 mt-2 w-72 bg-white/90 backdrop-blur-2xl border border-white/60 rounded-[2rem] shadow-2xl p-4 animate-in fade-in zoom-in duration-200 z-[60]">
+                            <div className="space-y-1">
+                                <button 
+                                    onClick={() => { setSelectedDeck('all'); setIsDeckSelectorOpen(false); }}
+                                    className={clsx(
+                                        "w-full flex items-center gap-3 p-3 rounded-2xl transition-all duration-200",
+                                        selectedDeck === 'all' ? "bg-primary/10 text-primary" : "hover:bg-gray-50 text-[#3E4A61]/70"
+                                    )}
+                                >
+                                    <div className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center">
+                                        <Activity size={12} />
+                                    </div>
+                                    <span className="text-xs font-black">All Active Workspace</span>
+                                </button>
+                                <div className="h-px bg-gray-100 my-2 mx-2" />
+                                {decks.filter(d => d.is_enabled).map(deck => (
+                                    <button 
+                                        key={deck.id}
+                                        onClick={() => { setSelectedDeck(deck.id); setIsDeckSelectorOpen(false); }}
+                                        className={clsx(
+                                            "w-full flex items-center gap-3 p-3 rounded-2xl transition-all duration-200 text-left",
+                                            selectedDeck === deck.id ? "bg-primary/10 text-primary" : "hover:bg-gray-50 text-[#3E4A61]/70"
+                                        )}
+                                    >
+                                        <div className={clsx(
+                                            "w-6 h-6 rounded-lg flex items-center justify-center",
+                                            deck.is_system ? "bg-blue-50 text-blue-500" : "bg-purple-50 text-purple-500"
+                                        )}>
+                                            <BookOpen size={12} />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-black">{deck.name}</span>
+                                            <span className="text-[9px] opacity-60 truncate">{deck.description || 'No description'}</span>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                            <Link 
+                                href="/decks" 
+                                className="mt-4 flex items-center justify-center gap-2 py-3 w-full bg-gray-50 hover:bg-gray-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-[#A0AEC0] transition-colors"
+                            >
+                                <Layers size={12} />
+                                Manage Workspace
+                            </Link>
+                        </div>
+                    )}
+                </div>
+
                 <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-md border border-primary/10 rounded-2xl shadow-sm hover:shadow-md transition-all group">
                         <Flame size={14} className="text-primary group-hover:scale-110 transition-transform" />

@@ -8,10 +8,11 @@ router = APIRouter(prefix="/learning", tags=["Learning"])
 
 @router.get("/dashboard", response_model=DashboardStats)
 async def get_learning_dashboard(
+    deck_id: str | None = Query(None),
     current_user: dict[str, Any] = Depends(get_current_user),
     service: LearningService = Depends(get_learning_service),
 ):
-    return await service.get_dashboard_stats(user_id=current_user["sub"])
+    return await service.get_dashboard_stats(user_id=current_user["sub"], deck_id=deck_id)
 
 @router.get("/progress", response_model=KUStatus | None)
 async def get_learning_progress(

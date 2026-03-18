@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends
 from supabase import Client, create_client
 
 from app.core.config import settings
-from app.adapters.supabase.learning_repo import LearningRepository
+from app.repositories.learning import SupabaseLearningRepository as LearningRepository
 from app.auth.jwt import get_current_user_id
-from app.core.learning.models import KnowledgeUnit, KUStatus, Rating
-from app.core.learning.services import LearningService
+from app.models.learning import KnowledgeUnit, KUStatus, Rating
+from app.services.learning import LearningService
 
 router = APIRouter(prefix="/learning", tags=["learning"])
 
@@ -65,6 +65,4 @@ async def get_recent_reviews(
     user_id: str = Depends(get_current_user_id),
     service: LearningService = Depends(get_learning_service),
 ):
-    # Dummy implementation for now to satisfy memory_agent
-    # In real world, we'd fetch from logs
-    return []
+    return await service.get_recent_reviews(user_id, limit)

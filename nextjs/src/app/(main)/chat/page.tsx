@@ -15,6 +15,7 @@ import { HanaTime } from '@/lib/time';
 import { useChatSession } from '@/features/chat/hooks/useChatSession';
 import { VoiceRecorder } from '@/components/shared/VoiceRecorder';
 import { AgentSession } from '@/types/chat';
+import { MessageTraces, TraceEvent } from '@/components/chat/MessageTraces';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,7 @@ type Message = {
     timestamp: string;
     toolsUsed?: string[];
     referencedUnits?: { id: string; slug: string; character: string; type: string }[];
+    traces?: TraceEvent[];
     /** True when the message was sent via voice recording */
     isVoice?: boolean;
 };
@@ -217,6 +219,7 @@ export default function ChatbotPage() {
         role: m.role as 'user' | 'assistant',
         content: m.content,
         timestamp: m.timestamp || HanaTime.getNowISO(),
+        traces: m.traces as TraceEvent[] | undefined,
         isVoice: voiceMessageIndicesRef.current.has(i),
     }));
 
@@ -370,6 +373,10 @@ export default function ChatbotPage() {
                                     </span>
                                 </div>
 
+                                {m.role === 'assistant' && m.traces && m.traces.length > 0 && (
+                                    <MessageTraces traces={m.traces} />
+                                )}
+
                                 <div className={clsx(
                                     'px-5 py-4 rounded-[28px] text-sm font-medium leading-relaxed shadow-sm transition-all relative overflow-hidden',
                                     m.role === 'user'
@@ -408,6 +415,9 @@ export default function ChatbotPage() {
                                     </div>
                                     <span className="text-[9px] font-black uppercase text-[#CBD5E0] tracking-[0.2em]">HANACHAN</span>
                                 </div>
+                                {streaming.traces && streaming.traces.length > 0 && (
+                                    <MessageTraces traces={streaming.traces} isStreaming={true} />
+                                )}
                                 {streamingContent ? (
                                     <div className="px-5 py-4 rounded-[28px] rounded-tl-none bg-[#F7FAFC] text-foreground border border-[#EDF2F7] text-sm font-medium leading-relaxed shadow-sm relative overflow-hidden">
                                         <div className="whitespace-pre-wrap">{streamingContent}</div>

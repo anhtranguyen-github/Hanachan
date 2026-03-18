@@ -26,6 +26,7 @@ Architecture Note:
 
 import json
 import logging
+import time
 from collections.abc import AsyncGenerator
 
 from fastapi import APIRouter, HTTPException, Request
@@ -108,6 +109,7 @@ async def chat_stream(
             "retrieved_episodic": "",
             "retrieved_semantic": "",
             "tts_enabled": req.tts_enabled,
+            "start_time": time.time(),
         }
 
         tokens_emitted = False
@@ -124,6 +126,10 @@ async def chat_stream(
 
                 # 1. Thought Tracing (from node updates)
                 if kind == "on_chain_end" and event["name"] in [
+                    "orchestrator",
+                    "memory_worker",
+                    "fsrs_worker",
+                    "sql_worker",
                     "planner",
                     "reviewer",
                     "generate",

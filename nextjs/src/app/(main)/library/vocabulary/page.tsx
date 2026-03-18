@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 
 export default function Redirect() {
-    redirect('/content?type=radical');
+    redirect('/library?type=vocabulary');
 }

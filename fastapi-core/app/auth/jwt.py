@@ -45,7 +45,7 @@ async def verify_supabase_jwt(token: str) -> dict[str, Any]:
         try:
             claims = jwt.get_unverified_claims(token)
             if not claims.get("sub") and claims.get("role") == "service_role":
-                claims["sub"] = "00000000-0000-0000-0000-000000000000"
+                claims["sub"] = "a1111111-1111-1111-1111-111111111111"
             return claims
         except Exception:
             pass

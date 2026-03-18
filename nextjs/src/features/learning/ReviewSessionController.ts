@@ -63,10 +63,26 @@ export class ReviewSessionController {
     }
 
     private transformItems(items: any[], questions: any[]): QuizItem[] {
+        const UNIT_QUIZ_CONFIG: Record<string, string[]> = {
+            radical: ['meaning'],
+            kanji: ['meaning'],
+            vocabulary: ['meaning', 'reading'],
+            grammar: ['cloze']
+        };
+
         return items.map(item => {
             const ku = item.knowledge_units;
             if (!ku) {
                 console.warn(`[ReviewSessionController] Item ${item.id} has no knowledge_units metadata.`);
+                return null;
+            }
+
+            const allowedFacets = UNIT_QUIZ_CONFIG[ku.type] || ['meaning'];
+            
+            // If the item facet is not allowed for this type, we theoretically shouldn't have it in the review queue,
+            // but we filter anyway for safety.
+            if (!allowedFacets.includes(item.facet)) {
+                console.warn(`[ReviewSessionController] Item ${item.id} has disallowed facet ${item.facet} for type ${ku.type}.`);
                 return null;
             }
 
@@ -82,13 +98,15 @@ export class ReviewSessionController {
                 ku_id: item.ku_id,
                 character: ku.character || ku.slug?.split(':')[1] || '?',
                 type: ku.type,
-                // Fallback prompt: use character or meaning if question is missing
-                prompt: question?.prompt || (item.facet === 'meaning' ? ku.character : (ku.character || ku.meaning)),
+                // Prompt logic: cloze uses sentence, others use character
+                prompt: item.facet === 'cloze' 
+                    ? (question?.cloze_text_with_blanks || "Grammar recall") 
+                    : (question?.prompt || ku.character || ku.slug?.split(':')[1] || ku.meaning),
                 prompt_variant: item.facet,
                 meaning: ku.meaning,
                 reading: reading,
                 cloze_answer: item.facet === 'cloze' ? (question?.correct_answers?.[0] || ku.meaning) : undefined,
-                sentence_ja: question?.cloze_text_with_blanks || (item.facet === 'cloze' ? "Grammar check: Try to recall the structure." : undefined),
+                sentence_ja: item.facet === 'cloze' ? (question?.cloze_text_with_blanks || "Grammar check") : undefined,
                 sentence_en: question?.hints?.[0] || (item.facet === 'cloze' ? ku.meaning : undefined),
                 currentState: {
                     stage: item.state,

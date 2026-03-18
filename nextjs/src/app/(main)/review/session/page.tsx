@@ -23,9 +23,10 @@ function SessionContent() {
     const loadSession = async () => {
         if (!user) return;
         const userId = user.id;
+        const deckId = searchParams.get('deckId') || undefined;
 
         try {
-            const itemsRes = await fetchDueItemsAction(userId);
+            const itemsRes = await fetchDueItemsAction(userId, deckId);
             const items = itemsRes.data || [];
 
             if (items.length === 0) {
@@ -133,25 +134,25 @@ function SessionContent() {
 
     return (
         <div className="w-full h-full flex flex-col overflow-hidden bg-white" data-testid="review-session-root">
-            <header className="flex justify-between items-center shrink-0 px-6 py-4 border-b border-gray-100 bg-white relative z-20">
-                <div className="flex items-center gap-4">
-                    <div className="w-32 sm:w-64 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <header className="flex justify-between items-center shrink-0 px-5 py-3.5 border-b border-gray-100 bg-white relative z-20">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden max-w-xs">
                         <div
-                            className={clsx("h-full transition-all duration-700 ease-out", currentCard?.type === 'kanji' ? 'bg-kanji' : 'bg-primary')}
+                            className={clsx('h-full rounded-full transition-all duration-700 ease-out', currentCard?.type === 'kanji' ? 'bg-kanji' : 'bg-primary')}
                             style={{ width: `${progress}%` }}
                         />
                     </div>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] whitespace-nowrap">
-                        {stats.completed + 1} / {stats.totalItems}
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">
+                        Step {stats.completed + 1} of {stats.totalItems}
                     </span>
                 </div>
                 <button
                     onClick={() => router.push('/review')}
-                    className="group flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-xl transition-all duration-300 border border-gray-200 hover:border-gray-300"
+                    className="ml-3 group flex items-center gap-1.5 px-3 py-2 hover:bg-gray-50 rounded-xl transition-all duration-300 border border-gray-200 hover:border-gray-300"
                     title="Close Review"
                 >
-                    <X size={16} className="text-gray-400 group-hover:text-red-500 transition-colors duration-300" />
-                    <span className="text-[10px] font-bold text-gray-400 group-hover:text-red-500 tracking-widest uppercase hidden sm:inline">Close</span>
+                    <X size={15} className="text-gray-400 group-hover:text-red-500 transition-colors duration-300" />
+                    <span className="text-[10px] font-bold text-gray-400 group-hover:text-red-500 tracking-widest uppercase hidden sm:inline">Exit</span>
                 </button>
             </header>
 

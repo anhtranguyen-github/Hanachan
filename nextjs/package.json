@@ -2,7 +2,7 @@
   "name": "hanachan",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@10.2.0",
+  "packageManager": "pnpm@10.24.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -21,7 +21,7 @@
     "test:accounts:create": "node ../scripts/create-test-accounts.js",
     "test:mutation": "stryker run",
     "test:mutation:ci": "stryker run --reporters json,dashboard",
-    "preinstall": "npx only-allow pnpm"
+    "preinstall": "pnpm dlx only-allow pnpm"
   },
   "dependencies": {
     "@langchain/core": "0.3.80",
@@ -50,6 +50,9 @@
   "devDependencies": {
     "@stryker-mutator/core": "^9.6.0",
     "@stryker-mutator/vitest-runner": "^9.6.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "20.17.6",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
@@ -60,6 +63,7 @@
     "dotenv-cli": "^11.0.0",
     "eslint": "8.57.1",
     "eslint-config-next": "14.2.16",
+    "jsdom": "^28.1.0",
     "playwright": "^1.58.2",
     "playwright-core": "^1.58.2",
     "postcss": "8.4.47",

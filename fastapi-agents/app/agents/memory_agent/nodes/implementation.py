@@ -34,8 +34,12 @@ async def tools_node(state: AgentState) -> dict[str, Any]:
         if tool_name not in tool_map:
             continue
 
-        # Inject user_id and jwt if needed
+        # Inject user_id and jwt if needed (proactive injection for hidden parameters)
         if tool_name in [
+            "get_episodic_memory",
+            "get_semantic_facts",
+            "get_user_learning_progress",
+            "get_due_items",
             "get_recent_reviews",
             "search_knowledge_units",
             "append_to_learning_notes",
@@ -47,16 +51,25 @@ async def tools_node(state: AgentState) -> dict[str, Any]:
             "submit_reading_answer",
             "get_database_schema",
             "execute_read_only_sql",
+            "submit_review",
         ]:
-            if "user_id" in tool_map[tool_name].args:
-                args["user_id"] = user_id
-            if "jwt" in tool_map[tool_name].args:
-                args["jwt"] = state["jwt"]
+            args["user_id"] = user_id
+            args["jwt"] = state["jwt"]
 
-        # Invoke (LangChain handles sync/async internally via ainvoke)
+        # Invoke the underlying function directly to bypass schema validation of injected parameters (jwt/user_id)
         target_tool = tool_map[tool_name]
         try:
-            content = await target_tool.ainvoke(args)
+            import asyncio
+            # Async tools store their function in .coroutine, sync tools in .func
+            func = getattr(target_tool, "coroutine", None) or getattr(target_tool, "func", None)
+            
+            if not func:
+                raise ValueError(f"Could not find executable function for tool {tool_name}")
+
+            if asyncio.iscoroutinefunction(func):
+                content = await func(**args)
+            else:
+                content = func(**args)
 
             results.append(
                 ToolMessage(tool_call_id=tool_call["id"], content=str(content), name=tool_name)
@@ -80,11 +93,13 @@ ORCHESTRATOR_PROMPT = ChatPromptTemplate.from_messages(
             "Your job is to delegate tasks to specialized workers based on the user's intent.\n\n"
             "Workers Available:\n"
             "- 'memory_worker': Handles past conversations, personal facts, interests, and goals.\n"
-            "- 'sql_worker': Handles structured data queries in Supabase (e.g., counts, stats, specific records).\n\n"
+            "- 'fsrs_worker': Handles learning progress, recent reviews, and knowledge unit details (Japanese context).\n"
+            "- 'sql_worker': Handles structured data queries in Supabase (e.g., student counts, lesson stats).\n\n"
             "Instructions:\n"
             "1. Analyze the user's message.\n"
             "2. Decide which worker(s) to call. You can call one, both, or none (if you can answer directly).\n"
             "3. Return the names of the workers you want to trigger as a list, or 'GENERATE' if you have enough info.\n\n"
+            "All identity and authentication are handled automatically. NEVER ask the user for technical IDs or access tokens. If you cannot identify the user's data, simply state that the records are currently unreachable.\n\n"
             "User session context:\n{thread_context}\n\n"
             "Current Date: {date}",
         ),
@@ -94,7 +109,7 @@ ORCHESTRATOR_PROMPT = ChatPromptTemplate.from_messages(
 
 
 class WorkerDispatch(BaseModel):
-    workers: list[str] = Field(description="List of worker names to trigger: ['memory_worker', 'sql_worker']")
+    workers: list[str] = Field(description="List of worker names to trigger: ['memory_worker', 'fsrs_worker', 'sql_worker']")
     reasoning: str = Field(description="Short explanation of why these workers were chosen")
 
 

@@ -70,3 +70,12 @@ class DeckService:
 
         response = client.table("deck_items").select("*").eq("deck_id", deck_id).execute()
         return response.data
+
+    @staticmethod
+    async def delete_deck(user_id: str, deck_id: str):
+        client = get_db_client()
+        deck_res = client.table("decks").select("user_id").eq("id", deck_id).execute()
+        if not deck_res.data or deck_res.data[0]["user_id"] != user_id:
+            raise Exception("Deck not found or access denied")
+
+        client.table("decks").delete().eq("id", deck_id).execute()

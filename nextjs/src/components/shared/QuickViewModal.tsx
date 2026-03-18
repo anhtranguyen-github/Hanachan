@@ -143,7 +143,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ isOpen, onClose,
                     )}
                     {!onAddToDeck && (
                         <Link
-                            href={`/content/${data.ku_type?.toLowerCase() === 'vocabulary' ? 'vocabulary' : data.ku_type?.toLowerCase() === 'radical' ? 'radicals' : data.ku_type?.toLowerCase() || 'kanji'}/${data.slug}`}
+                            href={`/library/${data.ku_type?.toLowerCase() === 'vocabulary' ? 'vocabulary' : data.ku_type?.toLowerCase() === 'radical' ? 'radicals' : data.ku_type?.toLowerCase() || 'kanji'}/${data.slug}`}
                             className="flex-[2] py-3 bg-primary text-white rounded-2xl text-[9px] font-black uppercase flex items-center justify-center gap-2 shadow-md transition-all hover:opacity-90"
                         >
                             Open Full Page

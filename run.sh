@@ -13,6 +13,7 @@ set -Eeuo pipefail
 
 FRONTEND_PORT=${FRONTEND_PORT:-3000}
 BACKEND_PORT=${BACKEND_PORT:-6100}
+OMNIROUTE_PORT=${OMNIROUTE_PORT:-20128}
 MODE="${1:-dev}"   # dev | build | start (or prod)
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,6 +21,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_PID=""
 FRONTEND_PID=""
 CORE_PID=""
+OMNIROUTE_PID=""
 
 log() {
   echo -e "[$(date +'%H:%M:%S')] $*"
@@ -104,6 +106,11 @@ shutdown() {
     kill -TERM "$CORE_PID" 2>/dev/null || true
   fi
 
+  if [[ -n "$OMNIROUTE_PID" ]] && kill -0 "$OMNIROUTE_PID" 2>/dev/null; then
+    log "Stopping OmniRoute (PID $OMNIROUTE_PID)"
+    kill -TERM "$OMNIROUTE_PID" 2>/dev/null || true
+  fi
+
   sleep 2
 
   if [[ -n "$FRONTEND_PID" ]] && kill -0 "$FRONTEND_PID" 2>/dev/null; then
@@ -119,6 +126,11 @@ shutdown() {
   if [[ -n "$CORE_PID" ]] && kill -0 "$CORE_PID" 2>/dev/null; then
     log "Force killing core service"
     kill -KILL "$CORE_PID" 2>/dev/null || true
+  fi
+
+  if [[ -n "$OMNIROUTE_PID" ]] && kill -0 "$OMNIROUTE_PID" 2>/dev/null; then
+    log "Force killing OmniRoute"
+    kill -KILL "$OMNIROUTE_PID" 2>/dev/null || true
   fi
 
   wait || true
@@ -139,6 +151,7 @@ fi
 cleanup_port "$BACKEND_PORT"
 cleanup_port "$FRONTEND_PORT"
 cleanup_port 6200
+cleanup_port "$OMNIROUTE_PORT"
 
 if port_in_use "$FRONTEND_PORT"; then
   log "ERROR: Port $FRONTEND_PORT is still in use and cannot be freed from this shell."
@@ -163,6 +176,10 @@ case "$MODE" in
       --port 6200 \
       > "$ROOT_DIR/fastapi-core/core.log" 2>&1 &
     CORE_PID=$!
+
+    log "🚀 Starting OmniRoute on port $OMNIROUTE_PORT"
+    omniroute --port "$OMNIROUTE_PORT" --no-open > "$ROOT_DIR/omniroute.log" 2>&1 &
+    OMNIROUTE_PID=$!
 
     log "🚀 Starting backend on port $BACKEND_PORT"
     cd "$ROOT_DIR/fastapi-agents"
@@ -202,6 +219,10 @@ case "$MODE" in
       --port 6200 \
       > "$ROOT_DIR/fastapi-core/core.log" 2>&1 &
     CORE_PID=$!
+
+    log "🚀 Starting OmniRoute on port $OMNIROUTE_PORT"
+    omniroute --port "$OMNIROUTE_PORT" --no-open > "$ROOT_DIR/omniroute.log" 2>&1 &
+    OMNIROUTE_PID=$!
 
     log "🚀 Starting backend on port $BACKEND_PORT"
     cd "$ROOT_DIR/fastapi-agents"
@@ -244,8 +265,9 @@ esac
 FRONTEND_PID=$!
 
 log "✅ Startup complete"
-log "Backend:  http://localhost:$BACKEND_PORT"
-log "Frontend: http://localhost:$FRONTEND_PORT"
+log "Backend:   http://localhost:$BACKEND_PORT"
+log "Frontend:  http://localhost:$FRONTEND_PORT"
+log "OmniRoute: http://localhost:$OMNIROUTE_PORT"
 log "Press Ctrl+C to stop."
 
 wait

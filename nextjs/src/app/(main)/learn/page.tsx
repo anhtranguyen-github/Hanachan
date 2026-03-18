@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2, BookOpen, ChevronRight, Target, X, Sparkles, GraduationCap } from 'lucide-react';
 import { fetchNewItemsAction, fetchLevelStatsAction } from '@/features/learning/actions';
 import { useUser } from '@/features/auth/AuthContext';
+import { useDecks } from '@/features/decks/hooks';
 import { supabase } from '@/lib/supabase';
 import { clsx } from 'clsx';
 
@@ -15,6 +16,8 @@ export default function LearnOverviewPage() {
     const [state, setState] = useState<any>(null);
     const [mounted, setMounted] = useState(false);
     const [userLevel, setUserLevel] = useState(1);
+    const { decks, loading: decksLoading } = useDecks();
+    const [selectedDeckId, setSelectedDeckId] = useState<string>('global');
 
     const refreshData = async () => {
         try {
@@ -24,9 +27,15 @@ export default function LearnOverviewPage() {
             const { data: profile } = await supabase.from('users').select('level').eq('id', userId).single();
             const currentLevel = profile?.level || 1;
             setUserLevel(currentLevel);
+
+            // If global, we fetch from level-X for now as fallback
+            // but ideally we should fetch from "Enabled Decks"
+            const deckId = selectedDeckId === 'global' ? undefined : selectedDeckId;
             const levelRes = await fetchLevelStatsAction(userId, `level-${currentLevel}`);
             const levelStats = levelRes.data || { new: 0, learned: 0, total: 100 };
-            const newItemsRes = await fetchNewItemsAction(userId, `level-${currentLevel}`, 20);
+            
+            // fetchNewItemsAction should support deckId
+            const newItemsRes = await fetchNewItemsAction(userId, deckId || `level-${currentLevel}`, 20);
             const newItems = newItemsRes.data || [];
             const batches = [];
             for (let i = 0; i < newItems.length; i += 5) {
@@ -77,7 +86,20 @@ export default function LearnOverviewPage() {
                         </div>
                         <div>
                             <h2 className="text-lg font-black text-[#3E4A61] tracking-tight uppercase">Learn</h2>
-                            <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0]">Level {userLevel}</p>
+                            <div className="flex items-center gap-2">
+                                <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0]">Level {userLevel}</p>
+                                <span className="text-[#CBD5E0] text-[8px]">•</span>
+                                <select 
+                                    className="bg-transparent text-[8px] font-black uppercase tracking-widest text-[#A2D2FF] outline-none cursor-pointer hover:text-[#3A6EA5] transition-colors"
+                                    value={selectedDeckId}
+                                    onChange={(e) => setSelectedDeckId(e.target.value)}
+                                >
+                                    <option value="global">Enabled Decks</option>
+                                    {decks.map(d => (
+                                        <option key={d.id} value={d.id}>{d.name}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <Link href="/dashboard" className="p-2 bg-white/80 border border-border/40 rounded-xl text-[#A0AEC0] hover:text-[#3E4A61] hover:border-primary/20 shadow-sm transition-all group backdrop-blur-sm">
@@ -116,7 +138,7 @@ export default function LearnOverviewPage() {
                                         return (
                                             <Link
                                                 key={i}
-                                                href={`/content/${pathType}/${ku?.slug}`}
+                                                href={`/library/${pathType}/${ku?.slug}`}
                                                 className="w-8 h-8 rounded-full bg-white border-2 border-[#EDF2F7] flex items-center justify-center text-[10px] font-black text-[#3A6EA5] shadow-sm hover:scale-110 hover:z-20 transition-all cursor-pointer"
                                                 title={ku?.meaning}
                                             >
@@ -140,7 +162,7 @@ export default function LearnOverviewPage() {
 
                     {hasActiveBatch && (
                         <button
-                            onClick={() => router.push('/learn/session')}
+                            onClick={() => router.push(`/learn/session${selectedDeckId !== 'global' ? `?deckId=${selectedDeckId}` : ''}`)}
                             data-testid="begin-session-link"
                             className="relative z-10 mt-5 w-full py-4 bg-gradient-to-r from-[#3A6EA5] to-[#2D5A8A] text-white rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] hover:shadow-xl hover:shadow-[#3A6EA5]/25 hover:scale-[1.02] transition-all duration-300 group/btn"
                         >

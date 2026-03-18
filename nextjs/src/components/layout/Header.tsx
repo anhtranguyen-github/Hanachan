@@ -25,8 +25,11 @@ import { clsx } from 'clsx';
 import { useUser } from '@/features/auth/AuthContext';
 
 const NAV_ITEMS = [
+    { name: 'Progress', href: '/dashboard', icon: LayoutDashboard, color: '#F4ACB7' },
     { name: 'Learn', href: '/learn', icon: BookOpen, color: '#A2D2FF' },
     { name: 'Review', href: '/review', icon: Swords, color: '#CDB4DB' },
+    { name: 'Decks', href: '/decks', icon: Layers, color: '#FFD6A5' },
+    { name: 'Library', href: '/library', icon: BookMarked, color: '#7BB8F0' },
     { name: 'Chat', href: '/chat', icon: MessageSquare, color: '#B7E4C7' },
     {
         name: 'Immersion',
@@ -38,10 +41,8 @@ const NAV_ITEMS = [
             { name: 'Reading', href: '/reading', icon: BookMarked, color: '#7BB8F0' },
             { name: 'Speaking', href: '/immersion/speaking', icon: Mic, color: '#FFB5B5' },
             { name: 'Sentences', href: '/sentences', icon: PenTool, color: '#A2D2FF' },
-            { name: 'All Decks', href: '/content', icon: Layers, color: '#FFD6A5' },
         ]
     },
-    { name: 'Progress', href: '/dashboard', icon: LayoutDashboard, color: '#F4ACB7' },
 ];
 
 export function Header() {

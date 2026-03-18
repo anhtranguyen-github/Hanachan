@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Any
 from uuid import UUID
@@ -6,6 +7,8 @@ import httpx
 from fastapi import HTTPException
 from app.core.config import settings
 
+logger = logging.getLogger(__name__)
+
 
 class CoreClient:
     def __init__(self, jwt: str):
@@ -13,24 +16,34 @@ class CoreClient:
         self.headers = {"Authorization": f"Bearer {jwt}", "Content-Type": "application/json"}
 
     async def _post(self, path: str, data: dict[str, Any]) -> dict[str, Any]:
+        url = f"{self.base_url}{path}"
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.post(f"{self.base_url}{path}", json=data, headers=self.headers)
+                response = await client.post(url, json=data, headers=self.headers)
                 response.raise_for_status()
                 return response.json()
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Core service error at {url}: {e.response.status_code} - {e.response.text}")
+            raise HTTPException(status_code=e.response.status_code, detail=f"Core service error: {e.response.text}")
         except httpx.RequestError as e:
-            raise HTTPException(status_code=502, detail=f"Core service unavailable: {e}") from e
+            logger.error(f"Core service unavailable at {url}: {str(e)}")
+            raise HTTPException(status_code=502, detail=f"Core service unavailable: {str(e)}") from e
 
     async def _get(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        url = f"{self.base_url}{path}"
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    f"{self.base_url}{path}", params=params, headers=self.headers
+                    url, params=params, headers=self.headers
                 )
                 response.raise_for_status()
                 return response.json()
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Core service error at {url}: {e.response.status_code} - {e.response.text}")
+            raise HTTPException(status_code=e.response.status_code, detail=f"Core service error: {e.response.text}")
         except httpx.RequestError as e:
-            raise HTTPException(status_code=502, detail=f"Core service unavailable: {e}") from e
+            logger.error(f"Core service unavailable at {url}: {str(e)}")
+            raise HTTPException(status_code=502, detail=f"Core service unavailable: {str(e)}") from e
 
     # Reading
     async def submit_reading_answer(

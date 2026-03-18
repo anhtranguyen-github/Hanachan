@@ -6,11 +6,15 @@ class SRSStage(StrEnum):
     NEW = "new"
     LEARNING = "learning"
     REVIEW = "review"
+    RELEARNING = "relearning"
     BURNED = "burned"
 
 class Rating(StrEnum):
     AGAIN = "again"
-    PASS = "pass"
+    HARD = "hard"
+    GOOD = "good"
+    PASS = "pass"  # Alias for GOOD
+    EASY = "easy"
 
 class ReviewSubmission(BaseModel):
     ku_id: str
@@ -99,3 +103,26 @@ class DashboardStats(BaseModel):
     totalKUCoverage: float
     streak: int
     todayBatchCount: int = 0
+    deckId: str | None = None
+
+class Deck(BaseModel):
+    id: str
+    user_id: str | None = None
+    name: str
+    description: str | None = None
+    is_system: bool = False
+    created_at: datetime = datetime.utcnow()
+
+class DeckProgress(BaseModel):
+    deck_id: str
+    total_items: int
+    learned_items: int
+    due_items: int
+    retention: float
+    progress_percentage: float
+
+class UserDeckSettings(BaseModel):
+    user_id: str
+    deck_id: str
+    is_enabled: bool = True
+    updated_at: datetime = datetime.utcnow()

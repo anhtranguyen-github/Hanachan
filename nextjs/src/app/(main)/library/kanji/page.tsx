@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 
 export default function Redirect() {
-    redirect('/content?type=grammar');
+    redirect('/library?type=kanji');
 }

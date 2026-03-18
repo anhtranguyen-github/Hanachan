@@ -7,10 +7,9 @@ from __future__ import annotations
 
 import logging
 from typing import Any
-from uuid import UUID
-
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import tool
+from pydantic import BaseModel, Field
 
 from app.core.config import settings
 from app.mcp.client import McpClient
@@ -18,13 +17,18 @@ from app.mcp.client import McpClient
 logger = logging.getLogger(__name__)
 
 
-@tool
-async def create_user_deck(
-    name: str, jwt: str, description: str | None = None, user_id: str = "INJECTED"
-) -> str:
+class CreateDeckSchema(BaseModel):
+    name: str = Field(description="The name of the new deck.")
+    description: str | None = Field(default=None, description="Optional description of the deck.")
+
+
+@tool(args_schema=CreateDeckSchema)
+async def create_user_deck(name: str, description: str | None = None, **kwargs) -> str:
     """
     Create a new custom deck for the user.
     """
+    user_id = kwargs.get("user_id", "INJECTED")
+    jwt = kwargs.get("jwt", "SYSTEM_PROVIDED")
     try:
         client = McpClient(settings.fastapi_core_mcp_url)
         result = await client.call_tool(
@@ -40,11 +44,17 @@ async def create_user_deck(
         return f"Failed to create deck: {str(e)}"
 
 
-@tool
-async def list_my_decks(jwt: str, user_id: str = "INJECTED") -> str:
+class ListDecksSchema(BaseModel):
+    pass
+
+
+@tool(args_schema=ListDecksSchema)
+async def list_my_decks(**kwargs) -> str:
     """
     List all custom decks created by the user.
     """
+    user_id = kwargs.get("user_id", "INJECTED")
+    jwt = kwargs.get("jwt", "SYSTEM_PROVIDED")
     try:
         client = McpClient(settings.fastapi_core_mcp_url)
         decks_str = await client.call_tool("list_decks", {}, jwt=jwt)
@@ -58,13 +68,19 @@ async def list_my_decks(jwt: str, user_id: str = "INJECTED") -> str:
         return f"Failed to list decks: {str(e)}"
 
 
-@tool
-async def add_to_deck(
-    deck_name_or_id: str, item_identifier: str, item_type: str, jwt: str, user_id: str = "INJECTED"
-) -> str:
+class AddToDeckSchema(BaseModel):
+    deck_name_or_id: str = Field(description="Name or ID of the deck.")
+    item_identifier: str = Field(description="The item (Kanji/Slug/Word) to add.")
+    item_type: str = Field(description="Type of item ('kanji', 'vocabulary', etc.)")
+
+
+@tool(args_schema=AddToDeckSchema)
+async def add_to_deck(deck_name_or_id: str, item_identifier: str, item_type: str, **kwargs) -> str:
     """
     Add an item to a specific deck.
     """
+    user_id = kwargs.get("user_id", "INJECTED")
+    jwt = kwargs.get("jwt", "SYSTEM_PROVIDED")
     try:
         client = McpClient(settings.fastapi_core_mcp_url)
         try:
@@ -99,13 +115,19 @@ async def add_to_deck(
         return f"Failed to add item to deck: {str(e)}"
 
 
-@tool
-async def remove_from_deck(
-    deck_name_or_id: str, item_identifier: str, item_type: str, jwt: str, user_id: str = "INJECTED"
-) -> str:
+class RemoveFromDeckSchema(BaseModel):
+    deck_name_or_id: str = Field(description="Name or ID of the deck.")
+    item_identifier: str = Field(description="The item (Kanji/Slug/Word) to remove.")
+    item_type: str = Field(description="Type of item.")
+
+
+@tool(args_schema=RemoveFromDeckSchema)
+async def remove_from_deck(deck_name_or_id: str, item_identifier: str, item_type: str, **kwargs) -> str:
     """
     Remove an item from a specific deck.
     """
+    user_id = kwargs.get("user_id", "INJECTED")
+    jwt = kwargs.get("jwt", "SYSTEM_PROVIDED")
     try:
         client = McpClient(settings.fastapi_core_mcp_url)
         try:
@@ -139,11 +161,17 @@ async def remove_from_deck(
         return f"Failed to remove item from deck: {str(e)}"
 
 
-@tool
-async def view_deck_contents(deck_name_or_id: str, jwt: str, user_id: str = "INJECTED") -> str:
+class ViewDeckSchema(BaseModel):
+    deck_name_or_id: str = Field(description="Name or ID of the deck to view.")
+
+
+@tool(args_schema=ViewDeckSchema)
+async def view_deck_contents(deck_name_or_id: str, **kwargs) -> str:
     """
     Show all items currently in a deck.
     """
+    user_id = kwargs.get("user_id", "INJECTED")
+    jwt = kwargs.get("jwt", "SYSTEM_PROVIDED")
     try:
         client = McpClient(settings.fastapi_core_mcp_url)
         try:

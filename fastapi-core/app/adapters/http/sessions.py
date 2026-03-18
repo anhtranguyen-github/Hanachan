@@ -17,6 +17,7 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 class ReviewStartRequest(BaseModel):
     limit: int = 20
     content_type: str = "all"  # radical, kanji, vocabulary, grammar or all
+    deck_id: str | None = None
 
 
 class ReviewSubmitRequest(BaseModel):
@@ -28,7 +29,9 @@ class ReviewSubmitRequest(BaseModel):
 
 
 class LessonStartRequest(BaseModel):
-    unit_ids: list[str]
+    unit_ids: list[str] = []
+    level: int | None = None
+    deck_id: str | None = None
 
 
 def get_db_client() -> Client:
@@ -58,6 +61,15 @@ async def start_review(
 
     if payload.content_type != "all":
         query = query.eq("knowledge_units.type", payload.content_type)
+
+    if payload.deck_id:
+        # Filter by deck items
+        deck_items_res = client.table("deck_items").select("item_id").eq("deck_id", payload.deck_id).execute()
+        item_ids = [item["item_id"] for item in deck_items_res.data]
+        if item_ids:
+            query = query.in_("item_id", item_ids)
+        else:
+            return {"session_id": None, "items": [], "error": "No items found in selected deck"}
 
     res = query.limit(payload.limit).execute()
     items = res.data
@@ -185,6 +197,7 @@ async def start_lesson(
             .insert(
                 {
                     "user_id": user_id,
+                    "level": payload.level,
                     "status": "in_progress",
                     "started_at": datetime.utcnow().isoformat(),
                 }
@@ -193,9 +206,23 @@ async def start_lesson(
         )
         batch_id = batch_res.data[0]["id"]
 
+        unit_ids = payload.unit_ids
+        
+        if not unit_ids and payload.deck_id:
+            # Auto-pick items from the deck that aren't learned yet
+            learned_res = client.table("user_fsrs_states").select("item_id").eq("user_id", user_id).execute()
+            learned_ids = [l["item_id"] for l in learned_res.data]
+            
+            deck_q = client.table("deck_items").select("item_id").eq("deck_id", payload.deck_id)
+            if learned_ids:
+                deck_q = deck_q.not_("item_id", "in", f"({','.join(learned_ids)})")
+            
+            deck_res = deck_q.limit(10).execute()
+            unit_ids = [d["item_id"] for d in deck_res.data]
+
         items = [
             {"batch_id": batch_id, "ku_id": unit_id, "status": "unseen"}
-            for unit_id in payload.unit_ids
+            for unit_id in unit_ids
         ]
 
         if items:

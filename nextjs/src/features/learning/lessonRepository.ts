@@ -1,7 +1,10 @@
 import { supabase } from "@/lib/supabase";
 
+let _curriculumStatsCache: Record<number, number> | null = null;
+let _curriculumStatsCacheTime: number = 0;
+
 export const lessonRepository = {
-    async fetchNewItems(userId: string, limit: number = 5, level?: number) {
+    async fetchNewItems(userId: string, limit: number = 5, level?: number, deckId?: string) {
         // Get IDs of items user is already learning
         const { data: learned, error: learnedError } = await supabase
             .from('user_fsrs_states')
@@ -10,22 +13,34 @@ export const lessonRepository = {
             .eq('item_type', 'ku');
 
         const learnedIds = learned?.map(l => l.item_id) || [];
-        console.log(`[lessonRepository] fetchNewItems: User ${userId} Level ${level}. Learned Count: ${learnedIds.length}`);
+        console.log(`[lessonRepository] fetchNewItems: User ${userId} Level ${level} Deck ${deckId}. Learned Count: ${learnedIds.length}`);
 
         let query = supabase
             .from('knowledge_units')
             .select('*, kanji_details(*), vocabulary_details(*), grammar_details(*)');
 
         if (learnedIds.length > 0) {
-            query = query.not('id', 'in', `(${learnedIds.join(',')})`);
+            // Because URL length limits apply to `in` filters (approx 200 UUIDs),
+            // we will fetch all items in the level/deck and filter locally.
+            // This is safer and avoids query string overflow.
         }
 
-        if (level) {
+        if (deckId) {
+            // Filter by deck items
+            const { data: deckItems } = await supabase.from('deck_items').select('item_id').eq('deck_id', deckId);
+            const itemIds = deckItems?.map(i => i.item_id) || [];
+            if (itemIds.length > 0) {
+                query = query.in('id', itemIds);
+            } else {
+                return [];
+            }
+        } else if (level) {
             query = query.eq('level', level);
         }
 
+        // Since we removed `.not('in')` to avoid URL limits, fetch more and filter locally
         const { data, error } = await query
-            .limit(limit)
+            .limit(limit * 50) // Fetch a larger batch
             .order('level', { ascending: true })
             .order('slug', { ascending: true });
 
@@ -34,9 +49,10 @@ export const lessonRepository = {
             return [];
         }
 
-        console.log(`[lessonRepository] fetchNewItems: Found ${data?.length} items.`);
+        // Filter locally
+        const unlearned = data.filter(ku => !learnedIds.includes(ku.id)).slice(0, limit);
 
-        return data.map(ku => ({
+        return unlearned.map(ku => ({
             user_id: userId,
             ku_id: ku.id,
             state: 'new',
@@ -100,7 +116,7 @@ export const lessonRepository = {
     async createLessonItems(batchId: string, unitIds: string[]) {
         const itemsToInsert = unitIds.map(id => ({
             batch_id: batchId,
-            item_id: id,
+            ku_id: id,
             status: 'unseen'
         }));
         const { error } = await supabase
@@ -114,7 +130,7 @@ export const lessonRepository = {
             .from('lesson_items')
             .update({ status })
             .eq('batch_id', batchId)
-            .eq('item_id', unitId);
+            .eq('ku_id', unitId);
         if (error) throw error;
     },
 
@@ -130,6 +146,12 @@ export const lessonRepository = {
     },
 
     async fetchCurriculumStats() {
+        const now = Date.now();
+        // Cache curriculum stats for 1 hour to prevent heavy sequential DB hits
+        if (_curriculumStatsCache && (now - _curriculumStatsCacheTime < 3600000)) {
+            return _curriculumStatsCache;
+        }
+
         const { data, error } = await supabase
             .from('knowledge_units')
             .select('level');
@@ -140,6 +162,9 @@ export const lessonRepository = {
         data.forEach(item => {
             counts[item.level] = (counts[item.level] || 0) + 1;
         });
+        
+        _curriculumStatsCache = counts;
+        _curriculumStatsCacheTime = now;
         return counts;
     }
 };

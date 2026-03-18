@@ -238,7 +238,7 @@ function WordDetail({ stat, isSaved, onClose, onSave }: WordDetailProps) {
 
         {stat.ku_id && (
           <a
-            href={`/content/vocabulary/${stat.ku_id}`}
+            href={`/library/vocabulary/${stat.ku_id}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wide bg-[#F7FAFC] text-[#A0AEC0] hover:text-[#3E4A61] transition-all"

@@ -35,25 +35,25 @@ const typeStyles: Record<string, { text: string; bg: string; border: string; hre
         text: 'text-[#D88C9A]',
         bg: 'bg-[#F4ACB7]/10',
         border: 'border-[#F4ACB7]/30',
-        href: '/content/kanji',
+        href: '/library/kanji',
     },
     vocabulary: {
         text: 'text-[#9B7DB5]',
         bg: 'bg-[#CDB4DB]/10',
         border: 'border-[#CDB4DB]/30',
-        href: '/content/vocabulary',
+        href: '/library/vocabulary',
     },
     grammar: {
         text: 'text-[#5A9E72]',
         bg: 'bg-[#B7E4C7]/10',
         border: 'border-[#B7E4C7]/30',
-        href: '/content/grammar',
+        href: '/library/grammar',
     },
     radical: {
         text: 'text-[#3A6EA5]',
         bg: 'bg-[#A2D2FF]/10',
         border: 'border-[#A2D2FF]/30',
-        href: '/content/radicals',
+        href: '/library/radicals',
     },
 };
 

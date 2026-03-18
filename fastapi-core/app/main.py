@@ -10,7 +10,6 @@ from app.adapters.http.learning import router as learning_router
 from app.adapters.http.reading import router as reading_router
 from app.adapters.http.sessions import router as sessions_router
 from app.auth.middleware import SupabaseJwtMiddleware
-from app.mcp.server import router as mcp_router
 
 app = FastAPI(
     title="Hanachan Core Service",

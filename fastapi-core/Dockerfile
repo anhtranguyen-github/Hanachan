@@ -14,12 +14,9 @@ WORKDIR /app
 # ── Dependency stage ──────────────────────────────────────────────────────────
 FROM base AS deps
 # Copy only files needed for installing dependencies
-COPY pyproject.toml ./
-# If uv.lock exists, copy it. Else skip.
-# Since we don't have it yet, we'll let uv generate it during build if needed
-RUN touch uv.lock
-COPY . .
-RUN uv sync --no-install-project
+COPY pyproject.toml uv.lock ./
+# Sync dependencies only
+RUN uv sync --frozen --no-install-project
 
 # ── Test stage ───────────────────────────────────────────────────────────────
 FROM deps AS test
