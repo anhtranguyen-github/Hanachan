@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Phase 1 — Naming & test hygiene (2026-03-19)
+
+#### Changed
+- **Renamed `coreClient` → `backendClient`**: File, class, instance, and all imports across 4 consumers + 2 test files + config. Single import path: `@/services/backendClient`
+- **Renamed `CORE_API_BASE_URL` → `BACKEND_API_BASE_URL`** in `src/nextjs/src/config/api.ts`
+- **Renamed `FASTAPI_CORE_URL` → `BACKEND_API_URL`** in API integration test setup
+- **Split backend tests**: Moved `src/fastapi/tests/` into `tests/unit/` (76 tests) and `tests/architecture/` (10 tests)
+- **Updated architecture guard messages**: `DIRECT_FASTAPI_CALL` and `CRUD_SERVICE_IN_FASTAPI` messages now reflect single-backend reality
+
+### Monorepo Restructure (2026-03-19)
+
+#### Changed
+- **Directory layout**: Moved `fastapi-agents/` + `fastapi-core/` → `src/fastapi/` (merged backend), `nextjs/` → `src/nextjs/`
+- **LLM client**: Created `src/nextjs/src/services/llmClient.ts` supporting OpenAI and Omniroute providers
+- **Learning service thinning**: Split learning feature into `service.ts` (backend contract only) and `data.ts` (local repository queries)
+- **Path references**: Updated docker-compose, package.json, run.sh, scripts, .gitignore, and data tooling to use new `src/` paths
+
+> **Note**: File paths in changelog entries below this point refer to the pre-restructure layout (`fastapi-agents/`, `fastapi-core/`, `nextjs/`). The current paths are under `src/`.
+
 ### Backend Quality Assurance & Repository Reorganization (2026-03-05)
 
 #### Added

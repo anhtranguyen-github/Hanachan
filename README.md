@@ -23,10 +23,10 @@ A Japanese learning platform built with Next.js 14 and FastAPI, using Supabase f
 
 ```bash
 # Install frontend
-cd nextjs && pnpm install
+cd src/nextjs && pnpm install
 
 # Copy env
-cp .env.example nextjs/.env.local
+cp src/nextjs/.env.example src/nextjs/.env.local
 # Fill in your keys
 
 # Run
@@ -49,8 +49,8 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ```bash
 # 1. Copy and configure environment files
-cp nextjs/.env.example nextjs/.env
-cp fastapi-agents/.env.example fastapi-agents/.env
+cp src/nextjs/.env.example src/nextjs/.env
+cp src/fastapi/.env.example src/fastapi/.env
 
 # 2. Edit the .env files with your credentials
 # See Environment Variables section below
@@ -70,7 +70,7 @@ docker compose down
 | Service | Port | Description |
 |---------|------|-------------|
 | nextjs | 3000 | Next.js frontend |
-| fastapi-agents | 6100 | FastAPI backend API |
+| fastapi | 6100 | FastAPI backend API |
 
 ### Docker Commands
 
@@ -87,21 +87,21 @@ docker compose down
 # View logs
 docker compose logs -f
 docker compose logs -f nextjs
-docker compose logs -f fastapi-agents
+docker compose logs -f fastapi
 
 # Restart a specific service
-docker restart fastapi-agents
+docker restart fastapi
 
 # Shell into a container
 docker compose exec nextjs sh
-docker compose exec fastapi-agents bash
+docker compose exec fastapi bash
 ```
 
 ### Running Tests with Docker
 
 ```bash
 # Run FastAPI tests
-docker compose --profile test run --rm fastapi-agents-test
+docker compose --profile test run --rm fastapi-test
 
 # Run Next.js tests
 docker compose --profile test run --rm nextjs-test
@@ -109,14 +109,14 @@ docker compose --profile test run --rm nextjs-test
 
 ### Environment Variables
 
-#### Next.js (nextjs/.env)
+#### Next.js (src/nextjs/.env)
 
 ```env
 # Required
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-AGENTS_API_URL=http://fastapi-agents:6100
+AGENTS_API_URL=http://fastapi:6100
 OPENAI_API_KEY=your_openai_key
 
 # Optional
@@ -124,7 +124,7 @@ AZURE_SPEECH_KEY=your_azure_key
 AZURE_SPEECH_REGION=eastus
 ```
 
-#### FastAPI (fastapi-agents/.env)
+#### FastAPI (src/fastapi/.env)
 
 ```env
 # Required
@@ -171,7 +171,7 @@ docker compose -f docker-compose.yml up -d
 ## Structure
 
 ```
-nextjs/     # Frontend
-fastapi-agents/    # Backend
+src/nextjs/     # Frontend
+src/fastapi/    # Backend
 database/   # Schema
 ```

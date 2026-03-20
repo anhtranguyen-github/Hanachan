@@ -89,14 +89,14 @@ run_mutation_tests() {
     
     # Next.js mutation testing with Stryker
     echo "Running Stryker mutation testing for Next.js..."
-    cd "$PROJECT_ROOT/nextjs"
+    cd "$PROJECT_ROOT/src/nextjs"
     
     if pnpm stryker run 2>&1 | tee "$REPORT_DIR/stryker-output.log"; then
         success "Stryker mutation testing completed"
         
         # Extract mutation score from report
         if [ -f "reports/mutation/mutation-report.json" ]; then
-            score=$(python3 -c "import json; d=json.load(open('reports/mutation/mutation-report.json')); print(d.get('mutationScore', 0))" 2>/dev/null || echo "0")
+            score=$(uv run python -c "import json; d=json.load(open('reports/mutation/mutation-report.json')); print(d.get('mutationScore', 0))" 2>/dev/null || echo "0")
             success "Mutation score: ${score}%"
             
             # Check threshold (70%)
@@ -112,32 +112,20 @@ run_mutation_tests() {
     
     # Python mutation testing with mutmut
     echo ""
-    echo "Running mutmut for FastAPI Core..."
-    cd "$PROJECT_ROOT/fastapi-core"
-    
-    if uv run mutmut run --paths-to-mutate="app/" --tests-dir="tests/" 2>&1 | tee "$REPORT_DIR/mutmut-core.log"; then
-        success "mutmut completed for Core"
-        uv run mutmut results > "$REPORT_DIR/mutmut-core-results.txt"
-        
-        # Calculate survival rate
-        local survived=$(grep -c "Survived" "$REPORT_DIR/mutmut-core-results.txt" 2>/dev/null || echo "0")
-        local total=$(grep -c "🟢\|🔴" "$REPORT_DIR/mutmut-core-results.txt" 2>/dev/null || echo "1")
-        
+    echo "Running mutmut for FastAPI..."
+    cd "$PROJECT_ROOT/src/fastapi"
+
+    if uv run mutmut run --paths-to-mutate="app/" --tests-dir="tests/" 2>&1 | tee "$REPORT_DIR/mutmut-fastapi.log"; then
+        success "mutmut completed for FastAPI"
+        uv run mutmut results > "$REPORT_DIR/mutmut-fastapi-results.txt"
+
+        local survived=$(grep -c "Survived" "$REPORT_DIR/mutmut-fastapi-results.txt" 2>/dev/null || echo "0")
+        local total=$(grep -c "🟢\|🔴" "$REPORT_DIR/mutmut-fastapi-results.txt" 2>/dev/null || echo "1")
+
         if [ "$total" -gt 0 ]; then
             local survival_rate=$(echo "scale=2; $survived / $total * 100" | bc)
             warn "Mutant survival rate: ${survival_rate}%"
         fi
-    else
-        warn "mutmut encountered issues (this may be expected)"
-    fi
-    
-    # FastAPI Agents mutation testing
-    echo ""
-    echo "Running mutmut for FastAPI Agents..."
-    cd "$PROJECT_ROOT/fastapi-agents"
-    
-    if uv run mutmut run --paths-to-mutate="app/" --tests-dir="tests/" 2>&1 | tee "$REPORT_DIR/mutmut-agents.log"; then
-        success "mutmut completed for Agents"
     else
         warn "mutmut encountered issues (this may be expected)"
     fi
@@ -154,7 +142,7 @@ run_contract_violation_tests() {
     local contract_exit=0
     
     echo "Running contract violation tests..."
-    cd "$PROJECT_ROOT/nextjs"
+    cd "$PROJECT_ROOT/src/nextjs"
     
     # Run contract drift tests
     if pnpm vitest run tests/api/contract-drift.test.ts 2>&1 | tee "$REPORT_DIR/contract-tests.log"; then
@@ -176,7 +164,7 @@ run_negative_tests() {
     local negative_exit=0
     
     echo "Running negative scenario tests..."
-    cd "$PROJECT_ROOT/nextjs"
+    cd "$PROJECT_ROOT/src/nextjs"
     
     # Run tests with intentionally invalid data
     echo "Testing with invalid payloads..."
@@ -207,10 +195,10 @@ run_assertion_strength_check() {
     echo "Scanning for weak assertions..."
     
     # Find tests with only status code checks
-    local weak_tests=$(grep -r "\.status == 200\|\.toBe(200)\|\.status_code == 200" nextjs/tests/ fastapi*/tests/ 2>/dev/null | wc -l)
+    local weak_tests=$(grep -r "\.status == 200\|\.toBe(200)\|\.status_code == 200" src/nextjs/tests/ src/fastapi/tests/ 2>/dev/null | wc -l)
     
     # Find tests with only trivial assertions
-    local trivial_tests=$(grep -r "toBeDefined()\|toBeTruthy()\|not\.toBeNull()" nextjs/tests/ 2>/dev/null | grep -v "//" | wc -l)
+    local trivial_tests=$(grep -r "toBeDefined()\|toBeTruthy()\|not\.toBeNull()" src/nextjs/tests/ 2>/dev/null | grep -v "//" | wc -l)
     
     echo "Weak assertions found: $weak_tests"
     echo "Trivial assertions found: $trivial_tests"
@@ -232,7 +220,7 @@ Recommendations:
 Files with weak assertions:
 EOF
     
-    grep -r -l "\.status == 200\|\.toBe(200)" nextjs/tests/ fastapi*/tests/ 2>/dev/null >> "$REPORT_DIR/assertion-analysis.txt" || true
+    grep -r -l "\.status == 200\|\.toBe(200)" src/nextjs/tests/ src/fastapi/tests/ 2>/dev/null >> "$REPORT_DIR/assertion-analysis.txt" || true
     
     if [ "$weak_tests" -gt 10 ]; then
         warn "Found $weak_tests weak assertions - consider strengthening tests"
@@ -252,7 +240,7 @@ run_red_green_verification() {
     local rgv_exit=0
     
     echo "Running Red-Green verification..."
-    cd "$PROJECT_ROOT/nextjs"
+    cd "$PROJECT_ROOT/src/nextjs"
     
     # Create a temporary modification to test that tests fail when code is broken
     echo "Testing that tests can detect failures..."
@@ -303,7 +291,7 @@ run_isolation_verification() {
     local issues=0
     
     # Check for global variables in tests
-    local global_vars=$(grep -r "^let \|^const \|^var " nextjs/tests/ fastapi*/tests/ 2>/dev/null | grep -v "test\|describe\|it(" | wc -l)
+    local global_vars=$(grep -r "^let \|^const \|^var " src/nextjs/tests/ src/fastapi/tests/ 2>/dev/null | grep -v "test\|describe\|it(" | wc -l)
     
     if [ "$global_vars" -gt 0 ]; then
         warn "Found $global_vars potential shared state variables"

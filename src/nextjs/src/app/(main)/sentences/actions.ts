@@ -1,0 +1,127 @@
+'use server';
+
+import { sentenceClient } from '@/services/sentenceClient';
+
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+// Architecture Note: Direct FastAPI calls removed per Phase 2 migration
+// Use Next.js API routes instead of calling FastAPI directly
+
+function getSupabase(cookieStore: any) {
+    return createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                get(name: string) { return cookieStore.get(name)?.value; },
+            },
+        }
+    );
+}
+
+export async function addSentenceAction(japaneseRaw: string, englishRaw: string) {
+    const cookieStore = await cookies();
+    const supabase = getSupabase(cookieStore);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        return { success: false, error: 'Unauthorized' };
+    }
+
+    // 1. Insert the sentence
+    const { data, error } = await supabase
+        .from('sentences')
+        .insert({
+            japanese: japaneseRaw,
+            english: englishRaw,
+            source_type: 'manual',
+            user_id: user.id
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error adding sentence:', error);
+        return { success: false, error: (error instanceof Error ? error.message : String(error)) };
+    }
+
+    // 2. Trigger annotation via sentenceClient (architecture: service layer refactor)
+    try {
+        const annotations = await sentenceClient.annotate(data.id, japaneseRaw);
+        return { success: true, data: { ...data, annotations } };
+    } catch (err) {
+        console.warn('Annotation failed (non-fatal):', err);
+    }
+
+    return { success: true, data: { ...data, annotations: [] } };
+}
+
+export async function fetchUserSentencesAction() {
+    const cookieStore = await cookies();
+    const supabase = getSupabase(cookieStore);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        return { success: false, error: 'Unauthorized' };
+    }
+
+    // Fetch sentences
+    const { data: sentences, error } = await supabase
+        .from('sentences')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+
+    if (error) {
+        return { success: false, error: (error instanceof Error ? error.message : String(error)) };
+    }
+
+    if (!sentences || sentences.length === 0) {
+        return { success: true, data: [] };
+    }
+
+    // Fetch annotations for all sentences in one query
+    const sentenceIds = sentences.map(s => s.id);
+    const { data: annotations } = await supabase
+        .from('sentence_knowledge')
+        .select(`
+            sentence_id,
+            position_start,
+            position_end,
+            ku_id,
+            knowledge_units!inner (
+                type,
+                character,
+                slug
+            )
+        `)
+        .in('sentence_id', sentenceIds);
+
+    // Group annotations by sentence_id
+    const annotationMap: Record<string, any[]> = {};
+    for (const ann of (annotations || [])) {
+        const sid = ann.sentence_id;
+        if (!annotationMap[sid]) annotationMap[sid] = [];
+        const ku = (ann as any).knowledge_units;
+        annotationMap[sid].push({
+            ku_id: ann.ku_id,
+            ku_type: ku?.type,
+            character: ku?.character,
+            slug: ku?.slug,
+            position_start: ann.position_start,
+            position_end: ann.position_end,
+        });
+    }
+
+    // Attach annotations to each sentence
+    const enriched = sentences.map(s => ({
+        ...s,
+        annotations: (annotationMap[s.id] || []).sort(
+            (a: any, b: any) => a.position_start - b.position_start
+        ),
+    }));
+
+    return { success: true, data: enriched };
+}

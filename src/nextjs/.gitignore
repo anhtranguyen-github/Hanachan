@@ -1,0 +1,33 @@
+# Next.js - Local .gitignore
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build & Output
+.next/
+out/
+build/
+dist/
+.next_clean/
+.turbo/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Testing
+coverage/
+.jest/
+*.log
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# OS & IDEs
+.DS_Store
+.vscode/
+.idea/
