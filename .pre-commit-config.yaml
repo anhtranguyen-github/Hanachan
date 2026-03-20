@@ -14,28 +14,8 @@ repos:
 
 -   repo: local
     hooks:
-    -   id: hardcoded-strings
-        name: check-hardcoded-strings
-        entry: python3 tools/check_hardcoded_strings.py
-        language: system
-        pass_filenames: false
-    -   id: mock-data
-        name: check-mock-data
-        entry: python3 tools/check_mock_data.py
-        language: system
-        pass_filenames: false
-    -   id: debug-artifacts
-        name: check-debug-artifacts
-        entry: python3 tools/check_debug_artifacts.py
-        language: system
-        pass_filenames: false
-    -   id: import-linter-agents
-        name: import-linter (fastapi-agents)
-        entry: bash -c "cd fastapi-agents && uv run lint-imports"
-        language: system
-        pass_filenames: false
-    -   id: import-linter-core
-        name: import-linter (fastapi-core)
-        entry: bash -c "cd fastapi-core && uv run lint-imports"
+    -   id: architecture-guard
+        name: architecture-guard
+        entry: python3 scripts/architecture-guard.py
         language: system
         pass_filenames: false
