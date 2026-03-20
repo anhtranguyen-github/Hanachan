@@ -3,7 +3,7 @@ version: '3.8'
 # ─── Hanachan — Full Stack Docker Compose ────────────────────────────────────
 # Services:
 #   nextjs   — Next.js 14 frontend (port 3000)
-#   fastapi-agents  — FastAPI memory backend (port 6100)
+#   fastapi  — Unified FastAPI backend (port 6100)
 #   qdrant   — Vector database (ports 6333, 6334)
 #   neo4j    — Graph database (ports 7474, 7687)
 #
@@ -18,7 +18,7 @@ services:
   # ── Next.js Frontend ────────────────────────────────────────────────────────
   nextjs:
     build:
-      context: ./nextjs
+      context: ./src/nextjs
       dockerfile: Dockerfile
       target: runner
       args:
@@ -28,7 +28,7 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      - ./nextjs/.env
+      - ./src/nextjs/.env
     environment:
       - NODE_ENV=production
       - AGENTS_API_URL=http://fastapi:6100
@@ -45,26 +45,25 @@ services:
       retries: 3
       start_period: 40s
 
-  # ── FastAPI Memory Backend ───────────────────────────────────────────────────
+  # ── Unified FastAPI Backend ──────────────────────────────────────────────────
   fastapi:
     build:
-      context: ./fastapi-agents
+      context: ./src/fastapi
       dockerfile: Dockerfile
       target: runner
     ports:
       - "6100:6100"
     env_file:
-      - ./fastapi-agents/.env
+      - ./src/fastapi/.env
     environment:
-      - FASTAPI_CORE_URL=http://core:6200/api/v1
-      - FASTAPI_CORE_MCP_URL=http://core:6200/mcp/sse
       - QDRANT_URL=http://qdrant:6333
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USER=neo4j
       - NEO4J_PASSWORD=password
+      - OPENAI_API_BASE=${OPENAI_API_BASE:-http://host.docker.internal:20128/v1}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
-      core:
-        condition: service_healthy
       qdrant:
         condition: service_healthy
       neo4j:
@@ -74,26 +73,6 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:6100/api/v1/health')\" || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
-  # ── FastAPI Core Service (SSOT) ─────────────────────────────────────────────
-  core:
-    build:
-      context: ./fastapi-core
-      dockerfile: Dockerfile
-      target: runner
-    ports:
-      - "6200:6200"
-    env_file:
-      - ./fastapi-core/.env
-    networks:
-      - app-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:6200/health')\" || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -156,13 +135,14 @@ services:
   # ── FastAPI Test Runner ──────────────────────────────────────────────────────
   fastapi-test:
     build:
-      context: ./fastapi-agents
+      context: ./src/fastapi
       dockerfile: Dockerfile
       target: test
     env_file:
-      - ./fastapi-agents/.env
+      - ./src/fastapi/.env
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test-key}
+      - OPENAI_API_BASE=${OPENAI_API_BASE:-http://host.docker.internal:20128/v1}
       - SUPABASE_URL=${SUPABASE_URL:-https://test.supabase.co}
       - SUPABASE_KEY=${SUPABASE_KEY:-test-anon-key}
       - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET:-test-jwt-secret-32-chars-minimum!!}
@@ -171,6 +151,8 @@ services:
       - DB_NAME=${DB_NAME:-test_db}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-test-password}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - app-network
     profiles:
@@ -179,7 +161,7 @@ services:
   # ── Next.js Test Runner ──────────────────────────────────────────────────────
   nextjs-test:
     build:
-      context: ./nextjs
+      context: ./src/nextjs
       dockerfile: Dockerfile
       target: deps
     command: >
@@ -190,7 +172,7 @@ services:
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-test-anon-key}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test-key}
       - AGENTS_API_URL=${AGENTS_API_URL:-http://fastapi:6100}
-      - FASTAPI_CORE_URL=${FASTAPI_CORE_URL:-http://core:6200}
+      - FASTAPI_CORE_URL=${FASTAPI_CORE_URL:-http://fastapi:6100/api/v1}
     networks:
       - app-network
     profiles:

@@ -1,13 +1,14 @@
 import json
 import os
+from pathlib import Path
 import uuid
 import psycopg2
 import re
 from psycopg2.extras import execute_values, Json
 from dotenv import load_dotenv
 
-# Load env from nextjs/.env
-load_dotenv("/home/tra01/project/hanachan_v2_final/nextjs/.env")
+_project_root = Path(__file__).resolve().parent.parent.parent
+load_dotenv(_project_root / "src" / "nextjs" / ".env")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 

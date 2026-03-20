@@ -123,10 +123,10 @@ __pycache__/
 # ==========================================
 
 # Hey API generated SDK (must be regenerated during build)
-nextjs/src/client/
+src/nextjs/src/client/
 
 # Old generated API client location (deprecated)
-nextjs/src/lib/api/generated/
+src/nextjs/src/lib/api/generated/
 
 # ==========================================
 # 4. Environment & Secrets
