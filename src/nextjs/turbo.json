@@ -1,0 +1,41 @@
+{
+    "$schema": "https://turbo.build/schema.json",
+    "ui": "tui",
+    "tasks": {
+        "build": {
+            "dependsOn": [
+                "^build"
+            ],
+            "inputs": [
+                "src/**",
+                "tailwind.config.ts",
+                "next.config.js",
+                "tsconfig.json"
+            ],
+            "outputs": [
+                ".next/**",
+                "!.next/cache/**"
+            ]
+        },
+        "test": {
+            "dependsOn": [
+                "lint"
+            ],
+            "inputs": [
+                "src/**",
+                "tests/**",
+                "vitest.config.ts"
+            ]
+        },
+        "lint": {
+            "inputs": [
+                "src/**",
+                ".eslintrc.json"
+            ]
+        },
+        "dev": {
+            "cache": false,
+            "persistent": true
+        }
+    }
+}

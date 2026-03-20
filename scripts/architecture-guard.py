@@ -83,57 +83,57 @@ class ArchitectureGuard:
             "description": "Direct PostgreSQL driver imports are forbidden",
             "message": "Direct psycopg2/asyncpg import is forbidden. Use Supabase client instead.",
             "severity": "ERROR",
-            "applies_to": ["fastapi-agents/**/*.py"],
+            "applies_to": ["src/fastapi/**/*.py"],
         },
         "FORBIDDEN_CORE_IMPORT": {
             "description": "Importing core.database or core.security is forbidden",
             "message": "Import from core.database/core.security is forbidden. Use Supabase client instead.",
             "severity": "ERROR",
-            "applies_to": ["fastapi-agents/**/*.py"],
+            "applies_to": ["src/fastapi/**/*.py"],
         },
         "FORBIDDEN_JWT_VALIDATION": {
             "description": "JWT validation in FastAPI is forbidden",
             "message": "JWT validation in FastAPI is forbidden. Auth must flow through Next.js + Supabase.",
             "severity": "ERROR",
-            "applies_to": ["fastapi-agents/**/*.py"],
+            "applies_to": ["src/fastapi/**/*.py"],
         },
         "IN_MEMORY_STATE": {
             "description": "In-memory state as source of truth",
             "message": "In-memory state is forbidden. Use Supabase for persistent state.",
             "severity": "ERROR",
-            "applies_to": ["fastapi-agents/**/*.py"],
+            "applies_to": ["src/fastapi/**/*.py"],
         },
         "BUSINESS_LOGIC_IN_FASTAPI": {
             "description": "Business logic should be in Next.js, not FastAPI",
             "message": "Business logic (FSRS/scheduling) should be in Next.js, not FastAPI.",
             "severity": "ERROR",
-            "applies_to": ["fastapi-agents/**/*.py"],
+            "applies_to": ["src/fastapi/**/*.py"],
         },
         "DIRECT_SQL": {
             "description": "Direct SQL execution is forbidden",
             "message": "Direct SQL execution is forbidden. Use Supabase client with RLS.",
             "severity": "ERROR",
-            "applies_to": ["fastapi-agents/**/*.py"],
+            "applies_to": ["src/fastapi/**/*.py"],
         },
         "CRUD_SERVICE_IN_FASTAPI": {
             "description": "CRUD services should not exist in FastAPI",
-            "message": "CRUD services should not exist in FastAPI. FastAPI should only have agents.",
+            "message": "CRUD services should not exist in FastAPI. FastAPI is an agent host only.",
             "severity": "ERROR",
-            "applies_to": ["fastapi-agents/**/*.py"],
+            "applies_to": ["src/fastapi/**/*.py"],
         },
         # Next.js Rules
         "DIRECT_FASTAPI_CALL": {
-            "description": "Direct HTTP calls to FastAPI from Next.js",
-            "message": "Direct HTTP calls to FastAPI are forbidden. Use Supabase-mediated workflow.",
+            "description": "Direct HTTP calls to backend from Next.js",
+            "message": "Hardcoded backend URLs are forbidden. Use backendClient or agentsClient.",
             "severity": "ERROR",
-            "applies_to": ["nextjs/**/*.ts", "nextjs/**/*.tsx"],
+            "applies_to": ["src/nextjs/**/*.ts", "src/nextjs/**/*.tsx"],
         },
         # Python Rules
         "IN_MEMORY_CACHE_GLOBAL": {
             "description": "Global in-memory cache variables",
             "message": "Global in-memory caches will not persist across deployments.",
             "severity": "WARNING",
-            "applies_to": ["fastapi-agents/**/*.py"],
+            "applies_to": ["src/fastapi/**/*.py"],
         },
     }
 
@@ -160,7 +160,7 @@ class ArchitectureGuard:
 
     def _scan_fastapi(self) -> None:
         """Scan FastAPI directory for violations."""
-        fastapi_dir = self.project_root / "fastapi-agents"
+        fastapi_dir = self.project_root / "src" / "fastapi"
         if not fastapi_dir.exists():
             print(f"Warning: FastAPI directory not found at {fastapi_dir}")
             return
@@ -186,7 +186,7 @@ class ArchitectureGuard:
 
     def _scan_nextjs(self) -> None:
         """Scan Next.js directory for violations."""
-        nextjs_dir = self.project_root / "nextjs"
+        nextjs_dir = self.project_root / "src" / "nextjs"
         if not nextjs_dir.exists():
             print(f"Warning: Next.js directory not found at {nextjs_dir}")
             return

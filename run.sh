@@ -20,7 +20,6 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 BACKEND_PID=""
 FRONTEND_PID=""
-CORE_PID=""
 OMNIROUTE_PID=""
 
 log() {
@@ -101,11 +100,6 @@ shutdown() {
     kill -TERM "$BACKEND_PID" 2>/dev/null || true
   fi
 
-  if [[ -n "$CORE_PID" ]] && kill -0 "$CORE_PID" 2>/dev/null; then
-    log "Stopping core service (PID $CORE_PID)"
-    kill -TERM "$CORE_PID" 2>/dev/null || true
-  fi
-
   if [[ -n "$OMNIROUTE_PID" ]] && kill -0 "$OMNIROUTE_PID" 2>/dev/null; then
     log "Stopping OmniRoute (PID $OMNIROUTE_PID)"
     kill -TERM "$OMNIROUTE_PID" 2>/dev/null || true
@@ -121,11 +115,6 @@ shutdown() {
   if [[ -n "$BACKEND_PID" ]] && kill -0 "$BACKEND_PID" 2>/dev/null; then
     log "Force killing backend"
     kill -KILL "$BACKEND_PID" 2>/dev/null || true
-  fi
-
-  if [[ -n "$CORE_PID" ]] && kill -0 "$CORE_PID" 2>/dev/null; then
-    log "Force killing core service"
-    kill -KILL "$CORE_PID" 2>/dev/null || true
   fi
 
   if [[ -n "$OMNIROUTE_PID" ]] && kill -0 "$OMNIROUTE_PID" 2>/dev/null; then
@@ -150,7 +139,6 @@ fi
 
 cleanup_port "$BACKEND_PORT"
 cleanup_port "$FRONTEND_PORT"
-cleanup_port 6200
 cleanup_port "$OMNIROUTE_PORT"
 
 if port_in_use "$FRONTEND_PORT"; then
@@ -164,30 +152,22 @@ fi
 case "$MODE" in
   build)
     log "🏗️ Build-only mode (frontend only)"
-    cd "$ROOT_DIR/nextjs"
+    cd "$ROOT_DIR/src/nextjs"
     pnpm run build
     exit 0
     ;;
   dev)
-    log "🚀 Starting core service on port 6200"
-    cd "$ROOT_DIR/fastapi-core"
-    uv run python -m uvicorn app.main:app \
-      --host 127.0.0.1 \
-      --port 6200 \
-      > "$ROOT_DIR/fastapi-core/core.log" 2>&1 &
-    CORE_PID=$!
-
     log "🚀 Starting OmniRoute on port $OMNIROUTE_PORT"
     omniroute --port "$OMNIROUTE_PORT" --no-open > "$ROOT_DIR/omniroute.log" 2>&1 &
     OMNIROUTE_PID=$!
 
     log "🚀 Starting backend on port $BACKEND_PORT"
-    cd "$ROOT_DIR/fastapi-agents"
+    cd "$ROOT_DIR/src/fastapi"
 
     uv run python -m uvicorn app.main:app \
       --host 0.0.0.0 \
       --port "$BACKEND_PORT" \
-      > "$ROOT_DIR/fastapi-agents/server.log" 2>&1 &
+      > "$ROOT_DIR/src/fastapi/server.log" 2>&1 &
 
     BACKEND_PID=$!
 
@@ -200,7 +180,7 @@ case "$MODE" in
       sleep 1
     done
 
-    cd "$ROOT_DIR/nextjs"
+    cd "$ROOT_DIR/src/nextjs"
     log "🚀 Starting frontend (dev)"
     if port_in_use "$FRONTEND_PORT"; then
       log "ERROR: Port $FRONTEND_PORT became busy before starting frontend."
@@ -212,25 +192,17 @@ case "$MODE" in
     PORT="$FRONTEND_PORT" pnpm run dev &
     ;;
   start|prod|product)
-    log "🚀 Starting core service on port 6200"
-    cd "$ROOT_DIR/fastapi-core"
-    uv run python -m uvicorn app.main:app \
-      --host 127.0.0.1 \
-      --port 6200 \
-      > "$ROOT_DIR/fastapi-core/core.log" 2>&1 &
-    CORE_PID=$!
-
     log "🚀 Starting OmniRoute on port $OMNIROUTE_PORT"
     omniroute --port "$OMNIROUTE_PORT" --no-open > "$ROOT_DIR/omniroute.log" 2>&1 &
     OMNIROUTE_PID=$!
 
     log "🚀 Starting backend on port $BACKEND_PORT"
-    cd "$ROOT_DIR/fastapi-agents"
+    cd "$ROOT_DIR/src/fastapi"
 
     uv run python -m uvicorn app.main:app \
       --host 0.0.0.0 \
       --port "$BACKEND_PORT" \
-      > "$ROOT_DIR/fastapi-agents/server.log" 2>&1 &
+      > "$ROOT_DIR/src/fastapi/server.log" 2>&1 &
 
     BACKEND_PID=$!
 
@@ -243,7 +215,7 @@ case "$MODE" in
       sleep 1
     done
 
-    cd "$ROOT_DIR/nextjs"
+    cd "$ROOT_DIR/src/nextjs"
     log "🏗️ Ensuring production build exists"
     pnpm run build
     log "🚀 Starting frontend (production start)"
