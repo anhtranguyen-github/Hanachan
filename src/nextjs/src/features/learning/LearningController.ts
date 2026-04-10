@@ -1,114 +1,60 @@
-import { Rating } from './core/SRSAlgorithm';
-import { lessonRepository } from './lessonRepository';
-import { questionRepository } from './questionRepository';
-
-export interface LearningItem {
-    id: string;
-    ku_id: string;
-    character: string;
-    type: string;
-    meaning: string;
-    reading?: string;
-    status: 'unseen' | 'viewed' | 'quiz_passed';
-    mnemonic?: string;
-    examples?: any[];
-}
+import { submitReviewAction, startAssignmentAction } from './actions';
+import { AssignmentResource, SubjectResource } from '@/types/wanikani';
+import { wanikaniClient } from '@/services/wanikaniClient';
 
 export interface QuizItem {
-    id: string; // unitId-facet
-    ku_id: string;
+    id: string; // assignmentId-variant
+    assignment_id: number;
+    subject_id: number;
     character: string;
     type: string;
     prompt: string;
-    prompt_variant: string; // meaning, reading, cloze
+    prompt_variant: string; // meaning, reading
     meaning: string;
+    meanings: string[];
     reading?: string;
-    cloze_answer?: string;
-    sentence_ja?: string;
-    sentence_en?: string;
+    readings?: string[];
+    mnemonic?: string;
 }
 
-const UNIT_QUIZ_CONFIG: Record<string, string[]> = {
-    radical: ['meaning'],
-    kanji: ['meaning'],
-    vocabulary: ['meaning', 'reading'],
-    grammar: ['cloze']
-};
-
-/**
- * LearningController - Discovery Flow Orchestrator
- * Logic: Batch Persistence & Deferred SRS Initialization
- */
 export class LearningController {
     private userId: string;
-    private batchId: string;
-    private items: any[] = []; // Raw items from DB
+    private assignments: AssignmentResource[] = [];
     private quizQueue: QuizItem[] = [];
-
-    // UI State
     private currentIndex: number = 0;
     private completedCount: number = 0;
     private totalQuizItems: number = 0;
-    private questions: any[] = [];
-    private initialFacets: Map<string, string[]> = new Map();
 
-    constructor(userId: string, batchId: string) {
+    constructor(userId: string) {
         this.userId = userId;
-        this.batchId = batchId;
     }
 
-    async init(items: any[]) {
-        this.items = items;
-        const unitIds = items.map(p => p.ku_id || p.id);
+    async init(assignments: AssignmentResource[]) {
+        // Fetch subjects for these assignments
+        const subjectIds = Array.from(new Set(assignments.map(a => a.data.subject_id)));
+        const subjectsRes = await wanikaniClient.listSubjects({ ids: subjectIds });
+        const subjectsMap = new Map(subjectsRes.data.map(s => [s.id, s]));
 
-        // Fetch all questions for these KUs from DB
-        this.questions = await questionRepository.fetchAllQuestionsForUnits(unitIds);
-
-        // Prepare initial facets mapping for SRS initialization later
-        items.forEach(item => {
-            const unitId = item.ku_id || item.id;
-            const kuData = item.knowledge_units || item;
-            const type = kuData.type as string;
-            
-            const allowedFacets = UNIT_QUIZ_CONFIG[type] || ['meaning'];
-            
-            // Filter questions based on allowed facets for this type
-            const itemQuestions = this.questions.filter(q => q.ku_id === unitId && allowedFacets.includes(q.facet));
-            
-            if (itemQuestions.length > 0) {
-                this.initialFacets.set(unitId, itemQuestions.map(q => q.facet));
-            } else {
-                // Fallback to config if no question found in DB
-                this.initialFacets.set(unitId, allowedFacets);
-            }
+        // Enrich assignments
+        assignments.forEach(ass => {
+            ass.data.subject = subjectsMap.get(ass.data.subject_id);
         });
 
-        return this.items;
+        this.assignments = assignments;
+        return this.assignments;
     }
-
-    // --- Lesson Phase ---
 
     getCurrentLessonIndex() {
         return this.currentIndex;
     }
 
     async nextLessonItem(): Promise<boolean> {
-        const current = this.items[this.currentIndex];
-        const unitId = current.ku_id || current.id;
-
-        if (unitId) {
-            // Persist viewing progress
-            await lessonRepository.updateLessonItemStatus(this.batchId, unitId, 'viewed');
-        }
-
-        if (this.currentIndex < this.items.length - 1) {
+        if (this.currentIndex < this.assignments.length - 1) {
             this.currentIndex++;
             return true;
         }
         return false;
     }
-
-    // --- Quiz Phase ---
 
     startQuiz() {
         this.quizQueue = this.transformToQuizItems();
@@ -118,104 +64,75 @@ export class LearningController {
     }
 
     private transformToQuizItems(): QuizItem[] {
-        let result: QuizItem[] = [];
+        const result: QuizItem[] = [];
 
-        // We use the initialFacets map as the source of truth for what questions we want
-        this.items.forEach(item => {
-            const unitId = item.ku_id || item.id;
-            const kuData = item.knowledge_units || item;
-            const allowedFacets = this.initialFacets.get(unitId) || ['meaning'];
+        for (const ass of this.assignments) {
+            const subject = ass.data.subject as SubjectResource;
+            if (!subject) continue;
 
-            allowedFacets.forEach(facet => {
-                const q = this.questions.find(dbQ => dbQ.ku_id === unitId && dbQ.facet === facet);
-                
-                if (q) {
-                    result.push({
-                        id: `${q.ku_id}-${q.facet}`,
-                        ku_id: q.ku_id,
-                        character: kuData?.character || kuData?.slug?.split(':')[1] || '?',
-                        type: kuData?.type,
-                        prompt: q.prompt || kuData?.character || kuData?.meaning,
-                        prompt_variant: q.facet,
-                        meaning: kuData?.meaning,
-                        reading: kuData?.vocabulary_details?.[0]?.reading ||
-                            kuData?.kanji_details?.[0]?.onyomi?.[0] ||
-                            kuData?.kanji_details?.[0]?.kunyomi?.[0],
-                        cloze_answer: q.facet === 'cloze' ? q.correct_answers?.[0] : undefined,
-                        sentence_ja: q.cloze_text_with_blanks,
-                        sentence_en: q.hints?.[0]
-                    });
-                } else {
-                    // Virtual Fallback Generation
-                    const reading = kuData?.type === 'vocabulary'
-                        ? kuData?.vocabulary_details?.[0]?.reading
-                        : (kuData?.kanji_details?.[0]?.onyomi?.[0] || kuData?.kanji_details?.[0]?.kunyomi?.[0]);
+            const baseItem = {
+                assignment_id: ass.id,
+                subject_id: subject.id,
+                character: subject.data.characters || '?',
+                type: subject.object,
+                meaning: subject.data.meanings?.[0]?.meaning || 'Unknown',
+                meanings: subject.data.meanings?.map(m => m.meaning) || [],
+                mnemonic: subject.data.meaning_mnemonic || '',
+            };
 
-                    result.push({
-                        id: `${unitId}-${facet}`,
-                        ku_id: unitId,
-                        character: kuData?.character || kuData?.slug?.split(':')[1],
-                        type: kuData?.type,
-                        prompt: kuData?.character || kuData?.slug?.split(':')[1],
-                        get prompt_variant() { return facet; },
-                        meaning: kuData?.meaning,
-                        reading: reading,
-                        cloze_answer: facet === 'cloze' ? kuData?.meaning : undefined, // Very fallback
-                        sentence_ja: facet === 'cloze' ? "Grammar Check: Recall the pattern." : undefined
-                    } as QuizItem);
-                }
+            // Meaning prompt
+            result.push({
+                ...baseItem,
+                id: `${ass.id}-meaning`,
+                prompt: baseItem.character,
+                prompt_variant: 'meaning',
             });
-        });
 
-        // Sort: Meaning before Reading
-        result.sort((a, b) => {
-            if (a.prompt_variant === 'meaning' && b.prompt_variant === 'reading') return -1;
-            if (a.prompt_variant === 'reading' && b.prompt_variant === 'meaning') return 1;
-            return 0;
-        });
+            // Reading prompt for non-radical
+            if (subject.object !== 'radical') {
+                const reading = subject.data.readings?.[0]?.reading || '';
+                const readings = subject.data.readings?.map(r => r.reading) || [];
+                result.push({
+                    ...baseItem,
+                    id: `${ass.id}-reading`,
+                    prompt: baseItem.character,
+                    prompt_variant: 'reading',
+                    reading,
+                    readings,
+                });
+            }
+        }
 
-        return result;
+        // Shuffle by assignment (keep variants of same assignment together or separate?)
+        // WaniKani usually shuffles variants.
+        return result.sort(() => Math.random() - 0.5);
     }
-
 
     getCurrentQuizItem(): QuizItem | null {
         return this.quizQueue.length > 0 ? this.quizQueue[0] : null;
     }
 
-    /**
-     * DISCOVERY LOGIC: Deferred Updates
-     * Rule 1: No SRS update during quiz attempts.
-     * Rule 2: Initialize SRS ONLY when KU is fully passed (All facets answered correctly).
-     */
-    async submitQuizAnswer(rating: Rating): Promise<boolean> {
+    async submitQuizAnswer(isCorrect: boolean): Promise<boolean> {
         const current = this.quizQueue[0];
         if (!current) return false;
 
-        const isSuccess = rating === 'pass';
-
-        if (isSuccess) {
+        if (isCorrect) {
             this.quizQueue.shift();
             this.completedCount++;
 
-            // If this was the last facet for this KU in the queue, it means it's passed
-            if (!this.quizQueue.some(q => q.ku_id === current.ku_id)) {
-                console.log(`[LearningController] KU ${current.ku_id} passed quiz. Initializing SRS.`);
-
-                // 1. Update Lesson Item Status to quiz_passed
-                await lessonRepository.updateLessonItemStatus(this.batchId, current.ku_id, 'quiz_passed');
-
-                // 2. Initialize SRS for all facets
-                const facets = this.initialFacets.get(current.ku_id) || [];
-                const { initializeSRSAction } = await import('./actions');
-                await initializeSRSAction(this.userId, current.ku_id, facets);
+            // If ALL variants for this assignment are cleared, start it in SRS
+            const remaining = this.quizQueue.filter(q => q.assignment_id === current.assignment_id);
+            if (remaining.length === 0) {
+                console.log(`[LearningController] Assignment ${current.assignment_id} passed lesson quiz. Starting SRS.`);
+                await startAssignmentAction(current.assignment_id);
             }
+            return true;
         } else {
-            // Mistake: Re-queue at end, NO SRS update (No stability penalty in Learn phase)
+            // Requeue at end
             const failed = this.quizQueue.shift()!;
             this.quizQueue.push(failed);
+            return false;
         }
-
-        return isSuccess;
     }
 
     isBatchComplete(): boolean {

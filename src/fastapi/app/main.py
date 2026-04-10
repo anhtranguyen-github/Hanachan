@@ -20,6 +20,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.api.v1.api import api_router
+from app.api.v2.api import api_v2_router
 from app.core.config import settings, validate_config
 from app.core.errors import AppError, app_error_handler, unhandled_exception_handler
 from app.core.logging import RequestIdMiddleware, configure_logging
@@ -150,10 +151,8 @@ app.add_exception_handler(Exception, unhandled_exception_handler)
 # Routes
 # ---------------------------------------------------------------------------
 
-import os
-
-API_PREFIX = os.getenv("API_PREFIX", "/a" + "pi/v1")
-app.include_router(api_router, prefix=API_PREFIX)
+app.include_router(api_router, prefix="/api/v1")
+app.include_router(api_v2_router, prefix="/api/v2")
 
 
 @app.get("/health")

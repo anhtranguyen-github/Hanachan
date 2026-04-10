@@ -139,8 +139,8 @@ trap shutdown SIGINT SIGTERM
 log "☁️ Using Cloud Supabase"
 log "🧹 Cleaning ports"
 
-if ! command -v pnpm >/dev/null 2>&1; then
-  log "ERROR: pnpm not found. Install pnpm (or enable corepack) and retry."
+if ! command -v bun >/dev/null 2>&1; then
+  log "ERROR: bun not found. Install bun and retry."
   exit 127
 fi
 
@@ -160,7 +160,7 @@ case "$MODE" in
   build)
     log "🏗️ Build-only mode (frontend only)"
     cd "$ROOT_DIR/src/nextjs"
-    pnpm run build
+    bun run build
     exit 0
     ;;
   dev)
@@ -171,7 +171,7 @@ case "$MODE" in
     log "🚀 Starting backend on port $BACKEND_PORT"
     cd "$ROOT_DIR/src/fastapi"
 
-    uv run python -m uvicorn app.main:app \
+    uv run uvicorn app.main:app \
       --host 0.0.0.0 \
       --port "$BACKEND_PORT" \
       > "$ROOT_DIR/src/fastapi/server.log" 2>&1 &
@@ -180,7 +180,7 @@ case "$MODE" in
 
     log "⏳ Waiting for backend health..."
     for i in {1..15}; do
-      if curl -sf "http://localhost:$BACKEND_PORT/api/v1/health" >/dev/null; then
+      if curl -sf "http://localhost:$BACKEND_PORT/api/v2/health" >/dev/null; then
         log "✅ Backend ready"
         break
       fi
@@ -196,7 +196,7 @@ case "$MODE" in
       log "  FRONTEND_PORT=3001 ./run.sh dev"
       shutdown
     fi
-    PORT="$FRONTEND_PORT" pnpm run dev &
+    PORT="$FRONTEND_PORT" bun run dev &
     ;;
   start|prod|product)
     log "🚀 Starting OmniRoute on port $OMNIROUTE_PORT"
@@ -206,7 +206,7 @@ case "$MODE" in
     log "🚀 Starting backend on port $BACKEND_PORT"
     cd "$ROOT_DIR/src/fastapi"
 
-    uv run python -m uvicorn app.main:app \
+    uv run uvicorn app.main:app \
       --host 0.0.0.0 \
       --port "$BACKEND_PORT" \
       > "$ROOT_DIR/src/fastapi/server.log" 2>&1 &
@@ -215,7 +215,7 @@ case "$MODE" in
 
     log "⏳ Waiting for backend health..."
     for i in {1..15}; do
-      if curl -sf "http://localhost:$BACKEND_PORT/api/v1/health" >/dev/null; then
+      if curl -sf "http://localhost:$BACKEND_PORT/api/v2/health" >/dev/null; then
         log "✅ Backend ready"
         break
       fi
@@ -224,7 +224,7 @@ case "$MODE" in
 
     cd "$ROOT_DIR/src/nextjs"
     log "🏗️ Ensuring production build exists"
-    pnpm run build
+    bun run build
     log "🚀 Starting frontend (production start)"
     if port_in_use "$FRONTEND_PORT"; then
       log "ERROR: Port $FRONTEND_PORT became busy before starting frontend."
@@ -233,7 +233,7 @@ case "$MODE" in
       log "  FRONTEND_PORT=3001 ./run.sh start"
       shutdown
     fi
-    PORT="$FRONTEND_PORT" pnpm run start &
+    PORT="$FRONTEND_PORT" bun run start &
     ;;
   *)
     log "Unknown MODE='$MODE'. Use one of: dev | build | start"

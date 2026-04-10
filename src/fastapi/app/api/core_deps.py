@@ -12,6 +12,8 @@ from app.domain.learning.services import LearningService
 from app.domain.reading.services import ReadingService
 from app.repositories.learning import ILearningRepository, SupabaseLearningRepository
 from app.repositories.reading import IReadingRepository, SupabaseReadingRepository
+from app.repositories.wanikani import WaniKaniRepository
+
 
 security = HTTPBearer()
 
@@ -44,6 +46,10 @@ def get_learning_repo(client: Client = Depends(get_client)) -> ILearningReposito
 
 def get_reading_repo(client: Client = Depends(get_client)) -> IReadingRepository:
     return SupabaseReadingRepository(client)
+
+
+def get_wanikani_repo(client: Client = Depends(get_client)) -> WaniKaniRepository:
+    return WaniKaniRepository(client)
 
 
 def get_learning_service(

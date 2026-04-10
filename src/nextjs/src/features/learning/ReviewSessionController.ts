@@ -1,214 +1,137 @@
 import { submitReviewAction } from './actions';
-import { Rating } from './core/SRSAlgorithm';
-import { srsRepository } from './srsRepository';
-import { questionRepository } from './questionRepository';
+import { AssignmentResource, SubjectResource } from '@/types/wanikani';
+import { wanikaniClient } from '@/services/wanikaniClient';
 
 export interface QuizItem {
-    id: string; // unitId-facet
-    ku_id: string;
+    id: string; // assignmentId-variant
+    assignment_id: number;
+    subject_id: number;
     character: string;
     type: string;
     prompt: string;
-    prompt_variant: string; // meaning, reading, cloze
+    prompt_variant: string; // meaning, reading
     meaning: string;
+    meanings: string[];
     reading?: string;
-    cloze_answer?: string;
+    readings?: string[];
+    mnemonic?: string;
     sentence_ja?: string;
     sentence_en?: string;
-    currentState: any;
 }
 
 export class ReviewSessionController {
     private queue: QuizItem[] = [];
     private completedCount: number = 0;
     private userId: string;
-    private sessionId: string | null = null;
     private totalItems: number = 0;
 
-    // State tracking for the current session (FIF Architecture)
-    private sessionState: Map<string, { attemptCount: number, wrongCount: number }> = new Map();
+    // Failure Intensity Framework (FIF) state
+    private sessionState: Map<string, { incorrectMeaning: number, incorrectReading: number, attempts: number }> = new Map();
 
     constructor(userId: string) {
         this.userId = userId;
     }
 
-    async initSession(items: any[]) {
-        // Fetch questions for all items in the session
-        const kuFacetPairs = items.map(item => ({
-            unitId: item.ku_id,
-            facet: item.facet
-        }));
+    async initSession(assignments: AssignmentResource[]) {
+        // Fetch subjects for these assignments
+        const subjectIds = Array.from(new Set(assignments.map(a => a.data.subject_id)));
+        const subjectsRes = await wanikaniClient.listSubjects({ ids: subjectIds });
+        const subjectsMap = new Map(subjectsRes.data.map(s => [s.id, s]));
 
-        const questions = await questionRepository.fetchQuestionsBatch(kuFacetPairs);
+        // Enrich assignments with subjects
+        assignments.forEach(ass => {
+            ass.data.subject = subjectsMap.get(ass.data.subject_id);
+        });
 
-        this.queue = this.transformItems(items, questions);
-        this.totalItems = this.queue.length;
-
-        // Persist Session Header
-        try {
-            const session = await srsRepository.createReviewSession(this.userId, this.totalItems);
-            this.sessionId = session.id;
-
-            // Optional: Persist initial items if we want a full trace
-            const sessionItems = this.queue.map(item => ({
-                ku_id: item.ku_id,
-                facet: item.prompt_variant
-            }));
-            await srsRepository.createReviewSessionItems(this.sessionId, sessionItems);
-        } catch (error) {
-            console.error("[ReviewSessionController] Failed to persist session header:", error);
-        }
-
+        this.queue = this.transformAssignments(assignments);
+        this.totalItems = assignments.length;
+        
         return this.queue;
     }
 
-    private transformItems(items: any[], questions: any[]): QuizItem[] {
-        const UNIT_QUIZ_CONFIG: Record<string, string[]> = {
-            radical: ['meaning'],
-            kanji: ['meaning'],
-            vocabulary: ['meaning', 'reading'],
-            grammar: ['cloze']
-        };
+    private transformAssignments(assignments: AssignmentResource[]): QuizItem[] {
+        const items: QuizItem[] = [];
 
-        return items.map(item => {
-            const ku = item.knowledge_units;
-            if (!ku) {
-                console.warn(`[ReviewSessionController] Item ${item.id} has no knowledge_units metadata.`);
-                return null;
+        for (const ass of assignments) {
+            const subject = ass.data.subject as SubjectResource;
+            if (!subject) continue;
+
+            const baseItem = {
+                assignment_id: ass.id,
+                subject_id: subject.id,
+                character: subject.data.characters || '?',
+                type: subject.object,
+                meaning: subject.data.meanings?.[0]?.meaning || 'Unknown',
+                meanings: subject.data.meanings?.map(m => m.meaning) || [],
+                mnemonic: subject.data.meaning_mnemonic,
+            };
+
+            // Meaning prompt for all types
+            items.push({
+                ...baseItem,
+                id: `${ass.id}-meaning`,
+                prompt: baseItem.character,
+                prompt_variant: 'meaning',
+            });
+
+            // Reading prompt for kanji and vocabulary
+            if (subject.object === 'kanji' || subject.object === 'vocabulary') {
+                const reading = subject.data.readings?.[0]?.reading || '';
+                const readings = subject.data.readings?.map(r => r.reading) || [];
+                items.push({
+                    ...baseItem,
+                    id: `${ass.id}-reading`,
+                    prompt: baseItem.character,
+                    prompt_variant: 'reading',
+                    reading,
+                    readings,
+                });
             }
+        }
 
-            const allowedFacets = UNIT_QUIZ_CONFIG[ku.type] || ['meaning'];
-            
-            // If the item facet is not allowed for this type, we theoretically shouldn't have it in the review queue,
-            // but we filter anyway for safety.
-            if (!allowedFacets.includes(item.facet)) {
-                console.warn(`[ReviewSessionController] Item ${item.id} has disallowed facet ${item.facet} for type ${ku.type}.`);
-                return null;
-            }
-
-            const question = questions.find(q => q.ku_id === item.ku_id && q.facet === item.facet);
-
-            // Fallback reading mapping
-            const reading = ku.vocabulary_details?.[0]?.reading ||
-                ku.kanji_details?.[0]?.onyomi?.[0] ||
-                ku.kanji_details?.[0]?.kunyomi?.[0];
-
-            return {
-                id: `${item.ku_id}-${item.facet}`,
-                ku_id: item.ku_id,
-                character: ku.character || ku.slug?.split(':')[1] || '?',
-                type: ku.type,
-                // Prompt logic: cloze uses sentence, others use character
-                prompt: item.facet === 'cloze' 
-                    ? (question?.cloze_text_with_blanks || "Grammar recall") 
-                    : (question?.prompt || ku.character || ku.slug?.split(':')[1] || ku.meaning),
-                prompt_variant: item.facet,
-                meaning: ku.meaning,
-                reading: reading,
-                cloze_answer: item.facet === 'cloze' ? (question?.correct_answers?.[0] || ku.meaning) : undefined,
-                sentence_ja: item.facet === 'cloze' ? (question?.cloze_text_with_blanks || "Grammar check") : undefined,
-                sentence_en: question?.hints?.[0] || (item.facet === 'cloze' ? ku.meaning : undefined),
-                currentState: {
-                    stage: item.state,
-                    stability: item.stability,
-                    difficulty: item.difficulty,
-                    reps: item.reps,
-                    lapses: item.lapses
-                }
-            } as QuizItem;
-        }).filter((item): item is QuizItem => !!item && !!item.ku_id);
+        // Shuffle queue
+        return items.sort(() => Math.random() - 0.5);
     }
 
     getNextItem(): QuizItem | null {
         return this.queue.length > 0 ? this.queue[0] : null;
     }
 
-    /**
-     * REVIEW SESSION LOGIC: Failure Intensity Framework (FIF)
-     * Rule: 
-     * - Incorrect -> Increment wrongCount, Requeue (No FSRS Update)
-     * - Correct -> Calculate Penalty (log2) -> Update FSRS Once -> Remove
-     */
-    async submitAnswer(rating: Rating): Promise<boolean> {
+    async submitAnswer(isCorrect: boolean, userInput: string): Promise<boolean> {
         const current = this.queue[0];
         if (!current) return false;
 
-        const isSuccess = rating === 'pass';
-
-        // Initialize state if not exists
         if (!this.sessionState.has(current.id)) {
-            this.sessionState.set(current.id, { attemptCount: 0, wrongCount: 0 });
+            this.sessionState.set(current.id, { incorrectMeaning: 0, incorrectReading: 1, attempts: 0 });
         }
+        
         const state = this.sessionState.get(current.id)!;
-        state.attemptCount++;
+        state.attempts++;
 
-        if (!isSuccess) {
-            // === INCORRECT LOOP ===
-            state.wrongCount++;
+        if (!isCorrect) {
+            if (current.prompt_variant === 'meaning') state.incorrectMeaning++;
+            else state.incorrectReading++;
 
-            // 1. Persist Attempt (Log it, even if we don't update FSRS yet)
-            if (this.sessionId) {
-                // Update status to 'pending' or 'failed' but keep it alive
-                // We log the fail rating to user_learning_logs via a 'quiet' log if needed
-                // For now, update session item status to track it's active
-                await srsRepository.updateReviewSessionItem(
-                    this.sessionId,
-                    current.ku_id,
-                    current.prompt_variant,
-                    'incorrect',
-                    'again',
-                    state.wrongCount,
-                    state.attemptCount
-                );
-            }
-
-            // 2. Re-queue at the end
+            // Requeue
             this.queue.shift();
             this.queue.push(current);
-            console.log(`[FIF] Item ${current.id} incorrect. WrongCount=${state.wrongCount}. Requeued.`);
-
             return false;
-        }
-
-        // === CORRECT LOOP (COMMIT) ===
-        else {
-            // 1. Calculate FSRS with FIF
-            // state.wrongCount holds the total failures in this session
-            await submitReviewAction(
-                this.sessionId || 'unknown_session',
-                current.ku_id,
-                current.prompt_variant,
-                rating,
-                state.attemptCount,
-                state.wrongCount
-            );
-
-            // 2. Queue Management
-            this.queue.shift(); // Remove
-            this.completedCount++;
-            this.sessionState.delete(current.id); // Cleanup memory
-
-            // 3. Persist Success
-            if (this.sessionId) {
-                await srsRepository.updateReviewSessionItem(
-                    this.sessionId,
-                    current.ku_id,
-                    current.prompt_variant,
-                    'correct',
-                    rating,
-                    state.wrongCount,
-                    state.attemptCount
+        } else {
+            // Correct - removed from queue
+            this.queue.shift();
+            
+            // If all variants for this assignment are done, submit to API
+            const remainingVariants = this.queue.filter(it => it.assignment_id === current.assignment_id);
+            if (remainingVariants.length === 0) {
+                // Submit review for this assignment
+                await submitReviewAction(
+                    current.assignment_id,
+                    state.incorrectMeaning,
+                    state.incorrectReading
                 );
-                srsRepository.incrementSessionProgress(this.sessionId);
+                this.completedCount++;
             }
-
-            console.log(`[FIF] Item ${current.id} graduate. Wrongs=${state.wrongCount}.`);
-
-            // If queue empty, finish session
-            if (this.queue.length === 0 && this.sessionId) {
-                srsRepository.finishReviewSession(this.sessionId);
-            }
-
+            
             return true;
         }
     }
@@ -219,9 +142,5 @@ export class ReviewSessionController {
             total: this.totalItems,
             percentage: (this.completedCount / Math.max(this.totalItems, 1)) * 100
         };
-    }
-
-    getSessionId() {
-        return this.sessionId;
     }
 }

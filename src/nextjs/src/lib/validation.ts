@@ -15,13 +15,15 @@ export const AnswerStateSchema = z.enum(['unanswered', 'correct', 'incorrect']);
 
 // --- CORE KNOWLEDGE ---
 export const KnowledgeUnitSchema = z.object({
-    id: z.string().uuid().optional(),
+    id: z.union([z.string(), z.number()]).optional(),
     slug: z.string().min(1),
     type: KnowledgeUnitTypeSchema,
-    character: z.string().min(1).nullable(),
+    character: z.string().min(1).nullable().optional(),
+    characters: z.string().min(1).nullable().optional(),
     level: z.number().int().min(0).max(60),
     jlpt: z.number().int().min(1).max(5).nullable().optional(),
-    meaning: z.string().min(1),
+    meaning: z.string().min(1).optional(),
+    meanings: z.array(z.any()).optional(),
     details: z.any().optional(),
 });
 

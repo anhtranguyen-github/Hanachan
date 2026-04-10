@@ -9,6 +9,7 @@ from app.auth.jwt import verify_supabase_jwt
 security = HTTPBearer()
 
 
+
 async def get_current_user(token: HTTPAuthorizationCredentials = Depends(security)) -> dict[str, Any]:
     """Verify Supabase JWT and return normalized user context."""
     try:
@@ -28,3 +29,6 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Depends(securit
         }
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+
+# Re-export core dependencies for convenience
+from app.api.core_deps import get_wanikani_repo

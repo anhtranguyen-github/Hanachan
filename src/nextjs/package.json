@@ -2,7 +2,6 @@
   "name": "hanachan",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@10.24.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -20,8 +19,7 @@
     "typecheck": "tsc --noEmit",
     "test:accounts:create": "node ../scripts/create-test-accounts.js",
     "test:mutation": "stryker run",
-    "test:mutation:ci": "stryker run --reporters json,dashboard",
-    "preinstall": "pnpm dlx only-allow pnpm"
+    "test:mutation:ci": "stryker run --reporters json,dashboard"
   },
   "dependencies": {
     "@langchain/core": "0.3.80",
