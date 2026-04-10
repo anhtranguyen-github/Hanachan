@@ -34,7 +34,7 @@ pnpm dev
 # (or ./scripts/run.sh)
 ```
 
-Open [http://localhost:43100](http://localhost:43100)
+Open [http://localhost:7100](http://localhost:7100)
 
 ---
 
@@ -69,8 +69,8 @@ docker compose down
 
 | Service | Port | Description |
 |---------|------|-------------|
-| nextjs | 43100 | Next.js frontend |
-| fastapi | 43110 | FastAPI backend API |
+| nextjs | 7100 | Next.js frontend |
+| fastapi | 7110 | FastAPI backend API |
 
 ### Docker Commands
 
@@ -152,7 +152,7 @@ NEO4J_USER=neo4j
 NEO4J_PASSWORD=your_password
 
 # CORS
-ALLOWED_ORIGINS=["http://localhost:43100"]
+ALLOWED_ORIGINS=["http://localhost:7100"]
 ```
 
 ### Production Deployment
