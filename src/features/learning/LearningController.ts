@@ -19,14 +19,16 @@ export interface QuizItem {
 
 export class LearningController {
     private userId: string;
+    private batchId: string | null;
     private assignments: AssignmentResource[] = [];
     private quizQueue: QuizItem[] = [];
     private currentIndex: number = 0;
     private completedCount: number = 0;
     private totalQuizItems: number = 0;
 
-    constructor(userId: string) {
+    constructor(userId: string, batchId: string | null = null) {
         this.userId = userId;
+        this.batchId = batchId;
     }
 
     async init(assignments: AssignmentResource[]) {

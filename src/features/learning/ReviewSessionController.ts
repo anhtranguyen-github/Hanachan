@@ -1,6 +1,7 @@
 import { submitReviewAction } from './actions';
 import { AssignmentResource, SubjectResource } from '@/types/wanikani';
 import { wanikaniClient } from '@/services/wanikaniClient';
+import { Rating } from '@/lib/validation';
 
 export interface QuizItem {
     id: string; // assignmentId-variant
@@ -97,7 +98,8 @@ export class ReviewSessionController {
         return this.queue.length > 0 ? this.queue[0] : null;
     }
 
-    async submitAnswer(isCorrect: boolean, userInput: string): Promise<boolean> {
+    async submitAnswer(rating: Rating | boolean, userInput: string = ''): Promise<boolean> {
+        const isCorrect = typeof rating === 'boolean' ? rating : rating === 'pass';
         const current = this.queue[0];
         if (!current) return false;
 

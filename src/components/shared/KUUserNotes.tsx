@@ -5,7 +5,6 @@ import { useUser } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Edit3, Check, Loader2, BookOpen, AlertCircle } from 'lucide-react';
 import { clsx } from 'clsx';
-import { srsRepository } from '@/features/learning/srsRepository';
 
 interface KUUserNotesProps {
     kuId: string;
