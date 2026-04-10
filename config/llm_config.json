@@ -1,9 +1,0 @@
-{
-  "DEFAULT_LLM_MODEL": "cost-saver",
-  "LLM_BASE_URL": "http://localhost:43120/v1",
-  "OPENAI_API_KEY": "sk-none",
-  "EMBEDDING_API": {
-    "URL": "https://api.jina.ai/v1/embeddings",
-    "ENV_VAR": "JINA_API_KEY"
-  }
-}
