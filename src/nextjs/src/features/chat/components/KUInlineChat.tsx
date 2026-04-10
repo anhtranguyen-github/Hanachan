@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Bot, User, Loader2, Mic, Volume2, VolumeX, Sparkles, X, MessageCircle } from 'lucide-react';
+import { Send, Bot, User, Loader2, Mic, Sparkles, X, MessageCircle } from 'lucide-react';
 import { clsx } from 'clsx';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -63,7 +63,6 @@ export function KUInlineChat({ kuId, kuType, character, meaning, extraContext }:
     const { user } = useUser();
     const [input, setInput] = useState('');
     const [isOpen, setIsOpen] = useState(false);
-    const [ttsEnabled, setTtsEnabled] = useState(false);
     const chatEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -99,14 +98,14 @@ export function KUInlineChat({ kuId, kuType, character, meaning, extraContext }:
         if (!input.trim() || streaming.isStreaming) return;
         const content = buildContextPrefix(input);
         setInput('');
-        await sendMessageStreaming(content, ttsEnabled);
+        await sendMessageStreaming(content);
     };
 
     const handleVoiceTranscript = useCallback(async (text: string) => {
         if (!text.trim() || streaming.isStreaming) return;
         const content = buildContextPrefix(text);
-        await sendMessageStreaming(content, ttsEnabled);
-    }, [streaming.isStreaming, buildContextPrefix, sendMessageStreaming, ttsEnabled]);
+        await sendMessageStreaming(content);
+    }, [streaming.isStreaming, buildContextPrefix, sendMessageStreaming]);
 
     const isTyping = streaming.isStreaming;
     const streamingContent = streaming.partial;
@@ -153,19 +152,6 @@ export function KUInlineChat({ kuId, kuType, character, meaning, extraContext }:
                     </div>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    {/* TTS Toggle */}
-                    <button
-                        onClick={() => setTtsEnabled(v => !v)}
-                        title={ttsEnabled ? 'Disable voice response' : 'Enable voice response'}
-                        className={clsx(
-                            "p-1.5 rounded-lg transition-all text-xs",
-                            ttsEnabled
-                                ? "bg-primary/15 text-primary"
-                                : "text-foreground/20 hover:text-foreground/50 hover:bg-border/20"
-                        )}
-                    >
-                        {ttsEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
-                    </button>
                     {/* Close */}
                     <button
                         onClick={() => setIsOpen(false)}

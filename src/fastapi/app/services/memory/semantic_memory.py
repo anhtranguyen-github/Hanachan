@@ -42,6 +42,8 @@ def _get_driver() -> Driver:
 
 def init_neo4j() -> None:
     """Verify connectivity and ensure the fulltext index exists."""
+    if not settings.neo4j_uri or "neo4j" not in settings.neo4j_uri:
+        return 0, 0
     driver = _get_driver()
     with driver.session() as session:
         session.run(
@@ -101,8 +103,10 @@ def add_semantic_facts(user_id: str, kg: KnowledgeGraph) -> int:
 
     Returns number of relationships written.
     """
-    if not kg.relationships:
+    if not kg.relationships or not settings.neo4j_uri or "neo4j" not in settings.neo4j_uri:
         return 0
+    if not settings.neo4j_uri or "neo4j" not in settings.neo4j_uri:
+        return 0, 0
     driver = _get_driver()
     with driver.session() as session:
 
@@ -146,6 +150,8 @@ def add_nodes_and_relationships(
     user_id: str, nodes: list[Node], relationships: list[Relationship]
 ) -> tuple[int, int]:
     """Manually add nodes and relationships in a single atomic transaction."""
+    if not settings.neo4j_uri or "neo4j" not in settings.neo4j_uri:
+        return 0, 0
     driver = _get_driver()
     with driver.session() as session:
 
@@ -178,7 +184,7 @@ def add_nodes_and_relationships(
 
 def search_semantic_memory(user_id: str, keywords: list[str]) -> list[dict[str, Any]]:
     """Fulltext search with fuzzy matching and fallback 'about me' logic."""
-    if not keywords:
+    if not keywords or not settings.neo4j_uri or "neo4j" not in settings.neo4j_uri:
         return []
 
     # 1. Clean and enhance keywords
@@ -213,6 +219,8 @@ def search_semantic_memory(user_id: str, keywords: list[str]) -> list[dict[str, 
             lucene_terms.append(f"{k}~")
     kw_query = " OR ".join(lucene_terms)
 
+    if not settings.neo4j_uri or "neo4j" not in settings.neo4j_uri:
+        return 0, 0
     driver = _get_driver()
     results: list[dict[str, Any]] = []
 
@@ -310,6 +318,8 @@ def _deduplicate(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def inspect_semantic_memory(user_id: str) -> list[dict[str, Any]]:
     """Return all relationships in the graph for a given user."""
+    if not settings.neo4j_uri or "neo4j" not in settings.neo4j_uri:
+        return 0, 0
     driver = _get_driver()
     with driver.session() as session:
         records = session.run(
@@ -332,6 +342,8 @@ def inspect_semantic_memory(user_id: str) -> list[dict[str, Any]]:
 
 def get_graph_schema() -> dict[str, Any]:
     """Return a simplified view of node labels and relationship types."""
+    if not settings.neo4j_uri or "neo4j" not in settings.neo4j_uri:
+        return 0, 0
     driver = _get_driver()
     with driver.session() as session:
         labels = [r["label"] for r in session.run("CALL db.labels()")]
@@ -341,6 +353,8 @@ def get_graph_schema() -> dict[str, Any]:
 
 def clear_semantic_memory(user_id: str) -> None:
     """Delete all nodes (and their relationships) for a given user."""
+    if not settings.neo4j_uri or "neo4j" not in settings.neo4j_uri:
+        return 0, 0
     driver = _get_driver()
     with driver.session() as session:
         session.run(

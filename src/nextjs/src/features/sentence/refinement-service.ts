@@ -1,3 +1,1 @@
-
-// Empty mock
 export { };

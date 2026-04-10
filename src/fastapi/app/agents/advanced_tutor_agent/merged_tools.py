@@ -1,5 +1,4 @@
 import logging
-import re
 from typing import Any
 from uuid import UUID
 
@@ -13,6 +12,14 @@ from app.domain.learning.services import LearningService
 from app.repositories.learning import SupabaseLearningRepository
 from app.services.memory import episodic_memory as ep_mem
 from app.services.memory import semantic_memory as sem_mem
+from app.utils.safe_sql import (
+    DEFAULT_TABLE_WHITELIST,
+    SafeSqlError,
+    USER_ID_SQL_PLACEHOLDER,
+    assess_sql_risk,
+    render_sql_for_user,
+    validate_sql_query,
+)
 
 logger = logging.getLogger(__name__)
 _db_pool: Any | None = None
@@ -26,26 +33,53 @@ def _deck_service() -> DeckService:
     return DeckService(get_supabase_client())
 
 
+def _get_database_schema_impl() -> str:
+    client = get_supabase_client()
+    response = client.rpc("get_database_schema").execute()
+
+    data = response.data
+    if not data:
+        return "{}"
+
+    schema: dict[str, list[dict[str, str]]] = {}
+    for row in data:
+        table_name = row["table_name"]
+        if table_name not in DEFAULT_TABLE_WHITELIST:
+            continue
+        schema.setdefault(table_name, []).append(
+            {
+                "column": row["column_name"],
+                "type": row["data_type"],
+                "key": row["key_type"],
+            }
+        )
+    return str(schema)
 
 
-def _is_safe_sql(sql: str) -> bool:
-    forbidden = [
-        r"\bINSERT\b",
-        r"\bUPDATE\b",
-        r"\bDELETE\b",
-        r"\bDROP\b",
-        r"\bALTER\b",
-        r"\bTRUNCATE\b",
-        r"\bCREATE\b",
-        r"\bGRANT\b",
-        r"\bREVOKE\b",
-        r"\bREPLACE\b",
-    ]
-    sql_upper = sql.upper()
-    for pattern in forbidden:
-        if re.search(pattern, sql_upper):
-            return False
-    return sql_upper.strip().startswith("SELECT") or sql_upper.strip().startswith("WITH")
+def _execute_read_only_sql_impl(sql: str, *, user_id: str | None) -> str:
+    risk = assess_sql_risk(sql)
+    validated_sql = validate_sql_query(sql, table_whitelist=DEFAULT_TABLE_WHITELIST)
+    bounded_sql = _apply_sql_limit(validated_sql)
+    rendered_sql = render_sql_for_user(bounded_sql, user_id)
+    logger.info(
+        "sql_audit_execute_read_only_sql",
+        extra={
+            "user_id": user_id,
+            "tables": risk["tables"],
+            "risk_flags": risk["risk_flags"],
+            "requires_review": risk["requires_review"],
+        },
+    )
+    client = get_supabase_client()
+    response = client.rpc(
+        "execute_read_only_sql",
+        {
+            "sql_query": rendered_sql,
+            "allowed_tables": sorted(DEFAULT_TABLE_WHITELIST),
+        },
+    ).execute()
+
+    return str(response.data or [])
 
 
 def _apply_sql_limit(sql: str, default_limit: int = 100) -> str:
@@ -207,27 +241,9 @@ async def get_recent_reviews(limit: int = 5, **kwargs) -> str:
 
 @tool(args_schema=EmptySchema)
 async def get_database_schema(**kwargs) -> str:
-    """Return the public database schema for safe SQL generation."""
+    """Return the approved database schema for safe SQL generation."""
     try:
-        client = get_supabase_client()
-        response = client.rpc("get_database_schema").execute()
-        
-        # The RPC returns a JSON array of rows. Group them manually by table_name.
-        data = response.data
-        if not data:
-            return "{}"
-            
-        schema: dict[str, list[dict[str, str]]] = {}
-        for row in data:
-            table_name = row["table_name"]
-            schema.setdefault(table_name, []).append(
-                {
-                    "column": row["column_name"],
-                    "type": row["data_type"],
-                    "key": row["key_type"],
-                }
-            )
-        return str(schema)
+        return _get_database_schema_impl()
     except Exception as e:
         logger.error(f"Error getting schema: {e}")
         return f"Failed to retrieve schema: {e!s}"
@@ -237,14 +253,13 @@ async def get_database_schema(**kwargs) -> str:
 async def execute_read_only_sql(sql: str, **kwargs) -> str:
     """Execute a read-only SQL query against the application database."""
     try:
-        if not _is_safe_sql(sql):
-            return "Error: SQL injection detected or forbidden mutating keyword used. Only SELECT/WITH allowed."
-        sql = _apply_sql_limit(sql)
-        
-        client = get_supabase_client()
-        response = client.rpc("execute_read_only_sql", {"sql_query": sql}).execute()
-        
-        return str(response.data or [])
+        return _execute_read_only_sql_impl(sql, user_id=kwargs.get("user_id"))
+    except SafeSqlError as e:
+        logger.warning("Rejected unsafe SQL query: %s", e)
+        return (
+            "Error: unsafe SQL rejected. Use only approved learner tables, avoid SELECT *, "
+            f"and scope user data with user_id = {USER_ID_SQL_PLACEHOLDER}."
+        )
     except Exception as e:
         logger.error(f"Error executing SQL: {e}")
         return f"Failed to execute SQL: {e!s}"

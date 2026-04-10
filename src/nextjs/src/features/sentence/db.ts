@@ -1,17 +1,26 @@
 import { supabase } from "@/lib/supabase";
 
 export const sentenceRepository = {
+    getClient(client?: typeof supabase) {
+        return client ?? supabase;
+    },
+
     async create(data: {
-        text_ja: string,
-        text_en?: string,
-        origin: string,
-        source_text?: string,
-        metadata?: any,
+        japanese_raw: string,
+        english_raw: string,
+        source?: string,
+        japanese_html?: string | null,
+        english_html?: string | null,
+        audio_url?: string | null,
         created_by?: string
-    }) {
-        const { data: result, error } = await supabase
+    }, client?: typeof supabase) {
+        const db = this.getClient(client);
+        const { data: result, error } = await db
             .from('sentences')
-            .insert(data)
+            .insert({
+                source: 'user',
+                ...data,
+            })
             .select()
             .single();
 
@@ -24,11 +33,12 @@ export const sentenceRepository = {
     },
 
     async getById(id: string) {
+        const db = this.getClient();
         // Safety: Prevent 22P02 error by validating UUID format
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
         if (!isUuid) return null;
 
-        const { data, error } = await supabase
+        const { data, error } = await db
             .from('sentences')
             .select('*')
             .eq('id', id)
@@ -42,6 +52,7 @@ export const sentenceRepository = {
     },
 
     async linkKUToSentence(unitId: string, sentenceId: string, isPrimary: boolean = false) {
+        const db = this.getClient();
         // Safety: Prevent 22P02 error by validating UUID format
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         if (!uuidRegex.test(unitId) || !uuidRegex.test(sentenceId)) {
@@ -49,7 +60,7 @@ export const sentenceRepository = {
             return;
         }
 
-        const { error } = await supabase
+        const { error } = await db
             .from('sentence_knowledge')
             .upsert({
                 ku_id: unitId,
@@ -67,7 +78,8 @@ export const sentenceRepository = {
         cloze_data: any,
         note?: string
     }) {
-        const { data: result, error } = await supabase
+        const db = this.getClient();
+        const { data: result, error } = await db
             .from('cloze_sentence_cards')
             .insert(data)
             .select()
@@ -79,7 +91,7 @@ export const sentenceRepository = {
         }
 
         // Also create a flashcard entry for it
-        await supabase.from('flashcards').insert({
+        await db.from('flashcards').insert({
             cloze_id: result.id,
             card_type: 'cloze'
         });
@@ -87,12 +99,18 @@ export const sentenceRepository = {
         return result;
     },
 
-    async getUserSentences(userId: string) {
-        const { data, error } = await supabase
+    async getUserSentences(userId: string, client?: typeof supabase) {
+        const db = this.getClient(client);
+        const { data, error } = await db
             .from('sentences')
             .select('*')
             .eq('created_by', userId)
             .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error("Error fetching user sentences:", error);
+            return [];
+        }
 
         return data || [];
     }

@@ -34,6 +34,8 @@ async def execute_tool_calls(
         # Inject credentials
         args["user_id"] = state.get("user_id", "INJECTED")
         args["jwt"] = state.get("jwt", "SYSTEM_PROVIDED")
+        args["session_id"] = state.get("session_id")
+        args["persist_artifacts"] = state.get("persist_artifacts", True)
 
         target = tool_map[tool_name]
         try:

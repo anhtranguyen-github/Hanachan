@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 class FSRSEngine:
     @classmethod
     def calculate_next_review(
-        cls, current: SRSState, rating: int, w: list[float]
+        cls, current: SRSState, rating: int, w: list[float], wrong_count: int = 0
     ) -> tuple[datetime, SRSState]:
         """Implements FSRS-4.5 scheduling logic."""
         if current.stage == SRSStage.NEW:
@@ -75,6 +75,24 @@ class FSRSEngine:
             reps=reps,
             lapses=lapses,
         )
+
+        if wrong_count > 0 and rating > 1:
+            # Apply a bounded "drill then commit" penalty so repeated mistakes
+            # reduce the resulting schedule even if the final submitted rating is successful.
+            failure_intensity = min(math.log2(wrong_count + 1), 4.0)
+            next_state.difficulty = round(min(5.0, next_state.difficulty + (0.2 * failure_intensity)), 4)
+            next_state.stability = round(
+                max(0.1, next_state.stability * math.exp(-0.3 * failure_intensity)),
+                4,
+            )
+            if failure_intensity > 0.8:
+                next_state.stage = SRSStage.LEARNING
+                next_state.lapses += 1
+                next_state.reps = max(1, math.floor(next_state.reps * 0.5))
+            next_review = datetime.now(timezone.utc) + timedelta(days=next_state.stability)
+            if next_review <= datetime.now(timezone.utc):
+                next_review = datetime.now(timezone.utc) + timedelta(minutes=10)
+
         return next_review, next_state
 
 
@@ -322,7 +340,12 @@ class LearningService:
                 0.25,
             ]
 
-        next_review, next_state = FSRSEngine.calculate_next_review(current_state, rating_int, weights)
+        next_review, next_state = FSRSEngine.calculate_next_review(
+            current_state,
+            rating_int,
+            weights,
+            wrong_count=wrong_count,
+        )
 
         new_status = KUStatus(
             user_id=user_id,
@@ -364,6 +387,9 @@ class LearningService:
         if not enabled_deck_ids:
             return await self.repo.get_due_items(user_id, limit)
         return await self.repo.get_due_items_filtered(user_id, enabled_deck_ids, limit)
+
+    async def get_new_lessons(self, user_id: str, limit: int = 3):
+        return await self.repo.get_unstarted_kus(user_id, limit)
 
     async def list_user_decks(self, user_id: str) -> list[dict]:
         return await self.repo.get_all_decks_with_settings(user_id)

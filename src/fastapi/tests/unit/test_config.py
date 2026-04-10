@@ -5,6 +5,8 @@ Validates that settings load correctly and validation logic works.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 
 def test_settings_load_from_env():
     """Settings should load from environment variables."""
@@ -83,3 +85,28 @@ def test_settings_rate_limit_default():
     from app.core.config import settings
 
     assert settings.rate_limit_per_minute > 0
+
+
+def test_settings_accepts_supabase_service_role_key_alias():
+    from app.core.config import Settings
+
+    s = Settings(
+        openai_api_key="sk-test",
+        supabase_url="https://x.supabase.co",
+        supabase_key="anon-key",
+        SUPABASE_SERVICE_ROLE_KEY="service-role-key",
+    )
+
+    assert s.supabase_service_key == "service-role-key"
+
+
+def test_resolve_env_file_prefers_repo_root(monkeypatch):
+    """The monorepo root .env should win over a stale src/fastapi/.env."""
+    from app.core.config import _resolve_env_file
+
+    monkeypatch.delenv("ENV_FILE", raising=False)
+
+    resolved = _resolve_env_file()
+
+    assert resolved is not None
+    assert resolved == Path("/home/tra01/project/hanchan/.env")

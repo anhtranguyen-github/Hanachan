@@ -1,6 +1,7 @@
 'use server';
 
 import { sentenceClient } from '@/services/sentenceClient';
+import { sentenceRepository } from '@/features/sentence/db';
 
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
@@ -29,24 +30,17 @@ export async function addSentenceAction(japaneseRaw: string, englishRaw: string)
         return { success: false, error: 'Unauthorized' };
     }
 
-    // 1. Insert the sentence
-    const { data, error } = await supabase
-        .from('sentences')
-        .insert({
-            japanese: japaneseRaw,
-            english: englishRaw,
-            source_type: 'manual',
-            user_id: user.id
-        })
-        .select()
-        .single();
+    const data = await sentenceRepository.create({
+        japanese_raw: japaneseRaw,
+        english_raw: englishRaw,
+        source: 'manual',
+        created_by: user.id,
+    }, supabase as any);
 
-    if (error) {
-        console.error('Error adding sentence:', error);
-        return { success: false, error: (error instanceof Error ? error.message : String(error)) };
+    if (!data) {
+        return { success: false, error: 'Failed to create sentence.' };
     }
 
-    // 2. Trigger annotation via sentenceClient (architecture: service layer refactor)
     try {
         const annotations = await sentenceClient.annotate(data.id, japaneseRaw);
         return { success: true, data: { ...data, annotations } };
@@ -66,17 +60,7 @@ export async function fetchUserSentencesAction() {
         return { success: false, error: 'Unauthorized' };
     }
 
-    // Fetch sentences
-    const { data: sentences, error } = await supabase
-        .from('sentences')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-
-    if (error) {
-        return { success: false, error: (error instanceof Error ? error.message : String(error)) };
-    }
+    const sentences = await sentenceRepository.getUserSentences(user.id, supabase as any);
 
     if (!sentences || sentences.length === 0) {
         return { success: true, data: [] };

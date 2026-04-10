@@ -1,5 +1,5 @@
 from typing import Any, Callable, Dict, Optional, Union
-from .safe_sql import do_execute
+from .safe_sql import assess_sql_risk, do_execute
 import requests
 
 
@@ -17,14 +17,14 @@ def execute_with_approval(engine_url: str, query: str, params: Optional[Dict[str
         raise ValueError("approver callback or approver URL is required for HITL execution")
 
     # build proposed args for approval
-    proposed = {"query": query, "params": params or {}, "tables": []}
+    proposed = {"query": query, "params": params or {}, "tables": [], "risk": {}}
     try:
-        # lightweight table extraction for approver visibility
-        from .safe_sql import _extract_tables
-
-        proposed["tables"] = _extract_tables(query)
+        risk = assess_sql_risk(query)
+        proposed["tables"] = risk["tables"]
+        proposed["risk"] = risk
     except Exception:
         proposed["tables"] = []
+        proposed["risk"] = {}
 
     # Support approver as callable or URL string (POSTs proposed payload)
     if isinstance(approver, str):

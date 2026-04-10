@@ -6,7 +6,6 @@ export interface ChatRequest {
   user_id: string;
   message: string;
   session_id?: string | null;
-  tts_enabled?: boolean;
 }
 
 export interface StreamTraceEvent {
@@ -19,6 +18,13 @@ export interface StreamTraceEvent {
   meta?: Record<string, unknown>;
 }
 
+export interface ReferencedUnit {
+  id: string;
+  slug: string;
+  character?: string | null;
+  type: string;
+}
+
 export interface AgentThreadMessage {
   id?: string;
   role: 'user' | 'assistant' | 'system';
@@ -27,8 +33,11 @@ export interface AgentThreadMessage {
   created_at?: string | null;
   metadata?: Record<string, unknown> & {
     traces?: StreamTraceEvent[];
+    referenced_units?: ReferencedUnit[];
+    referencedUnits?: ReferencedUnit[];
   };
   traces?: StreamTraceEvent[];
+  referencedUnits?: ReferencedUnit[];
 }
 
 export interface ChatResponse {

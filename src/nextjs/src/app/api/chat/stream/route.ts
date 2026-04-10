@@ -26,7 +26,6 @@ export async function POST(req: NextRequest) {
     const message = body.message;
     const userId = body.userId || body.user_id;
     const sessionId = body.sessionId || body.session_id;
-    const ttsEnabled = body.ttsEnabled ?? body.tts_enabled;
 
     if (!message || !userId) {
         console.error('[BFF] Missing message or userId:', { message: !!message, userId: !!userId });
@@ -72,7 +71,6 @@ export async function POST(req: NextRequest) {
                 user_id: userId,
                 message,
                 session_id: resolvedSessionId,
-                tts_enabled: ttsEnabled,
             }),
             cache: 'no-store',
         });

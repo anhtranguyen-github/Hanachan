@@ -27,6 +27,11 @@ function mapThreadMessage(message: AgentThreadMessage): ChatMessage {
         timestamp: message.timestamp ?? message.created_at ?? new Date().toISOString(),
         metadata: message.metadata ?? undefined,
         traces: message.traces ?? message.metadata?.traces ?? undefined,
+        referencedUnits:
+            message.referencedUnits
+            ?? message.metadata?.referencedUnits
+            ?? message.metadata?.referenced_units
+            ?? undefined,
     };
 }
 
@@ -171,7 +176,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
     // Streaming send message
     // ---------------------------------------------------------------------------
 
-    const sendMessageStreaming = useCallback(async (content: string, ttsEnabled?: boolean): Promise<void> => {
+    const sendMessageStreaming = useCallback(async (content: string): Promise<void> => {
         if (!userId) return;
 
         const memSessionId = await ensureMemorySession();
@@ -195,7 +200,6 @@ export function useChatSession(userId?: string, conversationId?: string) {
                     message: content,
                     user_id: userId,
                     session_id: memSessionId,
-                    tts_enabled: ttsEnabled,
                 },
                 { signal: abortControllerRef.current.signal },
             );
@@ -228,6 +232,7 @@ export function useChatSession(userId?: string, conversationId?: string) {
                             }));
                         } else if (event.type === 'done') {
                             // Commit the full streaming response as a real message
+                            const referencedUnits = event.referenced_units ?? [];
                             setStreaming(s => {
                                 setMessages(prev => [
                                     ...prev,
@@ -236,6 +241,10 @@ export function useChatSession(userId?: string, conversationId?: string) {
                                         content: fullResponse,
                                         timestamp: new Date().toISOString(),
                                         traces: s.traces,
+                                        referencedUnits,
+                                        metadata: referencedUnits.length > 0
+                                            ? { referencedUnits }
+                                            : undefined,
                                     },
                                 ]);
                                 return { isStreaming: false, partial: '', traces: [] };

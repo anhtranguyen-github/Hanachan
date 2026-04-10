@@ -30,14 +30,13 @@ class TutorState(TypedDict):
     # ── HITL ──────────────────────────────────────────────
     needs_human_approval: bool
     human_approved: bool
+    pending_sql_action: dict[str, Any] | None
 
     # ── Context ───────────────────────────────────────────
     thread_context: str
 
     # ── Output ────────────────────────────────────────────
     generation: str
-    audio_file: str | None
-    tts_enabled: bool
 
     # ── Timing ────────────────────────────────────────────
     start_time: float
