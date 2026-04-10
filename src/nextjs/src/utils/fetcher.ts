@@ -3,7 +3,7 @@
  */
 
 export interface FetchOptions extends RequestInit {
-  params?: Record<string, string | number | boolean | undefined>;
+  params?: Record<string, string | number | boolean | (string | number | boolean)[] | undefined>;
 }
 
 export class ApiError extends Error {
@@ -25,7 +25,15 @@ export async function fetcher<T>(url: string, options: FetchOptions = {}): Promi
   if (params) {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) {
+      if (value === undefined) return;
+      
+      if (Array.isArray(value)) {
+        value.forEach((v) => {
+          // WaniKani style uses repeated keys: slug=1&slug=2
+          // Some APIs use slug[]=1&slug[]=2, but FastAPI usually handles repeated keys fine.
+          query.append(key, String(v));
+        });
+      } else {
         query.append(key, String(value));
       }
     });

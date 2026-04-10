@@ -4,28 +4,22 @@
   "private": true,
   "description": "Hanachan - Japanese language learning chatbot",
   "scripts": {
-    "dev": "./scripts/run.sh",
-    "test": "pnpm run test:all",
-    "test:all": "pnpm run test:backend && pnpm run test:frontend",
-    "test:backend": "cd src/fastapi && uv run python -m pytest",
+    "dev": "./run.sh dev",
+    "test": "bun run test:all",
+    "test:all": "bun run test:backend && bun run test:frontend",
+    "test:backend": "cd src/fastapi && uv run pytest",
     "test:backend:watch": "cd src/fastapi && uv run ptw",
-    "test:backend:coverage": "cd src/fastapi && uv run python -m pytest --cov",
-    "test:frontend": "cd src/nextjs && pnpm run test:unit",
-    "test:frontend:watch": "cd src/nextjs && pnpm run test:watch",
-    "test:frontend:coverage": "cd src/nextjs && pnpm run test:coverage",
-    "test:unit": "pnpm run test:backend && pnpm run test:frontend:unit",
-    "test:integration": "pnpm run test:frontend:integration",
-    "lint": "pnpm run lint:backend && pnpm run lint:frontend",
+    "test:backend:coverage": "cd src/fastapi && uv run pytest --cov",
+    "test:frontend": "cd src/nextjs && bun run test:unit",
+    "test:frontend:watch": "cd src/nextjs && bun run test:watch",
+    "test:frontend:coverage": "cd src/nextjs && bun run test:coverage",
+    "test:unit": "bun run test:backend && bun run test:frontend:unit",
+    "test:integration": "bun run test:frontend:integration",
+    "lint": "bun run lint:backend && bun run lint:frontend",
     "lint:backend": "cd src/fastapi && uv run ruff check .",
-    "lint:frontend": "cd src/nextjs && pnpm run lint",
-    "preinstall": "pnpm dlx only-allow pnpm"
+    "lint:frontend": "cd src/nextjs && bun run lint"
   },
   "devDependencies": {
     "@kilocode/cli": "^7.0.33"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
-  },
-  "packageManager": "pnpm@10.24.0"
+  }
 }

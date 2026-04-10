@@ -37,6 +37,6 @@ USER appuser
 EXPOSE 43110
 # Use a healthcheck for better reliability
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:43110/openapi.json')"]
+    CMD ["uv", "run", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:43110/openapi.json')"]
 
 CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "43110"]

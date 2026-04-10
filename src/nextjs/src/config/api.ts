@@ -7,10 +7,11 @@ import { AGENTS_BASE_URL } from './env';
 // backend port 43110
 export const AGENTS_API_BASE_URL = AGENTS_BASE_URL;
 
-// unified backend port 43110
 export const BACKEND_API_BASE_URL =
   process.env.FASTAPI_CORE_URL?.replace(/\/+$/, '') ||
   `${AGENTS_BASE_URL}/api/v1`;
+
+export const WANIKANI_API_V2_BASE_URL = `${AGENTS_BASE_URL}/api/v2`;
 
 /**
  * API Endpoints

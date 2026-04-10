@@ -16,6 +16,6 @@ repos:
     hooks:
     -   id: architecture-guard
         name: architecture-guard
-        entry: python3 scripts/architecture-guard.py
+        entry: uv run python scripts/architecture-guard.py
         language: system
         pass_filenames: false

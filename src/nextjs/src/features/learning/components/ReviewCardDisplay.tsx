@@ -104,9 +104,13 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
     const validate = (c: QuizItem, input: string) => {
         const n = input.trim().toLowerCase();
         if (n === 'force-pass') return true;
-        if (c.prompt_variant === 'meaning') return n === c.meaning?.toLowerCase();
-        if (c.prompt_variant === 'reading') return n === c.reading?.toLowerCase();
-        if (c.prompt_variant === 'cloze') return n === c.cloze_answer?.toLowerCase();
+        
+        if (c.prompt_variant === 'meaning') {
+            return c.meanings.some(m => m.toLowerCase() === n);
+        }
+        if (c.prompt_variant === 'reading') {
+            return c.readings?.some(r => r.toLowerCase() === n) || false;
+        }
         return false;
     };
 
@@ -126,7 +130,7 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
     const handleKey = (e: React.KeyboardEvent) => {
         if (isEditingNote && document.activeElement === noteInputRef.current) return;
         if (e.key === 'Enter') {
-            if (submitted) onRate(isCorrect ? 'pass' : 'again', userInput);
+            if (submitted) onRate(isCorrect, userInput);
             else handleVerify();
         }
     };
@@ -134,36 +138,22 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
     const handleSaveNote = async () => {
         if (!noteInput.trim() || !user) { setIsEditingNote(false); return; }
         setIsSavingNote(true);
-        const res = await updateKUNoteAction(user.id, card.ku_id || card.id.split('-')[0], noteInput);
+        const res = await updateKUNoteAction(user.id, card.assignment_id, noteInput);
         if (res.success) { setLocalNotes(res.data); setNoteInput(''); setIsEditingNote(false); }
         setIsSavingNote(false);
     };
 
-    const cardType = card.type || card.ku_type || 'kanji';
+    const cardType = card.type || 'kanji';
     const cfg = TYPE_CONFIG[cardType] || TYPE_CONFIG.kanji;
 
     // Hero content
-    const isCloze = card.prompt_variant === 'cloze' && card.sentence_ja;
-    const heroContent = isCloze ? (
-        <p className="text-2xl sm:text-3xl font-bold leading-relaxed text-gray-800 text-center px-4 max-w-lg">
-            {card.sentence_ja.split(card.cloze_answer ?? '').map((part: string, i: number, arr: string[]) => (
-                <React.Fragment key={i}>
-                    {part}
-                    {i < arr.length - 1 && (
-                        <span className="inline-block border-b-2 border-gray-600 px-2 mx-1 min-w-[2.5ch] text-black">
-                            {submitted && isCorrect ? card.cloze_answer : '　'}
-                        </span>
-                    )}
-                </React.Fragment>
-            ))}
-        </p>
-    ) : (
+    const heroContent = (
         <div className="flex flex-col items-center gap-1 text-center">
-            {/* Main character — reduced from 9xl */}
+            {/* Main character */}
             <h2 className="text-[4.5rem] sm:text-[6rem] font-black text-gray-900 jp-text leading-none tracking-tight">
                 {card.character}
             </h2>
-            {/* Reading shown below character in learn-mode only, after submission */}
+            {/* Reading shown below character after submission */}
             {submitted && card.reading && card.prompt_variant === 'meaning' && (
                 <p className="text-lg sm:text-xl font-bold text-gray-500 jp-text animate-in fade-in duration-300">
                     {card.reading}
@@ -180,7 +170,6 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
             {/* ── HERO ── */}
             <div className={clsx(
                 'w-full flex flex-col items-center justify-center relative transition-colors duration-500',
-                // Compact hero: ~35vh max
                 'pt-6 pb-5 sm:pt-8 sm:pb-7 min-h-[32vh] sm:min-h-[35vh]',
                 cfg.heroBg,
             )}>
@@ -201,7 +190,7 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
                 <div className={clsx('absolute bottom-0 left-0 right-0 h-0.5', cfg.accent)} />
             </div>
 
-            {/* ── CONTENT + INPUT ZONE ── compact bottom section */}
+            {/* ── CONTENT + INPUT ZONE ── */}
             <div className="w-full bg-white flex flex-col flex-1 min-h-0">
                 <div className="w-full max-w-lg mx-auto px-4 sm:px-6 flex flex-col gap-0 pt-5 pb-6 sm:pt-6 sm:pb-8 h-full">
 
@@ -211,8 +200,7 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
                             {/* Sublabel */}
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">
                                 {card.prompt_variant === 'meaning' ? 'Type the English meaning'
-                                    : card.prompt_variant === 'reading' ? 'Type the Japanese reading'
-                                    : 'Fill in the missing word'}
+                                    : 'Type the Japanese reading'}
                             </p>
 
                             {/* Input */}
@@ -230,7 +218,7 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
                                 autoFocus
                             />
 
-                            {/* CTA — close to input */}
+                            {/* CTA */}
                             <button
                                 onClick={handleVerify}
                                 className={clsx(
@@ -281,99 +269,30 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
                                 {isCorrect && <Sparkles size={15} className="opacity-60" />}
                             </div>
 
-                            {/* Answer reveal — always show after submit */}
+                            {/* Answer reveal */}
                             <div className="bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 space-y-0.5">
                                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">
-                                    {card.prompt_variant === 'meaning' ? 'Meaning' : card.prompt_variant === 'reading' ? 'Reading' : 'Answer'}
+                                    {card.prompt_variant === 'meaning' ? 'Meanings' : 'Readings'}
                                 </p>
                                 <p className="text-2xl sm:text-3xl font-black text-gray-900 jp-text leading-tight">
-                                    {card.prompt_variant === 'meaning' ? card.meaning
-                                        : card.prompt_variant === 'reading' ? card.reading
-                                        : card.cloze_answer}
+                                    {card.prompt_variant === 'meaning' ? card.meanings.join(', ')
+                                        : card.readings?.join(', ')}
                                 </p>
-                                {/* Show secondary info */}
-                                {card.prompt_variant === 'meaning' && card.reading && (
-                                    <p className="text-sm text-gray-400 font-medium jp-text">{card.reading}</p>
-                                )}
                             </div>
 
-                            {/* Example sentence if available */}
-                            {card.sentence_ja ? (
-                                <div className="bg-white border border-gray-100 rounded-2xl px-4 py-3 space-y-1">
-                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-300">Example</p>
-                                    <p className="text-base font-bold text-gray-800 jp-text leading-relaxed">{card.sentence_ja}</p>
-                                    {card.sentence_en && (
-                                        <p className="text-sm text-gray-400 leading-relaxed">&quot;{card.sentence_en}&quot;</p>
-                                    )}
-                                </div>
-                            ) : (
-                                /* Empty state: show mnemonic hint instead of raw "No example" */
-                                card.mnemonic && (
-                                    <div className="flex gap-2 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3">
-                                        <BookOpen size={14} className="text-amber-400 shrink-0 mt-0.5" />
-                                        <div>
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-amber-400 mb-0.5">Mnemonic</p>
-                                            <p className="text-sm text-amber-800 leading-relaxed">{card.mnemonic}</p>
-                                        </div>
+                            {card.mnemonic && (
+                                <div className="flex gap-2 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3">
+                                    <BookOpen size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-amber-400 mb-0.5">Mnemonic</p>
+                                        <p className="text-sm text-amber-800 leading-relaxed">{card.mnemonic}</p>
                                     </div>
-                                )
-                            )}
-
-                            {/* Notes section */}
-                            {(localNotes || submitted) && (
-                                <div className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <h4 className="text-[10px] font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-                                            <PencilLine size={12} /> My Notes
-                                        </h4>
-                                        {!isEditingNote && (
-                                            <button
-                                                onClick={() => { setIsEditingNote(true); setTimeout(() => noteInputRef.current?.focus(), 50); }}
-                                                className="text-[10px] font-bold text-blue-500 hover:text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md transition-colors"
-                                            >
-                                                {localNotes ? 'Edit' : 'Add'}
-                                            </button>
-                                        )}
-                                    </div>
-                                    {localNotes && !isEditingNote && (
-                                        <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{localNotes}</p>
-                                    )}
-                                    {!localNotes && !isEditingNote && (
-                                        <p className="text-xs text-gray-300 italic">No notes yet — add a mnemonic!</p>
-                                    )}
-                                    {isEditingNote && (
-                                        <div className="mt-1 animate-in fade-in duration-200">
-                                            <textarea
-                                                ref={noteInputRef}
-                                                value={noteInput}
-                                                onChange={e => setNoteInput(e.target.value)}
-                                                placeholder="Mnemonic, rule, or tip..."
-                                                className="w-full h-20 p-3 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/30 resize-none"
-                                                disabled={isSavingNote}
-                                            />
-                                            <div className="flex justify-end gap-2 mt-1.5">
-                                                <button
-                                                    onClick={() => { setIsEditingNote(false); setNoteInput(''); }}
-                                                    className="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:bg-gray-100 transition-colors"
-                                                    disabled={isSavingNote}
-                                                >Cancel</button>
-                                                <button
-                                                    onClick={handleSaveNote}
-                                                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-900 text-white hover:bg-gray-700 transition-colors flex items-center gap-1.5"
-                                                    disabled={isSavingNote || !noteInput.trim()}
-                                                >
-                                                    {isSavingNote && <Loader2 size={11} className="animate-spin" />}
-                                                    Save
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             )}
 
-                            {/* CTA — immediately after result, not far at bottom */}
+                            {/* CTA */}
                             <button
-                                onClick={() => onRate(isCorrect ? 'pass' : 'again', userInput)}
+                                onClick={() => onRate(isCorrect, userInput)}
                                 className={clsx(
                                     'w-full py-4 rounded-2xl font-black text-sm sm:text-base text-white shadow-md hover:shadow-lg hover:scale-[1.015] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 mt-1',
                                     isCorrect
@@ -395,3 +314,4 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
         </div>
     );
 }
+
