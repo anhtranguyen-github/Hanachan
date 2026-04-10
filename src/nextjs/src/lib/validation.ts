@@ -49,12 +49,13 @@ export const UserLearningStateSchema = z.object({
 // --- SENTENCE & MINING ---
 export const SentenceEntitySchema = z.object({
     id: z.string().uuid().optional(),
-    user_id: z.string().uuid(),
-    text_ja: z.string().min(1),
-    text_en: z.string().optional().nullable(),
-    source_type: SourceTypeSchema,
-    source_id: z.string().optional().nullable(),
-    timestamp: z.number().optional().nullable(),
+    created_by: z.string().uuid().nullable().optional(),
+    japanese_raw: z.string().min(1),
+    japanese_html: z.string().nullable().optional(),
+    english_raw: z.string().min(1),
+    english_html: z.string().nullable().optional(),
+    audio_url: z.string().nullable().optional(),
+    source: z.string().min(1).optional(),
     created_at: z.string().datetime().optional(),
 });
 
@@ -73,6 +74,12 @@ export const ChatMessageSchema = z.object({
     content: z.string().min(1),
     timestamp: z.string().datetime(),
     metadata: z.any().optional(),
+    referencedUnits: z.array(z.object({
+        id: z.string(),
+        slug: z.string(),
+        character: z.string().nullable().optional(),
+        type: z.string(),
+    })).optional(),
     traces: z.array(z.object({
         type: z.string(),
         content: z.string(),

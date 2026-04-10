@@ -220,6 +220,7 @@ export default function ChatbotPage() {
         content: m.content,
         timestamp: m.timestamp || HanaTime.getNowISO(),
         traces: m.traces as TraceEvent[] | undefined,
+        referencedUnits: (m as any).referencedUnits,
         isVoice: voiceMessageIndicesRef.current.has(i),
     }));
 

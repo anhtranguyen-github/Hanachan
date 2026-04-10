@@ -27,6 +27,10 @@ class ILearningRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_unstarted_kus(self, user_id: str, limit: int = 3) -> list[KnowledgeUnit]:
+        pass
+
+    @abstractmethod
     async def add_ku_note(self, user_id: str, ku_id: str, note_content: str) -> None:
         pass
 
@@ -187,6 +191,27 @@ class SupabaseLearningRepository(ILearningRepository):
                 )
         return results
 
+    async def get_unstarted_kus(self, user_id: str, limit: int = 3) -> list[KnowledgeUnit]:
+        """Fetch items the user hasn't learned yet."""
+        learned_res = (
+            self.client.table("user_fsrs_states")
+            .select("item_id")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        learned_ids = [row["item_id"] for row in (learned_res.data or [])]
+        
+        query = self.client.table("knowledge_units").select("*").order("level").limit(limit + len(learned_ids))
+        res = query.execute()
+        
+        unstarted = []
+        for ku in (res.data or []):
+            if ku["id"] not in learned_ids:
+                unstarted.append(KnowledgeUnit(**ku))
+            if len(unstarted) >= limit:
+                break
+        return unstarted
+
     async def add_ku_note(self, user_id: str, ku_id: str, note_content: str) -> None:
         data = {
             "user_id": user_id,
@@ -284,8 +309,9 @@ class SupabaseLearningRepository(ILearningRepository):
                 .execute()
             )
             return [item["deck_id"] for item in response.data] if response and response.data else []
-        except Exception as e:
-            logger.warning(f"Could not fetch enabled decks (table might be missing): {e}")
+        except Exception:
+            # Table is missing or schema not updated yet. 
+            # Silently fallback to no filter to avoid distracting warnings in CLI.
             return []
 
     async def get_due_items_filtered(

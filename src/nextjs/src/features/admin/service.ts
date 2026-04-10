@@ -895,10 +895,22 @@ export interface RateLimitOverride {
 }
 
 export async function getRateLimitOverrides() {
-  // Phase 2: This would query Supabase rate_limit_overrides table
-  // For now, return empty result to satisfy type checking
+  const client = supabase;
+  const now = new Date().toISOString();
+
+  const { data, error } = await client
+    .from('rate_limit_overrides')
+    .select('*')
+    .gt('expires_at', now)
+    .order('expires_at', { ascending: true });
+
+  if (error) {
+    console.error('Error loading rate limit overrides:', error);
+    throw new Error('Failed to load rate limit overrides');
+  }
+
   return {
-    overrides: [] as RateLimitOverride[],
+    overrides: (data || []) as RateLimitOverride[],
   };
 }
 
@@ -914,23 +926,36 @@ export async function createRateLimitOverride(override: {
   max_requests_per_hour: number | null;
   max_requests_per_day: number | null;
 }): Promise<RateLimitOverride> {
-  // Phase 2: This would insert into Supabase
-  // For now, return a mock to satisfy type checking
+  const client = supabase;
+  const { data: authData, error: authError } = await client.auth.getUser();
+  if (authError || !authData.user) {
+    throw new Error('Admin authentication required');
+  }
+
   const expiresAt = new Date();
   expiresAt.setHours(expiresAt.getHours() + override.expires_hours);
-  
-  return {
-    id: crypto.randomUUID(),
-    user_id: override.user_id || null,
-    user_name: override.user_name || null,
-    ip_address: override.ip_address || null,
-    scope: override.scope,
-    endpoint_pattern: override.endpoint_pattern,
-    max_requests_per_minute: override.max_requests_per_minute,
-    max_requests_per_hour: override.max_requests_per_hour,
-    max_requests_per_day: override.max_requests_per_day,
-    expires_at: expiresAt.toISOString(),
-    reason: override.reason,
-    created_at: new Date().toISOString(),
-  };
+
+  const { data, error } = await client
+    .from('rate_limit_overrides')
+    .insert({
+      user_id: override.user_id || null,
+      ip_address: override.ip_address || null,
+      scope: override.scope,
+      endpoint_pattern: override.endpoint_pattern,
+      max_requests_per_minute: override.max_requests_per_minute,
+      max_requests_per_hour: override.max_requests_per_hour,
+      max_requests_per_day: override.max_requests_per_day,
+      expires_at: expiresAt.toISOString(),
+      reason: override.reason,
+      created_by: authData.user.id,
+    })
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error('Error creating rate limit override:', error);
+    throw new Error('Failed to create rate limit override');
+  }
+
+  return data as RateLimitOverride;
 }

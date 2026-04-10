@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -31,6 +31,49 @@ class LessonStartRequest(BaseModel):
     unit_ids: list[str] = []
     level: int | None = None
     deck_id: str | None = None
+
+
+INITIAL_FSRS_STABILITY = 0.166
+INITIAL_FSRS_DIFFICULTY = 3.0
+INITIAL_REVIEW_DELAY_HOURS = 4
+LESSON_FACETS_BY_TYPE: dict[str, list[str]] = {
+    "radical": ["meaning"],
+    "kanji": ["meaning"],
+    "vocabulary": ["meaning", "reading"],
+    "grammar": ["cloze"],
+}
+
+
+def _normalize_ku_type(ku_type: str | None) -> str:
+    if ku_type == "vocab":
+        return "vocabulary"
+    return (ku_type or "").lower()
+
+
+def _lesson_facets_for_type(ku_type: str | None) -> list[str]:
+    normalized_type = _normalize_ku_type(ku_type)
+    return LESSON_FACETS_BY_TYPE.get(normalized_type, ["meaning"])
+
+
+def _build_initial_fsrs_rows(user_id: str, ku_id: str, ku_type: str | None, now: datetime) -> list[dict[str, Any]]:
+    next_review = now + timedelta(hours=INITIAL_REVIEW_DELAY_HOURS)
+    return [
+        {
+            "user_id": user_id,
+            "item_id": ku_id,
+            "item_type": "ku",
+            "facet": facet,
+            "state": "learning",
+            "stability": INITIAL_FSRS_STABILITY,
+            "difficulty": INITIAL_FSRS_DIFFICULTY,
+            "reps": 1,
+            "lapses": 0,
+            "last_review": now.isoformat(),
+            "next_review": next_review.isoformat(),
+            "updated_at": now.isoformat(),
+        }
+        for facet in _lesson_facets_for_type(ku_type)
+    ]
 
 
 @router.post("/review/start", response_model=dict[str, Any])
@@ -111,7 +154,12 @@ async def submit_review(
 
     weights = [0.4, 0.6, 2.4, 5.8, 4.93, 0.94, 0.86, 1.01, 1.05, 0.94, 0.74, 0.46, 0.27, 0.29, 0.42, 0.36, 0.29, 1.2, 0.25]
     rating_map = {Rating.AGAIN: 1, Rating.HARD: 2, Rating.GOOD: 3, Rating.PASS: 3, Rating.EASY: 4}
-    next_review, next_state = FSRSEngine.calculate_next_review(current_state, rating_map[rating_enum], weights)
+    next_review, next_state = FSRSEngine.calculate_next_review(
+        current_state,
+        rating_map[rating_enum],
+        weights,
+        wrong_count=payload.wrong_count,
+    )
 
     client.table("user_fsrs_states").upsert(
         {
@@ -145,12 +193,13 @@ async def submit_review(
         }
     ).execute()
 
+    session_item_status = "completed" if payload.rating == "pass" else "incorrect"
     client.table("review_session_items").upsert(
         {
             "session_id": session_id,
             "ku_id": payload.ku_id,
             "facet": payload.facet,
-            "status": "completed",
+            "status": session_item_status,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         },
         on_conflict="session_id,ku_id,facet",
@@ -209,8 +258,44 @@ async def complete_lesson(
     if not batch_res.data or batch_res.data[0]["user_id"] != user_id:
         raise HTTPException(status_code=403, detail="Access denied")
 
+    items_res = (
+        client.table("lesson_items")
+        .select("ku_id, status, knowledge_units(type)")
+        .eq("batch_id", batch_id)
+        .execute()
+    )
+    lesson_items = items_res.data or []
+    if not lesson_items:
+        raise HTTPException(status_code=400, detail="Lesson batch has no items")
+
+    incomplete_items = [item["ku_id"] for item in lesson_items if item.get("status") != "quiz_passed"]
+    if incomplete_items:
+        raise HTTPException(
+            status_code=400,
+            detail="All lesson items must pass the batch quiz before completion",
+        )
+
+    now = datetime.now(timezone.utc)
+    fsrs_rows: list[dict[str, Any]] = []
+    for item in lesson_items:
+        ku = item.get("knowledge_units") or {}
+        if isinstance(ku, list):
+            ku = ku[0] if ku else {}
+        fsrs_rows.extend(_build_initial_fsrs_rows(user_id, item["ku_id"], ku.get("type"), now))
+
+    if fsrs_rows:
+        client.table("user_fsrs_states").upsert(
+            fsrs_rows,
+            on_conflict="user_id,item_id,item_type,facet",
+        ).execute()
+
     client.table("lesson_batches").update(
         {"status": "completed", "completed_at": datetime.now(timezone.utc).isoformat()}
     ).eq("id", batch_id).execute()
     client.table("lesson_items").update({"status": "learned"}).eq("batch_id", batch_id).execute()
-    return {"status": "success", "batch_id": batch_id}
+    return {
+        "status": "success",
+        "batch_id": batch_id,
+        "learned_item_count": len(lesson_items),
+        "scheduled_review_count": len(fsrs_rows),
+    }

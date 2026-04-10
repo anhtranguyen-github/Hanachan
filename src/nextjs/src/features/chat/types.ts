@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { ChatMessageSchema, ChatSessionSchema } from '@/lib/validation';
+import type { ReferencedUnit } from '@/types/chat';
+export type { ReferencedUnit } from '@/types/chat';
 
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 export interface ChatSession {
@@ -10,13 +12,6 @@ export interface ChatSession {
     summary?: string | null;
     mode?: string | null;
     updatedAt: string;
-}
-
-export interface ReferencedUnit {
-    id: string;
-    slug: string;
-    character: string;
-    type: string;
 }
 
 export interface ToolMetadata {

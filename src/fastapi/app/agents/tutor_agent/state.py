@@ -30,17 +30,25 @@ class TutorState(TypedDict):
     # ── HITL ──────────────────────────────────────────────
     needs_human_approval: bool
     human_approved: bool
+    pending_sql_action: dict[str, Any] | None
 
     # ── Context ───────────────────────────────────────────
     thread_context: str
 
     # ── Output ────────────────────────────────────────────
     generation: str
-    audio_file: str | None
-    tts_enabled: bool
+    persist_artifacts: bool
 
     # ── Timing ────────────────────────────────────────────
     start_time: float
+
+    # ── Tutoring Behavior ─────────────────────────────────
+    tutor_mode: str  # "learning", "interacting", "quizzing", "idle"
+    lessons_delivered: int
+    current_batch_count: int
+    last_interaction_at: float  # Timestamp
+    is_quiz_ready: bool
+    understanding_indicators: list[int]
 
     # ── Internal ──────────────────────────────────────────
     _registry: Any

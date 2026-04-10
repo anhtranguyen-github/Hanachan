@@ -18,6 +18,7 @@ class ChatService:
                     "id": session_id,
                     "user_id": user_id,
                     "updated_at": datetime.now(timezone.utc).isoformat(),
+                    "metadata": {},
                 }
             )
             .execute()
@@ -117,13 +118,26 @@ class ChatService:
         return res.data
 
     async def update_chat_session(
-        self, user_id: str, session_id: str, title: str | None = None, summary: str | None = None
+        self,
+        user_id: str,
+        session_id: str,
+        title: str | None = None,
+        summary: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        merge_metadata: bool = True,
     ) -> dict[str, Any]:
-        update_data: dict[str, str] = {}
+        update_data: dict[str, Any] = {}
         if title:
             update_data["title"] = title
         if summary:
             update_data["summary"] = summary
+        if metadata is not None:
+            if merge_metadata:
+                current = await self.get_chat_session(user_id, session_id)
+                existing_metadata = (current or {}).get("metadata") or {}
+                update_data["metadata"] = {**existing_metadata, **metadata}
+            else:
+                update_data["metadata"] = metadata
 
         if not update_data:
             return {}
@@ -136,6 +150,12 @@ class ChatService:
             .execute()
         )
         return res.data[0] if res.data else {}
+
+    async def get_chat_session_metadata(self, user_id: str, session_id: str) -> dict[str, Any]:
+        session = await self.get_chat_session(user_id, session_id)
+        if not session:
+            return {}
+        return session.get("metadata") or {}
 
     async def update_latest_assistant_message_metadata(
         self,

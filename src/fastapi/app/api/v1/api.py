@@ -30,6 +30,7 @@ from app.api.v1.endpoints import (
     reading,
     review_sessions,
     thread,
+    tutor,
 )
 
 api_router = APIRouter()
@@ -42,6 +43,7 @@ api_router.include_router(learning.router, tags=["Learning"])
 api_router.include_router(reading.router, tags=["Reading"])
 api_router.include_router(decks.router, tags=["Decks"])
 api_router.include_router(review_sessions.router, tags=["Review Sessions"])
+api_router.include_router(tutor.router, tags=["Tutor"])
 
 # Maintenance endpoints (health checks, not data access)
 api_router.include_router(maintenance.router, tags=["Maintenance"])

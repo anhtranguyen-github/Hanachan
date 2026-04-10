@@ -70,14 +70,10 @@ export class SentenceService {
 
         try {
             const result = await sentenceRepository.create({
-                text_ja: text,
-                text_en: analysis.translation,
-                origin: 'user',
+                japanese_raw: text,
+                english_raw: analysis.translation,
+                source: 'user',
                 created_by: userId,
-                metadata: {
-                    grammar_points: analysis.grammar_points,
-                    ai_cloze: analysis.cloze_suggestion
-                }
             });
 
             // Logic to link KUs is largely dependent on analysis results which are now empty.

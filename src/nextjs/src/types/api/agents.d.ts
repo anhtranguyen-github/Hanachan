@@ -456,12 +456,6 @@ export interface components {
              * @description Session ID for thread continuity. If omitted, no session context is used.
              */
             session_id?: string | null;
-            /**
-             * Tts Enabled
-             * @description If True, the agent will generate audio for the response.
-             * @default false
-             */
-            tts_enabled: boolean;
         };
         /** ChatResponse */
         ChatResponse: {

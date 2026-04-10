@@ -65,8 +65,7 @@ export default function VideoPlayerPage() {
     async function loadVideo() {
       try {
         setLoading(true);
-        const [videoData, subtitleData, vocabData] = await Promise.all([
-          videoService.searchVideos('').then(() => null).catch(() => null), // placeholder
+        const [subtitleData, vocabData] = await Promise.all([
           videoService.getVideoSubtitles(id),
           videoService.getVideoVocabStats(id),
         ]);

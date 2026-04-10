@@ -24,11 +24,6 @@ class ChatRequest(BaseModel):
         None,
         description="Session ID for thread continuity. If omitted, no session context is used.",
     )
-    tts_enabled: bool = Field(
-        False,
-        description="If True, the agent will generate audio for the response.",
-    )
-
     @field_validator("user_id")
     @classmethod
     def validate_user_id(cls, v: str) -> str:

@@ -1,31 +1,49 @@
 """
-Configuration — loads from .env in the project root.
+Configuration — loads from the monorepo root .env by default.
 """
 
 import os
 from pathlib import Path
 
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Resolve path to the .env that lives in the fastapi root
-# Allow override via ENV_FILE environment variable for container deployments
-_DEFAULT_ENV_PATH = Path(__file__).parent.parent.parent / ".env"
-_ENV_FILE = Path(os.environ.get("ENV_FILE", _DEFAULT_ENV_PATH))
+
+def _resolve_env_file() -> Path | None:
+    """Resolve the default env file, preferring the monorepo root."""
+    explicit = os.environ.get("ENV_FILE")
+    if explicit:
+        return Path(explicit)
+
+    fastapi_root = Path(__file__).resolve().parents[2]
+    repo_root = Path(__file__).resolve().parents[4]
+
+    repo_env = repo_root / ".env"
+    if repo_env.exists():
+        return repo_env
+
+    fastapi_env = fastapi_root / ".env"
+    if fastapi_env.exists():
+        return fastapi_env
+
+    return None
+
+
+_ENV_FILE = _resolve_env_file()
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=str(_ENV_FILE) if _ENV_FILE.exists() else None,
+        env_file=str(_ENV_FILE) if _ENV_FILE else None,
         env_file_encoding="utf-8",
         extra="ignore",
         env_prefix="",
     )
 
-    # OpenAI
-    openai_api_key: str = ""
-    openai_api_base: str | None = None
-    llm_model: str = "gpt-4o"
+    # LLM (OmniRoute / Private)
+    llm_api_key: str = Field("", alias="LLM_API_KEY")
+    llm_api_base: str | None = None
+    llm_model: str = "free-combo"
     default_llm_model: str = "free-combo"
     llm_base_url: str = "http://localhost:43120/v1"
     embedding_model: str = "text-embedding-3-small"
@@ -40,7 +58,10 @@ class Settings(BaseSettings):
     # Supabase (required for all database access)
     supabase_url: str = ""
     supabase_key: str = ""
-    supabase_service_key: str = Field("", alias="SUPABASE_SERVICE_KEY")
+    supabase_service_key: str = Field(
+        "",
+        validation_alias=AliasChoices("SUPABASE_SERVICE_KEY", "SUPABASE_SERVICE_ROLE_KEY"),
+    )
     supabase_jwt_secret: str = ""
 
     # Qdrant (cloud)
@@ -109,16 +130,14 @@ class Settings(BaseSettings):
     def validate_required(self) -> list[str]:
         """Return list of missing required configuration fields."""
         missing = []
-        if not self.openai_api_key:
-            missing.append("OPENAI_API_KEY")
+        if not self.llm_api_key:
+            missing.append("LLM_API_KEY")
         if not self.supabase_url:
             missing.append("SUPABASE_URL")
         if not self.supabase_key:
             missing.append("SUPABASE_KEY")
-        if not self.jina_api_key and not self.openai_api_key:
-            missing.append("JINA_API_KEY or OPENAI_API_KEY")
-        # NOTE: DB_PASSWORD removed - direct PostgreSQL access no longer allowed
-        # All DB access must go through Supabase client
+        if not self.jina_api_key and not self.llm_api_key:
+            missing.append("JINA_API_KEY or LLM_API_KEY")
         return missing
 
 

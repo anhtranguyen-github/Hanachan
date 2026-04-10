@@ -8,7 +8,11 @@ QA scenarios
    - File: `scenario_api_flow.py`
    - Purpose: example end-to-end flow using in-memory DB and the `execute_with_approval` helper
 
-3. Manual checklist
+3. FSRS learn/review flow
+   - File: `test_fsrs_learn_review.py`
+   - Purpose: verify chat-study learn and review flows can prepare a card, persist session state, and submit FSRS progress
+
+4. Manual checklist
    - Use the `qa` skill guidance for manual QA runs and evidence collection
 
 How to run

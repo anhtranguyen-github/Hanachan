@@ -159,19 +159,21 @@ export default function SentencesPage() {
                                     <div className="space-y-3 relative z-10 pl-2">
                                         <p className="text-xl sm:text-2xl font-black text-[#3E4A61] leading-relaxed break-words">
                                             <AnnotatedSentence
-                                                text={target.japanese}
+                                                text={target.japanese_raw}
                                                 annotations={target.annotations}
                                             />
                                         </p>
-                                        {(target.english || target.text_en) && (
+                                        {target.english_raw && (
                                             <p className="text-sm font-bold text-foreground/50 border-t border-border/40 pt-3">
-                                                {target.english || target.text_en}
+                                                {target.english_raw}
                                             </p>
                                         )}
 
                                     </div>
                                     <div className="flex items-center gap-2 mt-auto pt-2 pl-2">
-                                        <span className="text-[9px] font-black uppercase tracking-widest text-foreground/30 px-2.5 py-1 bg-surface-muted rounded-lg border border-border/50">Manual</span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-foreground/30 px-2.5 py-1 bg-surface-muted rounded-lg border border-border/50">
+                                            {target.source || 'manual'}
+                                        </span>
                                     </div>
                                 </div>
                             ))}

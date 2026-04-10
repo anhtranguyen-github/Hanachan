@@ -26,6 +26,7 @@ Architecture Note:
 
 import json
 import logging
+import re
 import time
 from collections.abc import AsyncGenerator
 from typing import Any as TypingAny
@@ -41,6 +42,9 @@ from app.core.rate_limit import limiter
 from app.core.supabase import get_supabase_client
 from app.domain.chat.services import ChatService
 from app.schemas.chat import ChatRequest, ChatResponse
+from app.services.memory.session_memory import get_thread_context_text
+from app.domain.learning.services import LearningService
+from app.repositories.learning import SupabaseLearningRepository
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +138,38 @@ async def _persist_stream_traces(
     )
 
 
+async def _detect_referenced_units(text: str) -> list[dict[str, TypingAny]]:
+    matches = re.findall(r"[A-Za-z0-9:_-]+|[\u4e00-\u9faf]", text)
+    unique_matches = []
+    seen: set[str] = set()
+    for match in matches:
+        if match in seen:
+            continue
+        seen.add(match)
+        unique_matches.append(match)
+        if len(unique_matches) >= 8:
+            break
+
+    service = LearningService(SupabaseLearningRepository(get_supabase_client()))
+    referenced_units: list[dict[str, TypingAny]] = []
+    for match in unique_matches:
+        results = await service.search_knowledge(match, limit=1)
+        if not results:
+            continue
+        ku = results[0]
+        referenced_units.append(
+            {
+                "id": ku.id,
+                "slug": ku.slug,
+                "character": ku.character,
+                "type": ku.type,
+            }
+        )
+        if len(referenced_units) >= 3:
+            break
+    return referenced_units
+
+
 @router.post("/chat", response_model=ChatResponse, tags=["Chat"])
 @limiter.limit(f"{settings.rate_limit_per_minute}/minute")
 async def chat(
@@ -187,6 +223,13 @@ async def chat_stream(
         raise HTTPException(status_code=400, detail="Invalid user_id in request body")
 
     async def event_stream() -> AsyncGenerator[str, None]:
+        thread_context = ""
+        if req.session_id:
+            try:
+                thread_context = await get_thread_context_text(current_user["jwt"], req.session_id)
+            except Exception:
+                thread_context = ""
+
         # Initialize state
         initial_state = {
             "user_id": user_id,
@@ -196,19 +239,18 @@ async def chat_stream(
             "messages": [HumanMessage(content=req.message)],
             "iterations": 0,
             "generation": "",
-            "thread_context": "",
+            "thread_context": thread_context,
             "thought": "",
             "route": None,
             "needs_human_approval": False,
             "human_approved": False,
-            "audio_file": None,
-            "tts_enabled": req.tts_enabled,
             "start_time": time.time(),
         }
 
         tokens_emitted = False
         final_generation = ""
         trace_events: list[dict[str, TypingAny]] = []
+        referenced_units: list[dict[str, TypingAny]] = []
 
         try:
             # astream_events v2 provides deep tracing of thoughts, tools, and tokens
@@ -303,6 +345,8 @@ async def chat_stream(
             if req.session_id and trace_events:
                 try:
                     chat_service = ChatService(get_supabase_client())
+                    if final_generation:
+                        referenced_units = await _detect_referenced_units(final_generation)
                     await _persist_stream_traces(
                         chat_service,
                         user_id=user_id,
@@ -310,13 +354,26 @@ async def chat_stream(
                         trace_events=trace_events,
                         final_generation=final_generation,
                     )
+                    if referenced_units:
+                        await chat_service.update_latest_assistant_message_metadata(
+                            user_id,
+                            req.session_id,
+                            {"referenced_units": referenced_units},
+                            content=final_generation or None,
+                        )
                 except Exception:
                     logger.exception(
                         "stream_trace_persist_error",
                         extra={"user_id": user_id, "session_id": req.session_id},
                     )
 
-            yield _emit_sse({"type": "done", "session_id": req.session_id})
+            yield _emit_sse(
+                {
+                    "type": "done",
+                    "session_id": req.session_id,
+                    "referenced_units": referenced_units,
+                }
+            )
 
         except Exception as exc:
             logger.error("stream_graph_error", extra={"user_id": user_id, "error": str(exc)})

@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "hanachan-fastapi"
 version = "0.1.0"
@@ -28,6 +32,9 @@ dependencies = [
     "mcp>=1.26.0",
 ]
 
+[project.scripts]
+hanachan-chat = "app.cli.chat:main"
+
 [project.optional-dependencies]
 test = [
     "pytest>=8.0.0",
@@ -52,6 +59,10 @@ dev = [
 
 [tool.uv]
 managed = true
+package = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
