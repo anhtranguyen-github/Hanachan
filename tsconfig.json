@@ -37,6 +37,9 @@
       ],
       "@components/*": [
         "./src/components/*"
+      ],
+      "@client/*": [
+        "./src/client/*"
       ]
     },
     "strict": false
@@ -45,21 +48,6 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    "src/components-inactive/Categories.tsx.bak",
-    "src/components/Dashboard.tsx.bak",
-    "src/components/GrammarCategories.tsx.bak",
-    "src/components/GrammarCategory.tsx.bak",
-    "src/components/GrammarDashboard.tsx.bak",
-    "src/components/GrammarSelection.tsx.bak",
-    "src/components/HowItWorks.tsx.bak",
-    "src/components/PreNav.tsx.bak",
-    "src/components/Pricing.tsx.bak",
-    "src/components/Pricing2.tsx.bak",
-    "src/components/Testimonial.tsx.bak",
-    "src/app/japanese/kanji_overview/page.tsx.nonprod",
-    "src/app/z-experimental/move-words/page.jsx",
-    "src/components/ComplexFlashcardModalGrammar.Flasktsx",
     ".next/types/**/*.ts"
   ],
   "exclude": [

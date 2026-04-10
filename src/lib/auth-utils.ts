@@ -1,6 +1,5 @@
-import { cookies } from 'next/headers';
-
 export async function getBearerFromSupabaseCookie(): Promise<string | null> {
+    const { cookies } = await import('next/headers');
     const cookieStore = await cookies();
     const allCookies = typeof cookieStore.getAll === 'function' ? cookieStore.getAll() : [];
 

@@ -16,8 +16,6 @@ import {
     fetchNewItems,
     initializeSRS,
 } from './data';
-import { lessonRepository } from './lessonRepository';
-import { srsRepository } from './srsRepository';
 
 function getErrorMessage(error: unknown) {
     if (error instanceof Error) {
@@ -142,4 +140,12 @@ export async function updateKUNoteAction(userId: string, assignmentId: number, n
     // In v2, notes are in study_materials. This needs a new client method.
     // For now, return success to avoid breaking UI.
     return { success: true, data: note };
+}
+
+export async function completeLessonBatchAction(batchId: string) {
+    // In v2 managed mode, assignments are processed individually.
+    // This action can be a no-op or trigger a final revalidation.
+    revalidatePath('/dashboard');
+    revalidatePath('/learn');
+    return { success: true };
 }

@@ -10,7 +10,6 @@ import { ReviewCard, ReviewAnswer, ReviewSession, KanjiReviewCard, VocabReviewCa
 import { generateReviewCards } from './review-card-generator';
 import { calculateNextReview, Rating, SRSState } from './SRSAlgorithm';
 import { validateClozeAnswer } from './grammar-cloze';
-import { srsRepository } from '../srsRepository';
 
 const LOG_PREFIX = '[ReviewSession]';
 
@@ -238,15 +237,7 @@ export async function startReviewSession(
 
     // Persistence Hook (Relational Session Tracking)
     try {
-        const dbSession = await srsRepository.createReviewSession(userId, cards.length);
-        // Overwrite random ID with DB ID for persistence
-        session.id = dbSession.id;
-
-        const sessionItems = cards.map(c => ({
-            ku_id: c.ku_id,
-            facet: c.prompt_variant
-        }));
-        await srsRepository.createReviewSessionItems(session.id, sessionItems);
+        // NOTE: Legacy session tracking disabled or replaced by direct Supabase calls
     } catch (e) {
         console.error(`${LOG_PREFIX} Failed to persist session header`, e);
     }

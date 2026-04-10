@@ -17,7 +17,7 @@
     "test:api": "vitest run --dir tests/api",
     "test:ci": "vitest run --reporter=default --silent",
     "typecheck": "tsc --noEmit",
-    "test:accounts:create": "node ../scripts/create-test-accounts.js",
+    "test:accounts:create": "node scripts/create-test-accounts.js",
     "test:mutation": "stryker run",
     "test:mutation:ci": "stryker run --reporters json,dashboard"
   },
