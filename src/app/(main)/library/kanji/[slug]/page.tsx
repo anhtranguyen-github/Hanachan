@@ -3,7 +3,7 @@ import React from 'react';
 import { getLocalKU } from '@/features/knowledge/actions';
 import Link from 'next/link';
 import { RichTextRenderer } from '@/components/shared/RichTextRenderer';
-import { ChevronLeft, PlayCircle, BookOpen, Layers, Zap, Sparkles, Target, Info, Hash } from 'lucide-react';
+import { ChevronLeft, PlayCircle, BookOpen, Layers, Zap, Sparkles, Target, Info, Hash, Lightbulb as LightbulbIcon } from 'lucide-react';
 import { KUInlineChat } from '@/features/chat/components/KUInlineChat';
 import { KUUserNotes } from '@/components/shared/KUUserNotes';
 import { KUUserSentences } from '@/components/shared/KUUserSentences';
@@ -107,8 +107,18 @@ export default async function KanjiDetailPage({ params }: { params: { slug: stri
                         <h2 className="text-sm font-black text-foreground uppercase tracking-widest">Meaning Mnemonic</h2>
                     </div>
                     <div className="text-sm text-foreground/70 leading-relaxed">
-                        <RichTextRenderer content={kuKanji.meaning_explanation || kanji.mnemonics?.meaning || "No mnemonic available."} />
+                        <RichTextRenderer content={kanji.mnemonics?.meaning || "No mnemonic available."} />
                     </div>
+                    {kanji.meaning_hint && (
+                        <div className="mt-4 p-4 bg-amber-50/50 border border-amber-100 rounded-2xl">
+                            <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1 flex items-center gap-1">
+                                <Sparkles size={10} /> Hint
+                            </p>
+                            <div className="text-xs text-amber-900/70 italic">
+                                <RichTextRenderer content={kanji.meaning_hint} />
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Reading mnemonic */}
@@ -120,8 +130,18 @@ export default async function KanjiDetailPage({ params }: { params: { slug: stri
                         <h2 className="text-sm font-black text-foreground/50 uppercase tracking-widest">Reading Mnemonic</h2>
                     </div>
                     <div className="text-sm text-foreground/60 leading-relaxed">
-                        <RichTextRenderer content={kanji.mnemonics?.reading || kuKanji.reading_explanation || "No reading mnemonic available."} />
+                        <RichTextRenderer content={kanji.mnemonics?.reading || "No reading mnemonic available."} />
                     </div>
+                    {kanji.reading_hint && (
+                        <div className="mt-4 p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+                                <LightbulbIcon size={10} /> Hint
+                            </p>
+                            <div className="text-xs text-slate-600 italic">
+                                <RichTextRenderer content={kanji.reading_hint} />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

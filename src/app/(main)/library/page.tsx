@@ -28,8 +28,13 @@ function ContentDatabase() {
     const filteredItems = useMemo(() => {
         return items.filter(unit => {
             const state = states[unit.id];
-            const status = !state ? 'new' : state.state;
-            return filterStatus === 'all' || status === filterStatus;
+            const wkState = state?.wanikani_state || 'new';
+            const fState = state?.state || 'new';
+            
+            if (filterStatus === 'all') return true;
+            if (filterStatus === 'locked') return wkState === 'locked';
+            if (filterStatus === 'in_lessons') return wkState === 'in_lessons';
+            return fState === filterStatus;
         });
     }, [items, states, filterStatus]);
 
@@ -93,7 +98,9 @@ function ContentDatabase() {
                             className="w-full appearance-none bg-[#F7FAFC] group-hover:bg-gray-50 border border-border/20 rounded-2xl px-4 py-2.5 text-xs font-black text-[#3E4A61] outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer shadow-sm"
                         >
                             <option value="all">ALL STATUS</option>
-                            <option value="new">NEW</option>
+                            <option value="locked">LOCKED</option>
+                            <option value="in_lessons">IN LESSONS</option>
+                            <option value="new">NEW (GLOBAL)</option>
                             <option value="learning">LEARNING</option>
                             <option value="burned">MASTERED</option>
                         </select>
@@ -169,18 +176,27 @@ function ContentDatabase() {
                                                             href={`/library/${unit.type === 'vocabulary' ? 'vocabulary' : unit.type === 'radical' ? 'radicals' : unit.type}/${unit.slug}`}
                                                             key={unit.id}
                                                             className={clsx(
-                                                                "group relative flex flex-col items-center bg-white border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg aspect-square justify-center gap-1 p-2"
+                                                                "group relative flex flex-col items-center bg-white border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg aspect-square justify-center gap-1 p-2",
+                                                                states[unit.id]?.wanikani_state === 'locked' && "grayscale-[0.5] opacity-80 bg-gray-50/50"
                                                             )}
                                                             style={{ borderColor: `${typeBorderColor[unit.type]}40` }}
                                                         >
                                                             <div className="absolute top-0 left-0 right-0 h-0.5" style={{ backgroundColor: typeBorderColor[unit.type] }} />
+                                                            
+                                                            {/* State Badge */}
+                                                            <div className="absolute top-1 right-2 flex gap-1">
+                                                                {states[unit.id]?.wanikani_state === 'locked' && <Lock size={8} className="text-foreground/20" />}
+                                                                {states[unit.id]?.wanikani_state === 'burned' && <Flame size={8} className="text-orange-500 fill-orange-500/20" />}
+                                                                {states[unit.id]?.wanikani_state === 'in_lessons' && <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />}
+                                                            </div>
+
                                                             <div className={clsx("text-2xl sm:text-3xl font-black transition-all group-hover:scale-110 duration-300 jp-text", typeTextColor[unit.type] || 'text-foreground')}>
                                                                 {unit.character || '—'}
                                                             </div>
                                                             <h3 className="text-[7px] sm:text-[8px] font-black text-foreground/40 uppercase tracking-tight text-center line-clamp-1 px-1">
                                                                 {unit.meaning}
                                                             </h3>
-                                                            {state && (
+                                                            {state && state.state !== 'new' && (
                                                                 <div className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: typeBorderColor[unit.type] }} />
                                                             )}
                                                         </Link>

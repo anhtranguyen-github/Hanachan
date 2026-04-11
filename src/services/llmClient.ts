@@ -1,5 +1,3 @@
-import OpenAI from 'openai';
-
 import {
   LLM_MODEL,
   LLM_PROVIDER,
@@ -11,8 +9,13 @@ import {
 
 export type LLMProvider = 'openai' | 'omniroute';
 
+type ChatMessage = {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+};
+
 type ChatInput = {
-  messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[];
+  messages: ChatMessage[];
   model?: string;
   temperature?: number;
   maxTokens?: number;
@@ -26,7 +29,6 @@ type ConnectionConfig = {
 };
 
 class LLMClient {
-  private client: OpenAI | null = null;
   private readonly provider: LLMProvider;
   private readonly model: string;
 
@@ -45,34 +47,56 @@ class LLMClient {
   }
 
   async chat({ messages, model = this.model, temperature, maxTokens }: ChatInput) {
-    const client = this.getClient();
-    return client.chat.completions.create({
-      model,
-      messages,
-      temperature,
-      max_tokens: maxTokens,
+    const config = this.getConfig();
+    const baseURL = config.baseURL || 'https://api.openai.com/v1';
+
+    const response = await fetch(`${baseURL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature,
+        max_tokens: maxTokens,
+      }),
     });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(`LLM Chat error: ${response.statusText} ${JSON.stringify(error)}`);
+    }
+
+    return response.json();
   }
 
   async transcribeAudio(file: File, model = 'whisper-1') {
-    const client = this.getClient();
-    return client.audio.transcriptions.create({
-      file,
-      model,
-      response_format: 'text',
-    });
-  }
+    const config = this.getConfig();
+    const baseURL = config.baseURL || 'https://api.openai.com/v1';
 
-  private getClient() {
-    if (!this.client) {
-      const config = this.getConfig();
-      this.client = new OpenAI({
-        apiKey: config.apiKey,
-        baseURL: config.baseURL,
-      });
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('model', model);
+    formData.append('response_format', 'text');
+
+    const response = await fetch(`${baseURL}/audio/transcriptions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(`LLM Transcription error: ${response.statusText} ${JSON.stringify(error)}`);
     }
 
-    return this.client;
+    // Using text format as requested by formData
+    const text = await response.text();
+    return text;
   }
 
   private getConfig(): ConnectionConfig {

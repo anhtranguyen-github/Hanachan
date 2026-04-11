@@ -2,23 +2,20 @@ import fs from 'fs';
 
 // WaniKani API Token provided by user
 const API_TOKEN = 'c64f8759-d793-4198-9c0f-d83541831778'; 
-const INITIAL_URL = 'https://api.wanikani.com/v2/subjects';
+const REVISION = '20170710';
 
-async function crawlWaniKaniSubjects() {
-    let allSubjects: any[] = [];
-    let nextUrl: string | null = INITIAL_URL;
-
-    console.log('🚀 Bắt đầu cào dữ liệu từ WaniKani...');
+async function fetchCollection(url: string) {
+    let allData: any[] = [];
+    let nextUrl: string | null = url;
 
     while (nextUrl) {
         console.log(`Đang lấy dữ liệu từ: ${nextUrl}`);
-        
         try {
             const response = await fetch(nextUrl, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${API_TOKEN}`,
-                    'Wanikani-Revision': '20170710' 
+                    'Wanikani-Revision': REVISION 
                 }
             });
 
@@ -27,24 +24,49 @@ async function crawlWaniKaniSubjects() {
             }
 
             const json: any = await response.json();
-            
-            allSubjects = allSubjects.concat(json.data);
+            allData = allData.concat(json.data);
             nextUrl = json.pages.next_url;
 
-            // Wait 500ms between requests to be safe with rate limits
             await new Promise(resolve => setTimeout(resolve, 500)); 
-
         } catch (error) {
-            console.error('❌ Có lỗi xảy ra trong quá trình cào:', error);
+            console.error('❌ Lỗi khi fetch:', error);
             break;
         }
     }
-
-    console.log(`✅ Đã cào xong! Tổng số subjects thu thập được: ${allSubjects.length}`);
-    
-    const fileName = 'wanikani_subjects.json';
-    fs.writeFileSync(fileName, JSON.stringify(allSubjects, null, 2), 'utf-8');
-    console.log(`💾 Đã lưu dữ liệu vào file: ${fileName}`);
+    return allData;
 }
 
-crawlWaniKaniSubjects().catch(console.error);
+async function crawlWaniKani() {
+    console.log('🚀 Bắt đầu cào dữ liệu toàn diện từ WaniKani...');
+
+    // 1. Fetch all subjects
+    console.log('--- Đang lấy Subjects (có thể mất vài phút) ---');
+    const subjects = await fetchCollection('https://api.wanikani.com/v2/subjects');
+    console.log(`✅ Đã lấy ${subjects.length} subjects.`);
+
+    // 2. Fetch all assignments
+    console.log('--- Đang lấy Assignments ---');
+    const assignments = await fetchCollection('https://api.wanikani.com/v2/assignments');
+    console.log(`✅ Đã lấy ${assignments.length} assignments.`);
+
+    // Create a map of assignments for easier merging
+    const assignmentMap = new Map();
+    assignments.forEach((a: any) => {
+        assignmentMap.set(a.data.subject_id, a.data);
+    });
+
+    // 3. Merge data
+    const mergedData = subjects.map((s: any) => {
+        const assignment = assignmentMap.get(s.id);
+        return {
+            ...s,
+            assignment: assignment || null
+        };
+    });
+
+    const fileName = 'docs/wanikani/wanikani_subjects.json';
+    fs.writeFileSync(fileName, JSON.stringify(mergedData, null, 2), 'utf-8');
+    console.log(`💾 Đã lưu ${mergedData.length} bản ghi vào ${fileName}`);
+}
+
+crawlWaniKani().catch(console.error);

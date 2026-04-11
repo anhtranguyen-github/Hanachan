@@ -22,12 +22,14 @@ import {
     fetchUserDashboardStatsAction, 
     fetchCurriculumStatsAction, 
     fetchLevelStatsAction,
+    syncWaniKaniDataAction
 } from '@/features/learning/actions';
 import { listDecksAction } from '@/features/decks/actions';
 import { useUser } from '@/features/auth/AuthContext';
 import { getUserLevelOrDefault } from '@/features/auth/db';
 import { HanaTime } from '@/lib/time';
-import { ChevronDown, Layers } from 'lucide-react';
+import { ChevronDown, Layers, RefreshCw } from 'lucide-react';
+import { WaniKaniSyncModal } from '@/features/learning/components/WaniKaniSyncModal';
 
 export default function DashboardPage() {
     const { user, openLoginModal } = useUser();
@@ -38,6 +40,7 @@ export default function DashboardPage() {
     const [decks, setDecks] = useState<any[]>([]);
     const [selectedDeck, setSelectedDeck] = useState<string | 'all'>('all');
     const [isDeckSelectorOpen, setIsDeckSelectorOpen] = useState(false);
+    const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
     const refreshData = async (deckId: string = selectedDeck) => {
         try {
@@ -214,6 +217,14 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <button 
+                        onClick={() => setIsSyncModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-2xl shadow-sm hover:bg-primary/20 transition-all group"
+                        title="Sync WaniKani Progress"
+                    >
+                        <RefreshCw size={14} className="text-primary group-hover:rotate-180 transition-transform duration-500" />
+                        <span className="text-[10px] font-black text-primary uppercase tracking-widest hidden sm:inline">Sync Progress</span>
+                    </button>
                     <div className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-md border border-primary/10 rounded-2xl shadow-sm hover:shadow-md transition-all group">
                         <Flame size={14} className="text-primary group-hover:scale-110 transition-transform" />
                         <span className="text-[10px] font-black text-[#3E4A61] uppercase tracking-widest">{stats.streak}d Streak</span>
@@ -594,6 +605,15 @@ export default function DashboardPage() {
                     <span className="text-[7px] font-black text-[#CBD5E0] uppercase tracking-widest leading-none">Most Active</span>
                 </div>
             </div>
+
+            {/* WaniKani Sync Modal */}
+            <WaniKaniSyncModal 
+                isOpen={isSyncModalOpen} 
+                onClose={() => {
+                    setIsSyncModalOpen(false);
+                    refreshData();
+                }} 
+            />
         </main>
     );
 }

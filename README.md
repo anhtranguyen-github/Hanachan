@@ -14,24 +14,22 @@ A Japanese learning platform built with Next.js 14 and FastAPI, using Supabase f
 
 ### Prerequisites
 
-- Node.js 20+ and pnpm
-- Python 3.11+
+- Node.js 20+ and Bun
 - Supabase CLI (for local development)
 - Docker & Docker Compose (optional)
 
 ### Local Development
 
 ```bash
-# Install frontend
-cd src/nextjs && pnpm install
+# Install dependencies
+bun install
 
 # Copy env
-cp src/nextjs/.env.example src/nextjs/.env.local
+cp .env.example .env.local
 # Fill in your keys
 
 # Run
-pnpm dev
-# (or ./scripts/run.sh)
+bun dev
 ```
 
 Open [http://localhost:7100](http://localhost:7100)

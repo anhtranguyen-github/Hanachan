@@ -64,11 +64,15 @@ export async function getKnowledgeUnit(type: string, slug: string) {
             item.stroke_video_url = details.stroke_video_url;
             mStory = details.meaning_mnemonic || "";
             rStory = details.reading_mnemonic || "";
+            item.meaning_hint = details.meaning_hint || "";
+            item.reading_hint = details.reading_hint || "";
         } else if (type === 'vocabulary' && item.vocabulary_details) {
             meanings = splitMeanings;
             const details = item.vocabulary_details;
             readings = [details.reading];
             mStory = details.meaning_mnemonic || "";
+            item.meaning_hint = details.meaning_hint || "";
+            item.reading_hint = details.reading_hint || "";
 
             // Support legacy component keys
             item.ku_vocabulary = {
@@ -98,6 +102,8 @@ export async function getKnowledgeUnit(type: string, slug: string) {
             item.ku_radicals = item.radical_details;
             item.image_url = item.radical_details.image_url;
             mStory = item.radical_details.meaning_mnemonic || "";
+            item.meaning_hint = item.radical_details.meaning_hint || "";
+            item.character_images = item.radical_details.character_images || [];
         } else if (type === 'grammar' && item.grammar_details) {
             meanings = splitMeanings;
             const details = item.grammar_details;
@@ -141,7 +147,7 @@ export async function getKnowledgeUnit(type: string, slug: string) {
                 reading: rStory
             },
             sentences: item.sentences || [],
-            metadata: {}
+            metadata: item.metadata || {}
         };
 
     } catch (e) {

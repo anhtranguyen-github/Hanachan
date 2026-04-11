@@ -10,7 +10,7 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl!, supabaseKey!);
 
 async function main() {
-  const filePath = 'wanikani_subjects.json';
+  const filePath = 'docs/wanikani/wanikani_subjects.json';
   if (!fs.existsSync(filePath)) {
     console.error(`File not found: ${filePath}`);
     return;

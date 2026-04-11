@@ -182,3 +182,17 @@ export async function syncWaniKaniDataAction(apiToken: string, strategy: 'merge'
         return { success: false, error: getErrorMessage(e) };
     }
 }
+
+export async function previewWaniKaniSyncAction(apiToken: string) {
+    try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const stats = await wanikaniSyncService.preview(user.id, apiToken);
+        return { success: true, data: stats };
+    } catch (e: unknown) {
+        console.error("[LearningActions] previewWaniKaniSyncAction error:", e);
+        return { success: false, error: getErrorMessage(e) };
+    }
+}

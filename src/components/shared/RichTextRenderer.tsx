@@ -6,7 +6,8 @@ const SANITIZE_CONFIG = {
     allowedTags: [
         'span', 'strong', 'em', 'br', 'p', 'div', 'mark',
         'ruby', 'rt', 'rp', // For Furigana support
-        'code', 'pre', 'ul', 'ol', 'li'
+        'code', 'pre', 'ul', 'ol', 'li',
+        'kanji', 'radical', 'vocabulary', 'meaning', 'reading' // WaniKani tags
     ],
     allowedAttributes: {
         '*': ['class']

@@ -14,7 +14,9 @@ export interface KnowledgeUnit extends z.infer<typeof KnowledgeUnitSchema> {
 export interface RadicalDetails {
     ku_id: string;
     meaning_mnemonic?: string | null;
+    meaning_hint?: string | null;
     image_url?: string | null;
+    character_images?: any[];
 }
 
 export interface KanjiDetails {
@@ -22,15 +24,21 @@ export interface KanjiDetails {
     onyomi?: string[] | null;
     kunyomi?: string[] | null;
     meaning_mnemonic?: string | null;
+    meaning_hint?: string | null;
     reading_mnemonic?: string | null;
+    reading_hint?: string | null;
 }
 
 export interface VocabularyDetails {
     ku_id: string;
     reading: string;
     audio_url?: string | null;
+    pronunciation_audios?: any[];
     parts_of_speech?: string[] | null;
     meaning_mnemonic?: string | null;
+    meaning_hint?: string | null;
+    reading_hint?: string | null;
+    context_sentences?: any[];
 }
 
 export interface GrammarDetails {

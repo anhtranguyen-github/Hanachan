@@ -32,12 +32,17 @@ export function useLibrary(filters: { type?: string; level?: number | 'all'; que
 
             if (userId) {
                 const { data: userStates } = await supabase
-                    .from('user_fsrs_states')
+                    .from('user_learning_states')
                     .select('*')
                     .eq('user_id', userId);
                 
                 const stateMap: Record<string, any> = {};
-                userStates?.forEach((s: any) => { stateMap[s.ku_id] = s; });
+                userStates?.forEach((s: any) => { 
+                    // Store the state, prioritizing 'meaning' facet for the general status if multiple exist
+                    if (!stateMap[s.ku_id] || s.facet === 'meaning') {
+                        stateMap[s.ku_id] = s; 
+                    }
+                });
                 setStates(stateMap);
             }
 

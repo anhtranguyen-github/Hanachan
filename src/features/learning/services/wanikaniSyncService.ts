@@ -41,20 +41,87 @@ export class WanikaniSyncService {
    */
   calculateFsrsFromSrsStage(srsStage: number) {
     // Basic mapping based on interval expectations
-    const mapping: Record<number, { stability: number; state: string; difficulty: number; reps: number }> = {
-      0: { stability: 0, state: 'new', difficulty: 5.0, reps: 0 },
-      1: { stability: 0.16, state: 'learning', difficulty: 5.0, reps: 1 }, // 4h
-      2: { stability: 0.33, state: 'learning', difficulty: 5.0, reps: 2 }, // 8h
-      3: { stability: 1.0, state: 'learning', difficulty: 5.0, reps: 3 }, // 1d
-      4: { stability: 2.0, state: 'learning', difficulty: 5.0, reps: 4 }, // 2d
-      5: { stability: 7.0, state: 'review', difficulty: 5.0, reps: 5 }, // 1w
-      6: { stability: 14.0, state: 'review', difficulty: 5.0, reps: 6 }, // 2w
-      7: { stability: 30.0, state: 'review', difficulty: 4.5, reps: 7 }, // 1m
-      8: { stability: 120.0, state: 'review', difficulty: 4.0, reps: 8 }, // 4m
-      9: { stability: 3650.0, state: 'burned', difficulty: 3.0, reps: 9 }, // Burned (10 years)
+    // 0: Initial, 1-4: Apprentice, 5-6: Guru, 7: Master, 8: Enlightened, 9: Burned
+    const mapping: Record<number, { stability: number; state: string; difficulty: number; reps: number; wk_state: string }> = {
+      0: { stability: 0, state: 'new', difficulty: 5.0, reps: 0, wk_state: 'locked' },
+      1: { stability: 0.16, state: 'learning', difficulty: 5.0, reps: 1, wk_state: 'in_lessons' }, 
+      2: { stability: 0.33, state: 'learning', difficulty: 5.0, reps: 2, wk_state: 'review' },
+      3: { stability: 1.0, state: 'learning', difficulty: 5.0, reps: 3, wk_state: 'review' },
+      4: { stability: 2.0, state: 'learning', difficulty: 5.0, reps: 4, wk_state: 'review' },
+      5: { stability: 7.0, state: 'review', difficulty: 5.0, reps: 5, wk_state: 'review' },
+      6: { stability: 14.0, state: 'review', difficulty: 5.0, reps: 6, wk_state: 'review' },
+      7: { stability: 30.0, state: 'review', difficulty: 4.5, reps: 7, wk_state: 'review' },
+      8: { stability: 120.0, state: 'review', difficulty: 4.0, reps: 8, wk_state: 'review' },
+      9: { stability: 3650.0, state: 'burned', difficulty: 3.0, reps: 9, wk_state: 'burned' },
     };
 
     return mapping[srsStage] || mapping[0];
+  }
+
+  /**
+   * Preview the sync results: returns comparison stats.
+   */
+  async preview(userId: string, apiToken: string) {
+    const assignments = await this.fetchAssignments(apiToken);
+    const supabase = createClient();
+
+    // Map WK IDs to Knowledge Unit IDs
+    const { data: kuData } = await supabase
+      .from('knowledge_units')
+      .select('id, metadata')
+      .like('slug', 'wk-%');
+
+    const wkToKuMap = new Map<number | string, string>();
+    kuData?.forEach((ku) => {
+      const wkId = (ku.metadata as any)?.wk_id;
+      if (wkId !== undefined && wkId !== null) wkToKuMap.set(wkId, ku.id);
+    });
+
+    const kuIds = assignments
+      .map((a) => wkToKuMap.get(a.data.subject_id))
+      .filter((id) => !!id) as string[];
+
+    // Fetch existing local states
+    const { data: localStates } = await supabase
+      .from('user_learning_states')
+      .select('ku_id, stability')
+      .eq('user_id', userId)
+      .eq('facet', 'meaning')
+      .in('ku_id', kuIds);
+
+    const localMap = new Map<string, number>();
+    localStates?.forEach((s) => localMap.set(s.ku_id, s.stability));
+
+    let aheadCount = 0;
+    let behindCount = 0; // WaniKani is further ahead than local
+    let sameCount = 0;
+    let newItemsCount = 0;
+
+    for (const assignment of assignments) {
+      const kuId = wkToKuMap.get(assignment.data.subject_id);
+      if (!kuId) continue;
+
+      const wkStability = this.calculateFsrsFromSrsStage(assignment.data.srs_stage).stability;
+      const localStability = localMap.get(kuId);
+
+      if (localStability === undefined) {
+        newItemsCount++;
+      } else if (wkStability > localStability) {
+        behindCount++;
+      } else if (localStability > wkStability) {
+        aheadCount++;
+      } else {
+        sameCount++;
+      }
+    }
+
+    return {
+      total: assignments.length,
+      ahead: aheadCount,
+      behind: behindCount,
+      same: sameCount,
+      new: newItemsCount,
+    };
   }
 
   /**
@@ -63,9 +130,6 @@ export class WanikaniSyncService {
   async sync(userId: string, apiToken: string, strategy: 'merge' | 'overwrite') {
     const assignments = await this.fetchAssignments(apiToken);
     const supabase = createClient();
-
-    // Never remove data - based on user feedback "never removes them"
-    // The previous delete-block is removed.
 
     const { data: kuData } = await supabase
         .from('knowledge_units')
@@ -108,6 +172,14 @@ export class WanikaniSyncService {
             const fsrs = this.calculateFsrsFromSrsStage(assignment.data.srs_stage);
             const localState = stateMap.get(kuId);
 
+            // Refine wk_state based on timestamps if needed
+            let effectiveWkState = fsrs.wk_state;
+            if (effectiveWkState === 'in_lessons' && !assignment.data.unlocked_at) {
+                effectiveWkState = 'locked';
+            } else if (effectiveWkState === 'review' && !assignment.data.started_at) {
+                effectiveWkState = 'in_lessons';
+            }
+
             if (localState) {
                 // "Prefer which ahead" - logic refinement
                 const isWkAhead = fsrs.stability > localState.stability;
@@ -132,6 +204,10 @@ export class WanikaniSyncService {
                 lapses: 0,
                 last_review: assignment.data.started_at || now,
                 next_review: assignment.data.available_at || now,
+                wanikani_state: effectiveWkState,
+                unlocked_at: assignment.data.unlocked_at,
+                started_at: assignment.data.started_at,
+                burned_at: assignment.data.burned_at,
                 updated_at: now
             });
         }

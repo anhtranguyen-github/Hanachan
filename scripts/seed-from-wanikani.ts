@@ -65,7 +65,9 @@ async function main() {
         wk_id: s.id,
         meanings: s.data.meanings,
         auxiliary_meanings: s.data.auxiliary_meanings,
-        lesson_position: s.data.lesson_position
+        lesson_position: s.data.lesson_position,
+        amalgamation_subject_ids: s.data.amalgamation_subject_ids || [],
+        component_subject_ids: s.data.component_subject_ids || []
       }
     };
   });
@@ -74,24 +76,51 @@ async function main() {
   const insertedKU = await upsertInBatches('knowledge_units', kuList);
 
   // 2. Map slugs to UUIDs
-  console.log('Mapping slugs to IDs...');
+  console.log('Mapping slugs/IDs to UUIDs...');
   const slugToId = new Map<string, string>(insertedKU.map((s: any) => [s.slug, s.id]));
+  const wkIdToId = new Map<number, string>(validSubjects.map((s: any) => {
+      const slug = `wk-${s.object}-${s.data.slug || s.id}`;
+      return [s.id, slugToId.get(slug)!];
+  }));
 
-  // 3. Prepare details
+  // 3. Prepare details and learning states
   const radicalDetails: any[] = [];
   const kanjiDetails: any[] = [];
   const vocabularyDetails: any[] = [];
+  const learningStates: any[] = [];
+
+  // Assuming we use the first authenticated user for seeding progression if needed, 
+  // or just skipping progression seeding if no USER_ID is provided.
+  const SEED_USER_ID = process.env.SEED_USER_ID; 
 
   for (const s of validSubjects) {
     const kuSlug = `wk-${s.object}-${s.data.slug || s.id}`;
     const kuId = slugToId.get(kuSlug);
     if (!kuId) continue;
 
+    // Progression State
+    if (SEED_USER_ID && s.assignment) {
+        learningStates.push({
+            user_id: SEED_USER_ID,
+            ku_id: kuId,
+            facet: 'meaning', // Default facet
+            wanikani_state: s.assignment.burned_at ? 'burned' : 
+                          s.assignment.started_at ? 'review' : 
+                          s.assignment.unlocked_at ? 'in_lessons' : 'locked',
+            unlocked_at: s.assignment.unlocked_at,
+            started_at: s.assignment.started_at,
+            burned_at: s.assignment.burned_at,
+            state: s.assignment.burned_at ? 'mastered' : (s.assignment.started_at ? 'learning' : 'new')
+        });
+    }
+
     if (s.object === 'radical') {
       radicalDetails.push({
         ku_id: kuId,
         meaning_mnemonic: s.data.meaning_mnemonic,
-        image_url: s.data.character_images?.find((img: any) => img.content_type === 'image/png' && img.metadata.style_name === 'original')?.url || s.data.character_images?.[0]?.url || null,
+        meaning_hint: s.data.meaning_hint,
+        image_url: s.data.character_images?.find((img: any) => img.content_type === 'image/svg+xml' && !img.metadata.inline_styles)?.url || s.data.character_images?.[0]?.url || null,
+        character_images: s.data.character_images,
         metadata: { character_images: s.data.character_images }
       });
     } else if (s.object === 'kanji') {
@@ -102,7 +131,9 @@ async function main() {
         onyomi,
         kunyomi,
         meaning_mnemonic: s.data.meaning_mnemonic,
+        meaning_hint: s.data.meaning_hint,
         reading_mnemonic: s.data.reading_mnemonic,
+        reading_hint: s.data.reading_hint,
         metadata: { readings: s.data.readings }
       });
     } else if (s.object === 'vocabulary') {
@@ -111,7 +142,11 @@ async function main() {
         reading: s.data.readings?.[0]?.reading || null,
         parts_of_speech: s.data.parts_of_speech || [],
         meaning_mnemonic: s.data.meaning_mnemonic,
+        meaning_hint: s.data.meaning_hint,
+        reading_hint: s.data.reading_hint,
         context_sentences: s.data.context_sentences || [],
+        pronunciation_audios: s.data.pronunciation_audios || [],
+        audio_url: s.data.pronunciation_audios?.[0]?.url || null,
         metadata: {
           readings: s.data.readings,
           pronunciation_audios: s.data.pronunciation_audios
@@ -133,6 +168,11 @@ async function main() {
   if (vocabularyDetails.length > 0) {
     console.log(`Seeding ${vocabularyDetails.length} vocabulary_details...`);
     await upsertInBatches('vocabulary_details', vocabularyDetails, 'ku_id', 'ku_id');
+  }
+
+  if (learningStates.length > 0) {
+      console.log(`Seeding ${learningStates.length} user_learning_states...`);
+      await upsertInBatches('user_learning_states', learningStates, 'user_id, ku_id, facet', 'id');
   }
 
   console.log('Seeding finished successfully!');

@@ -95,9 +95,19 @@ export default async function RadicalDetailPage({ params }: { params: { slug: st
                 </div>
                 <div className="text-sm text-foreground/70 leading-relaxed">
                     <RichTextRenderer
-                        content={radical.mnemonics?.meaning?.content || radical.mnemonics?.meaning || radical.mnemonics?.text || radical.ku_radicals?.mnemonic_story || "No mnemonic available for this radical."}
+                        content={radical.mnemonics?.meaning || "No mnemonic available for this radical."}
                     />
                 </div>
+                {radical.meaning_hint && (
+                    <div className="mt-4 p-4 bg-amber-50/50 border border-amber-100 rounded-2xl">
+                        <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1 flex items-center gap-1">
+                            <Sparkles size={10} /> Hint
+                        </p>
+                        <div className="text-xs text-amber-900/70 italic">
+                            <RichTextRenderer content={radical.meaning_hint} />
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Kanji that use this radical */}

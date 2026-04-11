@@ -84,10 +84,10 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                             )}
                         </div>
 
-                        {/* Audio + metadata */}
+            {/* Audio + metadata */}
                         <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-border/30">
                             {audioItems.length > 0 && (
-                                <div className="flex items-center bg-surface-muted border border-border rounded-2xl px-3 py-2">
+                                <div className="flex items-center bg-surface-muted border border-border rounded-2xl px-3 py-2 shrink-0">
                                     <AudioPlayer items={audioItems as any[]} showLabels />
                                 </div>
                             )}
@@ -115,8 +115,18 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                         <h2 className="text-sm font-black text-foreground uppercase tracking-widest">Meaning Mnemonic</h2>
                     </div>
                     <div className="text-sm text-foreground/70 leading-relaxed">
-                        <RichTextRenderer content={kuVocab.meaning_data?.explanation || vocab.mnemonics?.meaning || "No mnemonic available."} />
+                        <RichTextRenderer content={vocab.mnemonics?.meaning || "No mnemonic available."} />
                     </div>
+                    {vocab.meaning_hint && (
+                        <div className="mt-4 p-4 bg-amber-50/50 border border-amber-100 rounded-2xl">
+                            <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1 flex items-center gap-1">
+                                <Sparkles size={10} /> Hint
+                            </p>
+                            <div className="text-xs text-amber-900/70 italic">
+                                <RichTextRenderer content={vocab.meaning_hint} />
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="bg-white border border-border rounded-3xl p-6 space-y-3 shadow-sm">
@@ -127,8 +137,18 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                         <h2 className="text-sm font-black text-foreground/50 uppercase tracking-widest">Reading Mnemonic</h2>
                     </div>
                     <div className="text-sm text-foreground/60 leading-relaxed">
-                        <RichTextRenderer content={kuVocab.reading_data?.explanation || vocab.mnemonics?.reading || "No reading mnemonic available."} />
+                        <RichTextRenderer content={vocab.mnemonics?.reading || "No reading mnemonic available."} />
                     </div>
+                    {vocab.reading_hint && (
+                        <div className="mt-4 p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+                                <Activity size={10} /> Hint
+                            </p>
+                            <div className="text-xs text-slate-600 italic">
+                                <RichTextRenderer content={vocab.reading_hint} />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
