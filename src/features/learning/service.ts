@@ -106,14 +106,14 @@ export async function submitReview(
   const numericDeckId = parseDeckId(deckId);
   if (numericDeckId && subjectId) {
     return wanikaniClient.createDeckReview(numericDeckId, {
-      subject_id: subjectId,
+      subject_id: Number(subjectId),
       incorrect_meaning_answers: incorrectMeaningAnswers,
       incorrect_reading_answers: incorrectReadingAnswers,
     });
   }
 
   return wanikaniClient.createReview({
-    assignment_id: assignmentId,
+    assignment_id: Number(assignmentId),
     incorrect_meaning_answers: incorrectMeaningAnswers,
     incorrect_reading_answers: incorrectReadingAnswers
   });

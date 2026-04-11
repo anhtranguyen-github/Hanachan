@@ -73,8 +73,8 @@ export class LearningController {
             if (!subject) continue;
 
             const baseItem = {
-                assignment_id: ass.id,
-                subject_id: subject.id,
+                assignment_id: Number(ass.id),
+                subject_id: Number(subject.id),
                 character: subject.data.characters || '?',
                 type: subject.object,
                 meaning: subject.data.meanings?.[0]?.meaning || 'Unknown',
