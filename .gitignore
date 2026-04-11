@@ -44,5 +44,5 @@ next-env.d.ts
 # Project Cleanup (Legacy)
 src/.next/
 data/
-supabase/
+/supabase/
 .codex
