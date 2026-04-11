@@ -155,6 +155,7 @@ export default function HomePage() {
                             alt="HanaChan Real Dashboard"
                             width={1920}
                             height={1080}
+                            unoptimized
                             className="w-full h-auto opacity-100 scale-[1.02] group-hover:scale-100 transition-transform duration-1000"
                             priority
                         />
@@ -244,6 +245,7 @@ export default function HomePage() {
                                 alt="Systematic Curriculum"
                                 width={1000}
                                 height={800}
+                                unoptimized
                                 className="w-full h-auto"
                             />
                         </div>
@@ -310,6 +312,7 @@ export default function HomePage() {
                                 alt="AI Sensei Conversation"
                                 width={1000}
                                 height={800}
+                                unoptimized
                                 className="w-full h-auto opacity-90 group-hover:scale-105 transition-transform duration-700"
                             />
                             {/* Overlayed Agent Evidence */}
@@ -404,6 +407,7 @@ export default function HomePage() {
                                 alt="Video Library Tools"
                                 width={1000}
                                 height={800}
+                                unoptimized
                                 className="w-full h-auto opacity-95 group-hover:opacity-100 transition-opacity"
                             />
                         </div>
@@ -464,6 +468,7 @@ export default function HomePage() {
                                 alt="Custom Deck Interface"
                                 width={1000}
                                 height={800}
+                                unoptimized
                                 className="w-full h-auto"
                             />
                         </div>
@@ -542,4 +547,3 @@ export default function HomePage() {
         </div>
     );
 }
-

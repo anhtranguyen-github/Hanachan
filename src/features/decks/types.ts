@@ -58,6 +58,8 @@ export interface Deck {
     user_id: string;
     name: string;
     description?: string | null;
+    is_enabled?: boolean;
+    is_system?: boolean;
     created_at?: string;
     updated_at?: string;
     items?: DeckItem[];

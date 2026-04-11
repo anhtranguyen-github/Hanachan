@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { Loader2, BookOpen, ChevronRight, Target, X, Sparkles, GraduationCap } from 'lucide-react';
 import { fetchNewItemsAction, fetchLevelStatsAction } from '@/features/learning/actions';
 import { useUser } from '@/features/auth/AuthContext';
+import { getUserLevelOrDefault } from '@/features/auth/db';
 import { useDecks } from '@/features/decks/hooks';
-import { supabase } from '@/lib/supabase';
 import { clsx } from 'clsx';
 
 export default function LearnOverviewPage() {
@@ -24,8 +24,7 @@ export default function LearnOverviewPage() {
             const userId = user?.id;
             if (!userId) return;
 
-            const { data: profile } = await supabase.from('users').select('level').eq('id', userId).single();
-            const currentLevel = profile?.level || 1;
+            const currentLevel = await getUserLevelOrDefault(userId);
             setUserLevel(currentLevel);
 
             // If global, we fetch from level-X for now as fallback

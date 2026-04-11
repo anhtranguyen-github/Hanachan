@@ -46,3 +46,7 @@ src/.next/
 data/
 /supabase/
 .codex
+.agents/
+.augment/
+.kilocode/
+.kiro/

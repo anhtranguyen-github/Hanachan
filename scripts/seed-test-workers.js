@@ -4,8 +4,13 @@ const path = require('path');
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54421';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl) {
+    console.error('NEXT_PUBLIC_SUPABASE_URL is required');
+    process.exit(1);
+}
 
 if (!serviceRoleKey) {
     console.error('SUPABASE_SERVICE_ROLE_KEY is required');

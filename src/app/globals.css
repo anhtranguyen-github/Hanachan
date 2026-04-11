@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  radical {
+    @apply bg-[#00AAFF] text-white px-1 py-0.5 rounded-sm font-bold shadow-sm inline-block;
+    font-style: normal;
+  }
+  kanji {
+    @apply bg-[#FF00AA] text-white px-1 py-0.5 rounded-sm font-bold shadow-sm inline-block;
+    font-style: normal;
+  }
+  vocabulary {
+    @apply bg-[#AA00FF] text-white px-1 py-0.5 rounded-sm font-bold shadow-sm inline-block;
+    font-style: normal;
+  }
+  meaning {
+    @apply font-bold underline decoration-slate-400 decoration-2 underline-offset-2;
+  }
+  reading {
+    @apply font-bold text-slate-800 bg-slate-100 px-1 rounded-sm;
+  }
+  ja {
+    @apply font-bold font-serif;
+  }
+}
+
 /* Safe area support for mobile notch/home indicator */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -210,10 +234,6 @@
 .glass-card-hover {
   @apply hover:bg-white/80 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-[0_20px_40px_#f4acb726] hover:border-white/60;
 }
-
-
-
-
 
 @keyframes fadeInPage {
   from {

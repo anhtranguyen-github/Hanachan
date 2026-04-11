@@ -23,10 +23,12 @@ export default function SignupPage() {
         setMessage(null);
 
         try {
+            const emailRedirectTo = `${window.location.origin}/auth/confirm?next=${encodeURIComponent('/chat')}`;
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
+                    emailRedirectTo,
                     data: {
                         display_name: fullName,
                     },

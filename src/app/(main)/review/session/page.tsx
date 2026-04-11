@@ -35,7 +35,7 @@ function SessionContent() {
                 return;
             }
 
-            const newController = new ReviewSessionController(userId);
+            const newController = new ReviewSessionController(userId, deckId);
             await newController.initSession(items);
 
             setController(newController);

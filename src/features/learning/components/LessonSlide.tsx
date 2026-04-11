@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { ChevronRight, Layers, BookOpen, Zap, Hash, Globe, ArrowRight } from 'lucide-react';
+import { ChevronRight, Layers, BookOpen, Zap, Hash, Globe, ArrowRight, Volume2 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { MnemonicContent } from './MnemonicContent';
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -54,7 +55,7 @@ function RadicalSlide({ subject }: { subject: SubjectResource }) {
                         <SectionLabel>Memory Hook</SectionLabel>
                     </div>
                     {mnemonic ? (
-                        <p className="text-base text-gray-700 leading-relaxed font-medium">{mnemonic}</p>
+                        <MnemonicContent content={mnemonic} className="text-base text-gray-700 leading-relaxed font-medium" />
                     ) : (
                         <p className="text-base text-gray-500 leading-relaxed font-medium italic">
                             Imagine the shape of <strong className="text-[#2A6FA8] not-italic">{d.characters || d.meanings[0]?.meaning}</strong> as its name suggests.
@@ -115,7 +116,7 @@ function KanjiSlide({ subject }: { subject: SubjectResource }) {
                         </div>
                         <SectionLabel>Meaning Mnemonic</SectionLabel>
                     </div>
-                    <p className="text-base text-gray-700 leading-relaxed font-medium">{meaningMnemonic}</p>
+                    <MnemonicContent content={meaningMnemonic} className="text-base text-gray-700 leading-relaxed font-medium" />
                 </div>
 
                 {readingMnemonic && (
@@ -126,7 +127,7 @@ function KanjiSlide({ subject }: { subject: SubjectResource }) {
                             </div>
                             <SectionLabel>Reading Mnemonic</SectionLabel>
                         </div>
-                        <p className="text-base text-gray-600 leading-relaxed font-medium">{readingMnemonic}</p>
+                        <MnemonicContent content={readingMnemonic} className="text-base text-gray-600 leading-relaxed font-medium" />
                     </div>
                 )}
             </div>
@@ -146,9 +147,22 @@ function VocabularySlide({ subject }: { subject: SubjectResource }) {
         <div className="flex-1 overflow-y-auto bg-white custom-scrollbar">
             <div className="max-w-lg mx-auto px-4 sm:px-6 py-6 space-y-5">
 
-                <div className="bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-100 rounded-3xl p-5">
+                <div className="bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-100 rounded-3xl p-5 relative overflow-hidden group">
                     <SectionLabel>Reading</SectionLabel>
-                    <p className="text-4xl font-black text-[#5A2D8A] jp-text leading-tight mb-3">{reading || '—'}</p>
+                    <div className="flex items-center justify-between">
+                        <p className="text-4xl font-black text-[#5A2D8A] jp-text leading-tight">{reading || '—'}</p>
+                        {d.pronunciation_audios && d.pronunciation_audios.length > 0 && (
+                            <button 
+                                onClick={() => {
+                                    const audio = new Audio(d.pronunciation_audios[0].url);
+                                    audio.play();
+                                }}
+                                className="w-10 h-10 bg-violet-100 rounded-full flex items-center justify-center text-violet-600 hover:bg-violet-200 transition-colors"
+                            >
+                                <Volume2 size={20} />
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 <div className="bg-gradient-to-br from-violet-50 to-fuchsia-50 border border-violet-100 rounded-3xl p-5 space-y-2">
@@ -158,13 +172,13 @@ function VocabularySlide({ subject }: { subject: SubjectResource }) {
                         </div>
                         <SectionLabel>Meaning Mnemonic</SectionLabel>
                     </div>
-                    <p className="text-base text-gray-700 leading-relaxed font-medium">{meaningMnemonic}</p>
+                    <MnemonicContent content={meaningMnemonic} className="text-base text-gray-700 leading-relaxed font-medium" />
                 </div>
 
                 {readingMnemonic && (
                     <div className="bg-gray-50 border border-gray-100 rounded-3xl p-5 space-y-2">
                         <SectionLabel>Reading Mnemonic</SectionLabel>
-                        <p className="text-base text-gray-600 leading-relaxed font-medium">{readingMnemonic}</p>
+                        <MnemonicContent content={readingMnemonic} className="text-base text-gray-600 leading-relaxed font-medium" />
                     </div>
                 )}
             </div>

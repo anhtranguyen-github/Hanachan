@@ -5,8 +5,8 @@ import { Rating } from '@/lib/validation';
 
 export interface QuizItem {
     id: string; // assignmentId-variant
-    assignment_id: number;
-    subject_id: number;
+    assignment_id: number | string;
+    subject_id: number | string;
     character: string;
     type: string;
     prompt: string;
@@ -25,12 +25,14 @@ export class ReviewSessionController {
     private completedCount: number = 0;
     private userId: string;
     private totalItems: number = 0;
+    private deckId?: string;
 
     // Failure Intensity Framework (FIF) state
     private sessionState: Map<string, { incorrectMeaning: number, incorrectReading: number, attempts: number }> = new Map();
 
-    constructor(userId: string) {
+    constructor(userId: string, deckId?: string) {
         this.userId = userId;
+        this.deckId = deckId;
     }
 
     async initSession(assignments: AssignmentResource[]) {
@@ -129,7 +131,9 @@ export class ReviewSessionController {
                 await submitReviewAction(
                     current.assignment_id,
                     state.incorrectMeaning,
-                    state.incorrectReading
+                    state.incorrectReading,
+                    this.deckId,
+                    current.subject_id,
                 );
                 this.completedCount++;
             }

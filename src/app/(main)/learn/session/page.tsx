@@ -6,7 +6,7 @@ import { Loader2, ArrowLeft, BookOpen, ChevronRight, CheckCircle2, PlayCircle, Z
 import { clsx } from 'clsx';
 import { startLessonSessionAction, completeLessonBatchAction } from '@/features/learning/actions';
 import { useUser } from '@/features/auth/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { getUserLevelOrDefault } from '@/features/auth/db';
 import { QuizItem } from '@/features/learning/LearningController';
 import { Rating } from '@/features/learning/core/SRSAlgorithm';
 import { ReviewCardDisplay } from '@/features/learning/components/ReviewCardDisplay';
@@ -32,13 +32,7 @@ function SessionContent() {
         hasLoaded.current = true;
 
         try {
-            const { data: profile } = await supabase
-                .from('users')
-                .select('level')
-                .eq('id', user.id)
-                .single();
-
-            const currentLevel = profile?.level || 1;
+            const currentLevel = await getUserLevelOrDefault(user.id);
             const deckId = searchParams.get('deckId') || undefined;
 
             // Refactored to use Server Action that enforces limits

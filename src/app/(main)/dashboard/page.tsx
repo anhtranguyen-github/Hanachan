@@ -25,7 +25,7 @@ import {
 } from '@/features/learning/actions';
 import { listDecksAction } from '@/features/decks/actions';
 import { useUser } from '@/features/auth/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { getUserLevelOrDefault } from '@/features/auth/db';
 import { HanaTime } from '@/lib/time';
 import { ChevronDown, Layers } from 'lucide-react';
 
@@ -44,8 +44,7 @@ export default function DashboardPage() {
             const userId = user?.id;
             if (!userId) return;
 
-            const { data: profile } = await supabase.from('users').select('level').eq('id', userId).single();
-            const currentLevel = profile?.level || 1;
+            const currentLevel = await getUserLevelOrDefault(userId);
             setUserLevel(currentLevel);
 
             const [dashRes, currRes, lvlRes, decksRes]: any[] = await Promise.all([

@@ -125,8 +125,10 @@ export class LearningController {
             // If ALL variants for this assignment are cleared, start it in SRS
             const remaining = this.quizQueue.filter(q => q.assignment_id === current.assignment_id);
             if (remaining.length === 0) {
-                console.log(`[LearningController] Assignment ${current.assignment_id} passed lesson quiz. Starting SRS.`);
-                await startAssignmentAction(current.assignment_id);
+                if (current.assignment_id > 0) {
+                    console.log(`[LearningController] Assignment ${current.assignment_id} passed lesson quiz. Starting SRS.`);
+                    await startAssignmentAction(current.assignment_id);
+                }
             }
             return true;
         } else {

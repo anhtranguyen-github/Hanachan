@@ -61,10 +61,12 @@ export function AuthModal() {
                     router.refresh();
                 }
             } else {
+                const emailRedirectTo = `${window.location.origin}/auth/confirm?next=${encodeURIComponent('/chat')}`;
                 const { data, error: signUpError } = await supabase.auth.signUp({
                     email,
                     password,
                     options: {
+                        emailRedirectTo,
                         data: {
                             display_name: fullName,
                         },

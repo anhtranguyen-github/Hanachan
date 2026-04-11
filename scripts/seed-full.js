@@ -4,13 +4,13 @@ const kuromoji = require('kuromoji');
 const dotenv = require('dotenv');
 const path = require('path');
 
-dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fcrrepkexghzchohbsrj.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseKey) {
-    console.error('SUPABASE_SERVICE_ROLE_KEY missing from .env.local');
+    console.error('SUPABASE_SERVICE_ROLE_KEY missing from .env');
     process.exit(1);
 }
 
