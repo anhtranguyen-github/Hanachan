@@ -1,4 +1,96 @@
 import { wanikaniClient } from '@/services/wanikaniClient';
+import { AssignmentResource } from '@/types/wanikani';
+
+function parseDeckId(identifier?: string): number | null {
+  if (!identifier || identifier.startsWith('level-')) return null;
+  const direct = Number.parseInt(identifier, 10);
+  if (Number.isFinite(direct)) return direct;
+
+  const match = identifier.match(/\d+/);
+  if (!match) return null;
+
+  const extracted = Number.parseInt(match[0], 10);
+  return Number.isFinite(extracted) ? extracted : null;
+}
+
+async function buildCustomDeckLessonAssignments(deckId: number): Promise<AssignmentResource[]> {
+  const [deck, deckItems] = await Promise.all([
+    wanikaniClient.getDeck(deckId),
+    wanikaniClient.listDeckItems(deckId),
+  ]);
+
+  const currentLevel = deck.data.current_level;
+  const lessonItemIds = deckItems.data
+    .filter((item) => item.data.custom_level === currentLevel)
+    .map((item) => item.data.subject_id);
+
+  if (lessonItemIds.length === 0) return [];
+
+  const subjects = await wanikaniClient.listSubjects({ ids: lessonItemIds });
+  const subjectsById = new Map(subjects.data.map((subject) => [subject.id, subject]));
+
+  return lessonItemIds.flatMap((subjectId) => {
+    const subject = subjectsById.get(subjectId);
+    if (!subject) return [];
+
+    return [{
+      id: -((deckId * 1_000_000) + subjectId),
+      object: 'assignment',
+      url: `${deck.url}/items/${subjectId}`,
+      data_updated_at: subject.data_updated_at,
+      data: {
+        available_at: null,
+        burned_at: null,
+        created_at: subject.data.created_at,
+        hidden: false,
+        passed_at: null,
+        resurrected_at: null,
+        srs_stage: 0,
+        started_at: null,
+        subject_id: subject.id,
+        subject_type: subject.object as AssignmentResource['data']['subject_type'],
+        unlocked_at: subject.data.created_at,
+        subject,
+      },
+    } satisfies AssignmentResource];
+  });
+}
+
+async function buildCustomDeckReviewAssignments(deckId: number): Promise<AssignmentResource[]> {
+  const deckReviews = await wanikaniClient.listDeckReviews(deckId);
+  const reviewItemIds = deckReviews.data.map((item) => item.data.subject_id);
+
+  if (reviewItemIds.length === 0) return [];
+
+  const subjects = await wanikaniClient.listSubjects({ ids: reviewItemIds });
+  const subjectsById = new Map(subjects.data.map((subject) => [subject.id, subject]));
+
+  return deckReviews.data.flatMap((progress) => {
+    const subject = subjectsById.get(progress.data.subject_id);
+    if (!subject) return [];
+
+    return [{
+      id: -((deckId * 1_000_000) + progress.data.subject_id),
+      object: 'assignment',
+      url: progress.url,
+      data_updated_at: progress.data_updated_at,
+      data: {
+        available_at: progress.data.custom_next_review_at,
+        burned_at: null,
+        created_at: subject.data.created_at,
+        hidden: false,
+        passed_at: null,
+        resurrected_at: null,
+        srs_stage: progress.data.custom_stage,
+        started_at: subject.data.created_at,
+        subject_id: subject.id,
+        subject_type: subject.object as AssignmentResource['data']['subject_type'],
+        unlocked_at: subject.data.created_at,
+        subject,
+      },
+    } satisfies AssignmentResource];
+  });
+}
 
 export async function initializeSRS(userId: string, unitId: string, facets: string[]) {
   // Use v2 assignments implicitly or explicitly
@@ -6,6 +98,12 @@ export async function initializeSRS(userId: string, unitId: string, facets: stri
 }
 
 export async function fetchDueItems(userId: string, deckId?: string) {
+  const numericDeckId = parseDeckId(deckId);
+  if (numericDeckId) {
+    const items = await buildCustomDeckReviewAssignments(numericDeckId);
+    return items.filter((item) => item.data.available_at && new Date(item.data.available_at) <= new Date());
+  }
+
   const result = await wanikaniClient.listAssignments({
     immediately_available_for_review: true,
   });
@@ -16,6 +114,12 @@ export async function fetchNewItems(userId: string, identifier: string, limit: n
   let level: number | undefined;
   if (identifier?.startsWith('level-')) {
     level = Number.parseInt(identifier.split('-')[1], 10);
+  }
+
+  const deckId = parseDeckId(identifier);
+  if (deckId) {
+    const assignments = await buildCustomDeckLessonAssignments(deckId);
+    return assignments.slice(0, limit);
   }
   
   const result = await wanikaniClient.listAssignments({

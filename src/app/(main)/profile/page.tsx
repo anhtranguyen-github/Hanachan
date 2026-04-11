@@ -10,8 +10,9 @@ import {
     User, Brain, Map, Settings, Edit3, Save, X, Loader2,
     Flame, Target, BookOpen, Zap, Star, Shield,
     CheckCircle2, AlertCircle, ChevronRight,
-    Globe, Plus, Palette
+    Globe, Plus, Palette, Link as LinkIcon
 } from 'lucide-react';
+import { WaniKaniSyncModal } from '@/features/learning/components/WaniKaniSyncModal';
 import { BaseModal } from '@/components/shared/BaseModal';
 import { clsx } from 'clsx';
 import type { UserProfile } from '@/features/auth/types';
@@ -70,6 +71,9 @@ export default function ProfilePage() {
     // Memory state
     const [memories, setMemories] = useState<any>(null);
     const [loadingMemories, setLoadingMemories] = useState(false);
+
+    // Sync state
+    const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
     const loadData = async () => {
         if (!user) return;
@@ -349,8 +353,15 @@ export default function ProfilePage() {
                     user={user}
                     profile={profile}
                     onSignOut={signOut}
+                    onOpenSync={() => setIsSyncModalOpen(true)}
                 />
             )}
+
+            {/* ── Sync Modal ── */}
+            <WaniKaniSyncModal 
+                isOpen={isSyncModalOpen} 
+                onClose={() => setIsSyncModalOpen(false)} 
+            />
         </div>
     );
 }
@@ -869,7 +880,7 @@ function LearningPathTab({ stats, level }: any) {
 
 // ─── Settings Tab ─────────────────────────────────────────────────────────────
 
-function SettingsTab({ user, profile, onSignOut }: any) {
+function SettingsTab({ user, profile, onSignOut, onOpenSync }: any) {
     return (
         <div className="space-y-4">
             {/* Account info */}
@@ -912,6 +923,34 @@ function SettingsTab({ user, profile, onSignOut }: any) {
                             </div>
                         </div>
                     ))}
+                </div>
+            </div>
+
+            {/* Integrations */}
+            <div className="bg-white border border-border rounded-3xl p-5 shadow-sm space-y-4">
+                <h3 className="text-sm font-black text-[#3E4A61] uppercase tracking-tight">Integrations</h3>
+                <div className="space-y-2">
+                    <button
+                        onClick={onOpenSync}
+                        className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-[#A2D2FF]/10 to-transparent border border-[#A2D2FF]/20 rounded-2xl hover:from-[#A2D2FF]/20 transition-all group"
+                    >
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 bg-[#A2D2FF]/20 rounded-xl flex items-center justify-center group-hover:bg-[#A2D2FF]/30 transition-colors">
+                                <LinkIcon size={13} className="text-[#5BA4CF]" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-xs font-black text-[#3E4A61]">WaniKani Sync</p>
+                                <p className="text-[9px] text-foreground/40 font-medium">Link your official WaniKani progress</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-border rounded-lg shadow-sm">
+                            <span className="text-[8px] font-black text-foreground/30 uppercase tracking-widest">Setup</span>
+                            <ChevronRight size={10} className="text-foreground/20" />
+                        </div>
+                    </button>
+                    <p className="px-1 text-[9px] text-foreground/30 font-medium leading-relaxed italic">
+                        More integrations like Bunpro and Anki coming soon.
+                    </p>
                 </div>
             </div>
 

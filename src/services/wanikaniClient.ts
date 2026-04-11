@@ -14,7 +14,10 @@ import {
   CustomDeckCollection,
   CustomDeckCreateRequest,
   CustomDeckUpdateRequest,
-  CustomDeckItemResource
+  CustomDeckItemResource,
+  CustomDeckProgressCollection,
+  CustomDeckProgressResource,
+  CustomDeckReviewCreateRequest
 } from '@/types/wanikani';
 
 /**
@@ -26,17 +29,17 @@ class WanikaniClient extends ServerApiClient {
   // ── Subjects ────────────────────────────────────────────────
 
   async listSubjects(params: {
-    ids?: number[];
+    ids?: (number | string)[];
     types?: string[];
     levels?: number[];
     slugs?: string[];
     hidden?: boolean;
-    page_after_id?: number;
+    page_after_id?: number | string;
   } = {}): Promise<SubjectCollection> {
     return this.get(`${this.baseRoute}/subjects`, { params });
   }
 
-  async getSubject(id: number): Promise<SubjectResource> {
+  async getSubject(id: number | string): Promise<SubjectResource> {
     return this.get(`${this.baseRoute}/subjects/${id}`);
   }
 
@@ -51,7 +54,7 @@ class WanikaniClient extends ServerApiClient {
     immediately_available_for_review?: boolean;
     levels?: number[];
     srs_stages?: number[];
-    subject_ids?: number[];
+    subject_ids?: (number | string)[];
     subject_types?: string[];
     unlocked?: boolean;
     started?: boolean;
@@ -59,12 +62,12 @@ class WanikaniClient extends ServerApiClient {
     return this.get(`${this.baseRoute}/assignments`, { params });
   }
 
-  async getAssignment(id: number): Promise<AssignmentResource> {
+  async getAssignment(id: number | string): Promise<AssignmentResource> {
     return this.get(`${this.baseRoute}/assignments/${id}`);
   }
 
-  async startAssignment(id: number): Promise<AssignmentResource> {
-    return this.post(`${this.baseRoute}/assignments/${id}/start`, {});
+  async startAssignment(id: number | string): Promise<AssignmentResource> {
+    return this.put(`${this.baseRoute}/assignments/${id}/start`, {});
   }
 
   // ── Reviews ─────────────────────────────────────────────────
@@ -82,40 +85,44 @@ class WanikaniClient extends ServerApiClient {
   // ── Custom Decks ────────────────────────────────────────────
 
   async listDecks(): Promise<CustomDeckCollection> {
-    return this.get(`${this.baseRoute}/decks`);
+    return this.get(`${this.baseRoute}/custom_decks`);
   }
 
   async createDeck(payload: CustomDeckCreateRequest): Promise<CustomDeckResource> {
-    return this.post(`${this.baseRoute}/decks`, payload);
+    return this.post(`${this.baseRoute}/custom_decks`, payload);
   }
 
-  async getDeck(id: number): Promise<CustomDeckResource> {
-    return this.get(`${this.baseRoute}/decks/${id}`);
+  async getDeck(id: number | string): Promise<CustomDeckResource> {
+    return this.get(`${this.baseRoute}/custom_decks/${id}`);
   }
 
-  async updateDeck(id: number, payload: CustomDeckUpdateRequest): Promise<CustomDeckResource> {
-    return this.patch(`${this.baseRoute}/decks/${id}`, payload);
+  async updateDeck(id: number | string, payload: CustomDeckUpdateRequest): Promise<CustomDeckResource> {
+    return this.patch(`${this.baseRoute}/custom_decks/${id}`, payload);
   }
 
-  async deleteDeck(id: number): Promise<void> {
-    return this.delete(`${this.baseRoute}/decks/${id}`);
+  async deleteDeck(id: number | string): Promise<void> {
+    return this.delete(`${this.baseRoute}/custom_decks/${id}`);
   }
 
   // ── Deck Items ──────────────────────────────────────────────
 
-  async listDeckItems(deckId: number): Promise<BaseCollection<CustomDeckItemResource>> {
-    return this.get(`${this.baseRoute}/decks/${deckId}/items`);
+  async listDeckItems(deckId: number | string): Promise<BaseCollection<CustomDeckItemResource>> {
+    return this.get(`${this.baseRoute}/custom_decks/${deckId}/items`);
   }
 
-  async addDeckItems(deckId: number, subjectIds: number[], customLevel?: number): Promise<void> {
-    return this.post(`${this.baseRoute}/decks/${deckId}/items`, {
-      subject_ids: subjectIds,
+  async addDeckItem(deckId: number | string, subjectId: number | string, customLevel: number): Promise<CustomDeckItemResource> {
+    return this.post(`${this.baseRoute}/custom_decks/${deckId}/items`, {
+      subject_id: subjectId,
       custom_level: customLevel
     });
   }
 
-  async removeDeckItem(deckId: number, subjectId: number): Promise<void> {
-    return this.delete(`${this.baseRoute}/decks/${deckId}/items/${subjectId}`);
+  async listDeckReviews(deckId: number | string): Promise<CustomDeckProgressCollection> {
+    return this.get(`${this.baseRoute}/custom_decks/${deckId}/reviews`);
+  }
+
+  async createDeckReview(deckId: number | string, payload: CustomDeckReviewCreateRequest): Promise<CustomDeckProgressResource> {
+    return this.post(`${this.baseRoute}/custom_decks/${deckId}/reviews`, payload);
   }
 }
 

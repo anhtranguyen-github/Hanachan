@@ -12,7 +12,7 @@ export interface PagesInfo {
 }
 
 export interface BaseResource<T> {
-  id: number;
+  id: number | string;
   object: string;
   url: string;
   data_updated_at: string | null;
@@ -88,7 +88,7 @@ export interface AssignmentData {
   resurrected_at: string | null;
   srs_stage: number;
   started_at: string | null;
-  subject_id: number;
+  subject_id: number | string;
   subject_type: SubjectType;
   unlocked_at: string | null;
   subject?: SubjectResource;
@@ -100,14 +100,14 @@ export type AssignmentCollection = BaseCollection<AssignmentResource>;
 // ── Review ────────────────────────────────────────────────────
 
 export interface ReviewCreateRequest {
-  assignment_id: number;
+  assignment_id: number | string;
   incorrect_meaning_answers: number;
   incorrect_reading_answers: number;
 }
 
 export interface ReviewData {
-  assignment_id: number;
-  subject_id: number;
+  assignment_id: number | string;
+  subject_id: number | string;
   spaced_repetition_system_id: number | null;
   starting_srs_stage: number;
   ending_srs_stage: number;
@@ -128,12 +128,12 @@ export interface ReviewCreateResponse extends ReviewResource {
 
 export interface SummaryLesson {
   available_at: string;
-  subject_ids: number[];
+  subject_ids: (number | string)[];
 }
 
 export interface SummaryReview {
   available_at: string;
-  subject_ids: number[];
+  subject_ids: (number | string)[];
 }
 
 export interface SummaryData {
@@ -176,6 +176,16 @@ export interface CustomDeckItemData {
 
 export type CustomDeckItemResource = BaseResource<CustomDeckItemData>;
 
+export interface CustomDeckProgressData {
+  deck_id: number;
+  subject_id: number;
+  custom_stage: number;
+  custom_next_review_at: string | null;
+}
+
+export type CustomDeckProgressResource = BaseResource<CustomDeckProgressData>;
+export type CustomDeckProgressCollection = BaseCollection<CustomDeckProgressResource>;
+
 export interface CustomDeckCreateRequest {
   name: string;
   description?: string;
@@ -186,6 +196,12 @@ export interface CustomDeckUpdateRequest {
   name?: string;
   description?: string;
   config?: Partial<CustomDeckConfigData>;
+}
+
+export interface CustomDeckReviewCreateRequest {
+  subject_id: number;
+  incorrect_meaning_answers: number;
+  incorrect_reading_answers: number;
 }
 
 // ── User ──────────────────────────────────────────────────────

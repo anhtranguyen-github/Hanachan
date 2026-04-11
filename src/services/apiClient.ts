@@ -33,6 +33,14 @@ class ApiClient {
     });
   }
 
+  protected async put<T>(url: string, body: any, options: FetchOptions = {}): Promise<T> {
+    return this.request<T>(url, {
+      ...options,
+      method: 'PUT',
+      body: JSON.stringify(body),
+    });
+  }
+
   protected async delete<T>(url: string, options: FetchOptions = {}): Promise<T> {
     return this.request<T>(url, { ...options, method: 'DELETE' });
   }

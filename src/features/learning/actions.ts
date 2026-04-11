@@ -16,6 +16,8 @@ import {
     fetchNewItems,
     initializeSRS,
 } from './data';
+import { wanikaniSyncService } from './services/wanikaniSyncService';
+import { createClient } from '@/utils/supabase/server';
 
 function getErrorMessage(error: unknown) {
     if (error instanceof Error) {
@@ -46,9 +48,21 @@ export async function initializeSRSAction(userId: string, unitId: string, facets
     }
 }
 
-export async function submitReviewAction(assignmentId: number, incorrectMeaningAnswers: number = 0, incorrectReadingAnswers: number = 0) {
+export async function submitReviewAction(
+    assignmentId: number | string,
+    incorrectMeaningAnswers: number = 0,
+    incorrectReadingAnswers: number = 0,
+    deckId?: string,
+    subjectId?: number | string,
+) {
     try {
-        const result = await submitReview(assignmentId, incorrectMeaningAnswers, incorrectReadingAnswers);
+        const result = await submitReview(
+            assignmentId,
+            incorrectMeaningAnswers,
+            incorrectReadingAnswers,
+            deckId,
+            subjectId,
+        );
         return { success: true, data: result };
     } catch (e: unknown) {
         return { success: false, error: getErrorMessage(e) };
@@ -124,7 +138,7 @@ export async function startLessonSessionAction(userId: string, level?: number, d
     }
 }
 
-export async function startAssignmentAction(assignmentId: number) {
+export async function startAssignmentAction(assignmentId: number | string) {
     try {
         await completeLessonSession(assignmentId);
         revalidatePath('/dashboard');
@@ -136,7 +150,7 @@ export async function startAssignmentAction(assignmentId: number) {
     }
 }
 
-export async function updateKUNoteAction(userId: string, assignmentId: number, note: string) {
+export async function updateKUNoteAction(userId: string, assignmentId: number | string, note: string) {
     // In v2, notes are in study_materials. This needs a new client method.
     // For now, return success to avoid breaking UI.
     return { success: true, data: note };
@@ -148,4 +162,23 @@ export async function completeLessonBatchAction(batchId: string) {
     revalidatePath('/dashboard');
     revalidatePath('/learn');
     return { success: true };
+}
+
+export async function syncWaniKaniDataAction(apiToken: string, strategy: 'merge' | 'overwrite') {
+    try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const result = await wanikaniSyncService.sync(user.id, apiToken, strategy);
+        
+        revalidatePath('/dashboard');
+        revalidatePath('/learn');
+        revalidatePath('/profile');
+        
+        return { success: true, data: result };
+    } catch (e: unknown) {
+        console.error("[LearningActions] syncWaniKaniDataAction error:", e);
+        return { success: false, error: getErrorMessage(e) };
+    }
 }

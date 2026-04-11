@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { clsx } from 'clsx';
-import { Check, X, ArrowRight, Keyboard, Sparkles, PencilLine, Loader2, BookOpen } from 'lucide-react';
+import { Check, X, ArrowRight, Keyboard, Sparkles, PencilLine, Loader2, BookOpen, Volume2 } from 'lucide-react';
+import { MnemonicContent } from './MnemonicContent';
 import { QuizItem } from '../ReviewSessionController';
 import { Rating } from '../core/FSRSEngine';
 import { updateKUNoteAction } from '../actions';
@@ -284,8 +285,21 @@ export function ReviewCardDisplay({ card, mode, onReveal, onRate }: ReviewCardDi
                                 <div className="flex gap-2 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3">
                                     <BookOpen size={14} className="text-amber-400 shrink-0 mt-0.5" />
                                     <div>
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-amber-400 mb-0.5">Mnemonic</p>
-                                        <p className="text-sm text-amber-800 leading-relaxed">{card.mnemonic}</p>
+                                        <div className="flex items-center justify-between mb-0.5">
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-amber-400">Mnemonic</p>
+                                            {cardType === 'vocabulary' && card.audio_url && (
+                                                <button 
+                                                    onClick={() => {
+                                                        const audio = new Audio(card.audio_url);
+                                                        audio.play();
+                                                    }}
+                                                    className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-500 hover:bg-amber-200 transition-colors"
+                                                >
+                                                    <Volume2 size={12} />
+                                                </button>
+                                            )}
+                                        </div>
+                                        <MnemonicContent content={card.mnemonic} className="text-sm text-amber-800 leading-relaxed" />
                                     </div>
                                 </div>
                             )}
