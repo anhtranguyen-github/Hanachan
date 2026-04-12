@@ -8,6 +8,7 @@ export interface KnowledgeUnit extends z.infer<typeof KnowledgeUnitSchema> {
     vocabulary?: any[];
     sentences?: any[];
     related_grammar?: any[];
+    visually_similar?: any[];
     user_fsrs_states?: any;
 }
 

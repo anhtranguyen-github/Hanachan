@@ -51,31 +51,60 @@ export const curriculumRepository = {
 
             // Fetch Relations based on type
             if (type === 'kanji') {
-                const { data: radicals } = await supabase
-                    .from('kanji_radicals')
-                    .select('radical:knowledge_units!kanji_radicals_radical_id_fkey(*, details:radical_details(*))')
-                    .eq('kanji_id', anyData.id);
-                mapped.radicals = radicals?.map(r => (r as any).radical) || [];
+                if (anyData.metadata?.component_subject_ids?.length) {
+                    const { data: radicals } = await supabase
+                        .from('knowledge_units')
+                        .select('*, details:radical_details(*)')
+                        .in('metadata->wk_id', anyData.metadata.component_subject_ids);
+                    mapped.radicals = radicals?.map(r => mapToKnowledgeUnit(r, Array.isArray(r.details) ? r.details[0] : r.details, 'radical')) || [];
+                } else {
+                    mapped.radicals = [];
+                }
 
-                const { data: vocab } = await supabase
-                    .from('vocabulary_kanji')
-                    .select('vocab:knowledge_units!vocabulary_kanji_vocab_id_fkey(*, details:vocabulary_details(*))')
-                    .eq('kanji_id', anyData.id)
-                    .limit(10);
-                mapped.vocabulary = vocab?.map(v => (v as any).vocab) || [];
+                if (anyData.metadata?.amalgamation_subject_ids?.length) {
+                    const { data: vocab } = await supabase
+                        .from('knowledge_units')
+                        .select('*, details:vocabulary_details(*)')
+                        .in('metadata->wk_id', anyData.metadata.amalgamation_subject_ids)
+                        .limit(20);
+                    mapped.vocabulary = vocab?.map(v => mapToKnowledgeUnit(v, Array.isArray(v.details) ? v.details[0] : v.details, 'vocabulary')) || [];
+                } else {
+                    mapped.vocabulary = [];
+                }
+
+                if (anyData.metadata?.visually_similar_subject_ids?.length) {
+                    const { data: similar } = await supabase
+                        .from('knowledge_units')
+                        .select('*, details:kanji_details(*)')
+                        .in('metadata->wk_id', anyData.metadata.visually_similar_subject_ids);
+                    mapped.visually_similar = similar?.map(k => mapToKnowledgeUnit(k, Array.isArray(k.details) ? k.details[0] : k.details, 'kanji')) || [];
+                } else {
+                    mapped.visually_similar = [];
+                }
+
             } else if (type === 'vocabulary') {
-                const { data: kanji } = await supabase
-                    .from('vocabulary_kanji')
-                    .select('kanji:knowledge_units!vocabulary_kanji_kanji_id_fkey(*, details:kanji_details(*))')
-                    .eq('vocab_id', anyData.id);
-                mapped.kanji = kanji?.map(k => (k as any).kanji) || [];
+                if (anyData.metadata?.component_subject_ids?.length) {
+                    const { data: kanji } = await supabase
+                        .from('knowledge_units')
+                        .select('*, details:kanji_details(*)')
+                        .in('metadata->wk_id', anyData.metadata.component_subject_ids);
+                    mapped.kanji = kanji?.map(k => mapToKnowledgeUnit(k, Array.isArray(k.details) ? k.details[0] : k.details, 'kanji')) || [];
+                } else {
+                    mapped.kanji = [];
+                }
+                
             } else if (type === 'radical') {
-                const { data: kanji } = await supabase
-                    .from('kanji_radicals')
-                    .select('kanji:knowledge_units!kanji_radicals_kanji_id_fkey(*, details:kanji_details(*))')
-                    .eq('radical_id', anyData.id)
-                    .limit(20);
-                mapped.kanji = kanji?.map(k => (k as any).kanji) || [];
+                if (anyData.metadata?.amalgamation_subject_ids?.length) {
+                    const { data: kanji } = await supabase
+                        .from('knowledge_units')
+                        .select('*, details:kanji_details(*)')
+                        .in('metadata->wk_id', anyData.metadata.amalgamation_subject_ids)
+                        .limit(20);
+                    mapped.kanji = kanji?.map(k => mapToKnowledgeUnit(k, Array.isArray(k.details) ? k.details[0] : k.details, 'kanji')) || [];
+                } else {
+                    mapped.kanji = [];
+                }
+
             } else if (type === 'grammar') {
                 const { data: relations } = await supabase
                     .from('grammar_relations')

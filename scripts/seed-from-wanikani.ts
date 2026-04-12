@@ -67,7 +67,8 @@ async function main() {
         auxiliary_meanings: s.data.auxiliary_meanings,
         lesson_position: s.data.lesson_position,
         amalgamation_subject_ids: s.data.amalgamation_subject_ids || [],
-        component_subject_ids: s.data.component_subject_ids || []
+        component_subject_ids: s.data.component_subject_ids || [],
+        visually_similar_subject_ids: s.data.visually_similar_subject_ids || []
       }
     };
   });

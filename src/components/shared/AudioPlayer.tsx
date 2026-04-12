@@ -8,6 +8,10 @@ interface AudioItem {
     actor?: string;
     description?: string;
     content_type?: string;
+    metadata?: {
+        voice_actor_name?: string;
+        voice_description?: string;
+    };
 }
 
 interface AudioPlayerProps {
@@ -23,10 +27,19 @@ export function AudioPlayer({ items, showLabels }: AudioPlayerProps) {
     if (Array.isArray(items)) {
         items.forEach(item => {
             if (!item) return;
-            const key = item.actor || 'Unknown';
-            const existing = actorsMap.get(key);
+            // Support both flat format and metadata nested format
+            const actor = item.actor || item.metadata?.voice_actor_name || 'Unknown';
+            const description = item.description || item.metadata?.voice_description;
+            
+            const standardizedItem = {
+                ...item,
+                actor,
+                description
+            };
+
+            const existing = actorsMap.get(actor);
             if (!existing || (item.content_type === 'audio/mpeg' && existing.content_type !== 'audio/mpeg')) {
-                actorsMap.set(key, item);
+                actorsMap.set(actor, standardizedItem);
             }
         });
     }

@@ -169,6 +169,30 @@ export default async function KanjiDetailPage({ params }: { params: { slug: stri
                 </section>
             )}
 
+            {/* Visually Similar */}
+            {(kanji.visually_similar || []).length > 0 && (
+                <section className="bg-white border border-border rounded-3xl p-6 space-y-4 shadow-sm">
+                    <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 bg-surface-muted rounded-xl flex items-center justify-center">
+                            <Info size={14} className="text-foreground/40" />
+                        </div>
+                        <h2 className="text-sm font-black text-foreground uppercase tracking-widest">Visually Similar Kanji</h2>
+                    </div>
+                    <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-9 gap-2">
+                        {(kanji.visually_similar || []).map((v: any, i: number) => (
+                            <Link
+                                key={i}
+                                href={`/library/kanji/${v.slug}`}
+                                className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-slate-300 hover:bg-slate-100 transition-all group aspect-square"
+                            >
+                                <span className="text-2xl font-black text-foreground transition-colors jp-text leading-none">{v.character}</span>
+                                <span className="text-[8px] font-black text-foreground/40 uppercase tracking-wide text-center truncate w-full px-1">{v.meaning}</span>
+                            </Link>
+                        ))}
+                    </div>
+                </section>
+            )}
+
             {/* Vocabulary */}
             {(kanji.vocabulary || []).length > 0 && (
                 <section className="bg-white border border-border rounded-3xl p-6 space-y-4 shadow-sm">
