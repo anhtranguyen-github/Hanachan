@@ -71,9 +71,27 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                     {/* Info block */}
                     <div className="flex-1 p-6 sm:p-8 space-y-4">
                         <div>
-                            {reading && (
-                                <p className="text-base sm:text-lg font-black text-foreground/40 jp-text mb-1">{reading}</p>
-                            )}
+                            {(() => {
+                                const readingsArray = vocab.metadata?.readings || [];
+                                if (readingsArray.length > 0) {
+                                    return (
+                                        <div className="flex flex-wrap gap-2 mb-2">
+                                            {readingsArray.map((r: any, idx: number) => (
+                                                <span key={idx} className={clsx(
+                                                    "text-base sm:text-lg font-black jp-text px-2 py-0.5 rounded-lg border",
+                                                    r.primary ? "text-primary border-primary/20 bg-primary/5" : "text-foreground/40 border-border/40 bg-surface-muted/30"
+                                                )}>
+                                                    {r.reading}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    );
+                                }
+                                if (reading) {
+                                    return <p className="text-base sm:text-lg font-black text-foreground/40 jp-text mb-1">{reading}</p>;
+                                }
+                                return null;
+                            })()}
                             <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight leading-tight">
                                 {meanings[0]}
                             </h1>
@@ -177,7 +195,7 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
             )}
 
             {/* Example sentences */}
-            {(vocab.sentences || []).length > 0 && (
+            {(kuVocab.context_sentences || []).length > 0 && (
                 <section className="bg-white border border-border rounded-3xl p-6 space-y-4 shadow-sm">
                     <div className="flex items-center gap-2">
                         <div className="w-7 h-7 bg-surface-muted rounded-xl flex items-center justify-center">
@@ -186,7 +204,7 @@ export default async function VocabularyDetailPage({ params }: { params: { slug:
                         <h2 className="text-sm font-black text-foreground uppercase tracking-widest">Example Sentences</h2>
                     </div>
                     <div className="space-y-3">
-                        {(vocab.sentences || []).map((s: any, i: number) => (
+                        {(kuVocab.context_sentences || []).map((s: any, i: number) => (
                             <div key={i} className="relative p-4 bg-surface-muted/30 border border-border rounded-2xl group hover:border-primary/20 transition-all overflow-hidden">
                                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/20 group-hover:bg-primary transition-colors rounded-l-2xl" />
                                 <div className="pl-3 space-y-1.5">
