@@ -182,11 +182,12 @@ export class WanikaniSyncService {
 
             if (localState) {
                 // "Prefer which ahead" - logic refinement
-                const isWkAhead = fsrs.stability > localState.stability;
-                const isWkSameButStrategyOverwrite = strategy === 'overwrite' && fsrs.stability >= localState.stability;
+                // For 'merge', we update if WK is greater OR EQUAL in stability.
+                // This ensures we always sync WaniKani's latest timestamps (next_review, etc) if they are on the same SRS stage.
+                const isWkAheadOrSame = fsrs.stability >= localState.stability;
                 
-                // If local is strictly ahead in stability, keep local
-                if (!isWkAhead && !isWkSameButStrategyOverwrite) {
+                // If local is strictly ahead in stability, keep local completely, unless strategy is overwrite.
+                if (!isWkAheadOrSame && strategy !== 'overwrite') {
                     skippedCount++;
                     continue;
                 }

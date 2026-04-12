@@ -265,8 +265,8 @@ export function WaniKaniSyncModal({ isOpen, onClose }: WaniKaniSyncModalProps) {
                     <div>
                       <p className="text-xs font-black text-[#3E4A61] uppercase tracking-tight">Merge (Default)</p>
                       <p className="text-[10px] text-foreground/50 font-medium mt-0.5">
-                        Only update if WaniKani is further ahead ({previewStats?.behind || '?'} items). 
-                        Keeps your local {previewStats?.ahead || '?'} items that are ahead.
+                        Updates your local items if WaniKani is further ahead or at the same SRS level ({previewStats?.behind ? previewStats.behind + (previewStats.same || 0) : '?'}). 
+                        Keeps your local {previewStats?.ahead || '?'} items that are ahead of WaniKani.
                       </p>
                     </div>
                   </button>
