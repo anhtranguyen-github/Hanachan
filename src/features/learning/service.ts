@@ -197,8 +197,7 @@ export async function fetchUserDashboardStats(userId: string, deckId?: string) {
     lessonsAvailable,
     nextReviewAt: summary.data.next_reviews_at,
     ...globalStats,
-    srsSpread: srsData.spread,
-    detailedSpread: srsData.detailed,
+    srsSpread: srsData,
     dueBreakdown: {
       learning: srsData.spread.apprentice,
       review: srsData.spread.guru + srsData.spread.master + srsData.spread.enlightened,

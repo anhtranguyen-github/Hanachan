@@ -635,8 +635,8 @@ function OverviewTab({ stats, profile, level, displayName }: any) {
                         { label: 'Enlightened', key: 'enlightened', color: '#91A7FF' },
                         { label: 'Burned', key: 'burned', color: '#868E96' },
                     ].map((s) => {
-                        const count = stats?.srsSpread?.[s.key] || 0;
-                        const total = Object.values(stats?.srsSpread || {}).reduce((a: any, b: any) => a + b, 0) as number;
+                        const count = stats?.srsSpread?.spread?.[s.key] || 0;
+                        const total = Object.values(stats?.srsSpread?.spread || {}).reduce((a: any, b: any) => a + b, 0) as number;
                         const pct = total > 0 ? Math.round((count / total) * 100) : 0;
                         return (
                             <div key={s.key} className="flex items-center gap-3">

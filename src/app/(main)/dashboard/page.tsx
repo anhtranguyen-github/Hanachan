@@ -525,7 +525,9 @@ export default function DashboardPage() {
             <JlptJoyoProgress progress={stats.jlptJoyoProgress} />
 
             {/* SRS Breakdown (Detailed Table) */}
-            <DetailedSrsSpread detailed={stats.srsSpread.detailed} />
+            {stats.srsSpread?.detailed && (
+                <DetailedSrsSpread detailed={stats.srsSpread.detailed} />
+            )}
             <div className="glass-card p-4 sm:p-6 space-y-4 relative overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
                 <div className="flex justify-between items-start">
