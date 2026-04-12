@@ -30,6 +30,10 @@ import { getUserLevelOrDefault } from '@/features/auth/db';
 import { HanaTime } from '@/lib/time';
 import { ChevronDown, Layers, RefreshCw } from 'lucide-react';
 import { WaniKaniSyncModal } from '@/features/learning/components/WaniKaniSyncModal';
+import { ReviewForecastCard } from './components/ReviewForecastCard';
+import { CriticalItemsCard } from './components/CriticalItemsCard';
+import { JlptJoyoProgress } from './components/JlptJoyoProgress';
+import { RecentActivityCard } from './components/RecentActivityCard';
 
 export default function DashboardPage() {
     const { user, openLoginModal } = useUser();
@@ -492,7 +496,29 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            {/* SRS Spread + Forecast */}
+            {/* New Forecast & Critical Items Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="xl:col-span-2">
+                    <ReviewForecastCard 
+                        forecast={stats.reviewForecast} 
+                        type={forecastType} 
+                    />
+                </div>
+                <div>
+                    <CriticalItemsCard items={stats.criticalItems} />
+                </div>
+            </div>
+
+            {/* Recent Activity */}
+            <RecentActivityCard 
+                unlocked={stats.recentActivity?.unlocked || []} 
+                burned={stats.recentActivity?.burned || []} 
+            />
+
+            {/* JLPT & Joyo Progress */}
+            <JlptJoyoProgress progress={stats.jlptJoyoProgress} />
+
+            {/* SRS Spread (Moved here) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* SRS Spread */}
                 <div className="glass-card p-4 sm:p-6 space-y-4 relative overflow-hidden" data-testid="srs-spread-card">
@@ -527,56 +553,6 @@ export default function DashboardPage() {
                                             style={{ width: `${Math.max(4, barPct)}%`, background: `linear-gradient(90deg, ${s.color}, ${s.color}99)` }}
                                         />
                                     </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* Forecast */}
-                <div className="glass-card p-4 sm:p-6 space-y-4 flex flex-col relative overflow-hidden">
-                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#4DABF7]/30 to-transparent" />
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <h3 className="text-base sm:text-lg font-black text-[#3E4A61] tracking-tight text-left">Review Forecast</h3>
-                            <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0] mt-0.5 text-left">Upcoming load</p>
-                        </div>
-                        <div className="flex bg-[#F7FAFC] p-0.5 rounded-xl border border-border/20">
-                            {(['hourly', 'daily'] as const).map(t => (
-                                <button
-                                    key={t}
-                                    onClick={() => setForecastType(t)}
-                                    className={clsx(
-                                        "px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all duration-300",
-                                        forecastType === t ? "bg-white text-primary shadow-sm" : "text-[#A0AEC0]"
-                                    )}
-                                >
-                                    {t === 'hourly' ? '24h' : '14d'}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="flex-1 min-h-[120px] sm:min-h-[160px] flex items-end gap-1 pb-3 overflow-x-auto no-scrollbar">
-                        {(forecastType === 'hourly' ? stats.forecast?.hourly : stats.forecast?.daily)?.map((item: any, i: number) => {
-                            const arr = forecastType === 'hourly' ? stats.forecast?.hourly : stats.forecast?.daily;
-                            const maxCount = Math.max(...(arr || []).map((x: any) => x.count), 1);
-                            const hPct = (item.count / maxCount) * 100;
-                            const label = forecastType === 'hourly'
-                                ? `${new Date(item.time).getHours()}h`
-                                : `${new Date(item.date).getDate()}`;
-                            const isNow = i === 0;
-                            return (
-                                <div key={i} className="flex-1 flex flex-col items-center gap-2 min-w-[20px] group relative">
-                                    <div className="flex-1 w-full flex items-end justify-center">
-                                        <div
-                                            className="w-2 rounded-full transition-all duration-1000"
-                                            style={{
-                                                height: `${Math.max(4, hPct)}%`,
-                                                background: isNow ? 'linear-gradient(to top, #F4ACB7, #D88C9A)' : 'linear-gradient(to top, #EDF2F7, #E2E8F0)'
-                                            }}
-                                        />
-                                    </div>
-                                    <span className={clsx("text-[7px] font-black", isNow ? "text-primary" : "text-[#A0AEC0]")}>{label}</span>
                                 </div>
                             );
                         })}

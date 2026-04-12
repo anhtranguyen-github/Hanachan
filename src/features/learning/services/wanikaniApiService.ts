@@ -582,6 +582,164 @@ export class WanikaniApiService {
 
     return { spread, detailed };
   }
+
+  /**
+   * Get review forecast for the next 7 days.
+   */
+  async getReviewForecast(userId: string) {
+    const supabase = createClient();
+    const now = new Date();
+    const weekLater = new Date(now);
+    weekLater.setDate(now.getDate() + 7);
+
+    const { data, error } = await supabase
+      .from('user_learning_states')
+      .select('next_review')
+      .eq('user_id', userId)
+      .is('burned_at', null)
+      .not('next_review', 'is', null)
+      .gte('next_review', now.toISOString())
+      .lte('next_review', weekLater.toISOString());
+
+    if (error) throw error;
+
+    const forecast: Record<string, number> = {};
+    (data || []).forEach(row => {
+      const date = new Date(row.next_review);
+      date.setMinutes(0, 0, 0); // Round down to the hour
+      const key = date.toISOString();
+      forecast[key] = (forecast[key] || 0) + 1;
+    });
+
+    return forecast;
+  }
+
+  /**
+   * Get critical condition items (accuracy < 75%).
+   */
+  async getCriticalItems(userId: string) {
+    const supabase = createClient();
+    
+    const { data, error } = await supabase
+      .from('wanikani_review_statistics')
+      .select(`
+        subject_id,
+        percentage_correct,
+        meaning_correct,
+        meaning_incorrect,
+        reading_correct,
+        reading_incorrect,
+        knowledge_units!inner(character, meaning, type, level)
+      `)
+      .eq('user_id', userId)
+      .lt('percentage_correct', 75)
+      .order('percentage_correct', { ascending: true })
+      .limit(10);
+
+    if (error) throw error;
+
+    return (data || []).map(row => ({
+      ...row,
+      knowledge_unit: Array.isArray(row.knowledge_units) ? row.knowledge_units[0] : row.knowledge_units
+    }));
+  }
+
+  /**
+   * Get JLPT and Joyo progress.
+   */
+  async getJlptJoyoProgress(userId: string) {
+    const supabase = createClient();
+    
+    // We want to count items that are "Passed" (Guru or higher) or "Burned"
+    // reps >= 5 is Guru
+    const { data, error } = await supabase
+      .from('user_learning_states')
+      .select(`
+        reps,
+        state,
+        knowledge_units!inner(type, level, jlpt_level, joyo_grade)
+      `)
+      .eq('user_id', userId)
+      .eq('knowledge_units.type', 'kanji');
+
+    if (error) throw error;
+
+    const jlpt: Record<number, { total: number, passed: number, burned: number }> = {
+      1: { total: 0, passed: 0, burned: 0 },
+      2: { total: 0, passed: 0, burned: 0 },
+      3: { total: 0, passed: 0, burned: 0 },
+      4: { total: 0, passed: 0, burned: 0 },
+      5: { total: 0, passed: 0, burned: 0 },
+    };
+
+    const joyo: Record<number, { total: number, passed: number, burned: number }> = {
+      1: { total: 0, passed: 0, burned: 0 },
+      2: { total: 0, passed: 0, burned: 0 },
+      3: { total: 0, passed: 0, burned: 0 },
+      4: { total: 0, passed: 0, burned: 0 },
+      5: { total: 0, passed: 0, burned: 0 },
+      6: { total: 0, passed: 0, burned: 0 },
+      8: { total: 0, passed: 0, burned: 0 },
+    };
+
+    data.forEach(row => {
+      const ku = (Array.isArray(row.knowledge_units) ? row.knowledge_units[0] : row.knowledge_units) as any;
+      const jl = ku?.jlpt_level;
+      const jg = ku?.joyo_grade;
+
+      const isPassed = (row.reps || 0) >= 5;
+      const isBurned = row.state === 'burned' || (row.reps || 0) >= 9;
+
+      if (jl && jlpt[jl]) {
+        jlpt[jl].total++;
+        if (isPassed) jlpt[jl].passed++;
+        if (isBurned) jlpt[jl].burned++;
+      }
+
+      if (jg && joyo[jg]) {
+        joyo[jg].total++;
+        if (isPassed) joyo[jg].passed++;
+        if (isBurned) joyo[jg].burned++;
+      }
+    });
+
+    return { jlpt, joyo };
+  }
+
+  /**
+   * Get recently unlocked and burned items.
+   */
+  async getRecentActivity(userId: string) {
+    const supabase = createClient();
+    const ago30d = new Date();
+    ago30d.setDate(ago30d.getDate() - 30);
+
+    const { data: unlocked, error: e1 } = await supabase
+      .from('user_learning_states')
+      .select('unlocked_at, knowledge_units!inner(character, meaning, type, level)')
+      .eq('user_id', userId)
+      .not('unlocked_at', 'is', null)
+      .gte('unlocked_at', ago30d.toISOString())
+      .order('unlocked_at', { ascending: false })
+      .limit(20);
+
+    const { data: burned, error: e2 } = await supabase
+      .from('user_learning_states')
+      .select('burned_at, knowledge_units!inner(character, meaning, type, level)')
+      .eq('user_id', userId)
+      .not('burned_at', 'is', null)
+      .gte('burned_at', ago30d.toISOString())
+      .order('burned_at', { ascending: false })
+      .limit(20);
+
+    if (e1) throw e1;
+    if (e2) throw e2;
+
+    return { 
+      unlocked: (unlocked || []).map(row => ({ ...row, knowledge_unit: (Array.isArray(row.knowledge_units) ? row.knowledge_units[0] : row.knowledge_units) as any })),
+      burned: (burned || []).map(row => ({ ...row, knowledge_unit: (Array.isArray(row.knowledge_units) ? row.knowledge_units[0] : row.knowledge_units) as any }))
+    };
+  }
 }
 
 export const wanikaniApiService = new WanikaniApiService();

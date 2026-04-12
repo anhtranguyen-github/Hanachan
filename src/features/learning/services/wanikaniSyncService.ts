@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
-import { AssignmentCollection, AssignmentResource } from '@/types/wanikani';
+import { AssignmentCollection, AssignmentResource, ReviewStatisticCollection, ReviewStatisticResource } from '@/types/wanikani';
 import { HanaTime } from '@/lib/time';
 
 /**
@@ -34,6 +34,34 @@ export class WanikaniSyncService {
     }
 
     return allAssignments;
+  }
+
+  /**
+   * Fetch all review statistics from WaniKani API with pagination support.
+   */
+  async fetchReviewStatistics(apiToken: string): Promise<ReviewStatisticResource[]> {
+    let allStats: ReviewStatisticResource[] = [];
+    let nextUrl: string | null = `${this.baseUrl}/review_statistics`;
+
+    while (nextUrl) {
+      const response = await fetch(nextUrl, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+          'Wanikani-Revision': '20170710',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`WaniKani API error: ${response.statusText}`);
+      }
+
+      const collection: any = await response.json();
+      allStats = allStats.concat(collection.data);
+      nextUrl = collection.pages.next_url;
+    }
+
+    return allStats;
   }
 
   /**
@@ -222,7 +250,38 @@ export class WanikaniSyncService {
         }
     }
 
-    return { total: assignments.length, updated: updatedCount, skipped: skippedCount };
+    // Now sync Review Statistics
+    const stats = await this.fetchReviewStatistics(apiToken);
+    const statsBatchSize = 100;
+    let statsUpdatedCount = 0;
+
+    for (let i = 0; i < stats.length; i += statsBatchSize) {
+        const batch = stats.slice(i, i + statsBatchSize);
+        const upsertData = batch.map(s => ({
+            user_id: userId,
+            subject_id: s.data.subject_id,
+            subject_type: s.data.subject_type,
+            percentage_correct: s.data.percentage_correct,
+            meaning_correct: s.data.meaning_correct,
+            meaning_incorrect: s.data.meaning_incorrect,
+            meaning_max_streak: s.data.meaning_max_streak,
+            meaning_current_streak: s.data.meaning_current_streak,
+            reading_correct: s.data.reading_correct,
+            reading_incorrect: s.data.reading_incorrect,
+            reading_max_streak: s.data.reading_max_streak,
+            reading_current_streak: s.data.reading_current_streak,
+            updated_at: now
+        }));
+
+        const { error } = await supabase
+            .from('wanikani_review_statistics')
+            .upsert(upsertData, { onConflict: 'user_id,subject_id' });
+        
+        if (error) console.error('Error upserting stats batch:', error);
+        else statsUpdatedCount += batch.length;
+    }
+
+    return { total: assignments.length, updated: updatedCount, skipped: skippedCount, statsUpdated: statsUpdatedCount };
   }
 }
 

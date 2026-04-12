@@ -144,6 +144,26 @@ export interface SummaryData {
 
 export type SummaryResource = BaseResource<SummaryData>;
 
+// ── Review Statistics ─────────────────────────────────────────
+
+export interface ReviewStatisticData {
+  subject_id: number;
+  subject_type: SubjectType;
+  percentage_correct: number;
+  meaning_correct: number;
+  meaning_incorrect: number;
+  meaning_max_streak: number;
+  meaning_current_streak: number;
+  reading_correct: number;
+  reading_incorrect: number;
+  reading_max_streak: number;
+  reading_current_streak: number;
+  created_at: string;
+}
+
+export type ReviewStatisticResource = BaseResource<ReviewStatisticData>;
+export type ReviewStatisticCollection = BaseCollection<ReviewStatisticResource>;
+
 // ── Custom Deck ───────────────────────────────────────────────
 
 export interface CustomDeckConfigData {
