@@ -1,5 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
 import React from 'react';
+import { clsx } from "clsx";
 import { getLocalKU } from '@/features/knowledge/actions';
 import Link from 'next/link';
 import { RichTextRenderer } from '@/components/shared/RichTextRenderer';
