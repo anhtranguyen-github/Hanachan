@@ -342,7 +342,8 @@ export class WanikaniApiService {
         *,
         knowledge_units!inner(*)
       `)
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .neq('knowledge_units.type', 'grammar');
 
     if (params.subject_ids && params.subject_ids.length > 0) {
       query = query.in('ku_id', params.subject_ids);
@@ -483,6 +484,30 @@ export class WanikaniApiService {
           }
         ]
       }
+    };
+  }
+
+  /**
+   * Get global user statistics for the dashboard.
+   */
+  async getGlobalStats(userId: string) {
+    const supabase = createClient();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayISO = today.toISOString();
+
+    const [burnedRes, learnedRes, reviewsTodayRes] = await Promise.all([
+      supabase.from('user_learning_states').select('id, knowledge_units!inner(type)', { count: 'exact', head: true }).eq('user_id', userId).eq('state', 'burned').neq('knowledge_units.type', 'grammar'),
+      supabase.from('user_learning_states').select('id, knowledge_units!inner(type)', { count: 'exact', head: true }).eq('user_id', userId).neq('state', 'new').neq('knowledge_units.type', 'grammar'),
+      supabase.from('fsrs_review_logs').select('id, knowledge_units!inner(type)', { count: 'exact', head: true }).eq('user_id', userId).gte('reviewed_at', todayISO).neq('knowledge_units.type', 'grammar')
+    ]);
+
+    return {
+      totalBurned: burnedRes.count || 0,
+      totalLearned: learnedRes.count || 0,
+      reviewsToday: reviewsTodayRes.count || 0,
+      retention: 0,
+      streak: 0,
     };
   }
 }

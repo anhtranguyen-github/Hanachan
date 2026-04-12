@@ -171,7 +171,10 @@ export async function fetchUserDashboardStats(userId: string, deckId?: string) {
     };
   }
 
-  const summary = await wanikaniApiService.getSummary(userId);
+  const [summary, globalStats] = await Promise.all([
+    wanikaniApiService.getSummary(userId),
+    wanikaniApiService.getGlobalStats(userId)
+  ]);
   
   // Map v2 summary to legacy DashboardStats structure for UI compatibility
   const now = new Date();
@@ -187,12 +190,7 @@ export async function fetchUserDashboardStats(userId: string, deckId?: string) {
     reviewsDue,
     lessonsAvailable,
     nextReviewAt: summary.data.next_reviews_at,
-    // Add other fields needed by the dashboard with fallback values
-    retention: 0,
-    streak: 0,
-    reviewsToday: 0,
-    totalBurned: 0,
-    totalLearned: 0,
+    ...globalStats,
     dueBreakdown: {
       learning: 0,
       review: reviewsDue,

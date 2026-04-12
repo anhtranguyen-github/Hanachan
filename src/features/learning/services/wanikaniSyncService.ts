@@ -74,7 +74,7 @@ export class WanikaniSyncService {
     const wkToKuMap = new Map<number | string, string>();
     kuData?.forEach((ku) => {
       const wkId = (ku.metadata as any)?.wk_id;
-      if (wkId !== undefined && wkId !== null) wkToKuMap.set(wkId, ku.id);
+      if (wkId !== undefined && wkId !== null) wkToKuMap.set(Number(wkId), ku.id);
     });
 
     const kuIds = assignments
@@ -139,7 +139,7 @@ export class WanikaniSyncService {
     const wkToKuMap = new Map<number | string, string>();
     kuData?.forEach(ku => {
         const wkId = (ku.metadata as any)?.wk_id;
-        if (wkId !== undefined && wkId !== null) wkToKuMap.set(wkId, ku.id);
+        if (wkId !== undefined && wkId !== null) wkToKuMap.set(Number(wkId), ku.id);
     });
 
     const now = HanaTime.getNowISO();
