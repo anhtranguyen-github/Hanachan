@@ -65,8 +65,7 @@ export const curriculumRepository = {
                     const { data: vocab } = await supabase
                         .from('knowledge_units')
                         .select('*, details:vocabulary_details(*)')
-                        .in('metadata->wk_id', anyData.metadata.amalgamation_subject_ids)
-                        .limit(20);
+                        .in('metadata->wk_id', anyData.metadata.amalgamation_subject_ids);
                     mapped.vocabulary = vocab?.map(v => mapToKnowledgeUnit(v, Array.isArray(v.details) ? v.details[0] : v.details, 'vocabulary')) || [];
                 } else {
                     mapped.vocabulary = [];
@@ -98,8 +97,7 @@ export const curriculumRepository = {
                     const { data: kanji } = await supabase
                         .from('knowledge_units')
                         .select('*, details:kanji_details(*)')
-                        .in('metadata->wk_id', anyData.metadata.amalgamation_subject_ids)
-                        .limit(20);
+                        .in('metadata->wk_id', anyData.metadata.amalgamation_subject_ids);
                     mapped.kanji = kanji?.map(k => mapToKnowledgeUnit(k, Array.isArray(k.details) ? k.details[0] : k.details, 'kanji')) || [];
                 } else {
                     mapped.kanji = [];
