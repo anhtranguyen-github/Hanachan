@@ -31,7 +31,7 @@ async function upsertInBatches(table: string, items: any[], onConflict: string =
 }
 
 async function main() {
-  const filePath = 'wanikani_subjects.json';
+  const filePath = 'docs/wanikani/wanikani_subjects.json';
   if (!fs.existsSync(filePath)) {
     console.error(`File not found: ${filePath}`);
     return;
@@ -143,6 +143,7 @@ async function main() {
         parts_of_speech: s.data.parts_of_speech || [],
         meaning_mnemonic: s.data.meaning_mnemonic,
         meaning_hint: s.data.meaning_hint,
+        reading_mnemonic: s.data.reading_mnemonic,
         reading_hint: s.data.reading_hint,
         context_sentences: s.data.context_sentences || [],
         pronunciation_audios: s.data.pronunciation_audios || [],

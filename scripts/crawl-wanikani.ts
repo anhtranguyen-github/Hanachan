@@ -1,7 +1,12 @@
 import fs from 'fs';
 
 // WaniKani API Token provided by user
-const API_TOKEN = 'c64f8759-d793-4198-9c0f-d83541831778'; 
+// WaniKani API Token - Use environment variable for security
+const API_TOKEN = process.env.WANIKANI_API_TOKEN; 
+if (!API_TOKEN) {
+    console.error('❌ Missing WANIKANI_API_TOKEN environment variable');
+    process.exit(1);
+}
 const REVISION = '20170710';
 
 async function fetchCollection(url: string) {

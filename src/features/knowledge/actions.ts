@@ -71,6 +71,7 @@ export async function getKnowledgeUnit(type: string, slug: string) {
             const details = item.vocabulary_details;
             readings = [details.reading];
             mStory = details.meaning_mnemonic || "";
+            rStory = details.reading_mnemonic || "";
             item.meaning_hint = details.meaning_hint || "";
             item.reading_hint = details.reading_hint || "";
 
@@ -82,8 +83,16 @@ export async function getKnowledgeUnit(type: string, slug: string) {
                 parts_of_speech: details.parts_of_speech || []
             };
 
-            // Map newer schema back to what components expect for audio/pitch
-            if (details.audio_url && !details.audio_data) {
+            // Map pronunciation audios to audio_data for UI
+            if (details.pronunciation_audios && details.pronunciation_audios.length > 0) {
+                item.ku_vocabulary.audio_data = details.pronunciation_audios.map((audio: any) => ({
+                    url: audio.url,
+                    metadata: { 
+                        voice_actor_name: audio.metadata?.voice_actor_name || 'WaniKani',
+                        voice_description: audio.metadata?.voice_description || ''
+                    }
+                }));
+            } else if (details.audio_url && !details.audio_data) {
                 item.ku_vocabulary.audio_data = [{
                     url: details.audio_url,
                     metadata: { voice_actor_name: 'WaniKani' }
