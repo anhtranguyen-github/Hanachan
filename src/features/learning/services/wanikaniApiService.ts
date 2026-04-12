@@ -740,6 +740,70 @@ export class WanikaniApiService {
       burned: (burned || []).map(row => ({ ...row, knowledge_unit: (Array.isArray(row.knowledge_units) ? row.knowledge_units[0] : row.knowledge_units) as any }))
     };
   }
+
+  /**
+   * Get level progress for the current level (percentage of radicals/kanji passed).
+   */
+  async getLevelProgress(userId: string, level?: number) {
+    const supabase = createClient();
+    
+    let targetLevel = level;
+    if (!targetLevel) {
+      // Find the highest level the user has any started assignments for
+      const { data: maxLevelRes } = await supabase
+        .from('user_learning_states')
+        .select('knowledge_units!inner(level)')
+        .eq('user_id', userId)
+        .neq('state', 'new')
+        .order('knowledge_units(level)', { ascending: false, foreignTable: 'knowledge_units' } as any)
+        .limit(1);
+      
+      const ku = maxLevelRes?.[0]?.knowledge_units as any;
+      targetLevel = ku?.level || 1;
+    }
+
+    // Fetch all items for the target level
+    const { data: units, error: e1 } = await supabase
+      .from('knowledge_units')
+      .select('id, type, level')
+      .eq('level', targetLevel);
+
+    if (e1) throw e1;
+
+    const subjects = (units || []).filter(u => u.type !== 'vocabulary');
+    const unitIds = subjects.map(s => s.id);
+
+    // Fetch learning states for these items
+    const { data: states, error: e2 } = await supabase
+      .from('user_learning_states')
+      .select('ku_id, reps')
+      .eq('user_id', userId)
+      .in('ku_id', unitIds);
+
+    if (e2) throw e2;
+
+    const stateMap = new Map(states?.map(s => [s.ku_id, s.reps]));
+
+    const result = {
+      radicals: { passed: 0, total: 0 },
+      kanji: { passed: 0, total: 0 },
+      level: targetLevel
+    };
+
+    subjects.forEach(s => {
+      const reps = stateMap.get(s.id) || 0;
+      const passed = reps >= 5; // Guru+
+      if (s.type === 'radical') {
+        result.radicals.total++;
+        if (passed) result.radicals.passed++;
+      } else if (s.type === 'kanji') {
+        result.kanji.total++;
+        if (passed) result.kanji.passed++;
+      }
+    });
+
+    return result;
+  }
 }
 
 export const wanikaniApiService = new WanikaniApiService();

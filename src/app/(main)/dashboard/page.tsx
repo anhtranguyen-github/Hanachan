@@ -34,6 +34,8 @@ import { ReviewForecastCard } from './components/ReviewForecastCard';
 import { CriticalItemsCard } from './components/CriticalItemsCard';
 import { JlptJoyoProgress } from './components/JlptJoyoProgress';
 import { RecentActivityCard } from './components/RecentActivityCard';
+import { LevelProgress } from './components/LevelProgress';
+import { DetailedSrsSpread } from './components/DetailedSrsSpread';
 
 export default function DashboardPage() {
     const { user, openLoginModal } = useUser();
@@ -282,6 +284,11 @@ export default function DashboardPage() {
                 </Link>
             </div>
 
+            {/* Level Progress */}
+            {stats.levelProgress && (
+                <LevelProgress progress={stats.levelProgress} />
+            )}
+
             {/* Quick Access Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Reading Practice Quick Access */}
@@ -515,52 +522,10 @@ export default function DashboardPage() {
                 burned={stats.recentActivity?.burned || []} 
             />
 
-            {/* JLPT & Joyo Progress */}
             <JlptJoyoProgress progress={stats.jlptJoyoProgress} />
 
-            {/* SRS Spread (Moved here) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* SRS Spread */}
-                <div className="glass-card p-4 sm:p-6 space-y-4 relative overflow-hidden" data-testid="srs-spread-card">
-                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#FF7EB9]/30 to-transparent" />
-                    <div>
-                        <h3 className="text-base sm:text-lg font-black text-[#3E4A61] tracking-tight text-left">Learning Balance</h3>
-                        <p className="text-[8px] font-black uppercase tracking-widest text-[#CBD5E0] mt-0.5 text-left">By SRS stage</p>
-                    </div>
-                    <div className="space-y-3">
-                        {[
-                            { label: 'Apprentice', key: 'apprentice', color: '#FF7EB9' },
-                            { label: 'Guru', key: 'guru', color: '#B197FC' },
-                            { label: 'Master', key: 'master', color: '#4DABF7' },
-                            { label: 'Enlightened', key: 'enlightened', color: '#91A7FF' },
-                            { label: 'Burned', key: 'burned', color: '#868E96' }
-                        ].map((s) => {
-                            const count = stats.srsSpread?.[s.key as keyof typeof stats.srsSpread] || 0;
-                            const maxCount = Math.max(...Object.values(stats.srsSpread || {}).map(v => typeof v === 'number' ? v : 0), 1);
-                            const barPct = Math.round((count / maxCount) * 100);
-                            return (
-                                <div key={s.key} className="space-y-1 group">
-                                    <div className="flex justify-between items-center px-0.5">
-                                        <div className="flex items-center gap-1.5">
-                                            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color }} />
-                                            <span className="text-[9px] font-black uppercase tracking-widest text-[#3E4A61]/50">{s.label}</span>
-                                        </div>
-                                        <span className="text-[10px] font-black text-[#3E4A61]">{count}</span>
-                                    </div>
-                                    <div className="h-2.5 bg-[#F7FAFC] rounded-xl overflow-hidden border border-border/10 p-0.5">
-                                        <div
-                                            className="h-full rounded-lg transition-all duration-1000"
-                                            style={{ width: `${Math.max(4, barPct)}%`, background: `linear-gradient(90deg, ${s.color}, ${s.color}99)` }}
-                                        />
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            </div>
-
-            {/* Activity Heatmap */}
+            {/* SRS Breakdown (Detailed Table) */}
+            <DetailedSrsSpread detailed={stats.srsSpread.detailed} />
             <div className="glass-card p-4 sm:p-6 space-y-4 relative overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
                 <div className="flex justify-between items-start">
