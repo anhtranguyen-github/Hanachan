@@ -161,7 +161,11 @@ export default async function KanjiDetailPage({ params }: { params: { slug: stri
                                 href={`/library/radicals/${r.slug}`}
                                 className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-surface-muted/40 border border-border hover:border-primary/30 hover:bg-primary/5 transition-all group aspect-square"
                             >
-                                <span className="text-2xl font-black text-foreground group-hover:text-primary-dark transition-colors jp-text leading-none">{r.character}</span>
+                                {r.character ? (
+                                    <span className="text-2xl font-black text-foreground group-hover:text-primary-dark transition-colors jp-text leading-none">{r.character}</span>
+                                ) : (
+                                    <img src={r.details?.image_url || r.ku_radicals?.image_url} alt={r.meaning} className="w-8 h-8 group-hover:scale-110 transition-transform dark:invert" />
+                                )}
                                 <span className="text-[8px] font-black text-foreground/30 uppercase tracking-wide text-center truncate w-full px-1">{r.meaning}</span>
                             </Link>
                         ))}

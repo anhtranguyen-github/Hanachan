@@ -191,7 +191,11 @@ function ContentDatabase() {
                                                             </div>
 
                                                             <div className={clsx("text-2xl sm:text-3xl font-black transition-all group-hover:scale-110 duration-300 jp-text", typeTextColor[unit.type] || 'text-foreground')}>
-                                                                {unit.character || '—'}
+                                                                {unit.character ? (
+                                                                    unit.character
+                                                                ) : (
+                                                                    <img src={unit.metadata?.image_url} alt={unit.meaning} className="w-8 h-8 dark:invert" />
+                                                                )}
                                                             </div>
                                                             <h3 className="text-[7px] sm:text-[8px] font-black text-foreground/40 uppercase tracking-tight text-center line-clamp-1 px-1">
                                                                 {unit.meaning}

@@ -68,7 +68,9 @@ async function main() {
         lesson_position: s.data.lesson_position,
         amalgamation_subject_ids: s.data.amalgamation_subject_ids || [],
         component_subject_ids: s.data.component_subject_ids || [],
-        visually_similar_subject_ids: s.data.visually_similar_subject_ids || []
+        visually_similar_subject_ids: s.data.visually_similar_subject_ids || [],
+        image_url: s.object === 'radical' ? 
+            (s.data.character_images?.find((img: any) => img.content_type === 'image/svg+xml' && !img.metadata?.inline_styles)?.url || s.data.character_images?.[0]?.url || null) : null
       }
     };
   });
