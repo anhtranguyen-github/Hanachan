@@ -1,4 +1,5 @@
 import { wanikaniClient } from '@/services/wanikaniClient';
+import { wanikaniApiService } from '@/features/learning/services/wanikaniApiService';
 import { AssignmentResource } from '@/types/wanikani';
 
 function parseDeckId(identifier?: string): number | null {
@@ -26,15 +27,15 @@ async function buildCustomDeckLessonAssignments(deckId: number): Promise<Assignm
 
   if (lessonItemIds.length === 0) return [];
 
-  const subjects = await wanikaniClient.listSubjects({ ids: lessonItemIds });
+  const subjects = await wanikaniApiService.listSubjects({ ids: lessonItemIds as number[] });
   const subjectsById = new Map(subjects.data.map((subject) => [subject.id, subject]));
 
   return lessonItemIds.flatMap((subjectId) => {
-    const subject = subjectsById.get(subjectId);
+    const subject = subjectsById.get(subjectId as number);
     if (!subject) return [];
 
     return [{
-      id: -((deckId * 1_000_000) + subjectId),
+      id: -((deckId * 1_000_000) + (subjectId as number)),
       object: 'assignment',
       url: `${deck.url}/items/${subjectId}`,
       data_updated_at: subject.data_updated_at,
@@ -62,15 +63,15 @@ async function buildCustomDeckReviewAssignments(deckId: number): Promise<Assignm
 
   if (reviewItemIds.length === 0) return [];
 
-  const subjects = await wanikaniClient.listSubjects({ ids: reviewItemIds });
+  const subjects = await wanikaniApiService.listSubjects({ ids: reviewItemIds as number[] });
   const subjectsById = new Map(subjects.data.map((subject) => [subject.id, subject]));
 
   return deckReviews.data.flatMap((progress) => {
-    const subject = subjectsById.get(progress.data.subject_id);
+    const subject = subjectsById.get(progress.data.subject_id as number);
     if (!subject) return [];
 
     return [{
-      id: -((deckId * 1_000_000) + progress.data.subject_id),
+      id: -((deckId * 1_000_000) + (progress.data.subject_id as number)),
       object: 'assignment',
       url: progress.url,
       data_updated_at: progress.data_updated_at,
@@ -104,7 +105,7 @@ export async function fetchDueItems(userId: string, deckId?: string) {
     return items.filter((item) => item.data.available_at && new Date(item.data.available_at) <= new Date());
   }
 
-  const result = await wanikaniClient.listAssignments({
+  const result = await wanikaniApiService.listAssignments(userId, {
     immediately_available_for_review: true,
   });
   return result.data;
@@ -122,7 +123,7 @@ export async function fetchNewItems(userId: string, identifier: string, limit: n
     return assignments.slice(0, limit);
   }
   
-  const result = await wanikaniClient.listAssignments({
+  const result = await wanikaniApiService.listAssignments(userId, {
     immediately_available_for_lessons: true,
     levels: level ? [level] : undefined,
   });
@@ -147,8 +148,8 @@ export async function fetchLevelStats(userId: string, levelId: string) {
   }
 
   // Fetch subjects in this level
-  const subjectsRes = await wanikaniClient.listSubjects({ levels: [level] });
-  const assignmentsRes = await wanikaniClient.listAssignments({ levels: [level] });
+  const subjectsRes = await wanikaniApiService.listSubjects({ levels: [level] });
+  const assignmentsRes = await wanikaniApiService.listAssignments(userId, { levels: [level] });
 
   const total = subjectsRes.total_count;
   const assignments = assignmentsRes.data;

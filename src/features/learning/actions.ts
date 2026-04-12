@@ -69,9 +69,9 @@ export async function submitReviewAction(
     }
 }
 
-export async function startReviewSessionAction(limit: number = 20, contentType: string = 'all') {
+export async function startReviewSessionAction(userId: string, limit: number = 20, contentType: string = 'all') {
     try {
-        const result = await startReviewSession(limit, contentType);
+        const result = await startReviewSession(userId, limit, contentType);
         return { success: true, data: result };
     } catch (e: unknown) {
         return { success: false, error: getErrorMessage(e) };
@@ -80,7 +80,7 @@ export async function startReviewSessionAction(limit: number = 20, contentType: 
 
 export async function fetchUserDashboardStatsAction(userId: string, deckId?: string) {
     try {
-        const stats = await fetchUserDashboardStats(deckId);
+        const stats = await fetchUserDashboardStats(userId, deckId);
         return { success: true, data: stats };
     } catch (e: unknown) {
         return { success: false, error: getErrorMessage(e) };
@@ -126,7 +126,7 @@ export async function fetchCurriculumStatsAction() {
 export async function startLessonSessionAction(userId: string, level?: number, deckId?: string) {
     try {
         // v2 doesn't use batches in the same way, but we can list assignments available for lessons
-        const assignments = await startLessonSession(level, deckId);
+        const assignments = await startLessonSession(userId, level, deckId);
         if (assignments.length === 0) {
             return { success: true, data: { items: [], batch: null } };
         }

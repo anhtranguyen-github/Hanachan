@@ -119,20 +119,20 @@ export async function submitReview(
   });
 }
 
-export async function startReviewSession(limit: number = 20, contentType: string = 'all') {
+export async function startReviewSession(userId: string, limit: number = 20, contentType: string = 'all') {
   // Use v2 assignments for fetching due items
-  const assignments = await wanikaniClient.listAssignments({
+  const assignments = await wanikaniApiService.listAssignments(userId, {
     immediately_available_for_review: true,
   });
   return assignments.data.slice(0, limit);
 }
 
-export async function startLessonSession(level?: number, deckId?: string) {
+export async function startLessonSession(userId: string, level?: number, deckId?: string) {
   if (deckId) {
     return buildCustomDeckLessonAssignments(deckId);
   }
 
-  const assignments = await wanikaniClient.listAssignments({
+  const assignments = await wanikaniApiService.listAssignments(userId, {
     immediately_available_for_lessons: true,
     levels: level ? [level] : undefined,
   });
@@ -144,7 +144,9 @@ export async function completeLessonSession(assignmentId: number | string) {
   return wanikaniClient.startAssignment(assignmentId);
 }
 
-export async function fetchUserDashboardStats(deckId?: string) {
+import { wanikaniApiService } from '@/features/learning/services/wanikaniApiService';
+
+export async function fetchUserDashboardStats(userId: string, deckId?: string) {
   const numericDeckId = parseDeckId(deckId);
   if (numericDeckId) {
     const dueAssignments = await buildCustomDeckReviewAssignments(deckId!);
@@ -169,17 +171,17 @@ export async function fetchUserDashboardStats(deckId?: string) {
     };
   }
 
-  const summary = await wanikaniClient.getSummary();
+  const summary = await wanikaniApiService.getSummary(userId);
   
   // Map v2 summary to legacy DashboardStats structure for UI compatibility
   const now = new Date();
   const reviewsDue = summary.data.reviews
-    .filter(r => new Date(r.available_at) <= now)
-    .reduce((acc, r) => acc + r.subject_ids.length, 0);
+    .filter((r: any) => new Date(r.available_at) <= now)
+    .reduce((acc: number, r: any) => acc + r.subject_ids.length, 0);
   
   const lessonsAvailable = summary.data.lessons
-    .filter(l => new Date(l.available_at) <= now)
-    .reduce((acc, l) => acc + l.subject_ids.length, 0);
+    .filter((l: any) => new Date(l.available_at) <= now)
+    .reduce((acc: number, l: any) => acc + l.subject_ids.length, 0);
 
   return {
     reviewsDue,
@@ -196,7 +198,7 @@ export async function fetchUserDashboardStats(deckId?: string) {
       review: reviewsDue,
     },
     forecast: {
-      hourly: summary.data.reviews.map(r => ({
+      hourly: summary.data.reviews.map((r: any) => ({
         time: r.available_at,
         count: r.subject_ids.length
       })),
