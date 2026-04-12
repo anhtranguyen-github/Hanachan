@@ -379,7 +379,7 @@ export class WanikaniApiService {
         hidden: false,
         passed_at: row.reps > 0 ? row.created_at : null, // Simplification
         resurrected_at: null,
-        srs_stage: row.state === 'review' ? 4 : (row.state === 'learning' ? 1 : 0), // Mapping FSRS to stages
+        srs_stage: row.reps || 0,
         started_at: row.last_review,
         subject_id: row.ku_id,
         subject_type: row.knowledge_units.type as SubjectType,
@@ -509,6 +509,78 @@ export class WanikaniApiService {
       retention: 0,
       streak: 0,
     };
+  }
+
+  async getSrsSpread(userId: string) {
+    const supabase = createClient();
+    
+    // In our simplified mapping, reps 1-4 are Apprentice, 5-6 Guru, 7 Master, 8 Enlightened, 9+ Burned
+    const { data, error } = await supabase
+      .from('user_learning_states')
+      .select(`
+        reps,
+        state,
+        knowledge_units!inner(type)
+      `)
+      .eq('user_id', userId)
+      .neq('knowledge_units.type', 'grammar');
+
+    if (error) throw error;
+
+    const spread = {
+      apprentice: 0,
+      guru: 0,
+      master: 0,
+      enlightened: 0,
+      burned: 0,
+    };
+
+    // For the detailed breakdown the user wants
+    const detailed = {
+      apprentice1: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+      apprentice2: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+      apprentice3: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+      apprentice4: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+      guru1: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+      guru2: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+      master: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+      enlightened: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+      burned: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+    };
+
+    data.forEach(row => {
+      // Cast explicitly to handle potential Supabase join ambiguity
+      const ku = (Array.isArray(row.knowledge_units) ? row.knowledge_units[0] : row.knowledge_units) as any;
+      const type = ku?.type as 'radical' | 'kanji' | 'vocabulary';
+      if (!type) return;
+      
+      const reps = row.reps || 0;
+      
+      if (reps >= 1 && reps <= 4) spread.apprentice++;
+      else if (reps >= 5 && reps <= 6) spread.guru++;
+      else if (reps === 7) spread.master++;
+      else if (reps === 8) spread.enlightened++;
+      else if (reps >= 9 || row.state === 'burned') spread.burned++;
+
+      // Detailed mapping
+      let target: any = null;
+      if (reps === 1) target = detailed.apprentice1;
+      else if (reps === 2) target = detailed.apprentice2;
+      else if (reps === 3) target = detailed.apprentice3;
+      else if (reps === 4) target = detailed.apprentice4;
+      else if (reps === 5) target = detailed.guru1;
+      else if (reps === 6) target = detailed.guru2;
+      else if (reps === 7) target = detailed.master;
+      else if (reps === 8) target = detailed.enlightened;
+      else if (reps >= 9 || row.state === 'burned') target = detailed.burned;
+
+      if (target && target[type] !== undefined) {
+        target[type]++;
+        target.total++;
+      }
+    });
+
+    return { spread, detailed };
   }
 }
 

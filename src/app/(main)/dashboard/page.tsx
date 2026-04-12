@@ -373,6 +373,43 @@ export default function DashboardPage() {
                         );
                     })}
                 </div>
+
+                {/* Detailed WaniKani Grid */}
+                {stats.detailedSpread && (
+                    <div className="mt-6 p-4 rounded-3xl bg-surface-muted/30 border border-border/40 overflow-x-auto">
+                        <table className="w-full text-[10px] text-left">
+                            <thead>
+                                <tr className="text-foreground/40 font-black uppercase tracking-widest border-b border-border/20">
+                                    <th className="pb-2 px-2">Level Progress</th>
+                                    <th className="pb-2 px-2">Radical</th>
+                                    <th className="pb-2 px-2">Kanji</th>
+                                    <th className="pb-2 px-2">Vocab</th>
+                                    <th className="pb-2 px-2">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody className="font-black text-foreground/70">
+                                {[
+                                    { label: 'Apprentice I', key: 'apprentice1' },
+                                    { label: 'Apprentice II', key: 'apprentice2' },
+                                    { label: 'Apprentice III', key: 'apprentice3' },
+                                    { label: 'Apprentice IV', key: 'apprentice4' },
+                                    { label: 'Guru V', key: 'guru1' },
+                                    { label: 'Guru VI', key: 'guru2' },
+                                    { label: 'Master', key: 'master' },
+                                    { label: 'Enlightened', key: 'enlightened' },
+                                ].map((row) => (
+                                    <tr key={row.key} className="border-b border-border/10 hover:bg-white/40 transition-colors">
+                                        <td className="py-2 px-2 text-foreground/40">{row.label}</td>
+                                        <td className="py-2 px-2">{stats.detailedSpread[row.key]?.radical || 0}</td>
+                                        <td className="py-2 px-2">{stats.detailedSpread[row.key]?.kanji || 0}</td>
+                                        <td className="py-2 px-2">{stats.detailedSpread[row.key]?.vocabulary || 0}</td>
+                                        <td className="py-2 px-2 text-primary">{stats.detailedSpread[row.key]?.total || 0}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
 
             {/* Growth & Coverage - MERGED FROM PROGRESS */}

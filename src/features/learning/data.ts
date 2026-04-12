@@ -172,7 +172,7 @@ export async function fetchLevelStats(userId: string, levelId: string) {
     if (typeStats[typeKey]) {
       typeStats[typeKey].total++;
       const assignment = assignments.find(a => a.data.subject_id === s.id);
-      if (assignment?.data.passed_at) {
+      if (assignment && assignment.data.srs_stage >= 5) {
         typeStats[typeKey].mastered++;
       }
     }

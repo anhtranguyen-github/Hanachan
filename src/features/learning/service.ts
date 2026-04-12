@@ -171,9 +171,10 @@ export async function fetchUserDashboardStats(userId: string, deckId?: string) {
     };
   }
 
-  const [summary, globalStats] = await Promise.all([
+  const [summary, globalStats, srsData] = await Promise.all([
     wanikaniApiService.getSummary(userId),
-    wanikaniApiService.getGlobalStats(userId)
+    wanikaniApiService.getGlobalStats(userId),
+    wanikaniApiService.getSrsSpread(userId)
   ]);
   
   // Map v2 summary to legacy DashboardStats structure for UI compatibility
@@ -191,9 +192,11 @@ export async function fetchUserDashboardStats(userId: string, deckId?: string) {
     lessonsAvailable,
     nextReviewAt: summary.data.next_reviews_at,
     ...globalStats,
+    srsSpread: srsData.spread,
+    detailedSpread: srsData.detailed,
     dueBreakdown: {
-      learning: 0,
-      review: reviewsDue,
+      learning: srsData.spread.apprentice,
+      review: srsData.spread.guru + srsData.spread.master + srsData.spread.enlightened,
     },
     forecast: {
       hourly: summary.data.reviews.map((r: any) => ({
